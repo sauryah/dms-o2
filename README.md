@@ -79,11 +79,18 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
    ```bash
    docker compose up -d --build
    ```
+   *Note: This will build and run all database, search, backend API, and frontend Web App containers.*
 
 4. **Initialize Root Account**:
    ```bash
    docker compose exec django python manage.py create_root_user
    ```
+
+5. **Access the Application**:
+   Once running, you can access the platform at:
+   - **Frontend App**: [http://localhost](http://localhost)
+   - **Django Admin Interface**: [http://localhost/admin/](http://localhost/admin/)
+   - **Django REST API**: [http://localhost/api/](http://localhost/api/)
 
 ---
 

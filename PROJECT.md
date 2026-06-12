@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · infra: containerize React frontend service in docker-compose with Traefik ingress
+### 2026-06-12 · docs: finalize PROJECT.md changelog with readme commit
 ### 2026-06-12 · docs: generate complete README.md based on codebase analysis
 ### 2026-06-12 · docs: finalize changelog in PROJECT.md
 ### 2026-06-12 · docs: update changelog for Phase 6-8 complete
