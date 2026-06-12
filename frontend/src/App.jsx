@@ -1928,9 +1928,9 @@ function ImportPage() {
 
   const downloadTemplate = () => {
     const csvContent = 
-      "die_id,die_type,casing,status,location,remarks,current_set_id,original_size,current_size,original_width,current_width,original_thickness,current_thickness,radius\n" +
-      "R-101,ROUND,25x10,AVAILABLE,Rack A - Shelf 3,Sample Round Die,,2.5,2.5,,,,,\n" +
-      "F-201,FLAT,30x15,AVAILABLE,Rack B - Shelf 1,Sample Flat Die,,,,30.0,30.0,15.0,15.0,1.5\n"
+      "die_id,die_type,casing,status,location,remarks,current_set_id,set_name,machine_name,original_size,current_size,original_width,current_width,original_thickness,current_thickness,radius\n" +
+      "R-101,ROUND,25x10,AVAILABLE,Rack A - Shelf 3,Sample Round Die,,Set A,Machine 1,2.5,2.5,,,,,\n" +
+      "F-201,FLAT,30x15,AVAILABLE,Rack B - Shelf 1,Sample Flat Die,,Set B,Machine 2,,,,30.0,30.0,15.0,15.0,1.5\n"
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)

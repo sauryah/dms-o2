@@ -167,3 +167,32 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
             self.assertEqual(getattr(doc, 'thickness', None), "15.000")
         finally:
             os.remove(filepath)
+
+    def test_import_with_set_name(self):
+        from machines.models import MachineCategory, Machine, Set
+        
+        cat = MachineCategory.objects.create(name="Cat Import")
+        mach1 = Machine.objects.create(name="Mach A", category=cat)
+        mach2 = Machine.objects.create(name="Mach B", category=cat)
+        
+        set_unique = Set.objects.create(name="UniqueSet", machine=mach1)
+        set_dup1 = Set.objects.create(name="DupSet", machine=mach1)
+        set_dup2 = Set.objects.create(name="DupSet", machine=mach2)
+        
+        content = """die_id,die_type,casing,status,location,remarks,set_name,machine_name,original_size,current_size
+R-IMP-101,ROUND,25x10,AVAILABLE,Rack A,,UniqueSet,,2.5,2.5
+R-IMP-102,ROUND,25x10,AVAILABLE,Rack A,,DupSet,Mach B,3.0,3.0
+"""
+        filepath = self.write_temp_csv(content)
+        try:
+            res = import_dies(filepath, '.csv', self.user)
+            self.assertEqual(res['created'], 2)
+            self.assertEqual(len(res['errors']), 0)
+            
+            d1 = Die.objects.get(die_id='R-IMP-101')
+            self.assertEqual(d1.current_set, set_unique)
+            
+            d2 = Die.objects.get(die_id='R-IMP-102')
+            self.assertEqual(d2.current_set, set_dup2)
+        finally:
+            os.remove(filepath)

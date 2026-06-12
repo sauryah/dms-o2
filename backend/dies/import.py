@@ -100,12 +100,46 @@ def import_dies(file_path: str, file_ext: str, user) -> dict:
             remarks = str(remarks).strip()
 
             current_set_val = row_data.get('current_set') or row_data.get('current_set_id')
+            set_name_val = row_data.get('set_name')
+            machine_name_val = row_data.get('machine_name') or row_data.get('machine')
             current_set = None
+
             if current_set_val:
+                current_set_val_str = str(current_set_val).strip()
+                is_numeric = False
                 try:
-                    current_set = Set.objects.get(pk=int(float(str(current_set_val))))
-                except (ValueError, TypeError, Set.DoesNotExist):
-                    raise ValueError(f"Set with ID '{current_set_val}' does not exist")
+                    float(current_set_val_str)
+                    is_numeric = True
+                except ValueError:
+                    pass
+
+                if is_numeric:
+                    try:
+                        current_set = Set.objects.get(pk=int(float(current_set_val_str)))
+                    except (ValueError, TypeError, Set.DoesNotExist):
+                        raise ValueError(f"Set with ID '{current_set_val_str}' does not exist")
+                else:
+                    set_name_val = current_set_val_str
+
+            if not current_set and set_name_val:
+                set_name_str = str(set_name_val).strip()
+                qs = Set.objects.filter(name__iexact=set_name_str)
+                if qs.count() == 1:
+                    current_set = qs.first()
+                elif qs.count() > 1:
+                    if machine_name_val:
+                        mach_name_str = str(machine_name_val).strip()
+                        qs = qs.filter(machine__name__iexact=mach_name_str)
+                        if qs.count() == 1:
+                            current_set = qs.first()
+                        elif qs.count() > 1:
+                            raise ValueError(f"Multiple sets named '{set_name_str}' found under machine '{mach_name_str}'")
+                        else:
+                            raise ValueError(f"Set '{set_name_str}' not found under machine '{mach_name_str}'")
+                    else:
+                        raise ValueError(f"Multiple sets named '{set_name_str}' exist. Please specify a unique set name or provide the machine_name to resolve ambiguity.")
+                else:
+                    raise ValueError(f"Set with name '{set_name_str}' does not exist")
 
             with transaction.atomic():
                 # update_or_create Die on die_id
