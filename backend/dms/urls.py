@@ -3,10 +3,14 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from dies.views import DieViewSet, search_dies, ImportDiesView
 from users.views import LoginView, UserViewSet
+from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet
 
 router = DefaultRouter()
 router.register('dies', DieViewSet, basename='die')
 router.register('users', UserViewSet, basename='user')
+router.register('categories', MachineCategoryViewSet, basename='category')
+router.register('machines', MachineViewSet, basename='machine')
+router.register('sets', SetViewSet, basename='set')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

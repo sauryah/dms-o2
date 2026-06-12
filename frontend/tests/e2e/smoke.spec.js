@@ -46,9 +46,9 @@ test.describe('DMS E2E Smoke Tests', () => {
   });
 
   test('unauthenticated search page and login flow', async ({ page }) => {
-    // 1. Visit / -> search page renders
+    // 1. Visit / -> dashboard page renders
     await page.goto('/#/');
-    await expect(page.locator('h1')).toContainText('Die Inventory');
+    await expect(page.locator('h1')).toContainText('Die Tracking Dashboard');
 
     // 2. Visit /login -> login form renders
     await page.goto('/#/login');
@@ -63,9 +63,9 @@ test.describe('DMS E2E Smoke Tests', () => {
     // Verify navbar shows user's name
     await expect(page.locator('nav')).toContainText('root');
 
-    // 4. Type a die_id -> result card appears
+    // 4. Type a die_id on dashboard -> result card appears
     await page.fill('input[placeholder*="Search by Die ID"]', 'R-E2E-1');
-    const card = page.locator('h3:has-text("R-E2E-1")');
+    const card = page.locator('h3').filter({ hasText: /^R-E2E-1$/ });
     await expect(card).toBeVisible();
 
     // 5. Click result -> detail page renders with history table
@@ -74,7 +74,11 @@ test.describe('DMS E2E Smoke Tests', () => {
     await expect(page.locator('h1')).toContainText('R-E2E-1');
     await expect(page.locator('h3:has-text("Change History")')).toBeVisible();
 
-    // 6. Visit /import -> import page renders
+    // 6. Visit /inventory -> inventory page renders
+    await page.goto('/#/inventory');
+    await expect(page.locator('h1')).toContainText('Die Registry Inventory');
+
+    // 7. Visit /import -> import page renders
     await page.goto('/#/import');
     await expect(page.locator('h1')).toContainText('Bulk Import Dies');
   });

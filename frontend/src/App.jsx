@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { 
   HashRouter as Router, 
   Routes, 
   Route, 
   Link, 
   useNavigate, 
-  useParams 
+  useParams,
+  useSearchParams
 } from 'react-router-dom'
 import { 
   QueryClient, 
@@ -30,7 +31,14 @@ import {
   ChevronRight,
   Plus,
   Trash2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Edit,
+  Sliders,
+  Database,
+  Calendar,
+  Layers3,
+  Wrench,
+  X
 } from 'lucide-react'
 
 // React Query Client
@@ -119,7 +127,13 @@ function Navbar() {
             
             <div className="hidden sm:flex space-x-4">
               <Link to="/" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Search Dies
+                Dashboard
+              </Link>
+              <Link to="/inventory" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Die Inventory
+              </Link>
+              <Link to="/machines" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Machine Sets
               </Link>
               {(role === 'ROOT' || role === 'ADMIN') && (
                 <Link to="/import" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
@@ -160,16 +174,166 @@ function Navbar() {
   )
 }
 
-// Search Dashboard Page
-function SearchPage() {
+// Dashboard Page
+function DashboardPage() {
   const { request } = useApi()
   const navigate = useNavigate()
-  
-  // Search parameters
   const [q, setQ] = useState('')
-  const [dieType, setDieType] = useState('')
-  const [statusVal, setStatusVal] = useState('')
-  const [casing, setCasing] = useState('')
+
+  // Fetch all dies to compute overall statistics
+  const { data: allDies, isLoading: isStatsLoading } = useQuery({
+    queryKey: ['allDiesStats'],
+    queryFn: () => request('/api/dies/')
+  })
+
+  // Fetch fuzzy search results if search query exists
+  const { data: searchDies, isLoading: isSearchLoading } = useQuery({
+    queryKey: ['searchDiesDashboard', q],
+    queryFn: () => {
+      if (!q) return []
+      return request(`/api/search/?q=${encodeURIComponent(q)}`)
+    },
+    enabled: !!q
+  })
+
+  const totalCount = allDies ? allDies.length : 0
+  const stats = {
+    AVAILABLE: 0,
+    RUNNING: 0,
+    CLEANING: 0,
+    POLISHING: 0,
+    DAMAGED: 0,
+    SCRAPPED: 0,
+    MISSING: 0
+  }
+  if (allDies) {
+    allDies.forEach(d => {
+      if (stats[d.status] !== undefined) {
+        stats[d.status]++
+      }
+    })
+  }
+
+  const statusColors = {
+    AVAILABLE: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5',
+    RUNNING: 'border-blue-500/30 text-blue-400 bg-blue-500/5',
+    CLEANING: 'border-amber-500/30 text-amber-400 bg-amber-500/5',
+    POLISHING: 'border-purple-500/30 text-purple-400 bg-purple-500/5',
+    DAMAGED: 'border-rose-500/30 text-rose-400 bg-rose-500/5',
+    SCRAPPED: 'border-slate-500/30 text-slate-400 bg-slate-500/5',
+    MISSING: 'border-red-500/30 text-red-400 bg-red-500/5',
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-4xl font-extrabold text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+          Die Tracking Dashboard
+        </h1>
+        <p className="text-slate-400 mt-2">Overview of facility inventory and search portal.</p>
+      </div>
+
+      {isStatsLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="animate-pulse bg-slate-900 border border-slate-800 rounded-xl h-24"></div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+          <div className="bg-gradient-to-tr from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px]">
+            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+            <span className="text-3xl font-extrabold text-white block mt-1">{totalCount}</span>
+          </div>
+          {Object.entries(stats).map(([statusKey, count]) => (
+            <div 
+              key={statusKey}
+              onClick={() => navigate(`/inventory?status=${statusKey}`)}
+              className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 ${statusColors[statusKey]}`}
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider opacity-80">{statusKey}</span>
+              <span className="text-3xl font-extrabold block mt-1">{count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Clean search interface */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-xl max-w-4xl mx-auto">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-white">Find a Die</h2>
+          <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly.</p>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
+          <input 
+            type="text" 
+            placeholder="Search by Die ID, casing, location..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
+          />
+        </div>
+      </div>
+
+      {q && (
+        <div className="mt-8 border-t border-slate-800/80 pt-8">
+          <div className="mb-6 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-slate-300">
+              Search Results for <span className="text-blue-400">"{q}"</span>
+            </h3>
+            <Link to={`/inventory?q=${encodeURIComponent(q)}`} className="text-sm text-blue-400 hover:underline">
+              View in Inventory
+            </Link>
+          </div>
+
+          {isSearchLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : searchDies?.length === 0 ? (
+            <div className="text-center py-12 bg-slate-900 border border-slate-850 rounded-2xl">
+              <p className="text-slate-500">No dies found matching "{q}".</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {searchDies?.map((die) => 
+                die.die_type === 'ROUND' ? (
+                  <RoundDieCard 
+                    key={die.die_id} 
+                    die={die} 
+                    onClick={() => navigate(`/dies/${die.die_id}`)}
+                  />
+                ) : (
+                  <FlatDieCard 
+                    key={die.die_id} 
+                    die={die} 
+                    onClick={() => navigate(`/dies/${die.die_id}`)}
+                  />
+                )
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Die Inventory & Advanced Filtering Page
+function InventoryPage() {
+  const { request } = useApi()
+  const { role } = useAuth()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  
+  // Search parameters states initialized from URL if present
+  const [q, setQ] = useState(searchParams.get('q') || '')
+  const [dieType, setDieType] = useState(searchParams.get('die_type') || '')
+  const [statusVal, setStatusVal] = useState(searchParams.get('status') || '')
+  const [casing, setCasing] = useState(searchParams.get('casing') || '')
   
   // Custom ranges
   const [sizeMin, setSizeMin] = useState('')
@@ -180,8 +344,37 @@ function SearchPage() {
   const [thickMax, setThickMax] = useState('')
   
   const [showFilters, setShowFilters] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
-  // React Query Fetcher (combines fuzzy Meilisearch and exact filters)
+  // Fetch list of sets for the dropdown
+  const { data: setsList } = useQuery({
+    queryKey: ['setsDropdownList'],
+    queryFn: () => request('/api/sets/')
+  })
+
+  // Create Die form states
+  const [newDieId, setNewDieId] = useState('')
+  const [newDieType, setNewDieType] = useState('ROUND')
+  const [newCasing, setNewCasing] = useState('')
+  const [newStatus, setNewStatus] = useState('AVAILABLE')
+  const [newLocation, setNewLocation] = useState('')
+  const [newRemarks, setNewRemarks] = useState('')
+  const [newCurrentSet, setNewCurrentSet] = useState('')
+  
+  // Round subfields
+  const [newOriginalSize, setNewOriginalSize] = useState('')
+  const [newCurrentSize, setNewCurrentSize] = useState('')
+  
+  // Flat subfields
+  const [newOriginalWidth, setNewOriginalWidth] = useState('')
+  const [newCurrentWidth, setNewCurrentWidth] = useState('')
+  const [newOriginalThickness, setNewOriginalThickness] = useState('')
+  const [newCurrentThickness, setNewCurrentThickness] = useState('')
+  const [newRadius, setNewRadius] = useState('')
+
+  const [createError, setCreateError] = useState(null)
+
+  // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
     queryKey: ['dies', q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
     queryFn: () => {
@@ -193,7 +386,6 @@ function SearchPage() {
       if (statusVal) params.append('status', statusVal)
       if (casing) params.append('casing', casing)
       
-      // Range query values
       if (sizeMin) params.append('size_min', sizeMin)
       if (sizeMax) params.append('size_max', sizeMax)
       if (widthMin) params.append('width_min', widthMin)
@@ -208,17 +400,90 @@ function SearchPage() {
     }
   })
 
+  // Create die mutation
+  const createDieMutation = useMutation({
+    mutationFn: (payload) => request('/api/dies/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['dies'])
+      queryClient.invalidateQueries(['allDiesStats'])
+      setIsCreateOpen(false)
+      resetCreateForm()
+    },
+    onError: (err) => {
+      setCreateError(err.message)
+    }
+  })
+
+  const resetCreateForm = () => {
+    setNewDieId('')
+    setNewDieType('ROUND')
+    setNewCasing('')
+    setNewStatus('AVAILABLE')
+    setNewLocation('')
+    setNewRemarks('')
+    setNewCurrentSet('')
+    setNewOriginalSize('')
+    setNewCurrentSize('')
+    setNewOriginalWidth('')
+    setNewCurrentWidth('')
+    setNewOriginalThickness('')
+    setNewCurrentThickness('')
+    setNewRadius('')
+    setCreateError(null)
+  }
+
+  const handleCreateSubmit = (e) => {
+    e.preventDefault()
+    setCreateError(null)
+    
+    const payload = {
+      die_id: newDieId,
+      die_type: newDieType,
+      casing: newCasing,
+      status: newStatus,
+      location: newLocation,
+      remarks: newRemarks,
+      current_set: newCurrentSet || null
+    }
+
+    if (newDieType === 'ROUND') {
+      payload.original_size = newOriginalSize
+      payload.current_size = newCurrentSize
+    } else {
+      payload.original_width = newOriginalWidth
+      payload.current_width = newCurrentWidth
+      payload.original_thickness = newOriginalThickness
+      payload.current_thickness = newCurrentThickness
+      payload.radius = newRadius
+    }
+
+    createDieMutation.mutate(payload)
+  }
+
+  const canCreate = role === 'ROOT' || role === 'ADMIN'
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Die Inventory</h1>
-          <p className="text-slate-400 mt-1">Search, monitor, and update production dies.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Die Registry Inventory</h1>
+          <p className="text-slate-400 mt-1">Full access catalog with advanced sizing and category filters.</p>
         </div>
+        {canCreate && (
+          <button 
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Add New Die</span>
+          </button>
+        )}
       </div>
 
-      {/* Search Bar & Primary Actions */}
+      {/* Filter panel */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8 shadow-xl">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -245,10 +510,8 @@ function SearchPage() {
           </button>
         </div>
 
-        {/* Filters Panel */}
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80 animate-fadeIn">
-            {/* Die Type */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
               <select 
@@ -262,7 +525,6 @@ function SearchPage() {
               </select>
             </div>
 
-            {/* Status */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
               <select 
@@ -281,7 +543,6 @@ function SearchPage() {
               </select>
             </div>
 
-            {/* Casing */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
               <input 
@@ -293,7 +554,6 @@ function SearchPage() {
               />
             </div>
 
-            {/* Range queries based on type */}
             {dieType === 'ROUND' && (
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
@@ -400,6 +660,223 @@ function SearchPage() {
           )}
         </div>
       )}
+
+      {/* Add Die Modal */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Create Production Die</h2>
+              <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-6">
+              {createError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-sm">
+                  {createError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID (Unique)</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={newDieId}
+                    onChange={(e) => setNewDieId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
+                  <select 
+                    value={newDieType}
+                    onChange={(e) => setNewDieType(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="ROUND">Round</option>
+                    <option value="FLAT">Flat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. 25x10"
+                    value={newCasing}
+                    onChange={(e) => setNewCasing(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <select 
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="CLEANING">Cleaning</option>
+                    <option value="POLISHING">Polishing</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="SCRAPPED">Scrapped</option>
+                    <option value="MISSING">Missing</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
+                  <input 
+                    type="text" 
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
+                  <select 
+                    value={newCurrentSet}
+                    onChange={(e) => setNewCurrentSet(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="">— Unassigned —</option>
+                    {setsList?.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.machine_name})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic Sizing Subfields */}
+              <div className="border-t border-slate-800 pt-6">
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Dimensions Specifications</h3>
+                
+                {newDieType === 'ROUND' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Size (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalSize}
+                        onChange={(e) => setNewOriginalSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentSize}
+                        onChange={(e) => setNewCurrentSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Width (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalWidth}
+                        onChange={(e) => setNewOriginalWidth(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentWidth}
+                        onChange={(e) => setNewCurrentWidth(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Thickness (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalThickness}
+                        onChange={(e) => setNewOriginalThickness(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentThickness}
+                        onChange={(e) => setNewCurrentThickness(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Radius (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newRadius}
+                        onChange={(e) => setNewRadius(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
+                <textarea 
+                  rows="3"
+                  value={newRemarks}
+                  onChange={(e) => setNewRemarks(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreateOpen(false)}
+                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={createDieMutation.isLoading}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold"
+                >
+                  {createDieMutation.isLoading ? 'Creating...' : 'Create Die'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -416,6 +893,7 @@ function DieDetailPage() {
   const [statusVal, setStatusVal] = useState('')
   const [location, setLocation] = useState('')
   const [remarks, setRemarks] = useState('')
+  const [currentSetId, setCurrentSetId] = useState('')
   
   // Custom subfields editing
   const [currentSize, setCurrentSize] = useState('')
@@ -426,14 +904,25 @@ function DieDetailPage() {
   const { data: die, isLoading, error } = useQuery({
     queryKey: ['die', id],
     queryFn: () => request(`/api/dies/${id}/`),
-    onSuccess: (data) => {
-      setStatusVal(data.status)
-      setLocation(data.location)
-      setRemarks(data.remarks)
-      setCurrentSize(data.current_size || '')
-      setCurrentWidth(data.current_width || '')
-      setCurrentThickness(data.current_thickness || '')
+  })
+
+  // Populate form states once data loads or changes
+  useEffect(() => {
+    if (die) {
+      setStatusVal(die.status || 'AVAILABLE')
+      setLocation(die.location || '')
+      setRemarks(die.remarks || '')
+      setCurrentSetId(die.current_set || '')
+      setCurrentSize(die.current_size || '')
+      setCurrentWidth(die.current_width || '')
+      setCurrentThickness(die.current_thickness || '')
     }
+  }, [die])
+
+  // Fetch sets list for editing dropdown
+  const { data: setsList } = useQuery({
+    queryKey: ['setsDropdownDetail'],
+    queryFn: () => request('/api/sets/')
   })
 
   // Mutation for updating die
@@ -445,6 +934,7 @@ function DieDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries(['die', id])
       queryClient.invalidateQueries(['dies'])
+      queryClient.invalidateQueries(['allDiesStats'])
       setIsEditing(false)
     }
   })
@@ -456,7 +946,8 @@ function DieDetailPage() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries(['dies'])
-      navigate('/')
+      queryClient.invalidateQueries(['allDiesStats'])
+      navigate('/inventory')
     }
   })
 
@@ -466,6 +957,7 @@ function DieDetailPage() {
       status: statusVal,
       location,
       remarks,
+      current_set: currentSetId || null
     }
     if (die.die_type === 'ROUND') {
       payload.current_size = currentSize
@@ -492,7 +984,7 @@ function DieDetailPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl">
         <p className="text-rose-400 font-semibold">Error: {error.message}</p>
-        <Link to="/" className="text-blue-400 hover:underline mt-4 inline-block">Back to Dashboard</Link>
+        <Link to="/inventory" className="text-blue-400 hover:underline mt-4 inline-block">Back to Inventory</Link>
       </div>
     </div>
   )
@@ -503,13 +995,12 @@ function DieDetailPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumbs */}
       <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6">
-        <Link to="/" className="hover:text-slate-300">Inventory</Link>
+        <Link to="/inventory" className="hover:text-slate-300">Inventory</Link>
         <ChevronRight className="h-4 w-4" />
         <span className="text-slate-300">{die.die_id}</span>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mb-8">
-        {/* Banner header */}
         <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-slate-950 p-8 border-b border-slate-800 flex justify-between items-start gap-4">
           <div>
             <div className="flex items-center space-x-3">
@@ -539,7 +1030,6 @@ function DieDetailPage() {
           )}
         </div>
 
-        {/* Content body */}
         <div className="p-8">
           {isEditing ? (
             <form onSubmit={handleSave} className="space-y-6">
@@ -568,6 +1058,19 @@ function DieDetailPage() {
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
+                  <select 
+                    value={currentSetId}
+                    onChange={(e) => setCurrentSetId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">— Unassigned —</option>
+                    {setsList?.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.machine_name})</option>
+                    ))}
+                  </select>
                 </div>
                 {die.die_type === 'ROUND' ? (
                   <div>
@@ -620,7 +1123,7 @@ function DieDetailPage() {
                 <button 
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300"
+                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold"
                 >
                   Cancel
                 </button>
@@ -635,7 +1138,6 @@ function DieDetailPage() {
             </form>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Specifications block */}
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Specifications</h3>
                 <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 space-y-4">
@@ -686,7 +1188,6 @@ function DieDetailPage() {
                 </div>
               </div>
 
-              {/* Remarks block */}
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Remarks</h3>
                 <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 h-[calc(100%-2rem)]">
@@ -744,6 +1245,456 @@ function DieDetailPage() {
           <div className="text-center py-8 bg-slate-950/40 border border-slate-850 rounded-xl">
             <p className="text-slate-500 text-sm">No changes recorded yet.</p>
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Machine & Set Management Page
+function MachineSetsPage() {
+  const { request } = useApi()
+  const { role } = useAuth()
+  const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState('categories') // categories | machines | sets
+
+  // Queries
+  const { data: categories, isLoading: isCatsLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => request('/api/categories/')
+  })
+
+  const { data: machines, isLoading: isMachsLoading } = useQuery({
+    queryKey: ['machines'],
+    queryFn: () => request('/api/machines/')
+  })
+
+  const { data: sets, isLoading: isSetsLoading } = useQuery({
+    queryKey: ['sets'],
+    queryFn: () => request('/api/sets/')
+  })
+
+  // Mutators
+  const createCategory = useMutation({
+    mutationFn: (data) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['categories'])
+      setCatName('')
+      setEditingCat(null)
+    }
+  })
+
+  const updateCategory = useMutation({
+    mutationFn: ({ id, data }) => request(`/api/categories/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['categories'])
+      setCatName('')
+      setEditingCat(null)
+    }
+  })
+
+  const deleteCategory = useMutation({
+    mutationFn: (id) => request(`/api/categories/${id}/`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries(['categories'])
+  })
+
+  const createMachine = useMutation({
+    mutationFn: (data) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['machines'])
+      setMachName('')
+      setMachCat('')
+      setEditingMach(null)
+    }
+  })
+
+  const updateMachine = useMutation({
+    mutationFn: ({ id, data }) => request(`/api/machines/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['machines'])
+      setMachName('')
+      setMachCat('')
+      setEditingMach(null)
+    }
+  })
+
+  const deleteMachine = useMutation({
+    mutationFn: (id) => request(`/api/machines/${id}/`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries(['machines'])
+  })
+
+  const createSet = useMutation({
+    mutationFn: (data) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sets'])
+      queryClient.invalidateQueries(['setsDropdownList'])
+      queryClient.invalidateQueries(['setsDropdownDetail'])
+      setNameSet('')
+      setMachineSet('')
+      setEditingSet(null)
+    }
+  })
+
+  const updateSet = useMutation({
+    mutationFn: ({ id, data }) => request(`/api/sets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sets'])
+      queryClient.invalidateQueries(['setsDropdownList'])
+      queryClient.invalidateQueries(['setsDropdownDetail'])
+      setNameSet('')
+      setMachineSet('')
+      setEditingSet(null)
+    }
+  })
+
+  const deleteSet = useMutation({
+    mutationFn: (id) => request(`/api/sets/${id}/`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sets'])
+      queryClient.invalidateQueries(['setsDropdownList'])
+      queryClient.invalidateQueries(['setsDropdownDetail'])
+    }
+  })
+
+  // Local Form States
+  const [catName, setCatName] = useState('')
+  const [editingCat, setEditingCat] = useState(null)
+
+  const [machName, setMachName] = useState('')
+  const [machCat, setMachCat] = useState('')
+  const [editingMach, setEditingMach] = useState(null)
+
+  const [nameSet, setNameSet] = useState('')
+  const [machineSet, setMachineSet] = useState('')
+  const [editingSet, setEditingSet] = useState(null)
+
+  const isWritable = role === 'ROOT' || role === 'ADMIN'
+
+  // Form handlers
+  const handleCatSubmit = (e) => {
+    e.preventDefault()
+    if (editingCat) {
+      updateCategory.mutate({ id: editingCat.id, data: { name: catName } })
+    } else {
+      createCategory.mutate({ name: catName })
+    }
+  }
+
+  const handleMachSubmit = (e) => {
+    e.preventDefault()
+    const payload = { name: machName, category: machCat }
+    if (editingMach) {
+      updateMachine.mutate({ id: editingMach.id, data: payload })
+    } else {
+      createMachine.mutate(payload)
+    }
+  }
+
+  const handleSetSubmit = (e) => {
+    e.preventDefault()
+    const payload = { name: nameSet, machine: machineSet }
+    if (editingSet) {
+      updateSet.mutate({ id: editingSet.id, data: payload })
+    } else {
+      createSet.mutate(payload)
+    }
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Machines & Sets Manager</h1>
+        <p className="text-slate-400 mt-1">Configure layout, structure machine profiles, and allocate toolsets.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-800 space-x-6 mb-8">
+        <button 
+          onClick={() => setActiveTab('categories')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
+            activeTab === 'categories' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Machine Categories
+        </button>
+        <button 
+          onClick={() => setActiveTab('machines')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
+            activeTab === 'machines' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Machines
+        </button>
+        <button 
+          onClick={() => setActiveTab('sets')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
+            activeTab === 'sets' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Tool Sets
+        </button>
+      </div>
+
+      {/* Tab Contents */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Categories Tab */}
+        {activeTab === 'categories' && (
+          <>
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-lg font-bold text-white mb-4">Categories List</h2>
+              {isCatsLoading ? (
+                <div className="text-center py-6">Loading...</div>
+              ) : categories?.length === 0 ? (
+                <p className="text-slate-500 text-sm">No machine categories found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {categories?.map(cat => (
+                    <div key={cat.id} className="flex justify-between items-center bg-slate-950/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
+                      <span className="font-semibold text-slate-200">{cat.name}</span>
+                      {isWritable && (
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => { setEditingCat(cat); setCatName(cat.name); }}
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => { if (window.confirm('Delete this category?')) deleteCategory.mutate(cat.id); }}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {isWritable && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
+                <h2 className="text-lg font-bold text-white mb-4">
+                  {editingCat ? 'Edit Category' : 'Create Category'}
+                </h2>
+                <form onSubmit={handleCatSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={catName}
+                      onChange={(e) => setCatName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    {editingCat && (
+                      <button 
+                        type="button"
+                        onClick={() => { setEditingCat(null); setCatName(''); }}
+                        className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button 
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                    >
+                      {editingCat ? 'Save' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Machines Tab */}
+        {activeTab === 'machines' && (
+          <>
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-lg font-bold text-white mb-4">Machines List</h2>
+              {isMachsLoading ? (
+                <div className="text-center py-6">Loading...</div>
+              ) : machines?.length === 0 ? (
+                <p className="text-slate-500 text-sm">No machines found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {machines?.map(mach => (
+                    <div key={mach.id} className="flex justify-between items-center bg-slate-950/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
+                      <div>
+                        <span className="font-semibold text-slate-200 block">{mach.name}</span>
+                        <span className="text-xs text-slate-500">Category: {mach.category_name}</span>
+                      </div>
+                      {isWritable && (
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => { setEditingMach(mach); setMachName(mach.name); setMachCat(mach.category); }}
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => { if (window.confirm('Delete this machine?')) deleteMachine.mutate(mach.id); }}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {isWritable && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
+                <h2 className="text-lg font-bold text-white mb-4">
+                  {editingMach ? 'Edit Machine' : 'Create Machine'}
+                </h2>
+                <form onSubmit={handleMachSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Machine Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={machName}
+                      onChange={(e) => setMachName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                    <select 
+                      required
+                      value={machCat}
+                      onChange={(e) => setMachCat(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    >
+                      <option value="">— Select Category —</option>
+                      {categories?.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    {editingMach && (
+                      <button 
+                        type="button"
+                        onClick={() => { setEditingMach(null); setMachName(''); setMachCat(''); }}
+                        className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button 
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                    >
+                      {editingMach ? 'Save' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Tool Sets Tab */}
+        {activeTab === 'sets' && (
+          <>
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-lg font-bold text-white mb-4">Tool Sets List</h2>
+              {isSetsLoading ? (
+                <div className="text-center py-6">Loading...</div>
+              ) : sets?.length === 0 ? (
+                <p className="text-slate-500 text-sm">No tool sets found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sets?.map(s => (
+                    <div key={s.id} className="flex justify-between items-center bg-slate-950/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
+                      <div>
+                        <span className="font-semibold text-slate-200 block">{s.name}</span>
+                        <span className="text-xs text-slate-500">Machine: {s.machine_name} ({s.category_name})</span>
+                      </div>
+                      {isWritable && (
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => { setEditingSet(s); setNameSet(s.name); setMachineSet(s.machine); }}
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => { if (window.confirm('Delete this set?')) deleteSet.mutate(s.id); }}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {isWritable && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
+                <h2 className="text-lg font-bold text-white mb-4">
+                  {editingSet ? 'Edit Set' : 'Create Set'}
+                </h2>
+                <form onSubmit={handleSetSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Set Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={nameSet}
+                      onChange={(e) => setNameSet(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Machine Profile</label>
+                    <select 
+                      required
+                      value={machineSet}
+                      onChange={(e) => setMachineSet(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    >
+                      <option value="">— Select Machine —</option>
+                      {machines?.map(mach => (
+                        <option key={mach.id} value={mach.id}>{mach.name} ({mach.category_name})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    {editingSet && (
+                      <button 
+                        type="button"
+                        onClick={() => { setEditingSet(null); setNameSet(''); setMachineSet(''); }}
+                        className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button 
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                    >
+                      {editingSet ? 'Save' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -948,8 +1899,10 @@ function AppContent() {
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
       <Navbar />
       <Routes>
-        <Route path="/" element={<SearchPage />} />
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/dies/:id" element={<DieDetailPage />} />
+        <Route path="/machines" element={<MachineSetsPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
