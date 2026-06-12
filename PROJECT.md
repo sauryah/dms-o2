@@ -322,3 +322,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 ## PHASE 2 — DieHistory signals
 
 ... (and so on)
+
+
+## Changelog
+### 2026-06-12 · Phase 0: Project Scaffold
