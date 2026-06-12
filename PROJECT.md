@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · feat: implement machine category, machine, and set CRUD views with frontend pages, separate dashboard and inventory pages, and fix E2E smoke tests
+### 2026-06-12 · docs: add default login credentials to README.md
 ### 2026-06-12 · docs: finalize project md changelog with the docker setup documentation commit
 ### 2026-06-12 · docs: update README.md and PROJECT.md to document unified docker setup
 ### 2026-06-12 · infra: containerize React frontend service in docker-compose with Traefik ingress
