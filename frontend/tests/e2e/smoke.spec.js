@@ -81,5 +81,9 @@ test.describe('DMS E2E Smoke Tests', () => {
     // 7. Visit /import -> import page renders
     await page.goto('/#/import');
     await expect(page.locator('h1')).toContainText('Bulk Import Dies');
+
+    // 8. Visit /users -> user management renders
+    await page.goto('/#/users');
+    await expect(page.locator('h1')).toContainText('User Administration');
   });
 });

@@ -140,6 +140,11 @@ function Navbar() {
                   Bulk Import
                 </Link>
               )}
+              {role === 'ROOT' && (
+                <Link to="/users" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Users
+                </Link>
+              )}
             </div>
           </div>
 
@@ -2055,6 +2060,376 @@ function ImportPage() {
   )
 }
 
+// User Management Page (Root Only)
+function UsersPage() {
+  const { request } = useApi()
+  const { role, username: currentUsername } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (role !== 'ROOT') {
+      navigate('/')
+    }
+  }, [role, navigate])
+
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
+  
+  // Form fields
+  const [usernameInput, setUsernameInput] = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [roleInput, setRoleInput] = useState('REGULAR')
+  const [isActiveInput, setIsActiveInput] = useState(true)
+  
+  const [formError, setFormError] = useState(null)
+
+  // Fetch users
+  const { data: users, isLoading, error } = useQuery({
+    queryKey: ['usersListAdmin'],
+    queryFn: () => request('/api/users/'),
+    enabled: role === 'ROOT'
+  })
+
+  // Create User Mutation
+  const createUserMutation = useMutation({
+    mutationFn: (data) => request('/api/users/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['usersListAdmin'])
+      closeForm()
+    },
+    onError: (err) => {
+      setFormError(err.message || 'Failed to create user')
+    }
+  })
+
+  // Update User Mutation
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }) => request(`/api/users/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['usersListAdmin'])
+      closeForm()
+    },
+    onError: (err) => {
+      setFormError(err.message || 'Failed to update user')
+    }
+  })
+
+  // Toggle user active status directly
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }) => request(`/api/users/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['usersListAdmin'])
+    }
+  })
+
+  // Delete User Mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: (id) => request(`/api/users/${id}/`, {
+      method: 'DELETE'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['usersListAdmin'])
+    }
+  })
+
+  const openAddForm = () => {
+    setEditingUser(null)
+    setUsernameInput('')
+    setPasswordInput('')
+    setEmailInput('')
+    setRoleInput('REGULAR')
+    setIsActiveInput(true)
+    setFormError(null)
+    setIsFormOpen(true)
+  }
+
+  const openEditForm = (user) => {
+    setEditingUser(user)
+    setUsernameInput(user.username)
+    setPasswordInput('')
+    setEmailInput(user.email || '')
+    setRoleInput(user.role)
+    setIsActiveInput(user.is_active)
+    setFormError(null)
+    setIsFormOpen(true)
+  }
+
+  const closeForm = () => {
+    setIsFormOpen(false)
+    setEditingUser(null)
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setFormError(null)
+
+    const payload = {
+      username: usernameInput,
+      email: emailInput,
+      role: roleInput,
+      is_active: isActiveInput
+    }
+
+    if (editingUser) {
+      if (passwordInput.trim()) {
+        payload.password = passwordInput
+      }
+      updateUserMutation.mutate({ id: editingUser.id, data: payload })
+    } else {
+      if (!passwordInput.trim()) {
+        setFormError('Password is required for new users')
+        return
+      }
+      payload.password = passwordInput
+      createUserMutation.mutate(payload)
+    }
+  }
+
+  const handleToggleActive = (user) => {
+    if (user.username === currentUsername) {
+      alert('You cannot deactivate your own account.')
+      return
+    }
+    toggleActiveMutation.mutate({ id: user.id, is_active: !user.is_active })
+  }
+
+  const handleDeleteUser = (user) => {
+    if (user.username === currentUsername) {
+      alert('You cannot delete your own account.')
+      return
+    }
+    if (window.confirm(`Are you sure you want to permanently delete user "${user.username}"?`)) {
+      deleteUserMutation.mutate(user.id)
+    }
+  }
+
+  if (role !== 'ROOT') {
+    return null
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">User Administration</h1>
+          <p className="text-slate-400 mt-1">Manage administrative credentials, system roles, and account statuses.</p>
+        </div>
+        <button 
+          onClick={openAddForm}
+          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Create User</span>
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-24">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl p-8">
+          <p className="text-rose-400 font-semibold">Error: {error.message}</p>
+        </div>
+      ) : (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                  <th className="py-4.5 px-6">Username</th>
+                  <th className="py-4.5 px-6">Email</th>
+                  <th className="py-4.5 px-6">Role</th>
+                  <th className="py-4.5 px-6">Status</th>
+                  <th className="py-4.5 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {users?.map((user) => {
+                  const isSelf = user.username === currentUsername
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-850/30 transition-colors duration-200">
+                      <td className="py-4 px-6 font-bold text-white flex items-center space-x-2">
+                        <span>{user.username}</span>
+                        {isSelf && (
+                          <span className="text-xxs bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-semibold">
+                            You
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-slate-300">{user.email || '—'}</td>
+                      <td className="py-4 px-6">
+                        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                          user.role === 'ROOT' 
+                            ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
+                            : user.role === 'ADMIN'
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${user.is_active ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' : 'bg-rose-500'}`} />
+                          <span className={`text-sm font-medium ${user.is_active ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {user.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right space-x-2">
+                        <button 
+                          onClick={() => openEditForm(user)}
+                          className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleToggleActive(user)}
+                          disabled={isSelf}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                            user.is_active 
+                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20 disabled:opacity-40' 
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                          }`}
+                        >
+                          {user.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={isSelf}
+                          className="bg-rose-500/5 hover:bg-rose-500/15 text-rose-500 hover:text-rose-400 border border-rose-500/10 p-2 rounded-xl text-xs transition disabled:opacity-40"
+                          title={isSelf ? 'You cannot delete yourself' : 'Delete user'}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit User Modal */}
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">
+                {editingUser ? `Edit User: ${editingUser.username}` : 'Create Administrative User'}
+              </h2>
+              <button onClick={closeForm} className="text-slate-400 hover:text-white">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {formError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-sm font-medium">
+                  {formError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Username</label>
+                <input 
+                  type="text" 
+                  required
+                  disabled={!!editingUser}
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-950 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Password {editingUser && <span className="text-slate-500 font-normal capitalize">(leave blank to keep current)</span>}
+                </label>
+                <input 
+                  type="password" 
+                  required={!editingUser}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email</label>
+                <input 
+                  type="email" 
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Role</label>
+                <select 
+                  value={roleInput}
+                  onChange={(e) => setRoleInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                >
+                  <option value="REGULAR">Regular (Read-Only)</option>
+                  <option value="ADMIN">Admin (Read-Write)</option>
+                  <option value="ROOT">Root (Full-Access)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-2">
+                <input 
+                  type="checkbox"
+                  id="user-active-checkbox"
+                  checked={isActiveInput}
+                  onChange={(e) => setIsActiveInput(e.target.checked)}
+                  disabled={editingUser && editingUser.username === currentUsername}
+                  className="h-4.5 w-4.5 bg-slate-950 border border-slate-800 rounded focus:ring-0 text-blue-500"
+                />
+                <label htmlFor="user-active-checkbox" className="text-sm font-semibold text-slate-300 cursor-pointer">
+                  Is Account Active
+                </label>
+              </div>
+
+              <div className="border-t border-slate-800 pt-5 flex justify-end space-x-2">
+                <button 
+                  type="button" 
+                  onClick={closeForm}
+                  className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-md shadow-blue-500/10 hover:shadow-blue-500/20"
+                >
+                  {editingUser ? 'Save Changes' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Login Page
 function LoginPage() {
   const { login } = useAuth()
@@ -2151,6 +2526,7 @@ function AppContent() {
         <Route path="/dies/:id" element={<DieDetailPage />} />
         <Route path="/machines" element={<MachineSetsPage />} />
         <Route path="/import" element={<ImportPage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
     </div>
