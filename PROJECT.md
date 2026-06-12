@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · feat: add Django signals in machines app to resync Meilisearch and maintain history log consistency upon Set/Machine changes and Set deletion
+### 2026-06-12 · docs: update PROJECT.md changelog with tree layout commit
 ### 2026-06-12 · feat: redesign Die Inventory page to display expandable drill-down tree (Machine -> Sets -> Dies)
 ### 2026-06-12 · docs: update PROJECT.md changelog with docker-compose port commit
 ### 2026-06-12 · infra: expose PostgreSQL port 5432 to host in docker-compose.yml
