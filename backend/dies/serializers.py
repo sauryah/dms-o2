@@ -18,7 +18,7 @@ class DieListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set']
         
     def get_set_name(self, obj):
         return obj.current_set.name if obj.current_set else ''
