@@ -1708,6 +1708,23 @@ function ImportPage() {
   const [statusMsg, setStatusMsg] = useState(null)
   const [progress, setProgress] = useState(false)
 
+  const downloadTemplate = () => {
+    const csvContent = 
+      "die_id,die_type,casing,status,location,remarks,current_set_id,original_size,current_size,original_width,current_width,original_thickness,current_thickness,radius\n" +
+      "R-101,ROUND,25x10,AVAILABLE,Rack A - Shelf 3,Sample Round Die,,2.5,2.5,,,,,\n" +
+      "F-201,FLAT,30x15,AVAILABLE,Rack B - Shelf 1,Sample Flat Die,,,,30.0,30.0,15.0,15.0,1.5\n"
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", "dms_die_import_template.csv")
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0])
     setStatusMsg(null)
@@ -1745,9 +1762,21 @@ function ImportPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Bulk Import Dies</h1>
-        <p className="text-slate-400 mt-1">Upload a CSV or XLSX spreadsheet containing die data.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Bulk Import Dies</h1>
+          <p className="text-slate-400 mt-1">Upload a CSV or XLSX spreadsheet containing die data.</p>
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-md"
+          >
+            <FileSpreadsheet className="h-4.5 w-4.5 text-emerald-500" />
+            <span>Download Template (CSV)</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8">
