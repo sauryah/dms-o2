@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · feat: support resolving and assigning sets by name with machine_name conflict resolution during bulk import, and update CSV template
+### 2026-06-12 · docs: update PROJECT.md changelog with consistency signals commit
 ### 2026-06-12 · feat: add Django signals in machines app to resync Meilisearch and maintain history log consistency upon Set/Machine changes and Set deletion
 ### 2026-06-12 · docs: update PROJECT.md changelog with tree layout commit
 ### 2026-06-12 · feat: redesign Die Inventory page to display expandable drill-down tree (Machine -> Sets -> Dies)
