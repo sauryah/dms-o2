@@ -352,6 +352,25 @@ function InventoryPage() {
     queryFn: () => request('/api/sets/')
   })
 
+  // Fetch list of machines
+  const { data: machinesList } = useQuery({
+    queryKey: ['machinesList'],
+    queryFn: () => request('/api/machines/')
+  })
+
+  // Tree expanded states
+  const [expandedMachines, setExpandedMachines] = useState({})
+  const [expandedSets, setExpandedSets] = useState({})
+  const [expandedUnassigned, setExpandedUnassigned] = useState(true)
+
+  const toggleMachine = (id) => {
+    setExpandedMachines(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const toggleSet = (id) => {
+    setExpandedSets(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
   // Create Die form states
   const [newDieId, setNewDieId] = useState('')
   const [newDieType, setNewDieType] = useState('ROUND')
@@ -463,6 +482,57 @@ function InventoryPage() {
     createDieMutation.mutate(payload)
   }
 
+  // Group dies into tree data structure
+  const diesBySet = {}
+  const unassignedDies = []
+  
+  dies?.forEach(die => {
+    if (die.current_set) {
+      if (!diesBySet[die.current_set]) {
+        diesBySet[die.current_set] = []
+      }
+      diesBySet[die.current_set].push(die)
+    } else {
+      unassignedDies.push(die)
+    }
+  })
+
+  const machinesWithData = (machinesList || []).map(machine => {
+    const machineSets = (setsList || []).filter(s => s.machine === machine.id).map(set => {
+      const setDies = diesBySet[set.id] || []
+      return {
+        ...set,
+        dies: setDies
+      }
+    }).filter(set => set.dies.length > 0)
+
+    return {
+      ...machine,
+      sets: machineSets,
+      totalDies: machineSets.reduce((sum, s) => sum + s.dies.length, 0)
+    }
+  }).filter(m => m.totalDies > 0)
+
+  const handleExpandAll = () => {
+    const nextMachs = {}
+    const nextSets = {}
+    machinesWithData.forEach(m => {
+      nextMachs[m.id] = true
+      m.sets.forEach(s => {
+        nextSets[s.id] = true
+      })
+    })
+    setExpandedMachines(nextMachs)
+    setExpandedSets(nextSets)
+    setExpandedUnassigned(true)
+  }
+
+  const handleCollapseAll = () => {
+    setExpandedMachines({})
+    setExpandedSets({})
+    setExpandedUnassigned(false)
+  }
+
   const canCreate = role === 'ROOT' || role === 'ADMIN'
 
   return (
@@ -472,15 +542,31 @@ function InventoryPage() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Die Registry Inventory</h1>
           <p className="text-slate-400 mt-1">Full access catalog with advanced sizing and category filters.</p>
         </div>
-        {canCreate && (
-          <button 
-            onClick={() => setIsCreateOpen(true)}
-            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={handleExpandAll}
+            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-805 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 shadow-sm"
           >
-            <Plus className="h-5 w-5" />
-            <span>Add New Die</span>
+            Expand All
           </button>
-        )}
+          <button
+            type="button"
+            onClick={handleCollapseAll}
+            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-805 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 shadow-sm"
+          >
+            Collapse All
+          </button>
+          {canCreate && (
+            <button 
+              onClick={() => setIsCreateOpen(true)}
+              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Add New Die</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter panel */}
@@ -637,26 +723,158 @@ function InventoryPage() {
         <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl p-8">
           <p className="text-rose-400 font-semibold">Error: {error.message}</p>
         </div>
-      ) : dies?.length === 0 ? (
+      ) : (machinesWithData.length === 0 && unassignedDies.length === 0) ? (
         <div className="text-center py-24 bg-slate-900 border border-slate-850 rounded-2xl">
           <p className="text-slate-500 text-lg">No dies found matching the search criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {dies?.map((die) => 
-            die.die_type === 'ROUND' ? (
-              <RoundDieCard 
-                key={die.die_id} 
-                die={die} 
-                onClick={() => navigate(`/dies/${die.die_id}`)}
-              />
-            ) : (
-              <FlatDieCard 
-                key={die.die_id} 
-                die={die} 
-                onClick={() => navigate(`/dies/${die.die_id}`)}
-              />
+        <div className="space-y-6">
+          {/* Machines Tree */}
+          {machinesWithData.map((machine) => {
+            const isMachineExpanded = !!expandedMachines[machine.id]
+            return (
+              <div key={machine.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300">
+                {/* Machine Header */}
+                <div 
+                  onClick={() => toggleMachine(machine.id)}
+                  className="flex items-center justify-between p-5 bg-slate-900/80 hover:bg-slate-900 cursor-pointer transition-colors duration-200 select-none"
+                >
+                  <div className="flex items-center space-x-4">
+                    <ChevronRight 
+                      className={`h-5 w-5 text-slate-400 transform transition-transform duration-200 ${isMachineExpanded ? 'rotate-90' : ''}`}
+                    />
+                    <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                      <Cpu className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">{machine.name}</h3>
+                      <span className="text-xs text-slate-500 font-medium">{machine.category_name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="bg-slate-800 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-700/50">
+                      {machine.totalDies} {machine.totalDies === 1 ? 'Die' : 'Dies'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Machine Sets (Children) */}
+                {isMachineExpanded && (
+                  <div className="p-6 border-t border-slate-850 bg-slate-950/20 space-y-4">
+                    {machine.sets.map((set) => {
+                      const isSetExpanded = !!expandedSets[set.id]
+                      return (
+                        <div key={set.id} className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-900/20">
+                          {/* Set Header */}
+                          <div 
+                            onClick={() => toggleSet(set.id)}
+                            className="flex items-center justify-between p-4 bg-slate-900/50 hover:bg-slate-900/80 cursor-pointer transition-colors duration-200 select-none"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <ChevronRight 
+                                className={`h-4.5 w-4.5 text-slate-400 transform transition-transform duration-200 ${isSetExpanded ? 'rotate-90' : ''}`}
+                              />
+                              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                                <Layers className="h-4 w-4 text-indigo-400" />
+                              </div>
+                              <span className="font-bold text-slate-200 text-sm md:text-base">{set.name}</span>
+                            </div>
+                            <span className="bg-slate-950 text-indigo-400 text-xs font-medium px-2 py-0.5 rounded-full border border-slate-800">
+                              {set.dies.length} {set.dies.length === 1 ? 'Die' : 'Dies'}
+                            </span>
+                          </div>
+
+                          {/* Set Dies (Cards Grid) */}
+                          {isSetExpanded && (
+                            <div className="p-5 bg-slate-950/40 border-t border-slate-850">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {set.dies.map((die) => 
+                                  die.die_type === 'ROUND' ? (
+                                    <RoundDieCard 
+                                      key={die.die_id} 
+                                      die={die} 
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        navigate(`/dies/${die.die_id}`)
+                                      }}
+                                    />
+                                  ) : (
+                                    <FlatDieCard 
+                                      key={die.die_id} 
+                                      die={die} 
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        navigate(`/dies/${die.die_id}`)
+                                      }}
+                                    />
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
+          })}
+
+          {/* Standalone / Unassigned Dies */}
+          {unassignedDies.length > 0 && (
+            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300">
+              <div 
+                onClick={() => setExpandedUnassigned(!expandedUnassigned)}
+                className="flex items-center justify-between p-5 bg-slate-900/80 hover:bg-slate-900 cursor-pointer transition-colors duration-200 select-none"
+              >
+                <div className="flex items-center space-x-4">
+                  <ChevronRight 
+                    className={`h-5 w-5 text-slate-400 transform transition-transform duration-200 ${expandedUnassigned ? 'rotate-90' : ''}`}
+                  />
+                  <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <Sliders className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Unassigned / Standalone Dies</h3>
+                    <span className="text-xs text-slate-500 font-medium">Dies not assigned to any set</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="bg-slate-800 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-700/50">
+                    {unassignedDies.length} {unassignedDies.length === 1 ? 'Die' : 'Dies'}
+                  </span>
+                </div>
+              </div>
+
+              {expandedUnassigned && (
+                <div className="p-6 border-t border-slate-850 bg-slate-950/20">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {unassignedDies.map((die) => 
+                      die.die_type === 'ROUND' ? (
+                        <RoundDieCard 
+                          key={die.die_id} 
+                          die={die} 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/dies/${die.die_id}`)
+                          }}
+                        />
+                      ) : (
+                        <FlatDieCard 
+                          key={die.die_id} 
+                          die={die} 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/dies/${die.die_id}`)
+                          }}
+                        />
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
