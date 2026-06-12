@@ -205,6 +205,20 @@ dms/
 * **GET/POST/PUT/PATCH/DELETE** `/api/users/` (Root Only)
   * Manage administrative user accounts.
 
+### Machine Sets Management
+* **GET/POST** `/api/categories/` (Admin/Root for write operations)
+  * View or create machine categories.
+* **GET/PATCH/DELETE** `/api/categories/<id>/` (Admin/Root for write operations)
+  * View, modify, or delete a machine category.
+* **GET/POST** `/api/machines/` (Admin/Root for write operations)
+  * View or create machines.
+* **GET/PATCH/DELETE** `/api/machines/<id>/` (Admin/Root for write operations)
+  * View, modify, or delete a machine.
+* **GET/POST** `/api/sets/` (Admin/Root for write operations)
+  * View or create machine sets.
+* **GET/PATCH/DELETE** `/api/sets/<id>/` (Admin/Root for write operations)
+  * View, modify, or delete a machine set.
+
 ---
 
 ## Database Setup
