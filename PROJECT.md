@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-13 · feat: implement User Administration page for ROOT users and add E2E tests
+### 2026-06-12 · docs: update PROJECT.md changelog with serializer fix commit
 ### 2026-06-12 · fix: include current_set field in DieListSerializer to enable correct tree grouping in frontend
 ### 2026-06-12 · docs: update PROJECT.md changelog with bulk import set name resolution commit
 ### 2026-06-12 · feat: support resolving and assigning sets by name with machine_name conflict resolution during bulk import, and update CSV template
