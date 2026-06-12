@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · docs: generate complete README.md based on codebase analysis
+### 2026-06-12 · docs: finalize changelog in PROJECT.md
 ### 2026-06-12 · docs: update changelog for Phase 6-8 complete
 ### 2026-06-12 · Phase 6-8: React frontend pages, bulk import, and JWT auth and session prune logic and tests implemented
 ### 2026-06-12 · Phase 5: Deploy workflow implemented
