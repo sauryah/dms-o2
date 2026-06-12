@@ -150,3 +150,6 @@ MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
 
 # Custom user model with role (will implement in users app)
 AUTH_USER_MODEL = 'users.User'
+
+ROOT_USERNAME = config('ROOT_USERNAME', default='root')
+ROOT_PASSWORD = config('ROOT_PASSWORD', default='root_pass_1234567890')
