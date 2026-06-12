@@ -1,0 +1,9 @@
+Django==4.2.*
+djangorestframework
+djangorestframework-simplejwt
+psycopg2-binary
+meilisearch
+openpyxl
+python-decouple
+gunicorn
+django-cors-headers
