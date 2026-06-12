@@ -1,8 +1,9 @@
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 from users.middleware import get_current_user
+from search.meili import sync_die, delete_die_document
 
 # Watch these fields on Die
 DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks']
@@ -75,3 +76,19 @@ def log_flat_changes(sender, instance, **kwargs):
                 old_value=str(old_val),
                 new_value=str(new_val),
             )
+
+@receiver(post_save, sender=Die)
+def sync_die_post_save(sender, instance, **kwargs):
+    sync_die(instance)
+
+@receiver(post_save, sender=RoundDie)
+def sync_round_die_post_save(sender, instance, **kwargs):
+    sync_die(instance.die)
+
+@receiver(post_save, sender=FlatDie)
+def sync_flat_die_post_save(sender, instance, **kwargs):
+    sync_die(instance.die)
+
+@receiver(post_delete, sender=Die)
+def delete_die_post_delete(sender, instance, **kwargs):
+    delete_die_document(instance.die_id)

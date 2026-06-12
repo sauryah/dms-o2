@@ -7,4 +7,6 @@ class DiesConfig(AppConfig):
 
     def ready(self):
         import dies.signals
+        from search.meili import init_meilisearch
+        init_meilisearch()
 
