@@ -1,0 +1,43 @@
+name: Deploy DMS
+on:
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: dms_test, POSTGRES_USER: dms_user }
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+      meilisearch:
+        image: getmeili/meilisearch:v1.7
+        ports: ['7700:7700']
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r backend/requirements.txt
+      - run: python backend/manage.py migrate --check  # fail if unapplied
+      - run: python backend/manage.py test --verbosity=2  # run all tests
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backup DB before deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            docker exec dms-db pg_dump -U dms_user dms \
+              > /backups/pre-deploy-$(date +%Y%m%d%H%M).sql
+      - name: Pull + migrate + restart
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/dms
+            git pull origin main
+            docker compose up -d --build

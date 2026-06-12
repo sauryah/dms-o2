@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · Phase 5: Deploy workflow implemented
 ### 2026-06-12 · Phase 4: REST API + Search implemented and passing all tests
 ### 2026-06-12 · Phase 3: Django admin configured and all models registered, all tests pass
 ### 2026-06-12 · Phase 2: DieHistory pre_save signals implemented, all tests pass
