@@ -97,3 +97,37 @@ def search_dies(request):
         return Response(serializer.data)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+import tempfile
+import os
+from rest_framework.parsers import MultiPartParser
+from rest_framework.views import APIView
+import importlib
+import_module_dies = importlib.import_module("dies.import")
+import_dies = import_module_dies.import_dies
+
+class ImportDiesView(APIView):
+    permission_classes = [IsAdminOrRoot]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, *args, **kwargs):
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        name, ext = os.path.splitext(file_obj.name)
+        if ext.lower() not in ['.csv', '.xlsx']:
+            return Response({"error": "Unsupported file format. Only CSV and XLSX are supported."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+            for chunk in file_obj.chunks():
+                temp_file.write(chunk)
+            temp_path = temp_file.name
+
+        try:
+            result = import_dies(temp_path, ext, request.user)
+            return Response(result, status=status.HTTP_200_OK)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+

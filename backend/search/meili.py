@@ -36,10 +36,10 @@ def sync_die(die):
     
     # Check for related round or flat die data
     if hasattr(die, 'rounddie') and die.rounddie:
-        doc['size'] = str(die.rounddie.current_size)
+        doc['size'] = f"{die.rounddie.current_size:.3f}"
     if hasattr(die, 'flatdie') and die.flatdie:
-        doc['width']     = str(die.flatdie.current_width)
-        doc['thickness'] = str(die.flatdie.current_thickness)
+        doc['width']     = f"{die.flatdie.current_width:.3f}"
+        doc['thickness'] = f"{die.flatdie.current_thickness:.3f}"
         
     try:
         client.index('dies').add_documents([doc])

@@ -127,7 +127,7 @@ CORS_ALLOW_ALL_ORIGINS = True  # In production, restrict this.
 # REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.CustomJWTAuthentication',
         'django.contrib.auth.backends.ModelBackend',
     ),
 }

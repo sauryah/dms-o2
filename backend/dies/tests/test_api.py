@@ -2,7 +2,8 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
-from users.models import User
+from users.models import User, UserSession
+import hashlib
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 from decimal import Decimal
@@ -17,6 +18,12 @@ class DieAPITests(APITestCase):
             role='ROOT'
         )
         self.root_token = str(AccessToken.for_user(self.root_user))
+        
+        token_hash = hashlib.sha256(self.root_token.encode('utf-8')).hexdigest()
+        UserSession.objects.create(
+            user=self.root_user,
+            token_hash=token_hash
+        )
 
         # Create some dies
         self.round_die = Die.objects.create(
