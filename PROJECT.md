@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-12 · docs: finalize project md changelog with the docker setup documentation commit
 ### 2026-06-12 · docs: update README.md and PROJECT.md to document unified docker setup
 ### 2026-06-12 · infra: containerize React frontend service in docker-compose with Traefik ingress
 ### 2026-06-12 · docs: finalize PROJECT.md changelog with readme commit

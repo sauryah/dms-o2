@@ -92,6 +92,10 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
    - **Django Admin Interface**: [http://localhost/admin/](http://localhost/admin/)
    - **Django REST API**: [http://localhost/api/](http://localhost/api/)
 
+   **Default Root Credentials**:
+   - **Username**: `root`
+   - **Password**: `root_pass_1234567890` (as defined in the default environment configuration)
+
 ---
 
 ## Running Locally
