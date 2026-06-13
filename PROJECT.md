@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-13 · feat: secure ROOT user session, prevent self-demotion, update create_root_user command
+### 2026-06-13 · docs: update PROJECT.md changelog with user admin commit
 ### 2026-06-13 · feat: implement User Administration page for ROOT users and add E2E tests
 ### 2026-06-12 · docs: update PROJECT.md changelog with serializer fix commit
 ### 2026-06-12 · fix: include current_set field in DieListSerializer to enable correct tree grouping in frontend
