@@ -2291,7 +2291,9 @@ function UsersPage() {
                       <td className="py-4 px-6 text-right space-x-2">
                         <button 
                           onClick={() => openEditForm(user)}
-                          className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                          disabled={isSelf}
+                          className="bg-slate-950 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-950 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                          title={isSelf ? 'You cannot edit your own account here' : 'Edit user'}
                         >
                           Edit
                         </button>
@@ -2388,7 +2390,6 @@ function UsersPage() {
                 >
                   <option value="REGULAR">Regular (Read-Only)</option>
                   <option value="ADMIN">Admin (Read-Write)</option>
-                  <option value="ROOT">Root (Full-Access)</option>
                 </select>
               </div>
 

@@ -9,15 +9,21 @@ class Command(BaseCommand):
         username = settings.ROOT_USERNAME
         password = settings.ROOT_PASSWORD
 
-        if User.objects.filter(username=username).exists():
-            self.stdout.write(self.style.WARNING(f"User '{username}' already exists. Skipping root user creation."))
-            return
-
-        self.stdout.write(f"Creating root user '{username}'...")
-        user = User.objects.create_superuser(
-            username=username,
-            password=password,
-            email='root@dms.local',
-            role='ROOT'
-        )
-        self.stdout.write(self.style.SUCCESS(f"Successfully created root user '{username}'."))
+        try:
+            user = User.objects.get(username=username)
+            user.set_password(password)
+            user.email = 'root@dms.local'
+            user.role = 'ROOT'
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
+            self.stdout.write(self.style.SUCCESS(f"User '{username}' already exists. Updated password and role settings."))
+        except User.DoesNotExist:
+            self.stdout.write(f"Creating root user '{username}'...")
+            user = User.objects.create_superuser(
+                username=username,
+                password=password,
+                email='root@dms.local',
+                role='ROOT'
+            )
+            self.stdout.write(self.style.SUCCESS(f"Successfully created root user '{username}'."))

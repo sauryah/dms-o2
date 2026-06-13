@@ -9,6 +9,13 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True, 'required': False},
         }
 
+    def validate_role(self, value):
+        if value == 'ROOT':
+            if self.instance and self.instance.role == 'ROOT':
+                return value
+            raise serializers.ValidationError("The ROOT role cannot be created or assigned via the API.")
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         # Ensure only Root or Admin can create admins, but view-level permissions handle this
