@@ -48,3 +48,47 @@ class MeilisearchTests(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['die_id'], 'ROUND-MEILI')
         self.assertEqual(response.data[0]['status'], 'RUNNING')
+
+    def test_search_with_range_filters(self):
+        die1 = Die.objects.create(
+            die_id="ROUND-FILTER-1",
+            die_type="ROUND",
+            casing="25x10",
+            status="AVAILABLE",
+            location="Rack A"
+        )
+        RoundDie.objects.create(
+            die=die1,
+            original_size=Decimal("3.500"),
+            current_size=Decimal("3.500")
+        )
+        
+        die2 = Die.objects.create(
+            die_id="ROUND-FILTER-2",
+            die_type="ROUND",
+            casing="25x10",
+            status="AVAILABLE",
+            location="Rack A"
+        )
+        RoundDie.objects.create(
+            die=die2,
+            original_size=Decimal("5.500"),
+            current_size=Decimal("5.500")
+        )
+        
+        time.sleep(1.0)
+        
+        # Test max filter
+        url = reverse('search-dies') + "?q=ROUND-FILTER&size_max=4.000"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['die_id'], 'ROUND-FILTER-1')
+
+        # Test min filter
+        url = reverse('search-dies') + "?q=ROUND-FILTER&size_min=4.000"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['die_id'], 'ROUND-FILTER-2')
+

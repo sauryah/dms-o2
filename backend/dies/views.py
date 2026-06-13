@@ -70,6 +70,48 @@ def search_dies(request):
     location = request.query_params.get('location')
     casing = request.query_params.get('casing')
     
+    size_min = request.query_params.get('size_min')
+    size_max = request.query_params.get('size_max')
+    width_min = request.query_params.get('width_min')
+    width_max = request.query_params.get('width_max')
+    thick_min = request.query_params.get('thick_min')
+    thick_max = request.query_params.get('thick_max')
+
+    # If search query q is empty, query PostgreSQL directly to avoid Meilisearch's default hit limits
+    if not q:
+        try:
+            dies = Die.objects.all().select_related('rounddie', 'flatdie', 'current_set__machine')
+            if die_type:
+                dies = dies.filter(die_type=die_type)
+            if status_val:
+                dies = dies.filter(status=status_val)
+            if location:
+                dies = dies.filter(location__icontains=location)
+            if casing:
+                dies = dies.filter(casing=casing)
+                
+            if size_min:
+                dies = dies.filter(rounddie__current_size__gte=size_min)
+            if size_max:
+                dies = dies.filter(rounddie__current_size__lte=size_max)
+                
+            if width_min:
+                dies = dies.filter(flatdie__current_width__gte=width_min)
+            if width_max:
+                dies = dies.filter(flatdie__current_width__lte=width_max)
+                
+            if thick_min:
+                dies = dies.filter(flatdie__current_thickness__gte=thick_min)
+            if thick_max:
+                dies = dies.filter(flatdie__current_thickness__lte=thick_max)
+                
+            # Limit direct database query results to first 1000 items
+            serializer = DieListSerializer(dies[:1000], many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # If search query q is present, query Meilisearch first
     filters = []
     if die_type:
         filters.append(f"die_type = '{die_type}'")
@@ -80,7 +122,7 @@ def search_dies(request):
     if casing:
         filters.append(f"casing = '{casing}'")
         
-    search_params = {}
+    search_params = {'limit': 1000}  # Fetch up to 1000 hits to avoid 20-hit truncation before DB range filter
     if filters:
         search_params['filter'] = " AND ".join(filters)
         
@@ -90,6 +132,22 @@ def search_dies(request):
         hit_ids = [hit['id'] for hit in results['hits']]
         
         dies = Die.objects.filter(die_id__in=hit_ids).select_related('rounddie', 'flatdie', 'current_set__machine')
+        
+        if size_min:
+            dies = dies.filter(rounddie__current_size__gte=size_min)
+        if size_max:
+            dies = dies.filter(rounddie__current_size__lte=size_max)
+            
+        if width_min:
+            dies = dies.filter(flatdie__current_width__gte=width_min)
+        if width_max:
+            dies = dies.filter(flatdie__current_width__lte=width_max)
+            
+        if thick_min:
+            dies = dies.filter(flatdie__current_thickness__gte=thick_min)
+        if thick_max:
+            dies = dies.filter(flatdie__current_thickness__lte=thick_max)
+            
         die_map = {d.die_id: d for d in dies}
         ordered_dies = [die_map[hid] for hid in hit_ids if hid in die_map]
         
