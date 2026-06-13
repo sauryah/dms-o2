@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: redesign inventory page with Tree View + Master Detail, enable batch machine/set creation, and implement production upgrade/deployment workflow
 ### 2026-06-14 · feat: allow ROOT users to edit their own profile (password and email) in User Administration page
 ### 2026-06-14 · feat: implement range query filtering for Meilisearch search results, add Dashboard search filters UI with strict range trigger logic, and add unit and E2E smoke tests
 ### 2026-06-13 · feat: secure ROOT user session, prevent self-demotion, update create_root_user command

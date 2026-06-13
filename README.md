@@ -163,9 +163,12 @@ dms/
 │   ├── src/                       # Source files (App, Card components)
 │   ├── tests/e2e/                 # Playwright E2E tests
 │   ├── vite.config.js             # Vite configuration with API proxy
-│   └── playwright.config.js       # Playwright E2E config
+│   ├── playwright.config.js       # Playwright E2E config
+│   └── Dockerfile.prod            # Production multi-stage Nginx build
 ├── scripts/                       # Git hooks and utility scripts
-├── docker-compose.yml             # Docker Compose orchestration
+├── docker-compose.yml             # Development Docker Compose configuration
+├── docker-compose.prod.yml        # Production Docker Compose configuration
+├── deploy.sh                      # Production upgrade and deployment script
 ├── traefik.yml                    # Traefik routing configuration
 └── PROJECT.md                     # Roadmap and progress checklist
 ```
@@ -230,7 +233,41 @@ docker compose exec db psql -U dms_user -d dms
 
 ---
 
-## Deployment
+## Deployment & Upgrades
+
+### Development Mode
+For local development, use the default `docker-compose.yml` configuration. This mounts the source code directories directly into the containers to support hot reloading:
+```bash
+docker compose up -d --build
+```
+
+### Production Mode
+For production deployments, the application uses an optimized configuration:
+- **Frontend**: Multi-stage Docker build (`frontend/Dockerfile.prod`) compiling React assets to static HTML/JS/CSS served via Nginx.
+- **Backend**: Django served by Gunicorn instead of the development server.
+- **Proxy**: Traefik routing `/api` and `/admin` to Django, and all other paths to the Nginx static server.
+
+To run the application in production mode manually:
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Automated Upgrade and Deploy Script (`deploy.sh`)
+For safe upgrades when new code is pulled from GitHub, a custom `./deploy.sh` script is provided. It automates:
+1. Pulling the latest changes from the repository.
+2. Validating the active `.env` configuration against `.env.example` to ensure new features have their configuration keys.
+3. Re-building docker containers to apply any new package dependencies (`package.json` or `requirements.txt`).
+4. Applying database migrations automatically.
+5. Creating or synchronizing the `ROOT` superuser based on environment variables.
+6. Pruning unused Docker images to free up disk space.
+
+To run the upgrade script:
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+### CI/CD Deployment
 Automated deployment is configured via GitHub Actions in `.github/workflows/deploy.yml`. On push to the `main` branch, the workflow:
 1. Runs the test suite against temporary PostgreSQL and Meilisearch services.
 2. Backs up the remote production database.
