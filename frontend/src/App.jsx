@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { 
   HashRouter as Router, 
   Routes, 
@@ -38,7 +38,9 @@ import {
   Calendar,
   Layers3,
   Wrench,
-  X
+  X,
+  Menu,
+  ChevronDown
 } from 'lucide-react'
 
 // React Query Client
@@ -184,6 +186,18 @@ function DashboardPage() {
   const { request } = useApi()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
+  const [dieType, setDieType] = useState('')
+  const [statusVal, setStatusVal] = useState('')
+  const [casing, setCasing] = useState('')
+  
+  const [sizeMin, setSizeMin] = useState('')
+  const [sizeMax, setSizeMax] = useState('')
+  const [widthMin, setWidthMin] = useState('')
+  const [widthMax, setWidthMax] = useState('')
+  const [thickMin, setThickMin] = useState('')
+  const [thickMax, setThickMax] = useState('')
+  
+  const [showFilters, setShowFilters] = useState(false)
 
   // Fetch all dies to compute overall statistics
   const { data: allDies, isLoading: isStatsLoading } = useQuery({
@@ -191,15 +205,33 @@ function DashboardPage() {
     queryFn: () => request('/api/dies/')
   })
 
-  // Fetch fuzzy search results if search query exists
+  // Fetch fuzzy search results if search query or filters exist
   const { data: searchDies, isLoading: isSearchLoading } = useQuery({
-    queryKey: ['searchDiesDashboard', q],
+    queryKey: ['searchDiesDashboard', q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
     queryFn: () => {
-      if (!q) return []
-      return request(`/api/search/?q=${encodeURIComponent(q)}`)
+      if (!q && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
+      
+      let url = '/api/search/'
+      const params = new URLSearchParams()
+      if (q) params.append('q', q)
+      if (dieType) params.append('die_type', dieType)
+      if (statusVal) params.append('status', statusVal)
+      if (casing) params.append('casing', casing)
+      
+      if (sizeMin) params.append('size_min', sizeMin)
+      if (sizeMax) params.append('size_max', sizeMax)
+      if (widthMin) params.append('width_min', widthMin)
+      if (widthMax) params.append('width_max', widthMax)
+      if (thickMin) params.append('thick_min', thickMin)
+      if (thickMax) params.append('thick_max', thickMax)
+      
+      url += `?${params.toString()}`
+      return request(url)
     },
-    enabled: !!q
+    enabled: !!(q || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
   })
+
+  const hasActiveFilter = !!(q || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
   const totalCount = allDies ? allDies.length : 0
   const stats = {
@@ -270,25 +302,175 @@ function DashboardPage() {
           <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly.</p>
         </div>
         
-        <div className="relative">
-          <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
-          <input 
-            type="text" 
-            placeholder="Search by Die ID, casing, location..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-grow">
+            <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Search by Die ID, casing, location..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
+            />
+          </div>
+
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-semibold transition-all duration-300 ${
+              showFilters 
+                ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
+                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+            <span>Filters</span>
+          </button>
         </div>
+
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+              <select 
+                value={dieType}
+                onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">All Types</option>
+                <option value="ROUND">Round</option>
+                <option value="FLAT">Flat</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+              <select 
+                value={statusVal}
+                onChange={(e) => setStatusVal(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">All Statuses</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="RUNNING">Running</option>
+                <option value="CLEANING">Cleaning</option>
+                <option value="POLISHING">Polishing</option>
+                <option value="DAMAGED">Damaged</option>
+                <option value="SCRAPPED">Scrapped</option>
+                <option value="MISSING">Missing</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+              <input 
+                type="text" 
+                placeholder="e.g. 25x10"
+                value={casing}
+                onChange={(e) => setCasing(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            {dieType === 'ROUND' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="number" 
+                    step="0.001"
+                    placeholder="Min"
+                    value={sizeMin}
+                    onChange={(e) => setSizeMin(e.target.value)}
+                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                  />
+                  <input 
+                    type="number" 
+                    step="0.001"
+                    placeholder="Max"
+                    value={sizeMax}
+                    onChange={(e) => setSizeMax(e.target.value)}
+                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {dieType === 'FLAT' && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      step="0.001"
+                      placeholder="Min"
+                      value={widthMin}
+                      onChange={(e) => setWidthMin(e.target.value)}
+                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                    />
+                    <input 
+                      type="number" 
+                      step="0.001"
+                      placeholder="Max"
+                      value={widthMax}
+                      onChange={(e) => setWidthMax(e.target.value)}
+                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      step="0.001"
+                      placeholder="Min"
+                      value={thickMin}
+                      onChange={(e) => setThickMin(e.target.value)}
+                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                    />
+                    <input 
+                      type="number" 
+                      step="0.001"
+                      placeholder="Max"
+                      value={thickMax}
+                      onChange={(e) => setThickMax(e.target.value)}
+                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      {q && (
-        <div className="mt-8 border-t border-slate-800/80 pt-8">
+      {hasActiveFilter && (
+        <div className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
           <div className="mb-6 flex justify-between items-center">
             <h3 className="text-lg font-semibold text-slate-300">
-              Search Results for <span className="text-blue-400">"{q}"</span>
+              {q ? (
+                <>Search Results for <span className="text-blue-400">"{q}"</span></>
+              ) : (
+                <>Filtered Search Results</>
+              )}
             </h3>
-            <Link to={`/inventory?q=${encodeURIComponent(q)}`} className="text-sm text-blue-400 hover:underline">
+            <Link 
+              to={`/inventory?${new URLSearchParams({
+                ...(q && { q }),
+                ...(dieType && { die_type: dieType }),
+                ...(statusVal && { status: statusVal }),
+                ...(casing && { casing }),
+                ...(sizeMin && { size_min: sizeMin }),
+                ...(sizeMax && { size_max: sizeMax }),
+                ...(widthMin && { width_min: widthMin }),
+                ...(widthMax && { width_max: widthMax }),
+                ...(thickMin && { thick_min: thickMin }),
+                ...(thickMax && { thick_max: thickMax }),
+              }).toString()}`} 
+              className="text-sm text-blue-400 hover:underline"
+            >
               View in Inventory
             </Link>
           </div>
@@ -299,7 +481,7 @@ function DashboardPage() {
             </div>
           ) : searchDies?.length === 0 ? (
             <div className="text-center py-12 bg-slate-900 border border-slate-850 rounded-2xl">
-              <p className="text-slate-500">No dies found matching "{q}".</p>
+              <p className="text-slate-500">No dies found matching your search criteria.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -320,6 +502,164 @@ function DashboardPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const isDieActive = (die) => {
+  return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
+}
+
+function DiesTable({ diesList, navigate }) {
+  const [sortField, setSortField] = useState('die_id')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+    setCurrentPage(1)
+  }
+
+  const sortedDies = useMemo(() => {
+    return [...diesList].sort((a, b) => {
+      let valA = a[sortField] || ''
+      let valB = b[sortField] || ''
+      
+      if (sortField === 'category') {
+        valA = a.die_type || ''
+        valB = b.die_type || ''
+      }
+      
+      if (sortField === 'current_size') {
+        valA = a.die_type === 'ROUND' ? parseFloat(a.current_size || 0) : parseFloat(a.current_width || 0)
+        valB = b.die_type === 'ROUND' ? parseFloat(b.current_size || 0) : parseFloat(b.current_width || 0)
+      }
+      
+      if (typeof valA === 'string') {
+        return sortOrder === 'asc' 
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA)
+      } else {
+        return sortOrder === 'asc' ? valA - valB : valB - valA
+      }
+    })
+  }, [diesList, sortField, sortOrder])
+
+  const paginatedDies = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedDies.slice(start, start + pageSize)
+  }, [sortedDies, currentPage])
+
+  const totalPages = Math.ceil(diesList.length / pageSize)
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider select-none">
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('die_id')}>
+                Die ID {sortField === 'die_id' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('casing')}>
+                Casing {sortField === 'casing' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('current_size')}>
+                Size / Dimensions {sortField === 'current_size' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('location')}>
+                Location {sortField === 'location' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('category')}>
+                Category {sortField === 'category' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>
+                Status {sortField === 'status' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('updated_at')}>
+                Last Updated {sortField === 'updated_at' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+              </th>
+              <th className="py-4 px-6 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60">
+            {paginatedDies.map((die) => {
+              const active = isDieActive(die)
+              return (
+                <tr key={die.die_id} className="hover:bg-slate-850/30 transition-colors duration-200">
+                  <td className="py-4 px-6 text-white">
+                    <h3 className="font-bold inline-block">{die.die_id}</h3>
+                  </td>
+                  <td className="py-4 px-6 text-slate-300">{die.casing}</td>
+                  <td className="py-4 px-6 text-slate-300 font-semibold">
+                    {die.die_type === 'ROUND' ? (
+                      <span>Ø {die.current_size || '—'} mm</span>
+                    ) : (
+                      <span>{die.current_width || '—'} × {die.current_thickness || '—'} mm</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 text-slate-300">{die.location || '—'}</td>
+                  <td className="py-4 px-6 text-slate-300">
+                    <span className="px-2 py-0.5 text-xxs font-semibold bg-slate-800 rounded border border-slate-700/50">
+                      {die.die_type}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${
+                      active 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                    }`}>
+                      {die.status}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-slate-400 text-xs">
+                    {new Date(die.updated_at).toLocaleDateString()}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <button 
+                      onClick={() => navigate(`/dies/${die.die_id}`)}
+                      className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="bg-slate-950/20 border-t border-slate-800 px-6 py-4 flex items-center justify-between">
+          <span className="text-xs text-slate-500 font-medium">
+            Showing Page {currentPage} of {totalPages} ({diesList.length} total)
+          </span>
+          <div className="flex space-x-2">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 disabled:opacity-40 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            >
+              Previous
+            </button>
+            <button 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 disabled:opacity-40 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -538,351 +878,790 @@ function InventoryPage() {
     setExpandedUnassigned(false)
   }
 
+  const [selectedNode, setSelectedNode] = useState(null)
+  const [treeSearch, setTreeSearch] = useState('')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Filtered machines list for the tree navigation search
+  const filteredMachines = useMemo(() => {
+    if (!treeSearch) return machinesWithData
+    const query = treeSearch.toLowerCase()
+    return machinesWithData.map(m => {
+      const matchingSets = m.sets.filter(s => s.name.toLowerCase().includes(query))
+      const machineMatches = m.name.toLowerCase().includes(query)
+      if (machineMatches || matchingSets.length > 0) {
+        return {
+          ...m,
+          sets: machineMatches ? m.sets : matchingSets
+        }
+      }
+      return null
+    }).filter(Boolean)
+  }, [machinesWithData, treeSearch])
+
+  const isSearchActive = useMemo(() => {
+    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
+  // Automatically select search node when search starts/ends
+  useEffect(() => {
+    if (isSearchActive) {
+      setSelectedNode({ type: 'search' })
+    } else {
+      setSelectedNode(null)
+    }
+  }, [isSearchActive])
+
+  // Set default selected node once data is loaded and no search is active
+  useEffect(() => {
+    if (!selectedNode && !isSearchActive) {
+      if (machinesWithData && machinesWithData.length > 0) {
+        setSelectedNode({ type: 'machine', id: machinesWithData[0].id })
+      } else if (unassignedDies && unassignedDies.length > 0) {
+        setSelectedNode({ type: 'unassigned' })
+      }
+    }
+  }, [machinesWithData, unassignedDies, selectedNode, isSearchActive])
+
+  // Compute active view based on selection and search status
+  const activeView = useMemo(() => {
+    if (isSearchActive && (!selectedNode || selectedNode.type === 'search')) {
+      return 'search'
+    }
+    if (selectedNode) {
+      return selectedNode.type
+    }
+    return 'placeholder'
+  }, [selectedNode, isSearchActive])
+
+  // Find currently selected machine details from active data
+  const selectedMachine = useMemo(() => {
+    if (selectedNode?.type === 'machine') {
+      return machinesWithData.find(m => m.id === selectedNode.id)
+    }
+    return null
+  }, [selectedNode, machinesWithData])
+
+  // Find currently selected set details from active data
+  const selectedSetData = useMemo(() => {
+    if (selectedNode?.type === 'set') {
+      for (const m of machinesWithData) {
+        const s = m.sets.find(set => set.id === selectedNode.id)
+        if (s) {
+          return { set: s, machine: m }
+        }
+      }
+    }
+    return null
+  }, [selectedNode, machinesWithData])
+
+  // Find raw machine and set to show empty fallback details if filtered out
+  const rawMachine = useMemo(() => {
+    if (selectedNode?.type === 'machine') {
+      return (machinesList || []).find(m => m.id === selectedNode.id)
+    }
+    return null
+  }, [selectedNode, machinesList])
+
+  const rawSetData = useMemo(() => {
+    if (selectedNode?.type === 'set') {
+      const s = (setsList || []).find(set => set.id === selectedNode.id)
+      if (s) {
+        const m = (machinesList || []).find(mach => mach.id === s.machine)
+        return { set: s, machine: m }
+      }
+    }
+    return null
+  }, [selectedNode, setsList, machinesList])
+
   const canCreate = role === 'ROOT' || role === 'ADMIN'
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Die Registry Inventory</h1>
-          <p className="text-slate-400 mt-1">Full access catalog with advanced sizing and category filters.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={handleExpandAll}
-            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-805 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 shadow-sm"
-          >
-            Expand All
-          </button>
-          <button
-            type="button"
-            onClick={handleCollapseAll}
-            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-805 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-300 shadow-sm"
-          >
-            Collapse All
-          </button>
-          {canCreate && (
-            <button 
-              onClick={() => setIsCreateOpen(true)}
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Add New Die</span>
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] relative bg-slate-950 text-white font-sans">
+      
+      {/* Sidebar Overlay (Mobile only) */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      {/* Filter panel */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8 shadow-xl">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
-            <input 
-              type="text" 
-              placeholder="Search by Die ID, casing, location, or machine..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300"
-            />
+      {/* LEFT PANEL - Tree Navigation */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 border-r border-slate-805 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${
+          isSidebarCollapsed ? 'md:hidden' : 'md:flex'
+        }`}
+      >
+        {/* Sidebar Header with Tree Search */}
+        <div className="p-4 border-b border-slate-800 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-200 text-xs tracking-wider uppercase">Inventory Explorer</span>
+            {/* Close button for mobile */}
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden p-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
           
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-semibold transition-all duration-300 ${
-              showFilters 
-                ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
-                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            <SlidersHorizontal className="h-5 w-5" />
-            <span>Filters</span>
-          </button>
-        </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
-              <select 
-                value={dieType}
-                onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Types</option>
-                <option value="ROUND">Round</option>
-                <option value="FLAT">Flat</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-              <select 
-                value={statusVal}
-                onChange={(e) => setStatusVal(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Statuses</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="RUNNING">Running</option>
-                <option value="CLEANING">Cleaning</option>
-                <option value="POLISHING">Polishing</option>
-                <option value="DAMAGED">Damaged</option>
-                <option value="SCRAPPED">Scrapped</option>
-                <option value="MISSING">Missing</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 25x10"
-                value={casing}
-                onChange={(e) => setCasing(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-
-            {dieType === 'ROUND' && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
-                <div className="flex gap-2">
-                  <input 
-                    type="number" 
-                    step="0.001"
-                    placeholder="Min"
-                    value={sizeMin}
-                    onChange={(e) => setSizeMin(e.target.value)}
-                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                  />
-                  <input 
-                    type="number" 
-                    step="0.001"
-                    placeholder="Max"
-                    value={sizeMax}
-                    onChange={(e) => setSizeMax(e.target.value)}
-                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {dieType === 'FLAT' && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Min"
-                      value={widthMin}
-                      onChange={(e) => setWidthMin(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Max"
-                      value={widthMax}
-                      onChange={(e) => setWidthMax(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Min"
-                      value={thickMin}
-                      onChange={(e) => setThickMin(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Max"
-                      value={thickMax}
-                      onChange={(e) => setThickMax(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+          {/* Tree Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+            <input 
+              type="text"
+              placeholder="Search machines or sets..."
+              value={treeSearch}
+              onChange={(e) => setTreeSearch(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+            />
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Results grid */}
-      {isLoading ? (
-        <div className="flex justify-center items-center py-24">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      ) : error ? (
-        <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl p-8">
-          <p className="text-rose-400 font-semibold">Error: {error.message}</p>
-        </div>
-      ) : (machinesWithData.length === 0 && unassignedDies.length === 0) ? (
-        <div className="text-center py-24 bg-slate-900 border border-slate-850 rounded-2xl">
-          <p className="text-slate-500 text-lg">No dies found matching the search criteria.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Machines Tree */}
-          {machinesWithData.map((machine) => {
-            const isMachineExpanded = !!expandedMachines[machine.id]
-            return (
-              <div key={machine.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300">
-                {/* Machine Header */}
-                <div 
-                  onClick={() => toggleMachine(machine.id)}
-                  className="flex items-center justify-between p-5 bg-slate-900/80 hover:bg-slate-900 cursor-pointer transition-colors duration-200 select-none"
+        {/* Tree Content */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          <div>
+            {/* Search Results Tree Node */}
+            {isSearchActive && (
+              <div className="mb-4">
+                <div
+                  onClick={() => setSelectedNode({ type: 'search' })}
+                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                    selectedNode?.type === 'search'
+                      ? 'bg-blue-600/10 text-white border-blue-500'
+                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                  }`}
                 >
-                  <div className="flex items-center space-x-4">
-                    <ChevronRight 
-                      className={`h-5 w-5 text-slate-400 transform transition-transform duration-200 ${isMachineExpanded ? 'rotate-90' : ''}`}
-                    />
-                    <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                      <Cpu className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{machine.name}</h3>
-                      <span className="text-xs text-slate-500 font-medium">{machine.category_name}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="bg-slate-800 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-700/50">
-                      {machine.totalDies} {machine.totalDies === 1 ? 'Die' : 'Dies'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Machine Sets (Children) */}
-                {isMachineExpanded && (
-                  <div className="p-6 border-t border-slate-850 bg-slate-950/20 space-y-4">
-                    {machine.sets.map((set) => {
-                      const isSetExpanded = !!expandedSets[set.id]
-                      return (
-                        <div key={set.id} className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-900/20">
-                          {/* Set Header */}
-                          <div 
-                            onClick={() => toggleSet(set.id)}
-                            className="flex items-center justify-between p-4 bg-slate-900/50 hover:bg-slate-900/80 cursor-pointer transition-colors duration-200 select-none"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <ChevronRight 
-                                className={`h-4.5 w-4.5 text-slate-400 transform transition-transform duration-200 ${isSetExpanded ? 'rotate-90' : ''}`}
-                              />
-                              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-                                <Layers className="h-4 w-4 text-indigo-400" />
-                              </div>
-                              <span className="font-bold text-slate-200 text-sm md:text-base">{set.name}</span>
-                            </div>
-                            <span className="bg-slate-950 text-indigo-400 text-xs font-medium px-2 py-0.5 rounded-full border border-slate-800">
-                              {set.dies.length} {set.dies.length === 1 ? 'Die' : 'Dies'}
-                            </span>
-                          </div>
-
-                          {/* Set Dies (Cards Grid) */}
-                          {isSetExpanded && (
-                            <div className="p-5 bg-slate-950/40 border-t border-slate-850">
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {set.dies.map((die) => 
-                                  die.die_type === 'ROUND' ? (
-                                    <RoundDieCard 
-                                      key={die.die_id} 
-                                      die={die} 
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        navigate(`/dies/${die.die_id}`)
-                                      }}
-                                    />
-                                  ) : (
-                                    <FlatDieCard 
-                                      key={die.die_id} 
-                                      die={die} 
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        navigate(`/dies/${die.die_id}`)
-                                      }}
-                                    />
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-
-          {/* Standalone / Unassigned Dies */}
-          {unassignedDies.length > 0 && (
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300">
-              <div 
-                onClick={() => setExpandedUnassigned(!expandedUnassigned)}
-                className="flex items-center justify-between p-5 bg-slate-900/80 hover:bg-slate-900 cursor-pointer transition-colors duration-200 select-none"
-              >
-                <div className="flex items-center space-x-4">
-                  <ChevronRight 
-                    className={`h-5 w-5 text-slate-400 transform transition-transform duration-200 ${expandedUnassigned ? 'rotate-90' : ''}`}
-                  />
-                  <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                    <Sliders className="h-5 w-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Unassigned / Standalone Dies</h3>
-                    <span className="text-xs text-slate-500 font-medium">Dies not assigned to any set</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className="bg-slate-800 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-700/50">
-                    {unassignedDies.length} {unassignedDies.length === 1 ? 'Die' : 'Dies'}
+                  <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
+                  <span className="text-xs font-bold truncate flex-1">Search Results</span>
+                  <span className="bg-slate-950 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                    {dies?.length || 0}
                   </span>
                 </div>
               </div>
+            )}
 
-              {expandedUnassigned && (
-                <div className="p-6 border-t border-slate-850 bg-slate-950/20">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {unassignedDies.map((die) => 
-                      die.die_type === 'ROUND' ? (
-                        <RoundDieCard 
-                          key={die.die_id} 
-                          die={die} 
+            <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+              <Database className="h-3.5 w-3.5 text-blue-500" />
+              <span>Machines / Production Sets</span>
+            </div>
+            
+            <div className="space-y-1 mt-2">
+              {filteredMachines.length === 0 ? (
+                <div className="px-3 py-2 text-xs text-slate-500 italic">No matches found</div>
+              ) : (
+                filteredMachines.map(machine => {
+                  const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
+                  const isMachineSelected = selectedNode?.type === 'machine' && selectedNode?.id === machine.id
+                  
+                  return (
+                    <div key={machine.id} className="space-y-0.5">
+                      {/* Machine Node */}
+                      <div 
+                        className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
+                          isMachineSelected 
+                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2' 
+                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
+                        }`}
+                        onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
+                      >
+                        <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            navigate(`/dies/${die.die_id}`)
+                            toggleMachine(machine.id)
                           }}
-                        />
-                      ) : (
-                        <FlatDieCard 
-                          key={die.die_id} 
-                          die={die} 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigate(`/dies/${die.die_id}`)
-                          }}
-                        />
-                      )
-                    )}
+                          className="p-1 hover:bg-slate-850 rounded transition mr-1"
+                        >
+                          {isMachineExpanded ? (
+                            <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                          )}
+                        </button>
+                        <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-500'}`} />
+                        <span className="text-xs font-semibold truncate flex-1">{machine.name}</span>
+                        <span className="bg-slate-950 text-slate-500 text-xxs px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
+                          {machine.totalDies}
+                        </span>
+                      </div>
+                      
+                      {/* Set Nodes (Children) */}
+                      {isMachineExpanded && (
+                        <div className="pl-4 space-y-0.5 border-l border-slate-800/60 ml-4 mt-0.5">
+                          {machine.sets.map(set => {
+                            const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
+                            return (
+                              <div
+                                key={set.id}
+                                onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
+                                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-1.5 pl-3 pr-3 border-l-4 ${
+                                  isSetSelected
+                                    ? 'bg-indigo-600/10 text-white border-indigo-500'
+                                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                                }`}
+                              >
+                                <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
+                                <span className="text-xs font-medium truncate flex-1">{set.name}</span>
+                                <span className="text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
+                                  {set.dies.length}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Unassigned / Standalone Dies Node */}
+            {unassignedDies.length > 0 && (
+              <div className="pt-4 border-t border-slate-800/60 mt-4">
+                <div
+                  onClick={() => setSelectedNode({ type: 'unassigned' })}
+                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                    selectedNode?.type === 'unassigned'
+                      ? 'bg-amber-600/10 text-white border-amber-500'
+                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                  }`}
+                >
+                  <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
+                  <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                    {unassignedDies.length}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL - Content Area */}
+      <div className="flex-1 min-w-0 bg-slate-950 flex flex-col">
+        
+        {/* Top Header & Navbar-like control */}
+        <div className="bg-slate-900 border-b border-slate-800/60 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
+          <div className="flex items-center">
+            {/* Sidebar toggle button (Mobile: Drawer, Desktop/Tablet: Collapse) */}
+            <button 
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  setIsSidebarOpen(!isSidebarOpen)
+                } else {
+                  setIsSidebarCollapsed(!isSidebarCollapsed)
+                }
+              }}
+              className="p-2 bg-slate-950 border border-slate-800 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-white transition shadow-sm mr-4"
+              title="Toggle Sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">Die Registry Inventory</h1>
+              <p className="text-slate-400 text-xs mt-0.5 hidden sm:block">Professional enterprise-grade inventory registry dashboard.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Inner Content Area */}
+        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 overflow-y-auto">
+          
+          {/* Action Bar (Search & Filter Section) */}
+          <div className="bg-slate-900 border border-slate-805 rounded-2xl p-6 shadow-xl">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search by Die ID, casing, location, or machine..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-350"
+                />
+              </div>
+              
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-bold transition-all duration-350 w-full md:w-auto ${
+                  showFilters 
+                    ? 'bg-blue-600/15 text-blue-400 border-blue-500/30' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+                <span>Filters</span>
+              </button>
+            </div>
+
+            {/* Secondary Actions Row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800/60">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExpandAll}
+                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCollapseAll}
+                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                >
+                  Collapse All
+                </button>
+              </div>
+
+              {canCreate && (
+                <button 
+                  onClick={() => setIsCreateOpen(true)}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs md:text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add New Die</span>
+                </button>
+              )}
+            </div>
+
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
+                  <select 
+                    value={dieType}
+                    onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Types</option>
+                    <option value="ROUND">Round</option>
+                    <option value="FLAT">Flat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <select 
+                    value={statusVal}
+                    onChange={(e) => setStatusVal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="CLEANING">Cleaning</option>
+                    <option value="POLISHING">Polishing</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="SCRAPPED">Scrapped</option>
+                    <option value="MISSING">Missing</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. 25x10"
+                    value={casing}
+                    onChange={(e) => setCasing(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {dieType === 'ROUND' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Min"
+                        value={sizeMin}
+                        onChange={(e) => setSizeMin(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Max"
+                        value={sizeMax}
+                        onChange={(e) => setSizeMax(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                    </div>
                   </div>
+                )}
+
+                {dieType === 'FLAT' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={widthMin}
+                          onChange={(e) => setWidthMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={widthMax}
+                          onChange={(e) => setWidthMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={thickMin}
+                          onChange={(e) => setThickMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={thickMax}
+                          onChange={(e) => setThickMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Master Detail View Wrapper */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-24">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8">
+              <p className="text-rose-400 font-bold">Error loading inventory: {error.message}</p>
+            </div>
+          ) : !selectedNode ? (
+            <div className="text-center py-24 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-md">
+              <p className="text-slate-400 text-lg">No selection. Select a machine or set from the navigation tree.</p>
+            </div>
+          ) : (
+            <div>
+              
+              {/* SEARCH RESULTS VIEW */}
+              {activeView === 'search' && (
+                <div className="space-y-8 animate-fadeIn">
+                  {/* Header */}
+                  <div className="border-b border-slate-800 pb-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <Search className="h-4 w-4 text-blue-500" />
+                      <span>Search & Filter Results</span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black text-white">Matching Dies</h2>
+                    <p className="text-slate-400 text-xs mt-1">Showing all dies matching active registry filters.</p>
+                  </div>
+
+                  {dies && dies.length > 0 ? (
+                    <>
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Total Matches</span>
+                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2">{dies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {dies.length - dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Filtered Catalog</h3>
+                        <DiesTable diesList={dies} navigate={navigate} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+                      <Search className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <p className="text-slate-400 font-medium">No dies in the registry match the current search or filters.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* MACHINE DETAILS VIEW */}
+              {activeView === 'machine' && (
+                <div className="space-y-8">
+                  {selectedMachine ? (
+                    <>
+                      {/* Header */}
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <Cpu className="h-4 w-4 text-blue-500" />
+                          <span>Machine Explorer</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{selectedMachine.name}</h2>
+                        <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 rounded-lg mt-2">
+                          {selectedMachine.category_name || 'Standard Category'}
+                        </span>
+                      </div>
+
+                      {/* Stat Cards */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Summary Statistics</h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Sets</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.sets.length}</span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.totalDies}</span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                              {selectedMachine.sets.reduce((sum, s) => sum + s.dies.filter(isDieActive).length, 0)}
+                            </span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                              {selectedMachine.totalDies - selectedMachine.sets.reduce((sum, s) => sum + s.dies.filter(isDieActive).length, 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sets Cards Section */}
+                      <div className="pt-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-indigo-400" />
+                          <span>Assigned Sets</span>
+                        </h3>
+                        {selectedMachine.sets.length === 0 ? (
+                          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 italic">
+                            No sets found for this machine matching filters.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {selectedMachine.sets.map(set => {
+                              const sTotal = set.dies.length
+                              const sActive = set.dies.filter(isDieActive).length
+                              const sInactive = sTotal - sActive
+                              return (
+                                <div
+                                  key={set.id}
+                                  onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: selectedMachine.id })}
+                                  className="bg-slate-900/55 hover:bg-slate-900 border border-slate-850 hover:border-indigo-500/40 rounded-2xl p-5 cursor-pointer transition-all duration-300 shadow-md group relative overflow-hidden"
+                                >
+                                  {/* Hover Glow */}
+                                  <div className="absolute inset-x-0 bottom-0 h-1 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+                                  
+                                  <div className="flex items-center justify-between mb-4">
+                                    <span className="font-extrabold text-white text-base group-hover:text-indigo-400 transition-colors">
+                                      {set.name}
+                                    </span>
+                                    <span className="text-xs bg-slate-950 text-indigo-400 font-bold px-2 py-0.5 rounded-full border border-slate-800">
+                                      {sTotal} {sTotal === 1 ? 'Die' : 'Dies'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-4 text-xs text-slate-400 border-t border-slate-800 pt-3">
+                                    <div>
+                                      <span className="text-emerald-400 font-bold">{sActive}</span> Active
+                                    </div>
+                                    <div>
+                                      <span className="text-rose-400 font-bold">{sInactive}</span> Inactive
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback when selected machine is filtered out */
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <Cpu className="h-4 w-4 text-blue-500" />
+                          <span>Machine Explorer</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{rawMachine?.name || 'Machine'}</h2>
+                      </div>
+                      <div className="bg-slate-900 border border-slate-850 rounded-2xl p-12 text-center shadow-lg">
+                        <Cpu className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                        <p className="text-slate-400 font-medium">No dies assigned to this machine match the current filters.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SET DETAILS VIEW */}
+              {activeView === 'set' && (
+                <div className="space-y-8">
+                  {selectedSetData ? (
+                    <>
+                      {/* Header */}
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
+                          <span>{selectedSetData.machine?.name}</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                          <span className="text-indigo-400">{selectedSetData.set.name}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{selectedSetData.set.name}</h2>
+                        <p className="text-slate-400 text-xs mt-1">Assigned to machine: {selectedSetData.machine?.name}</p>
+                      </div>
+
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedSetData.set.dies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {selectedSetData.set.dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {selectedSetData.set.dies.length - selectedSetData.set.dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      {(() => {
+                        const total = selectedSetData.set.dies.length
+                        const active = selectedSetData.set.dies.filter(isDieActive).length
+                        const inactive = total - active
+                        const activePct = total > 0 ? ((active / total) * 100).toFixed(1) : '0.0'
+                        const inactivePct = total > 0 ? ((inactive / total) * 100).toFixed(1) : '0.0'
+                        return (
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Operational Ratio</h3>
+                            <div className="flex justify-between text-xs font-bold text-slate-400 mb-2">
+                              <span className="text-emerald-400">Active: {active} ({activePct}%)</span>
+                              <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden flex">
+                              <div className="bg-emerald-500 h-full transition-all duration-550" style={{ width: `${activePct}%` }} />
+                              <div className="bg-rose-500 h-full transition-all duration-550" style={{ width: `${inactivePct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
+                        <DiesTable diesList={selectedSetData.set.dies} navigate={navigate} />
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback when selected set is filtered out */
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <span>{rawSetData?.machine?.name || 'Machine'}</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                          <span className="text-indigo-400">{rawSetData?.set?.name || 'Set'}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{rawSetData?.set?.name || 'Set'}</h2>
+                      </div>
+                      <div className="bg-slate-900 border border-slate-805 rounded-2xl p-12 text-center shadow-lg">
+                        <Layers className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                        <p className="text-slate-400 font-medium">No dies assigned to this set match the current filters.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* UNASSIGNED STANDALONE DIES VIEW */}
+              {activeView === 'unassigned' && (
+                <div className="space-y-8">
+                  {/* Header */}
+                  <div className="border-b border-slate-800 pb-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <Sliders className="h-4 w-4 text-amber-500" />
+                      <span>Standalone Inventory</span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black text-white">Unassigned / Standalone Dies</h2>
+                    <p className="text-slate-400 text-xs mt-1">Production dies that are currently unassigned to any machine set.</p>
+                  </div>
+
+                  {unassignedDies.length > 0 ? (
+                    <>
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Total Standalone</span>
+                          <span className="text-2xl md:text-3xl font-black text-amber-450 mt-2">{unassignedDies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {unassignedDies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {unassignedDies.length - unassignedDies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
+                        <DiesTable diesList={unassignedDies} navigate={navigate} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+                      <Sliders className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <p className="text-slate-400 font-medium">No unassigned dies match the current filters.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Add Die Modal */}
       {isCreateOpen && (
@@ -2291,9 +3070,8 @@ function UsersPage() {
                       <td className="py-4 px-6 text-right space-x-2">
                         <button 
                           onClick={() => openEditForm(user)}
-                          disabled={isSelf}
-                          className="bg-slate-950 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-950 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
-                          title={isSelf ? 'You cannot edit your own account here' : 'Edit user'}
+                          className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                          title="Edit user"
                         >
                           Edit
                         </button>
@@ -2386,8 +3164,12 @@ function UsersPage() {
                 <select 
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  disabled={editingUser && (editingUser.role === 'ROOT' || editingUser.username === currentUsername)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-950 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
                 >
+                  {roleInput === 'ROOT' && (
+                    <option value="ROOT">Root (Superuser)</option>
+                  )}
                   <option value="REGULAR">Regular (Read-Only)</option>
                   <option value="ADMIN">Admin (Read-Write)</option>
                 </select>

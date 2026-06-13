@@ -68,6 +68,19 @@ test.describe('DMS E2E Smoke Tests', () => {
     const card = page.locator('h3').filter({ hasText: /^R-E2E-1$/ });
     await expect(card).toBeVisible();
 
+    // Verify range search on dashboard
+    await page.click('button:has-text("Filters")');
+    await page.selectOption('select:has(option[value="ROUND"])', 'ROUND');
+    await page.fill('input[placeholder="Min"]', '3.0'); // Excludes R-E2E-1 (size 2.5)
+    await expect(card).not.toBeVisible();
+    await page.fill('input[placeholder="Min"]', '1.0'); // Includes R-E2E-1
+    await expect(card).toBeVisible();
+    
+    // Reset dashboard filters
+    await page.fill('input[placeholder="Min"]', '');
+    await page.selectOption('select:has(option[value="ROUND"])', '');
+    await page.click('button:has-text("Filters")');
+
     // 5. Click result -> detail page renders with history table
     await card.click();
     await page.waitForURL('**/#/dies/R-E2E-1');
@@ -77,6 +90,27 @@ test.describe('DMS E2E Smoke Tests', () => {
     // 6. Visit /inventory -> inventory page renders
     await page.goto('/#/inventory');
     await expect(page.locator('h1')).toContainText('Die Registry Inventory');
+
+    // Test range search filters combined with query
+    await page.click('button:has-text("Filters")');
+    await page.fill('input[placeholder*="Search by Die ID"]', 'R-E2E');
+    await page.selectOption('select:has(option[value="ROUND"])', 'ROUND');
+    
+    // Set range that matches R-E2E-1 (size is 2.5)
+    await page.fill('input[placeholder="Min"]', '1.0');
+    await page.fill('input[placeholder="Max"]', '4.0');
+    await expect(page.locator('h3').filter({ hasText: /^R-E2E-1$/ })).toBeVisible();
+
+    // Set range that excludes R-E2E-1
+    await page.fill('input[placeholder="Min"]', '3.0');
+    await expect(page.locator('h3').filter({ hasText: /^R-E2E-1$/ })).not.toBeVisible();
+
+    // Reset filters
+    await page.fill('input[placeholder="Min"]', '');
+    await page.fill('input[placeholder="Max"]', '');
+    await page.selectOption('select:has(option[value="ROUND"])', '');
+    await page.fill('input[placeholder*="Search by Die ID"]', '');
+    await page.click('button:has-text("Filters")');
 
     // 7. Visit /import -> import page renders
     await page.goto('/#/import');

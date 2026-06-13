@@ -10,7 +10,6 @@ __pycache__/
 .env
 .env.local
 .env.*.local
-PROJECT.MD
 
 # Node
 node_modules/
