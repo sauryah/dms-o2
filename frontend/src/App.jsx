@@ -2382,23 +2382,39 @@ function MachineSetsPage() {
     }
   }
 
-  const handleMachSubmit = (e) => {
+  const handleMachSubmit = async (e) => {
     e.preventDefault()
-    const payload = { name: machName, category: machCat }
     if (editingMach) {
+      const payload = { name: machName.trim(), category: machCat }
       updateMachine.mutate({ id: editingMach.id, data: payload })
     } else {
-      createMachine.mutate(payload)
+      const payloadCategory = machCat
+      const names = machName.split(/[\n,]+/).map(n => n.trim()).filter(Boolean)
+      try {
+        for (const name of names) {
+          await createMachine.mutateAsync({ name, category: payloadCategory })
+        }
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
-  const handleSetSubmit = (e) => {
+  const handleSetSubmit = async (e) => {
     e.preventDefault()
-    const payload = { name: nameSet, machine: machineSet }
     if (editingSet) {
+      const payload = { name: nameSet.trim(), machine: machineSet }
       updateSet.mutate({ id: editingSet.id, data: payload })
     } else {
-      createSet.mutate(payload)
+      const payloadMachine = machineSet
+      const names = nameSet.split(/[\n,]+/).map(n => n.trim()).filter(Boolean)
+      try {
+        for (const name of names) {
+          await createSet.mutateAsync({ name, machine: payloadMachine })
+        }
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
@@ -2561,14 +2577,27 @@ function MachineSetsPage() {
                 </h2>
                 <form onSubmit={handleMachSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Machine Name</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={machName}
-                      onChange={(e) => setMachName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
-                    />
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                      {editingMach ? 'Machine Name' : 'Machine Name(s)'}
+                    </label>
+                    {editingMach ? (
+                      <input 
+                        type="text" 
+                        required
+                        value={machName}
+                        onChange={(e) => setMachName(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    ) : (
+                      <textarea 
+                        required
+                        placeholder="e.g. Mach 1, Mach 2 (comma or newline separated)"
+                        value={machName}
+                        onChange={(e) => setMachName(e.target.value)}
+                        rows="2"
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category</label>
@@ -2653,14 +2682,27 @@ function MachineSetsPage() {
                 </h2>
                 <form onSubmit={handleSetSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Set Name</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={nameSet}
-                      onChange={(e) => setNameSet(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
-                    />
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                      {editingSet ? 'Set Name' : 'Set Name(s)'}
+                    </label>
+                    {editingSet ? (
+                      <input 
+                        type="text" 
+                        required
+                        value={nameSet}
+                        onChange={(e) => setNameSet(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    ) : (
+                      <textarea 
+                        required
+                        placeholder="e.g. Set A, Set B (comma or newline separated)"
+                        value={nameSet}
+                        onChange={(e) => setNameSet(e.target.value)}
+                        rows="2"
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Machine Profile</label>
