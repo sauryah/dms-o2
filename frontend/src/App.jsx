@@ -603,7 +603,10 @@ function DiesTable({ diesList, navigate }) {
                     {die.die_type === 'ROUND' ? (
                       <span>Ø {die.current_size || '—'} mm</span>
                     ) : (
-                      <span>{die.current_width || '—'} × {die.current_thickness || '—'} mm</span>
+                      <span>
+                        {die.current_width || '—'} × {die.current_thickness || '—'} mm
+                        {die.radius ? ` (R: ${die.radius} mm)` : ''}
+                      </span>
                     )}
                   </td>
                   <td className="py-4 px-6 text-slate-300">{die.location || '—'}</td>

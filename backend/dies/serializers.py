@@ -33,6 +33,7 @@ class DieListSerializer(serializers.ModelSerializer):
         elif instance.die_type == 'FLAT' and hasattr(instance, 'flatdie') and instance.flatdie:
             rep['current_width'] = str(instance.flatdie.current_width)
             rep['current_thickness'] = str(instance.flatdie.current_thickness)
+            rep['radius'] = str(instance.flatdie.radius)
         return rep
 
 class DieDetailSerializer(serializers.ModelSerializer):

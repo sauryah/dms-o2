@@ -9,6 +9,7 @@ describe('FlatDieCard', () => {
     status: 'RUNNING',
     current_width: '5.500',
     current_thickness: '15.000',
+    radius: '1.250',
     casing: '30x15',
     location: 'Rack B - Shelf 1',
     set_name: 'Set Beta',
@@ -24,7 +25,7 @@ describe('FlatDieCard', () => {
     expect(screen.getByText('RUNNING')).toBeInTheDocument()
 
     // Check width×thickness, casing, location
-    expect(screen.getByText('5.500 × 15.000 mm')).toBeInTheDocument()
+    expect(screen.getByText('5.500 × 15.000 mm (R: 1.250 mm)')).toBeInTheDocument()
     expect(screen.getByText('30x15')).toBeInTheDocument()
     expect(screen.getByText('Rack B - Shelf 1')).toBeInTheDocument()
 

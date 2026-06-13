@@ -31,6 +31,7 @@ export function FlatDieCard({ die, onClick }) {
           <span className="text-slate-500 block text-xs">Width × Thickness</span>
           <span className="font-semibold text-slate-200">
             {die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness}` : 'N/A'} mm
+            {die.radius ? ` (R: ${die.radius} mm)` : ''}
           </span>
         </div>
         <div>

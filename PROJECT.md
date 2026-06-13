@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · fix: resolve flat die radius serialization in backend list serializer and render in frontend tables/cards
 ### 2026-06-14 · feat: redesign inventory page with Tree View + Master Detail, enable batch machine/set creation, and implement production upgrade/deployment workflow
 ### 2026-06-14 · feat: allow ROOT users to edit their own profile (password and email) in User Administration page
 ### 2026-06-14 · feat: implement range query filtering for Meilisearch search results, add Dashboard search filters UI with strict range trigger logic, and add unit and E2E smoke tests
