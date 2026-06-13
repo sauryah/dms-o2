@@ -295,155 +295,166 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* Clean search interface */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-xl max-w-4xl mx-auto">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white">Find a Die</h2>
-          <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly.</p>
-        </div>
+      {/* Dashboard Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-stretch">
         
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
-            <input 
-              type="text" 
-              placeholder="Search by Die ID, casing, location..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
-            />
-          </div>
+        {/* Search Panel */}
+        <div className="lg:col-span-2">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-center">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-white">Find a Die</h2>
+              <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly.</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-grow">
+                <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search by Die ID, casing, location..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
+                />
+              </div>
 
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-semibold transition-all duration-300 ${
-              showFilters 
-                ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
-                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            <SlidersHorizontal className="h-5 w-5" />
-            <span>Filters</span>
-          </button>
-        </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
-              <select 
-                value={dieType}
-                onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-semibold transition-all duration-300 ${
+                  showFilters 
+                    ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                }`}
               >
-                <option value="">All Types</option>
-                <option value="ROUND">Round</option>
-                <option value="FLAT">Flat</option>
-              </select>
+                <SlidersHorizontal className="h-5 w-5" />
+                <span>Filters</span>
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-              <select 
-                value={statusVal}
-                onChange={(e) => setStatusVal(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Statuses</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="RUNNING">Running</option>
-                <option value="CLEANING">Cleaning</option>
-                <option value="POLISHING">Polishing</option>
-                <option value="DAMAGED">Damaged</option>
-                <option value="SCRAPPED">Scrapped</option>
-                <option value="MISSING">Missing</option>
-              </select>
-            </div>
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+                  <select 
+                    value={dieType}
+                    onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Types</option>
+                    <option value="ROUND">Round</option>
+                    <option value="FLAT">Flat</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 25x10"
-                value={casing}
-                onChange={(e) => setCasing(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <select 
+                    value={statusVal}
+                    onChange={(e) => setStatusVal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="CLEANING">Cleaning</option>
+                    <option value="POLISHING">Polishing</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="SCRAPPED">Scrapped</option>
+                    <option value="MISSING">Missing</option>
+                  </select>
+                </div>
 
-            {dieType === 'ROUND' && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
-                <div className="flex gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
                   <input 
-                    type="number" 
-                    step="0.001"
-                    placeholder="Min"
-                    value={sizeMin}
-                    onChange={(e) => setSizeMin(e.target.value)}
-                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                  />
-                  <input 
-                    type="number" 
-                    step="0.001"
-                    placeholder="Max"
-                    value={sizeMax}
-                    onChange={(e) => setSizeMax(e.target.value)}
-                    className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                    type="text" 
+                    placeholder="e.g. 25x10"
+                    value={casing}
+                    onChange={(e) => setCasing(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
+
+                {dieType === 'ROUND' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Min"
+                        value={sizeMin}
+                        onChange={(e) => setSizeMin(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Max"
+                        value={sizeMax}
+                        onChange={(e) => setSizeMax(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {dieType === 'FLAT' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={widthMin}
+                          onChange={(e) => setWidthMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={widthMax}
+                          onChange={(e) => setWidthMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={thickMin}
+                          onChange={(e) => setThickMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={thickMax}
+                          onChange={(e) => setThickMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
-
-            {dieType === 'FLAT' && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Min"
-                      value={widthMin}
-                      onChange={(e) => setWidthMin(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Max"
-                      value={widthMax}
-                      onChange={(e) => setWidthMax(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Min"
-                      value={thickMin}
-                      onChange={(e) => setThickMin(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                    <input 
-                      type="number" 
-                      step="0.001"
-                      placeholder="Max"
-                      value={thickMax}
-                      onChange={(e) => setThickMax(e.target.value)}
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
           </div>
-        )}
+        </div>
+
+        {/* Analytics Panel */}
+        <div className="lg:col-span-1">
+          <StatusDistributionChart stats={stats} />
+        </div>
       </div>
 
       {hasActiveFilter && (
@@ -504,6 +515,241 @@ function DashboardPage() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function StatusDistributionChart({ stats }) {
+  const total = Object.values(stats).reduce((sum, val) => sum + val, 0)
+
+  const statusThemeColors = {
+    AVAILABLE: '#10b981', // Emerald
+    RUNNING: '#3b82f6',   // Blue
+    CLEANING: '#f59e0b',  // Amber
+    POLISHING: '#8b5cf6', // Purple
+    DAMAGED: '#f43f5e',   // Rose
+    SCRAPPED: '#64748b',  // Slate
+    MISSING: '#ef4444',   // Red
+  }
+
+  const radius = 50
+  const circumference = 2 * Math.PI * radius
+  let accumulatedPercent = 0
+
+  const segments = Object.entries(stats)
+    .filter(([_, count]) => count > 0)
+    .map(([statusKey, count]) => {
+      const pct = count / total
+      const strokeDasharray = `${pct * circumference} ${circumference}`
+      const strokeDashoffset = -accumulatedPercent * circumference
+      accumulatedPercent += pct
+
+      return {
+        statusKey,
+        count,
+        pct: (pct * 100).toFixed(1),
+        strokeDasharray,
+        strokeDashoffset,
+        color: statusThemeColors[statusKey] || '#64748b'
+      }
+    })
+
+  return (
+    <div className="glass-panel rounded-2xl p-6 shadow-xl flex flex-col justify-between h-full min-h-[260px] border border-slate-800/80">
+      <div>
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Status Distribution</h3>
+        <p className="text-slate-500 text-xs mb-4">Visual breakdown of registry assets.</p>
+      </div>
+
+      {total === 0 ? (
+        <div className="flex-grow flex flex-col items-center justify-center py-6">
+          <div className="w-16 h-16 rounded-full border-4 border-slate-850 border-t-blue-500 animate-spin mb-4" />
+          <span className="text-slate-500 text-sm">No dies loaded</span>
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 flex-grow">
+          {/* Donut Chart SVG */}
+          <div className="relative w-32 h-32 shrink-0">
+            <svg className="w-full h-full" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#111827" strokeWidth="10" />
+              {segments.map((seg) => (
+                <circle
+                  key={seg.statusKey}
+                  cx="70"
+                  cy="70"
+                  r="50"
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth="10"
+                  strokeDasharray={seg.strokeDasharray}
+                  strokeDashoffset={seg.strokeDashoffset}
+                  transform="rotate(-90 70 70)"
+                  strokeLinecap="round"
+                  className="transition-all duration-300 hover:stroke-[12] cursor-pointer"
+                  title={`${seg.statusKey}: ${seg.count} (${seg.pct}%)`}
+                />
+              ))}
+              <text x="70" y="65" textAnchor="middle" className="fill-slate-500 font-heading text-[9px] font-bold uppercase tracking-wider">
+                Total
+              </text>
+              <text x="70" y="86" textAnchor="middle" className="fill-white font-heading text-2xl font-black">
+                {total}
+              </text>
+            </svg>
+          </div>
+
+          {/* Legend Grid */}
+          <div className="flex-grow space-y-1.5 w-full sm:w-auto">
+            {segments.map((seg) => (
+              <div key={seg.statusKey} className="flex items-center justify-between text-xs py-1 border-b border-slate-800/40">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full dot-glow" style={{ backgroundColor: seg.color, color: seg.color }} />
+                  <span className="font-semibold text-slate-300">{seg.statusKey}</span>
+                </div>
+                <div className="text-slate-400 font-mono">
+                  <span className="text-slate-200 font-bold">{seg.count}</span>
+                  <span className="text-[9px] text-slate-500 ml-1">({seg.pct}%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DieBlueprint({ die }) {
+  if (!die) return null
+
+  const isRound = die.die_type === 'ROUND'
+
+  return (
+    <div className="relative glass-panel rounded-xl p-5 border border-slate-800/80 shadow-2xl blueprint-grid min-h-[280px] flex flex-col justify-between overflow-hidden">
+      <div className="flex justify-between items-center mb-4 border-b border-slate-800/80 pb-3">
+        <div>
+          <span className="text-slate-400 text-xs font-bold uppercase tracking-wider font-heading block">Dimensions Blueprint</span>
+          <span className="text-slate-500 text-[10px] block mt-0.5">Scale Vector CAD Simulation (mm)</span>
+        </div>
+        <span className="px-2.5 py-0.5 text-xxs font-mono font-bold bg-blue-950 text-blue-400 border border-blue-800/50 rounded-full">
+          {die.die_type}
+        </span>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-3">
+        {isRound ? (
+          <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
+            <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
+            <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
+            {die.original_size && (
+              <circle cx="100" cy="100" r="75" fill="none" className="blueprint-outline-secondary" />
+            )}
+            <circle 
+              cx="100" 
+              cy="100" 
+              r={75 * (parseFloat(die.current_size || 0) / parseFloat(die.original_size || die.current_size || 1))} 
+              fill="rgba(59, 130, 246, 0.06)" 
+              className="blueprint-outline animate-dash" 
+            />
+            <circle cx="100" cy="100" r="3" fill="#3b82f6" />
+            <g>
+              <line x1="25" y1="100" x2="175" y2="100" className="blueprint-dim-line" strokeDasharray="3 3" />
+              <path d="M 25 100 L 32 97 L 32 103 Z" fill="#10b981" />
+              <path d="M 175 100 L 168 97 L 168 103 Z" fill="#10b981" />
+              <rect x="72" y="88" width="56" height="15" rx="3" fill="#030712" />
+              <text x="100" y="99" textAnchor="middle" className="blueprint-dim-text">
+                Ø {die.current_size}
+              </text>
+            </g>
+            {die.original_size && die.original_size !== die.current_size && (
+              <g>
+                <line x1="100" y1="25" x2="145" y2="25" className="blueprint-dim-line" />
+                <circle cx="100" cy="25" r="2" fill="#10b981" />
+                <text x="150" y="28" className="blueprint-dim-text" textAnchor="start">
+                  Orig: Ø {die.original_size}
+                </text>
+              </g>
+            )}
+          </svg>
+        ) : (
+          (() => {
+            const width = parseFloat(die.current_width || 0)
+            const thickness = parseFloat(die.current_thickness || 0)
+            const origWidth = parseFloat(die.original_width || width || 1)
+            const origThick = parseFloat(die.original_thickness || thickness || 1)
+            const radius = parseFloat(die.radius || 0)
+
+            const maxVal = Math.max(origWidth, origThick)
+            const scale = 130 / maxVal
+            const w = width * scale
+            const t = thickness * scale
+            const ow = origWidth * scale
+            const ot = origThick * scale
+            const r = Math.min(radius * scale, Math.min(w, t) / 2)
+
+            const x = 100 - w / 2
+            const y = 100 - t / 2
+            const ox = 100 - ow / 2
+            const oy = 100 - ot / 2
+
+            return (
+              <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
+                <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
+                <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
+                {die.original_width && (
+                  <rect x={ox} y={oy} width={ow} height={ot} rx={r} ry={r} fill="none" className="blueprint-outline-secondary" />
+                )}
+                <rect 
+                  x={x} 
+                  y={y} 
+                  width={w} 
+                  height={t} 
+                  rx={r} 
+                  ry={r} 
+                  fill="rgba(59, 130, 246, 0.06)" 
+                  className="blueprint-outline animate-dash" 
+                />
+                <circle cx="100" cy="100" r="3" fill="#3b82f6" />
+                <g>
+                  <line x1={x} y1={y + t + 15} x2={x + w} y2={y + t + 15} className="blueprint-dim-line" />
+                  <line x1={x} y1={y + t + 5} x2={x} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
+                  <line x1={x + w} y1={y + t + 5} x2={x + w} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
+                  <path d={`M ${x} ${y + t + 15} L ${x + 6} ${y + t + 12} L ${x + 6} ${y + t + 18} Z`} fill="#10b981" />
+                  <path d={`M ${x + w} ${y + t + 15} L ${x + w - 6} ${y + t + 12} L ${x + w - 6} ${y + t + 18} Z`} fill="#10b981" />
+                  <rect x="85" y={y + t + 7} width="30" height="14" rx="2" fill="#030712" />
+                  <text x="100" y={y + t + 17} textAnchor="middle" className="blueprint-dim-text">
+                    W: {die.current_width}
+                  </text>
+                </g>
+                <g>
+                  <line x1={x - 15} y1={y} x2={x - 15} y2={y + t} className="blueprint-dim-line" />
+                  <line x1={x - 20} y1={y} x2={x - 5} y2={y} className="blueprint-dim-line" strokeWidth="0.5" />
+                  <line x1={x - 20} y1={y + t} x2={x - 5} y2={y + t} className="blueprint-dim-line" strokeWidth="0.5" />
+                  <path d={`M ${x - 15} ${y} L ${x - 18} ${y + 6} L ${x - 12} ${y + 6} Z`} fill="#10b981" />
+                  <path d={`M ${x - 15} ${y + t} L ${x - 18} ${y + t - 6} L ${x - 12} ${y + t - 6} Z`} fill="#10b981" />
+                  <text x={x - 18} y={y + t / 2 + 4} textAnchor="end" className="blueprint-dim-text">
+                    T: {die.current_thickness}
+                  </text>
+                </g>
+                {radius > 0 && (
+                  <g>
+                    <path d={`M ${x + w - r + r * Math.cos(Math.PI/4)} ${y + r - r * Math.sin(Math.PI/4)} L ${x + w + 12} ${y - 12}`} className="blueprint-dim-line" fill="none" strokeWidth="0.75" />
+                    <circle cx={x + w - r + r * Math.cos(Math.PI/4)} cy={y + r - r * Math.sin(Math.PI/4)} r="2" fill="#10b981" />
+                    <text x={x + w + 16} y={y - 10} className="blueprint-dim-text" textAnchor="start">
+                      R: {die.radius}
+                    </text>
+                  </g>
+                )}
+              </svg>
+            )
+          })()
+        )}
+      </div>
+      
+      <div className="flex justify-between items-center text-slate-500 text-[9px] font-mono mt-3 pt-2 border-t border-slate-800/80">
+        <span>Casing: {die.casing || '—'}</span>
+        <span>Status: {die.status}</span>
+      </div>
     </div>
   )
 }
@@ -1094,24 +1340,31 @@ function InventoryPage() {
                       
                       {/* Set Nodes (Children) */}
                       {isMachineExpanded && (
-                        <div className="pl-4 space-y-0.5 border-l border-slate-800/60 ml-4 mt-0.5">
+                        <div className="relative pl-4 space-y-0.5 ml-4 mt-0.5">
+                          <div className="tree-branch-line" />
                           {machine.sets.map(set => {
                             const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
+                            const activeCount = set.dies.filter(isDieActive).length
                             return (
-                              <div
-                                key={set.id}
-                                onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
-                                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-1.5 pl-3 pr-3 border-l-4 ${
-                                  isSetSelected
-                                    ? 'bg-indigo-600/10 text-white border-indigo-500'
-                                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
-                                }`}
-                              >
-                                <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
-                                <span className="text-xs font-medium truncate flex-1">{set.name}</span>
-                                <span className="text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
-                                  {set.dies.length}
-                                </span>
+                              <div key={set.id} className="relative pl-6">
+                                <div className="tree-leaf-line" />
+                                <div
+                                  onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
+                                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-1.5 pl-3 pr-3 border-l-4 ${
+                                    isSetSelected
+                                      ? 'bg-indigo-600/10 text-white border-indigo-500'
+                                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                                  }`}
+                                >
+                                  <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
+                                  <span className="text-xs font-medium truncate flex-1">{set.name}</span>
+                                  <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
+                                    {activeCount > 0 && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
+                                    )}
+                                    {set.dies.length}
+                                  </span>
+                                </div>
                               </div>
                             )
                           })}
@@ -2142,7 +2395,7 @@ function DieDetailPage() {
               </div>
             </form>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Specifications</h3>
                 <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 space-y-4">
@@ -2194,6 +2447,11 @@ function DieDetailPage() {
               </div>
 
               <div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">CAD Blueprint</h3>
+                <DieBlueprint die={die} />
+              </div>
+
+              <div className="md:col-span-2 lg:col-span-1">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Remarks</h3>
                 <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 h-[calc(100%-2rem)]">
                   <p className="text-slate-300 whitespace-pre-line text-sm leading-relaxed">

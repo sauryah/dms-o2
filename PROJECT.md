@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: complete UI/UX facelift with status distribution donut chart, dynamic SVG CAD blueprints, connecting tree lines, and custom fonts
 ### 2026-06-14 · fix: resolve flat die radius serialization in backend list serializer and render in frontend tables/cards
 ### 2026-06-14 · feat: redesign inventory page with Tree View + Master Detail, enable batch machine/set creation, and implement production upgrade/deployment workflow
 ### 2026-06-14 · feat: allow ROOT users to edit their own profile (password and email) in User Administration page
