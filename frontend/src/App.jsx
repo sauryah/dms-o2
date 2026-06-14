@@ -1095,7 +1095,7 @@ function DiesTable({ diesList, navigate }) {
                 value={bulkStatus}
                 disabled={isUpdating}
                 onChange={(e) => setBulkStatus(e.target.value)}
-                className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
+                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="">— Select Status —</option>
                 <option value="AVAILABLE">Available</option>
@@ -1128,7 +1128,7 @@ function DiesTable({ diesList, navigate }) {
                 disabled={isUpdating}
                 onChange={(e) => setBulkLocation(e.target.value)}
                 placeholder="e.g. Rack A - Shelf 3"
-                className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none w-44"
+                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none w-44"
               />
 
               <button
