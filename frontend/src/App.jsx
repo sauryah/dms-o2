@@ -759,10 +759,25 @@ const isDieActive = (die) => {
 }
 
 function DiesTable({ diesList, navigate }) {
+  const { role } = useAuth()
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+
+  const canEdit = role === 'ROOT' || role === 'ADMIN'
+
   const [sortField, setSortField] = useState('die_id')
   const [sortOrder, setSortOrder] = useState('asc')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
+
+  const [selectedDieIds, setSelectedDieIds] = useState(new Set())
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Clear selection if the list of dies changes
+  useEffect(() => {
+    setSelectedDieIds(new Set())
+  }, [diesList])
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -806,12 +821,121 @@ function DiesTable({ diesList, navigate }) {
 
   const totalPages = Math.ceil(diesList.length / pageSize)
 
+  const toggleSelectOne = (dieId) => {
+    setSelectedDieIds(prev => {
+      const next = new Set(prev)
+      if (next.has(dieId)) {
+        next.delete(dieId)
+      } else {
+        next.add(dieId)
+      }
+      return next
+    })
+  }
+
+  const currentPaginatedDieIds = paginatedDies.map(d => d.die_id)
+  const isAllSelected = currentPaginatedDieIds.length > 0 && currentPaginatedDieIds.every(id => selectedDieIds.has(id))
+
+  const toggleSelectAll = () => {
+    setSelectedDieIds(prev => {
+      const next = new Set(prev)
+      if (isAllSelected) {
+        currentPaginatedDieIds.forEach(id => next.delete(id))
+      } else {
+        currentPaginatedDieIds.forEach(id => next.add(id))
+      }
+      return next
+    })
+  }
+
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkStatus) return
+    setIsUpdating(true)
+    try {
+      // Sequentially patch status of all selected dies
+      for (const dieId of selectedDieIds) {
+        await request(`/api/dies/${dieId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: bulkStatus })
+        })
+      }
+      setSelectedDieIds(new Set())
+      setBulkStatus('')
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
+      alert(`Successfully updated status of ${selectedDieIds.size} dies to ${bulkStatus}.`)
+    } catch (err) {
+      console.error(err)
+      alert(`Error updating statuses: ${err.message}`)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* Floating Bulk Action Bar */}
+      {selectedDieIds.size > 0 && (
+        <div className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center space-x-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 dot-glow animate-pulse" />
+            <span className="text-sm font-semibold text-slate-200">
+              <span className="font-extrabold text-blue-400">{selectedDieIds.size}</span> dies selected for batch edit
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set status:</span>
+            <select
+              value={bulkStatus}
+              disabled={isUpdating}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
+            >
+              <option value="">— Select Status —</option>
+              <option value="AVAILABLE">Available</option>
+              <option value="RUNNING">Running</option>
+              <option value="CLEANING">Cleaning</option>
+              <option value="POLISHING">Polishing</option>
+              <option value="DAMAGED">Damaged</option>
+              <option value="SCRAPPED">Scrapped</option>
+              <option value="MISSING">Missing</option>
+            </select>
+
+            <button
+              onClick={handleBulkStatusUpdate}
+              disabled={!bulkStatus || isUpdating}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUpdating ? 'Updating...' : 'Apply Status'}
+            </button>
+
+            <button
+              onClick={() => setSelectedDieIds(new Set())}
+              disabled={isUpdating}
+              className="text-xs text-slate-450 hover:text-white px-3 py-2 rounded-xl border border-slate-800 hover:border-slate-750 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider select-none">
+              {canEdit && (
+                <th className="py-4 px-6 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer w-4 h-4" 
+                  />
+                </th>
+              )}
               <th className="py-4 px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('die_id')}>
                 Die ID {sortField === 'die_id' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
               </th>
@@ -839,8 +963,19 @@ function DiesTable({ diesList, navigate }) {
           <tbody className="divide-y divide-slate-800/60">
             {paginatedDies.map((die) => {
               const active = isDieActive(die)
+              const isSelected = selectedDieIds.has(die.die_id)
               return (
-                <tr key={die.die_id} className="hover:bg-slate-850/30 transition-colors duration-200">
+                <tr key={die.die_id} className={`hover:bg-slate-850/30 transition-colors duration-200 ${isSelected ? 'bg-blue-600/5' : ''}`}>
+                  {canEdit && (
+                    <td className="py-4 px-6 w-12 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(die.die_id)}
+                        className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer w-4 h-4" 
+                      />
+                    </td>
+                  )}
                   <td className="py-4 px-6 text-white">
                     <h3 className="font-bold inline-block">{die.die_id}</h3>
                   </td>
