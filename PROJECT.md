@@ -325,6 +325,9 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: add search input, parent category/machine filters, and scroll wrappers for Categories, Machines, and Tool Sets views
+### 2026-06-14 · feat: implement backup file local download, dump file upload, and active session eviction before system restores
+### 2026-06-14 · feat: implement root-only Backup & Restore UI tab in User Administration page with double-confirmation restore modal
 ### 2026-06-14 · feat: implement automated nightly backups container and dms-backup.sh host utility script
 ### 2026-06-14 · security: require current password to change password or email for self-profile updates
 ### 2026-06-14 · feat: implement client-side session idle warning modal and keep-alive backend endpoint
