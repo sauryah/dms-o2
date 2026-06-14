@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: implement automated nightly backups container and dms-backup.sh host utility script
 ### 2026-06-14 · security: require current password to change password or email for self-profile updates
 ### 2026-06-14 · feat: implement client-side session idle warning modal and keep-alive backend endpoint
 ### 2026-06-14 · feat: implement search optimizations (query debouncing, test environment index isolation, backend direct db query fallback, and auto-sync on deploy)

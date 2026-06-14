@@ -169,6 +169,27 @@ If the database is fresh and there are no users:
 2. **Add Other Users**:
    Log in as the `root` user on the web app or at `http://localhost/admin/`, and use the User Administration panel to add new Admin or Regular users.
 
+### 7. Database Backups and Restoration
+The application features a built-in automated backup container that takes compressed custom-format snapshots (`.dump` files) every night at **2:00 AM** and stores them on the host machine in the `./backups/` directory with a **14-day retention cycle**.
+
+You can also use the host-level utility script `./dms-backup.sh` to trigger backups, list them, or restore them easily:
+
+* **Trigger a Manual Backup**:
+  ```bash
+  ./dms-backup.sh backup
+  ```
+* **List Available Backups**:
+  ```bash
+  ./dms-backup.sh list
+  ```
+* **Restore a Backup**:
+  ```bash
+  ./dms-backup.sh restore <backup_filename.dump>
+  # Example:
+  ./dms-backup.sh restore dms_backup_20260614_152834.dump
+  ```
+  *Note: The restore command will overwrite current data and automatically rebuild your Meilisearch search index.*
+
 ---
 
 ## Running Locally
