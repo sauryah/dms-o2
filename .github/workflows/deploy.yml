@@ -9,10 +9,21 @@ jobs:
       postgres:
         image: postgres:18-alpine
         env: { POSTGRES_PASSWORD: test, POSTGRES_DB: dms_test, POSTGRES_USER: dms_user }
+        ports:
+          - 5432:5432
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
       meilisearch:
         image: getmeili/meilisearch:v1.7
         ports: ['7700:7700']
+    env:
+      POSTGRES_DB: dms_test
+      POSTGRES_USER: dms_user
+      POSTGRES_PASSWORD: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      MEILI_HOST: http://localhost:7700
+      MEILI_MASTER_KEY: change_me
+      DJANGO_SECRET_KEY: test-secret-key-1234567890
     steps:
       - uses: actions/checkout@v4
       - run: pip install -r backend/requirements.txt

@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · fix: map PostgreSQL container service ports and specify environment variables in GitHub Actions workflow
 ### 2026-06-14 · feat: support bulk status update via multi-select checkbox table controls
 ### 2026-06-14 · feat: complete UI/UX facelift with status distribution donut chart, dynamic SVG CAD blueprints, connecting tree lines, and custom fonts
 ### 2026-06-14 · fix: resolve flat die radius serialization in backend list serializer and render in frontend tables/cards
