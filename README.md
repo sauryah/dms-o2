@@ -385,9 +385,44 @@ If you log in with the same credentials on another browser or device, your previ
 ---
 
 ## Contributing
-> TODO: Verify manually
+
+We welcome contributions to improve the Die Management System (DMS)! Please follow these steps to contribute:
+
+1. **Fork the Repository**: Create a personal copy of the project.
+2. **Create a Feature Branch**: Use descriptive names (e.g., `feature/add-wear-charts` or `bugfix/session-timeout`).
+3. **Write Tests**: Ensure any backend additions are covered by Django unit tests and frontend changes are covered by Vitest suites.
+4. **Run Quality Checks**:
+   * Run backend unit tests: `docker compose exec django python manage.py test`
+   * Run frontend unit tests: `npm run test` (inside the `frontend` folder)
+5. **Submit a Pull Request**: Provide a detailed description of your changes and reference any relevant issue numbers.
 
 ---
 
 ## License
-> TODO: Verify manually
+
+This project is licensed under the **MIT License**. See below for details:
+
+```text
+MIT License
+
+Copyright (c) 2026
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
