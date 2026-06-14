@@ -300,6 +300,18 @@ function DashboardPage() {
   const [thickMax, setThickMax] = useState('')
   
   const [showFilters, setShowFilters] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchRef = React.useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Fetch all dies to compute overall statistics
   const { data: allDies, isLoading: isStatsLoading } = useQuery({
@@ -409,15 +421,77 @@ function DashboardPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-grow">
+              <div className="relative flex-grow" ref={searchRef}>
                 <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
                 <input 
                   type="text" 
                   placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                  onChange={(e) => { setQ(e.target.value); setShowDropdown(true); }}
+                  onFocus={() => setShowDropdown(true)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
                 />
+
+                {/* Search Dropdown Suggestions */}
+                {showDropdown && q.trim() && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto divide-y divide-slate-800/60">
+                    {isSearchLoading ? (
+                      <div className="p-4 text-center text-slate-500 text-sm flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                        <span>Searching...</span>
+                      </div>
+                    ) : !searchDies || searchDies.length === 0 ? (
+                      <div className="p-4 text-center text-slate-500 text-sm">
+                        No matching dies found.
+                      </div>
+                    ) : (
+                      <>
+                        {searchDies.slice(0, 6).map((die) => {
+                          const sizeStr = die.die_type === 'ROUND' 
+                            ? `${die.size || die.rounddie?.current_size || '—'} mm` 
+                            : `${die.width || die.flatdie?.current_width || '—'} × ${die.thickness || die.flatdie?.current_thickness || '—'} mm`
+                          return (
+                            <div 
+                              key={die.die_id}
+                              onClick={() => {
+                                navigate(`/dies/${die.die_id}`)
+                                setQ('')
+                                setShowDropdown(false)
+                              }}
+                              className="p-4 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition duration-150"
+                            >
+                              <div className="flex flex-col text-left">
+                                <span className="font-bold text-white text-sm">{die.die_id}</span>
+                                <span className="text-xs text-slate-400 mt-0.5">
+                                  {die.die_type} • {sizeStr} • {die.location || 'No Location'}
+                                </span>
+                              </div>
+                              <span className={`px-2 py-0.5 text-xxs font-bold rounded-full border ${
+                                die.status === 'AVAILABLE' 
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                  : die.status === 'RUNNING'
+                                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                  : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                              }`}>
+                                {die.status}
+                              </span>
+                            </div>
+                          )
+                        })}
+                        {searchDies.length > 6 && (
+                          <div 
+                            onClick={() => {
+                              setShowDropdown(false)
+                            }}
+                            className="p-3 bg-slate-950/40 text-center text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                          >
+                            Scroll down to view all {searchDies.length} results
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button 
