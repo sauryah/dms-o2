@@ -21,10 +21,23 @@ class CustomJWTAuthentication(JWTAuthentication):
         token_str = raw_token.decode('utf-8') if isinstance(raw_token, bytes) else str(raw_token)
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
         
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.conf import settings
+
         # Look up UserSession
         try:
             session = UserSession.objects.get(user=user, token_hash=token_hash)
         except UserSession.DoesNotExist:
+            raise AuthenticationFailed("Session replaced on another device or expired")
+
+        # Check idle and absolute timeouts
+        now = timezone.now()
+        idle_limit = now - timedelta(minutes=settings.SESSION_IDLE_TIMEOUT_MINUTES)
+        absolute_limit = now - timedelta(hours=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS)
+
+        if session.last_seen < idle_limit or session.created_at < absolute_limit:
+            session.delete()
             raise AuthenticationFailed("Session replaced on another device or expired")
             
         # Update last_seen
