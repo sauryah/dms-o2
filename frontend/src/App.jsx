@@ -3500,9 +3500,8 @@ function UsersPage() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                   <th className="py-4.5 px-6">Username</th>
-                  <th className="py-4.5 px-6">First Name</th>
-                  <th className="py-4.5 px-6">Last Name</th>
-                  <th className="py-4.5 px-6">Email</th>
+                  <th className="py-4.5 px-6 hidden sm:table-cell">Full Name</th>
+                  <th className="py-4.5 px-6 hidden md:table-cell">Email</th>
                   <th className="py-4.5 px-6">Role</th>
                   <th className="py-4.5 px-6">Status</th>
                   <th className="py-4.5 px-6 text-right">Actions</th>
@@ -3521,9 +3520,10 @@ function UsersPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-slate-300">{user.first_name || '—'}</td>
-                      <td className="py-4 px-6 text-slate-300">{user.last_name || '—'}</td>
-                      <td className="py-4 px-6 text-slate-300">{user.email || '—'}</td>
+                      <td className="py-4 px-6 text-slate-300 hidden sm:table-cell">
+                        {user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '—'}
+                      </td>
+                      <td className="py-4 px-6 text-slate-300 hidden md:table-cell">{user.email || '—'}</td>
                       <td className="py-4 px-6">
                         <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
                           user.role === 'ROOT' 
@@ -3612,7 +3612,7 @@ function UsersPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">First Name</label>
                   <input 
