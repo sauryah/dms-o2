@@ -228,10 +228,10 @@ function DashboardPage() {
       url += `?${params.toString()}`
       return request(url)
     },
-    enabled: !!(q || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+    enabled: !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
   })
 
-  const hasActiveFilter = !!(q || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  const hasActiveFilter = !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
   const totalCount = allDies ? allDies.length : 0
   const stats = {
@@ -1065,14 +1065,24 @@ function InventoryPage() {
   const [casing, setCasing] = useState(searchParams.get('casing') || '')
   
   // Custom ranges
-  const [sizeMin, setSizeMin] = useState('')
-  const [sizeMax, setSizeMax] = useState('')
-  const [widthMin, setWidthMin] = useState('')
-  const [widthMax, setWidthMax] = useState('')
-  const [thickMin, setThickMin] = useState('')
-  const [thickMax, setThickMax] = useState('')
+  const [sizeMin, setSizeMin] = useState(searchParams.get('size_min') || '')
+  const [sizeMax, setSizeMax] = useState(searchParams.get('size_max') || '')
+  const [widthMin, setWidthMin] = useState(searchParams.get('width_min') || '')
+  const [widthMax, setWidthMax] = useState(searchParams.get('width_max') || '')
+  const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
+  const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
   
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(!!(
+    searchParams.get('die_type') || 
+    searchParams.get('status') || 
+    searchParams.get('casing') || 
+    searchParams.get('size_min') || 
+    searchParams.get('size_max') || 
+    searchParams.get('width_min') || 
+    searchParams.get('width_max') || 
+    searchParams.get('thick_min') || 
+    searchParams.get('thick_max')
+  ))
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   // Fetch list of sets for the dropdown
