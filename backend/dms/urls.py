@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from dies.views import DieViewSet, search_dies, ImportDiesView
-from users.views import LoginView, UserViewSet, KeepAliveView
+from users.views import LoginView, UserViewSet, KeepAliveView, BackupViewSet
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet
 
 router = DefaultRouter()
@@ -11,6 +11,7 @@ router.register('users', UserViewSet, basename='user')
 router.register('categories', MachineCategoryViewSet, basename='category')
 router.register('machines', MachineViewSet, basename='machine')
 router.register('sets', SetViewSet, basename='set')
+router.register('backups', BackupViewSet, basename='backup')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
