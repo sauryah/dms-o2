@@ -27,7 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install -r backend/requirements.txt
-      - run: python backend/manage.py migrate --check  # fail if unapplied
+      - run: python backend/manage.py makemigrations --check --dry-run  # fail if migrations are missing in codebase
+      - run: python backend/manage.py migrate  # verify migrations apply cleanly to a database
       - run: python backend/manage.py test --verbosity=2  # run all tests
 
   deploy:
