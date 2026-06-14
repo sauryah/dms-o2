@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · fix: shift deployment conditional checks to step-level env checks and add Meilisearch container healthcheck in workflow
 ### 2026-06-14 · fix: skip deployment step when server secrets are unconfigured, map ports, and fix migration checks in workflow
 ### 2026-06-14 · feat: support bulk status update via multi-select checkbox table controls
 ### 2026-06-14 · feat: complete UI/UX facelift with status distribution donut chart, dynamic SVG CAD blueprints, connecting tree lines, and custom fonts

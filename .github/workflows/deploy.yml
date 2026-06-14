@@ -15,6 +15,8 @@ jobs:
       meilisearch:
         image: getmeili/meilisearch:v1.7
         ports: ['7700:7700']
+        env: { MEILI_MASTER_KEY: change_me, MEILI_ENV: development }
+        options: --health-cmd "curl -f http://localhost:7700/health" --health-interval 5s --health-retries 10
     env:
       POSTGRES_DB: dms_test
       POSTGRES_USER: dms_user
@@ -34,11 +36,14 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ secrets.SERVER_HOST != '' }}
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
     steps:
       - uses: actions/checkout@v4
+        if: ${{ env.SERVER_HOST != '' }}
       - name: Backup DB before deploy
         uses: appleboy/ssh-action@v1
+        if: ${{ env.SERVER_HOST != '' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           key: ${{ secrets.SERVER_SSH_KEY }}
@@ -47,6 +52,7 @@ jobs:
               > /backups/pre-deploy-$(date +%Y%m%d%H%M).sql
       - name: Pull + migrate + restart
         uses: appleboy/ssh-action@v1
+        if: ${{ env.SERVER_HOST != '' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           key: ${{ secrets.SERVER_SSH_KEY }}
