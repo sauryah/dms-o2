@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: implement drag-and-drop allocations to drag dies into sets or sets onto machines directly in the sidebar tree view
 ### 2026-06-14 · fix: allow dms.local and LAN hostnames in vite.config.js server.allowedHosts
 ### 2026-06-14 · feat: configure HTTP-only routing in Traefik to allow seamless local network access without SSL warning popups
 ### 2026-06-14 · feat: implement live real-time status synchronization using PostgreSQL LISTEN/NOTIFY and Server-Sent Events (SSE)

@@ -938,7 +938,7 @@ const isDieActive = (die) => {
   return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
 }
 
-function DiesTable({ diesList, navigate }) {
+function DiesTable({ diesList, navigate, onDragStartDie, onDragEndDie }) {
   const { role } = useAuth()
   const { request } = useApi()
   const queryClient = useQueryClient()
@@ -1201,7 +1201,21 @@ function DiesTable({ diesList, navigate }) {
               const active = isDieActive(die)
               const isSelected = selectedDieIds.has(die.die_id)
               return (
-                <tr key={die.die_id} className={`hover:bg-slate-850/30 transition-colors duration-200 ${isSelected ? 'bg-blue-600/5' : ''}`}>
+                <tr 
+                  key={die.die_id} 
+                  draggable={canEdit}
+                  onDragStart={(e) => {
+                    if (canEdit) {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'die', id: die.die_id }));
+                      if (onDragStartDie) onDragStartDie(die.die_id);
+                    }
+                  }}
+                  onDragEnd={() => {
+                    if (onDragEndDie) onDragEndDie();
+                  }}
+                  className={`hover:bg-slate-850/30 transition-colors duration-200 ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${isSelected ? 'bg-blue-600/5' : ''}`}
+                >
                   {canEdit && (
                     <td className="py-4 px-6 w-12 text-center">
                       <input 
@@ -1411,6 +1425,81 @@ function InventoryPage() {
       setCreateError(err.message)
     }
   })
+
+  // Drag and Drop State & Handler Hooks
+  const [activeDragType, setActiveDragType] = useState(null) // 'die' or 'set'
+  const [dragOverNode, setDragOverNode] = useState(null) // { type: 'machine'|'set'|'unassigned', id: ... }
+
+  const reallocateDieMutation = useMutation({
+    mutationFn: ({ dieId, setId }) => request(`/api/dies/${dieId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ current_set: setId })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+    }
+  })
+
+  const reallocateSetMutation = useMutation({
+    mutationFn: ({ setId, machineId }) => request(`/api/sets/${setId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ machine: machineId })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+    }
+  })
+
+  const handleDropOnMachine = (e, machineId) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'set') {
+        const { id: setId, currentMachineId } = data
+        if (Number(currentMachineId) === Number(machineId)) return
+        reallocateSetMutation.mutate({ setId, machineId })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleDropOnSet = (e, setId) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'die') {
+        const { id: dieId } = data
+        reallocateDieMutation.mutate({ dieId, setId })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleDropOnUnassigned = (e) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'die') {
+        const { id: dieId } = data
+        reallocateDieMutation.mutate({ dieId, setId: null })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const resetCreateForm = () => {
     setNewDieId('')
@@ -1688,17 +1777,24 @@ function InventoryPage() {
                 filteredMachines.map(machine => {
                   const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
                   const isMachineSelected = selectedNode?.type === 'machine' && selectedNode?.id === machine.id
+                  const isMachineDragOver = dragOverNode?.type === 'machine' && dragOverNode?.id === machine.id
                   
                   return (
                     <div key={machine.id} className="space-y-0.5">
                       {/* Machine Node */}
                       <div 
                         className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
-                          isMachineSelected 
-                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2' 
-                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
+                          isMachineDragOver
+                            ? 'bg-blue-600/30 text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
+                            : isMachineSelected 
+                              ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2' 
+                              : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
                         }`}
                         onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
+                        onDragOver={canCreate ? (e) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
+                        onDragEnter={canCreate ? (e) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
+                        onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                        onDrop={canCreate ? (e) => handleDropOnMachine(e, machine.id) : undefined}
                       >
                         <button
                           onClick={(e) => {
@@ -1727,15 +1823,36 @@ function InventoryPage() {
                           {machine.sets.map(set => {
                             const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
                             const activeCount = set.dies.filter(isDieActive).length
+                            const isSetDragOver = dragOverNode?.type === 'set' && dragOverNode?.id === set.id
                             return (
                               <div key={set.id} className="relative pl-6">
                                 <div className="tree-leaf-line" />
                                 <div
                                   onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
-                                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-1.5 pl-3 pr-3 border-l-4 ${
-                                    isSetSelected
-                                      ? 'bg-indigo-600/10 text-white border-indigo-500'
-                                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                                  draggable={canCreate}
+                                  onDragStart={(e) => {
+                                    if (canCreate) {
+                                      e.dataTransfer.effectAllowed = 'move';
+                                      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'set', id: set.id, currentMachineId: machine.id }));
+                                      setActiveDragType('set');
+                                    }
+                                  }}
+                                  onDragEnd={() => {
+                                    setActiveDragType(null);
+                                    setDragOverNode(null);
+                                  }}
+                                  onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                                  onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
+                                  onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                                  onDrop={canCreate ? (e) => handleDropOnSet(e, set.id) : undefined}
+                                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
+                                    canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                                  } ${
+                                    isSetDragOver
+                                      ? 'bg-indigo-600/30 text-white border-indigo-500 ring-2 ring-indigo-500/20'
+                                      : isSetSelected
+                                        ? 'bg-indigo-600/10 text-white border-indigo-500'
+                                        : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                                   }`}
                                 >
                                   <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
@@ -1757,26 +1874,37 @@ function InventoryPage() {
                 })
               )}
             </div>
-
-            {/* Unassigned / Standalone Dies Node */}
-            {unassignedDies.length > 0 && (
-              <div className="pt-4 border-t border-slate-800/60 mt-4">
-                <div
-                  onClick={() => setSelectedNode({ type: 'unassigned' })}
-                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
-                    selectedNode?.type === 'unassigned'
-                      ? 'bg-amber-600/10 text-white border-amber-500'
-                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
-                  }`}
-                >
-                  <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
-                  <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
-                  <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
-                    {unassignedDies.length}
-                  </span>
-                </div>
-              </div>
-            )}
+ 
+             {/* Unassigned / Standalone Dies Node */}
+             {unassignedDies.length > 0 && (
+               <div className="pt-4 border-t border-slate-800/60 mt-4">
+                 {(() => {
+                   const isUnassignedDragOver = dragOverNode?.type === 'unassigned'
+                   return (
+                     <div
+                       onClick={() => setSelectedNode({ type: 'unassigned' })}
+                       onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                       onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
+                       onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                       onDrop={canCreate ? (e) => handleDropOnUnassigned(e) : undefined}
+                       className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                         isUnassignedDragOver
+                           ? 'bg-amber-600/30 text-white border-amber-500 ring-2 ring-amber-500/20'
+                           : selectedNode?.type === 'unassigned'
+                             ? 'bg-amber-600/10 text-white border-amber-500'
+                             : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                       }`}
+                     >
+                       <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
+                       <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
+                       <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                         {unassignedDies.length}
+                       </span>
+                     </div>
+                   )
+                 })()}
+               </div>
+             )}
           </div>
         </div>
       </div>
@@ -2051,7 +2179,12 @@ function InventoryPage() {
                       {/* Dies Table */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Filtered Catalog</h3>
-                        <DiesTable diesList={dies} navigate={navigate} />
+                        <DiesTable 
+                          diesList={dies} 
+                          navigate={navigate} 
+                          onDragStartDie={(id) => setActiveDragType('die')}
+                          onDragEndDie={() => { setActiveDragType(null); setDragOverNode(null); }}
+                        />
                       </div>
                     </>
                   ) : (
@@ -2235,7 +2368,12 @@ function InventoryPage() {
                       {/* Dies Table */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
-                        <DiesTable diesList={selectedSetData.set.dies} navigate={navigate} />
+                        <DiesTable 
+                          diesList={selectedSetData.set.dies} 
+                          navigate={navigate} 
+                          onDragStartDie={(id) => setActiveDragType('die')}
+                          onDragEndDie={() => { setActiveDragType(null); setDragOverNode(null); }}
+                        />
                       </div>
                     </>
                   ) : (
@@ -2296,7 +2434,12 @@ function InventoryPage() {
                       {/* Dies Table */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
-                        <DiesTable diesList={unassignedDies} navigate={navigate} />
+                        <DiesTable 
+                          diesList={unassignedDies} 
+                          navigate={navigate} 
+                          onDragStartDie={(id) => setActiveDragType('die')}
+                          onDragEndDie={() => { setActiveDragType(null); setDragOverNode(null); }}
+                        />
                       </div>
                     </>
                   ) : (
