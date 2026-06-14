@@ -33,3 +33,4 @@ blob-report/
 
 # Cli
 .agent/
+graphify-out/
