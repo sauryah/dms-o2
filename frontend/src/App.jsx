@@ -29,6 +29,7 @@ import {
   History, 
   SlidersHorizontal,
   ChevronRight,
+  ChevronLeft,
   Plus,
   Trash2,
   FileSpreadsheet,
@@ -1798,7 +1799,18 @@ function InventoryPage() {
               className="p-2 bg-slate-950 border border-slate-800 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-white transition shadow-sm mr-4"
               title="Toggle Sidebar"
             >
-              <Menu className="h-5 w-5" />
+              {/* Mobile View: Hamburger Menu */}
+              <span className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </span>
+              {/* Desktop View: Dynamic Chevrons */}
+              <span className="hidden md:inline">
+                {isSidebarCollapsed ? (
+                  <ChevronRight className="h-5 w-5 text-blue-400" />
+                ) : (
+                  <ChevronLeft className="h-5 w-5" />
+                )}
+              </span>
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">Die Registry Inventory</h1>

@@ -83,7 +83,8 @@ h1, h2, h3, h4, .font-heading {
   top: -12px;
   bottom: 12px;
   width: 1px;
-  border-left: 1px dashed rgba(255, 255, 255, 0.12);
+  border-left: 1px dashed rgba(99, 102, 241, 0.25);
+  transition: border-color 0.2s ease;
 }
 
 .tree-leaf-line {
@@ -92,7 +93,13 @@ h1, h2, h3, h4, .font-heading {
   top: 12px;
   width: 10px;
   height: 1px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  border-top: 1px dashed rgba(99, 102, 241, 0.25);
+  transition: border-color 0.2s ease;
+}
+
+.relative:hover > .tree-branch-line,
+.relative:hover > div > .tree-leaf-line {
+  border-color: rgba(99, 102, 241, 0.45);
 }
 
 /* Glowing Dot for Badges */

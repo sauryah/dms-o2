@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: implement dynamic chevrons for desktop sidebar toggle and style tree connecting lines with indigo color and hover highlights
 ### 2026-06-14 · feat: create unified setup.sh environment bootstrap script and add size/header integrity checks in backup_db.sh
 ### 2026-06-14 · feat: add search input, parent category/machine filters, and scroll wrappers for Categories, Machines, and Tool Sets views
 ### 2026-06-14 · feat: implement backup file local download, dump file upload, and active session eviction before system restores
