@@ -88,9 +88,12 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
 
 5. **Access the Application**:
    Once running, you can access the platform at:
-   - **Frontend App**: [http://localhost](http://localhost)
-   - **Django Admin Interface**: [http://localhost/admin/](http://localhost/admin/)
-   - **Django REST API**: [http://localhost/api/](http://localhost/api/)
+   - **Frontend App**: [https://localhost](https://localhost) (or `https://dms.local` / `https://<lan-ip>`)
+   - **Django Admin Interface**: [https://localhost/admin/](https://localhost/admin/)
+   - **Django REST API**: [https://localhost/api/](https://localhost/api/)
+
+   *Note: HTTP requests are automatically redirected to HTTPS.*
+
 
    **Default Root Credentials**:
    - **Username**: `root`
