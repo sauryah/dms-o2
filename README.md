@@ -94,7 +94,80 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
 
    **Default Root Credentials**:
    - **Username**: `root`
-   - **Password**: `root_pass_1234567890` (as defined in the default environment configuration)
+   - **Password**: `root123` (as defined in the default environment configuration)
+
+---
+
+## Docker Container Management
+
+Here are the essential commands for managing your Docker containers in development or production.
+
+### 1. Starting the Application
+If you are starting the application for the first time or after making changes to dependencies (like `package.json` or `requirements.txt`):
+```bash
+docker compose up -d --build
+```
+*If no configurations or dependencies changed, you can start it without the `--build` flag:*
+```bash
+docker compose up -d
+```
+
+### 2. Stopping the Application (Temporarily)
+To stop the running containers without removing them or affecting any data:
+```bash
+docker compose stop
+```
+*To start them back up after stopping:*
+```bash
+docker compose start
+```
+
+### 3. Shutting Down and Re-initializing (Clean Shutdown)
+To fully stop and remove the containers and the local virtual network (useful if you face network/port binding issues):
+```bash
+docker compose down
+```
+To bring everything back up after a shutdown:
+```bash
+docker compose up -d
+```
+
+> [!IMPORTANT]
+> **Data Persistence Warning:** 
+> Running `docker compose down` preserves all your database records and search indexes because they are saved in persistent volumes.
+> **DO NOT** run `docker compose down -v` unless you explicitly want to delete all database and search index data.
+
+### 4. Viewing Application Logs
+To view combined logs from all running containers in real-time:
+```bash
+docker compose logs -f
+```
+To view logs of a specific service (e.g., just Django or Traefik):
+```bash
+docker compose logs -f django
+docker compose logs -f traefik
+```
+
+### 5. Running Database Commands / Shell
+To enter the PostgreSQL database interactive console:
+```bash
+docker compose exec db psql -U dms_user -d dms
+```
+To run Django management commands (e.g. creating users, running migrations):
+```bash
+docker compose exec django python manage.py <command>
+```
+
+### 6. Initializing and Creating Users
+If the database is fresh and there are no users:
+1. **Initialize the Root User**:
+   ```bash
+   docker compose exec django python manage.py create_root_user
+   ```
+   *This initializes the superuser with the credentials defined in your `.env` file (by default: username `root` and password `root_pass_1234567890`).*
+
+2. **Add Other Users**:
+   Log in as the `root` user on the web app or at `http://localhost/admin/`, and use the User Administration panel to add new Admin or Regular users.
 
 ---
 
