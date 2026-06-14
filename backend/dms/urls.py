@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from dies.views import DieViewSet, search_dies, ImportDiesView
-from users.views import LoginView, UserViewSet, KeepAliveView, BackupViewSet
+from users.views import LoginView, UserViewSet, KeepAliveView, BackupViewSet, EventStreamView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet
 
 router = DefaultRouter()
@@ -19,6 +19,8 @@ urlpatterns = [
     path('api/auth/keep-alive/', KeepAliveView.as_view(), name='keep-alive'),
     path('api/import/', ImportDiesView.as_view(), name='import-dies'),
     path('api/search/', search_dies, name='search-dies'),
+    path('api/events/', EventStreamView.as_view(), name='events'),
     path('api/', include(router.urls)),
 ]
+
 

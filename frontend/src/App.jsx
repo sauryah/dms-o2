@@ -4635,6 +4635,36 @@ function SessionTimeoutManager() {
 
 // Main App Container
 function AppContent() {
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!token) return
+
+    // Establish EventSource connection
+    const eventSource = new EventSource(`/api/events/?token=${encodeURIComponent(token)}`)
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        console.log('Real-time sync event received:', payload)
+        
+        // Invalidate all active queries to fetch fresh data from the server in the background
+        queryClient.invalidateQueries()
+      } catch (e) {
+        console.error('Failed to parse event data:', e)
+      }
+    }
+
+    eventSource.onerror = (err) => {
+      console.error('EventSource connection error:', err)
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [token, queryClient])
+
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
       <Navbar />

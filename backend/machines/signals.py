@@ -1,20 +1,23 @@
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, post_delete
 from django.dispatch import receiver
 from machines.models import Set, Machine
 from dies.models import Die
 from search.meili import sync_die
+from dms.events import broadcast_event
 
 @receiver(post_save, sender=Set)
 def sync_set_dies(sender, instance, **kwargs):
     # Resync all dies that belong to this set
     for die in Die.objects.filter(current_set=instance):
         sync_die(die)
+    broadcast_event('set_update', {'id': instance.id, 'action': 'save'})
 
 @receiver(post_save, sender=Machine)
 def sync_machine_dies(sender, instance, **kwargs):
     # Resync all dies in sets belonging to this machine
     for die in Die.objects.filter(current_set__machine=instance):
         sync_die(die)
+    broadcast_event('machine_update', {'id': instance.id, 'action': 'save'})
 
 @receiver(pre_delete, sender=Set)
 def handle_set_deletion(sender, instance, **kwargs):
@@ -23,3 +26,12 @@ def handle_set_deletion(sender, instance, **kwargs):
     for die in Die.objects.filter(current_set=instance):
         die.current_set = None
         die.save()
+
+@receiver(post_delete, sender=Set)
+def delete_set_post_delete(sender, instance, **kwargs):
+    broadcast_event('set_update', {'id': instance.id, 'action': 'delete'})
+
+@receiver(post_delete, sender=Machine)
+def delete_machine_post_delete(sender, instance, **kwargs):
+    broadcast_event('machine_update', {'id': instance.id, 'action': 'delete'})
+

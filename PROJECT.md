@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: implement live real-time status synchronization using PostgreSQL LISTEN/NOTIFY and Server-Sent Events (SSE)
 ### 2026-06-14 · feat: implement local HTTPS encryption using mkcert and Traefik on port 443 with automated HTTP-to-HTTPS redirect
 ### 2026-06-14 · feat: implement dynamic chevrons for desktop sidebar toggle and style tree connecting lines with indigo color and hover highlights
 ### 2026-06-14 · feat: create unified setup.sh environment bootstrap script and add size/header integrity checks in backup_db.sh

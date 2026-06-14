@@ -9,6 +9,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User, UserSession
 from users.serializers import UserSerializer, LoginSerializer
 from users.permissions import IsRootOnly
+from dms.events import broadcast_event
+from django.http import StreamingHttpResponse
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -153,6 +155,7 @@ class BackupViewSet(viewsets.ViewSet):
             except Exception:
                 pass
 
+            broadcast_event('backup_update', {'action': 'backup', 'filename': filename})
             return Response({
                 'status': 'success',
                 'filename': filename,
@@ -217,6 +220,7 @@ class BackupViewSet(viewsets.ViewSet):
 
             subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
             call_command('sync_search')
+            broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except subprocess.CalledProcessError as e:
             return Response({'error': f"pg_restore failed: {e.stderr or e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -242,6 +246,7 @@ class BackupViewSet(viewsets.ViewSet):
 
         try:
             os.remove(filepath)
+            broadcast_event('backup_update', {'action': 'delete', 'filename': filename})
             return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -293,6 +298,7 @@ class BackupViewSet(viewsets.ViewSet):
                 for chunk in file_obj.chunks():
                     destination.write(chunk)
             
+            broadcast_event('backup_update', {'action': 'upload', 'filename': filename})
             return Response({
                 'status': 'uploaded',
                 'filename': filename,
@@ -300,3 +306,65 @@ class BackupViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class EventStreamView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        token = request.query_params.get('token')
+        if not token:
+            return Response({'error': 'Authentication token is required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Authenticate token using simple JWT
+        from rest_framework_simplejwt.tokens import AccessToken
+        from django.contrib.auth import get_user_model
+        try:
+            validated_token = AccessToken(token)
+            user_id = validated_token['user_id']
+            User = get_user_model()
+            user = User.objects.get(id=user_id)
+        except Exception:
+            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        def event_generator():
+            import select
+            import psycopg2
+            from django.db import connection
+            
+            connection.ensure_connection()
+            conn = connection.connection
+            
+            orig_isolation = conn.isolation_level
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            
+            cursor = conn.cursor()
+            cursor.execute("LISTEN dms_events;")
+            
+            try:
+                yield "event: connected\ndata: {}\n\n"
+                
+                while True:
+                    if select.select([conn], [], [], 15) == ([], [], []):
+                        yield ": keepalive\n\n"
+                    else:
+                        conn.poll()
+                        while conn.notifies:
+                            notify = conn.notifies.pop(0)
+                            yield f"data: {notify.payload}\n\n"
+            except GeneratorExit:
+                pass
+            finally:
+                try:
+                    cursor.execute("UNLISTEN dms_events;")
+                    cursor.close()
+                except Exception:
+                    pass
+                try:
+                    conn.set_isolation_level(orig_isolation)
+                except Exception:
+                    pass
+                    
+        response = StreamingHttpResponse(event_generator(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'
+        return response

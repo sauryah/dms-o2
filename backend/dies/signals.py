@@ -4,6 +4,7 @@ from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 from users.middleware import get_current_user
 from search.meili import sync_die, delete_die_document
+from dms.events import broadcast_event
 
 # Watch these fields on Die
 DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks']
@@ -19,7 +20,7 @@ def log_die_changes(sender, instance, **kwargs):
     
     user = get_current_user()
     changed_by = user if (user and user.is_authenticated) else None
-
+ 
     for field in DIE_WATCH_FIELDS:
         old_val = getattr(old, field)
         new_val = getattr(instance, field)
@@ -80,15 +81,20 @@ def log_flat_changes(sender, instance, **kwargs):
 @receiver(post_save, sender=Die)
 def sync_die_post_save(sender, instance, **kwargs):
     sync_die(instance)
+    broadcast_event('die_update', {'id': instance.die_id, 'action': 'save'})
 
 @receiver(post_save, sender=RoundDie)
 def sync_round_die_post_save(sender, instance, **kwargs):
     sync_die(instance.die)
+    broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'})
 
 @receiver(post_save, sender=FlatDie)
 def sync_flat_die_post_save(sender, instance, **kwargs):
     sync_die(instance.die)
+    broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'})
 
 @receiver(post_delete, sender=Die)
 def delete_die_post_delete(sender, instance, **kwargs):
     delete_die_document(instance.die_id)
+    broadcast_event('die_update', {'id': instance.die_id, 'action': 'delete'})
+
