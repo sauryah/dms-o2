@@ -325,7 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
-### 2026-06-14 · fix: correct database migrate command and map container service ports in GitHub Actions workflow
+### 2026-06-14 · fix: skip deployment step when server secrets are unconfigured, map ports, and fix migration checks in workflow
 ### 2026-06-14 · feat: support bulk status update via multi-select checkbox table controls
 ### 2026-06-14 · feat: complete UI/UX facelift with status distribution donut chart, dynamic SVG CAD blueprints, connecting tree lines, and custom fonts
 ### 2026-06-14 · fix: resolve flat die radius serialization in backend list serializer and render in frontend tables/cards

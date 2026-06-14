@@ -34,6 +34,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    if: ${{ secrets.SERVER_HOST != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Backup DB before deploy
