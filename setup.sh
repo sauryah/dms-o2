@@ -23,6 +23,21 @@ else
     echo ">>> Environment file .env already exists."
 fi
 
+# 2.8. Check for active firewalls and open port 80/HTTP if needed
+if systemctl is-active firewalld &>/dev/null; then
+    echo ">>> Detected active firewalld. Ensuring HTTP port 80 is open..."
+    if ! firewall-cmd --list-services | grep -q "http"; then
+        echo ">>> Opening port 80/HTTP in firewalld..."
+        sudo firewall-cmd --add-service=http --permanent
+        sudo firewall-cmd --reload
+    else
+        echo ">>> HTTP service is already allowed in firewalld."
+    fi
+elif command -v ufw &>/dev/null && sudo ufw status | grep -q "Status: active" &>/dev/null; then
+    echo ">>> Detected active UFW firewall. Ensuring HTTP port 80 is open..."
+    sudo ufw allow http
+fi
+
 # 3. Spin up Docker containers
 echo ">>> Bootstrapping containers with Docker Compose..."
 docker compose up -d --build
@@ -54,9 +69,20 @@ docker compose exec django python manage.py create_root_user
 echo ">>> Rebuilding Meilisearch index cache..."
 docker compose exec django python manage.py sync_search
 
+CUR_HOSTNAME=$(hostname)
 echo "======================================================"
 echo ">>> Setup Completed Successfully!"
 echo ">>> You can now access the DMS application at:"
 echo "    - Web App URL: http://localhost"
 echo "    - Django Admin: http://localhost/admin/"
+if [ "$CUR_HOSTNAME" != "dms" ]; then
+    echo ""
+    echo ">>> LAN ACCESS SETUP NOTE:"
+    echo "    Your current system hostname is '$CUR_HOSTNAME'."
+    echo "    To access the app from other computers on your LAN using http://dms.local:"
+    echo "    1. Run: sudo hostnamectl set-hostname dms"
+    echo "    2. Run: sudo systemctl restart avahi-daemon"
+else
+    echo "    - LAN mDNS URL: http://dms.local"
+fi
 echo "======================================================"
