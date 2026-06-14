@@ -874,6 +874,7 @@ function DiesTable({ diesList, navigate }) {
 
   const [selectedDieIds, setSelectedDieIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkLocation, setBulkLocation] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
 
   // Clear selection if the list of dies changes
@@ -975,6 +976,31 @@ function DiesTable({ diesList, navigate }) {
     }
   }
 
+  const handleBulkLocationUpdate = async () => {
+    if (!bulkLocation.trim()) return
+    setIsUpdating(true)
+    try {
+      // Sequentially patch location of all selected dies
+      for (const dieId of selectedDieIds) {
+        await request(`/api/dies/${dieId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({ location: bulkLocation.trim() })
+        })
+      }
+      setSelectedDieIds(new Set())
+      setBulkLocation('')
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
+      alert(`Successfully updated location of ${selectedDieIds.size} dies to "${bulkLocation}".`)
+    } catch (err) {
+      console.error(err)
+      alert(`Error updating locations: ${err.message}`)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
       {/* Floating Bulk Action Bar */}
@@ -987,36 +1013,66 @@ function DiesTable({ diesList, navigate }) {
             </span>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set status:</span>
-            <select
-              value={bulkStatus}
-              disabled={isUpdating}
-              onChange={(e) => setBulkStatus(e.target.value)}
-              className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
-            >
-              <option value="">— Select Status —</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="RUNNING">Running</option>
-              <option value="CLEANING">Cleaning</option>
-              <option value="POLISHING">Polishing</option>
-              <option value="DAMAGED">Damaged</option>
-              <option value="SCRAPPED">Scrapped</option>
-              <option value="MISSING">Missing</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-6">
+            {/* Status Update Group */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set status:</span>
+              <select
+                value={bulkStatus}
+                disabled={isUpdating}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
+              >
+                <option value="">— Select Status —</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="RUNNING">Running</option>
+                <option value="CLEANING">Cleaning</option>
+                <option value="POLISHING">Polishing</option>
+                <option value="DAMAGED">Damaged</option>
+                <option value="SCRAPPED">Scrapped</option>
+                <option value="MISSING">Missing</option>
+              </select>
+
+              <button
+                onClick={handleBulkStatusUpdate}
+                disabled={!bulkStatus || isUpdating}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdating ? 'Updating...' : 'Apply Status'}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-[1px] h-6 bg-slate-800" />
+
+            {/* Location Update Group */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set Location:</span>
+              <input
+                type="text"
+                value={bulkLocation}
+                disabled={isUpdating}
+                onChange={(e) => setBulkLocation(e.target.value)}
+                placeholder="e.g. Rack A - Shelf 3"
+                className="bg-slate-905 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none w-44"
+              />
+
+              <button
+                onClick={handleBulkLocationUpdate}
+                disabled={!bulkLocation.trim() || isUpdating}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdating ? 'Updating...' : 'Apply Location'}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-[1px] h-6 bg-slate-800" />
 
             <button
-              onClick={handleBulkStatusUpdate}
-              disabled={!bulkStatus || isUpdating}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUpdating ? 'Updating...' : 'Apply Status'}
-            </button>
-
-            <button
-              onClick={() => setSelectedDieIds(new Set())}
+              onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
               disabled={isUpdating}
-              className="text-xs text-slate-450 hover:text-white px-3 py-2 rounded-xl border border-slate-800 hover:border-slate-750 transition"
+              className="text-xs text-slate-400 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-slate-700 transition"
             >
               Cancel
             </button>
