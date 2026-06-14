@@ -63,28 +63,42 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
 
 ## Installation
 
-1. **Clone the Repository**:
+We provide automated setup scripts to copy environment templates, bootstrap the Docker container stack, run database migrations, seed the default root account, and index Meilisearch in a single step.
+
+### Linux & macOS
+1. Open your terminal, navigate to the cloned folder, and run:
    ```bash
-   git clone <repo-url> dms
-   cd dms
+   chmod +x setup.sh
+   ./setup.sh
    ```
 
-2. **Configure Environment File**:
+### Windows (PowerShell)
+1. Open PowerShell, navigate to the cloned folder, and run:
+   ```powershell
+   ./setup.ps1
+   ```
+   *(If prompted with execution policy errors, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
+
+---
+
+### Manual Installation (Alternative)
+If you prefer to run the steps manually:
+1. **Configure Environment File**:
    ```bash
    cp .env.example .env
    # Edit .env with your credentials and configuration
    ```
-
-3. **Build and Run Containers**:
+2. **Build and Run Containers**:
    ```bash
    docker compose up -d --build
    ```
-   *Note: This will build and run all database, search, backend API, and frontend Web App containers.*
-
-4. **Initialize Root Account**:
+3. **Initialize Root Account & Sync Search**:
    ```bash
+   docker compose exec django python manage.py migrate
    docker compose exec django python manage.py create_root_user
+   docker compose exec django python manage.py sync_search
    ```
+
 
 5. **Access the Application**:
    Once running, you can access the platform at:
