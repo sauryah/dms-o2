@@ -46,6 +46,20 @@ import {
 // React Query Client
 const queryClient = new QueryClient()
 
+// Debounce hook for input text
+function useDebounce(value, delay = 300) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+  return debouncedValue
+}
+
 // In-Memory Auth Context
 const AuthContext = createContext(null)
 
@@ -186,6 +200,7 @@ function DashboardPage() {
   const { request } = useApi()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
+  const debouncedQ = useDebounce(q, 300)
   const [dieType, setDieType] = useState('')
   const [statusVal, setStatusVal] = useState('')
   const [casing, setCasing] = useState('')
@@ -207,13 +222,13 @@ function DashboardPage() {
 
   // Fetch fuzzy search results if search query or filters exist
   const { data: searchDies, isLoading: isSearchLoading } = useQuery({
-    queryKey: ['searchDiesDashboard', q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
+    queryKey: ['searchDiesDashboard', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
     queryFn: () => {
-      if (!q && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
+      if (!debouncedQ && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
       
       let url = '/api/search/'
       const params = new URLSearchParams()
-      if (q) params.append('q', q)
+      if (debouncedQ) params.append('q', debouncedQ)
       if (dieType) params.append('die_type', dieType)
       if (statusVal) params.append('status', statusVal)
       if (casing) params.append('casing', casing)
@@ -228,7 +243,7 @@ function DashboardPage() {
       url += `?${params.toString()}`
       return request(url)
     },
-    enabled: !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+    enabled: !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
   })
 
   const hasActiveFilter = !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
@@ -1060,6 +1075,7 @@ function InventoryPage() {
   
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
+  const debouncedQ = useDebounce(q, 300)
   const [dieType, setDieType] = useState(searchParams.get('die_type') || '')
   const [statusVal, setStatusVal] = useState(searchParams.get('status') || '')
   const [casing, setCasing] = useState(searchParams.get('casing') || '')
@@ -1134,12 +1150,12 @@ function InventoryPage() {
 
   // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
-    queryKey: ['dies', q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
+    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
     queryFn: () => {
-      let url = q ? '/api/search/' : '/api/dies/'
+      let url = debouncedQ ? '/api/search/' : '/api/dies/'
       const params = new URLSearchParams()
       
-      if (q) params.append('q', q)
+      if (debouncedQ) params.append('q', debouncedQ)
       if (dieType) params.append('die_type', dieType)
       if (statusVal) params.append('status', statusVal)
       if (casing) params.append('casing', casing)

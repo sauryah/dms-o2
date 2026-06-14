@@ -2,13 +2,13 @@ import time
 from django.test import TestCase
 from django.urls import reverse
 from dies.models import Die, RoundDie
-from search.meili import client as meili_client
+from search.meili import client as meili_client, INDEX_NAME
 from decimal import Decimal
 
 class MeilisearchTests(TestCase):
     def setUp(self):
         try:
-            meili_client.index('dies').delete_all_documents()
+            meili_client.index(INDEX_NAME).delete_all_documents()
         except Exception:
             pass
         time.sleep(0.5)
@@ -29,7 +29,7 @@ class MeilisearchTests(TestCase):
         
         time.sleep(1.0)
         
-        index = meili_client.index('dies')
+        index = meili_client.index(INDEX_NAME)
         doc = index.get_document("ROUND-MEILI")
         self.assertEqual(doc.id, "ROUND-MEILI")
         self.assertEqual(doc.status, "AVAILABLE")

@@ -8,7 +8,7 @@ from dies.models import Die, RoundDie, FlatDie
 import importlib
 import_module_dies = importlib.import_module("dies.import")
 import_dies = import_module_dies.import_dies
-from search.meili import client as meili_client
+from search.meili import client as meili_client, INDEX_NAME
 
 User = get_user_model()
 
@@ -20,7 +20,7 @@ class BulkImportTests(TestCase):
             role='ADMIN'
         )
         try:
-            meili_client.index('dies').delete_all_documents()
+            meili_client.index(INDEX_NAME).delete_all_documents()
         except Exception:
             pass
         time.sleep(0.5)
@@ -57,7 +57,7 @@ R-IMP-5,ROUND,25x10,DAMAGED,Rack C,remark5,4.5,4.5
             
             # Wait for Meilisearch sync and check
             time.sleep(1.0)
-            index = meili_client.index('dies')
+            index = meili_client.index(INDEX_NAME)
             doc = index.get_document("R-IMP-1")
             self.assertEqual(doc.id, "R-IMP-1")
             self.assertEqual(doc.status, "AVAILABLE")
@@ -160,7 +160,7 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
             
             # Wait for Meilisearch sync and check
             time.sleep(1.0)
-            index = meili_client.index('dies')
+            index = meili_client.index(INDEX_NAME)
             doc = index.get_document("F-IMP-1")
             self.assertEqual(doc.id, "F-IMP-1")
             self.assertEqual(getattr(doc, 'width', None), "5.500")

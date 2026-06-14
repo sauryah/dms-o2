@@ -61,6 +61,9 @@ done
 echo ">>> Creating/Updating ROOT superuser in Django..."
 docker compose -f docker-compose.prod.yml exec django python manage.py create_root_user
 
+echo ">>> Rebuilding and synchronizing Meilisearch index..."
+docker compose -f docker-compose.prod.yml exec django python manage.py sync_search
+
 # 6. Cleanup unused docker images to free up space
 echo ">>> Cleaning up old, unused Docker images..."
 docker image prune -f

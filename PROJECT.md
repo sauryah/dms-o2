@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-14 · feat: implement search optimizations (query debouncing, test environment index isolation, backend direct db query fallback, and auto-sync on deploy)
 ### 2026-06-14 · fix: create sync_search management command to sync database with Meilisearch and fix frontend search filter parameter initialization from URL query parameters
 ### 2026-06-14 · fix: shift deployment conditional checks to step-level env checks and add Meilisearch container healthcheck in workflow
 ### 2026-06-14 · fix: skip deployment step when server secrets are unconfigured, map ports, and fix migration checks in workflow

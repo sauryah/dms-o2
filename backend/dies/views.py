@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from dies.models import Die
 from dies.serializers import DieListSerializer, DieDetailSerializer, DieCreateSerializer
 from users.permissions import IsAdminOrRoot
-from search.meili import client as meili_client
+from search.meili import client as meili_client, INDEX_NAME
 
 class DieViewSet(viewsets.ModelViewSet):
     queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine')
@@ -127,7 +127,7 @@ def search_dies(request):
         search_params['filter'] = " AND ".join(filters)
         
     try:
-        index = meili_client.index('dies')
+        index = meili_client.index(INDEX_NAME)
         results = index.search(q, search_params)
         hit_ids = [hit['id'] for hit in results['hits']]
         
@@ -154,7 +154,39 @@ def search_dies(request):
         serializer = DieListSerializer(ordered_dies, many=True)
         return Response(serializer.data)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Meilisearch query failed: {e}. Falling back to database direct search.")
+        try:
+            dies = Die.objects.all().select_related('rounddie', 'flatdie', 'current_set__machine')
+            if q:
+                dies = dies.filter(die_id__icontains=q)
+            if die_type:
+                dies = dies.filter(die_type=die_type)
+            if status_val:
+                dies = dies.filter(status=status_val)
+            if location:
+                dies = dies.filter(location__icontains=location)
+            if casing:
+                dies = dies.filter(casing=casing)
+                
+            if size_min:
+                dies = dies.filter(rounddie__current_size__gte=size_min)
+            if size_max:
+                dies = dies.filter(rounddie__current_size__lte=size_max)
+                
+            if width_min:
+                dies = dies.filter(flatdie__current_width__gte=width_min)
+            if width_max:
+                dies = dies.filter(flatdie__current_width__lte=width_max)
+                
+            if thick_min:
+                dies = dies.filter(flatdie__current_thickness__gte=thick_min)
+            if thick_max:
+                dies = dies.filter(flatdie__current_thickness__lte=thick_max)
+                
+            serializer = DieListSerializer(dies[:1000], many=True)
+            return Response(serializer.data)
+        except Exception as db_err:
+            return Response({"error": f"Database search fallback failed: {str(db_err)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 import tempfile
 import os

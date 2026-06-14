@@ -1,18 +1,23 @@
+import sys
 import meilisearch
 from django.conf import settings
 
 # Initialize client
 client = meilisearch.Client(settings.MEILI_HOST, settings.MEILI_MASTER_KEY)
 
+# Determine the index name dynamically (use dies_test for tests)
+IS_TESTING = 'test' in sys.argv
+INDEX_NAME = 'dies_test' if IS_TESTING else 'dies'
+
 def init_meilisearch():
     try:
         # Create index if it does not exist
-        client.create_index('dies', {'primaryKey': 'id'})
+        client.create_index(INDEX_NAME, {'primaryKey': 'id'})
     except Exception:
         pass
     
     try:
-        index = client.index('dies')
+        index = client.index(INDEX_NAME)
         index.update_settings({
             'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
             'filterableAttributes': ['die_type', 'status', 'casing', 'location'],
@@ -42,12 +47,12 @@ def sync_die(die):
         doc['thickness'] = f"{die.flatdie.current_thickness:.3f}"
         
     try:
-        client.index('dies').add_documents([doc])
+        client.index(INDEX_NAME).add_documents([doc])
     except Exception as e:
         print(f"Failed to sync die {die.die_id} to Meilisearch: {e}")
 
 def delete_die_document(die_id):
     try:
-        client.index('dies').delete_document(die_id)
+        client.index(INDEX_NAME).delete_document(die_id)
     except Exception as e:
         print(f"Failed to delete die {die_id} from Meilisearch: {e}")
