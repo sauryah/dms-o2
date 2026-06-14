@@ -3536,9 +3536,9 @@ function UsersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   
-  // Form fields
   const [usernameInput, setUsernameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('')
   const [emailInput, setEmailInput] = useState('')
   const [firstNameInput, setFirstNameInput] = useState('')
   const [lastNameInput, setLastNameInput] = useState('')
@@ -3609,6 +3609,7 @@ function UsersPage() {
     setEditingUser(null)
     setUsernameInput('')
     setPasswordInput('')
+    setCurrentPasswordInput('')
     setEmailInput('')
     setFirstNameInput('')
     setLastNameInput('')
@@ -3622,6 +3623,7 @@ function UsersPage() {
     setEditingUser(user)
     setUsernameInput(user.username)
     setPasswordInput('')
+    setCurrentPasswordInput('')
     setEmailInput(user.email || '')
     setFirstNameInput(user.first_name || '')
     setLastNameInput(user.last_name || '')
@@ -3634,6 +3636,7 @@ function UsersPage() {
   const closeForm = () => {
     setIsFormOpen(false)
     setEditingUser(null)
+    setCurrentPasswordInput('')
   }
 
   const handleSubmit = (e) => {
@@ -3652,6 +3655,9 @@ function UsersPage() {
     if (editingUser) {
       if (passwordInput.trim()) {
         payload.password = passwordInput
+      }
+      if (editingUser.username === currentUsername && (passwordInput.trim() || emailInput !== editingUser.email)) {
+        payload.current_password = currentPasswordInput
       }
       updateUserMutation.mutate({ id: editingUser.id, data: payload })
     } else {
@@ -3862,6 +3868,22 @@ function UsersPage() {
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
                 />
               </div>
+
+              {editingUser && editingUser.username === currentUsername && (passwordInput.trim() || emailInput !== editingUser.email) && (
+                <div>
+                  <label className="block text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2">
+                    Current Password <span className="text-slate-500 font-normal capitalize">(required to save changes)</span>
+                  </label>
+                  <input 
+                    type="password" 
+                    required
+                    value={currentPasswordInput}
+                    onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-rose-800/40 focus:border-rose-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none placeholder-rose-900/30"
+                    placeholder="Enter current password to verify"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email</label>

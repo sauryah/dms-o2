@@ -2,12 +2,29 @@ from rest_framework import serializers
 from users.models import User
 
 class UserSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'email', 'first_name', 'last_name', 'is_active', 'password']
+        fields = ['id', 'username', 'role', 'email', 'first_name', 'last_name', 'is_active', 'password', 'current_password']
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
         }
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if request and self.instance and request.user == self.instance:
+            new_password = attrs.get('password')
+            new_email = attrs.get('email')
+            
+            # Require current_password when updating sensitive details (password or email)
+            if new_password or (new_email and new_email != self.instance.email):
+                current_password = attrs.get('current_password')
+                if not current_password:
+                    raise serializers.ValidationError({"current_password": "Current password is required to change password or email."})
+                if not self.instance.check_password(current_password):
+                    raise serializers.ValidationError({"current_password": "Incorrect current password."})
+        return attrs
 
     def validate_role(self, value):
         if value == 'ROOT':
@@ -18,7 +35,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        # Ensure only Root or Admin can create admins, but view-level permissions handle this
         user = User.objects.create(**validated_data)
         if password:
             user.set_password(password)
@@ -26,6 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
+        validated_data.pop('current_password', None)
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
