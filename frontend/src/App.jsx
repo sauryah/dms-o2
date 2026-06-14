@@ -318,7 +318,7 @@ function DashboardPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-center">
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold text-white">Find a Die</h2>
-              <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly.</p>
+              <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly. Use double quotes (e.g. "2.500") for exact matches.</p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -326,7 +326,7 @@ function DashboardPage() {
                 <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder="Search by Die ID, casing, location..."
+                  placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
@@ -1597,7 +1597,7 @@ function InventoryPage() {
                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder="Search by Die ID, casing, location, or machine..."
+                  placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-350"
