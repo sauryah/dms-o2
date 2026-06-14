@@ -192,3 +192,43 @@ class AuthTests(APITestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username='admin_new').exists())
+
+    def test_create_and_update_user_name_fields(self):
+        # Authenticate as root
+        res = self.client.post(self.login_url, {
+            'username': 'root_test',
+            'password': 'root_password_123'
+        })
+        token = res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        # Create user with first_name and last_name
+        response = self.client.post(self.users_list_url, {
+            'username': 'john_doe',
+            'password': 'password123',
+            'role': 'ADMIN',
+            'email': 'john@dms.local',
+            'first_name': 'John',
+            'last_name': 'Doe'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['first_name'], 'John')
+        self.assertEqual(response.data['last_name'], 'Doe')
+
+        user = User.objects.get(username='john_doe')
+        self.assertEqual(user.first_name, 'John')
+        self.assertEqual(user.last_name, 'Doe')
+
+        # Update user's first_name and last_name
+        response = self.client.patch(reverse('user-detail', kwargs={'pk': user.id}), {
+            'first_name': 'Johnny',
+            'last_name': 'Smith'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['first_name'], 'Johnny')
+        self.assertEqual(response.data['last_name'], 'Smith')
+
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, 'Johnny')
+        self.assertEqual(user.last_name, 'Smith')
+

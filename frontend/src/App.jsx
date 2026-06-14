@@ -3323,6 +3323,8 @@ function UsersPage() {
   const [usernameInput, setUsernameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
   const [emailInput, setEmailInput] = useState('')
+  const [firstNameInput, setFirstNameInput] = useState('')
+  const [lastNameInput, setLastNameInput] = useState('')
   const [roleInput, setRoleInput] = useState('REGULAR')
   const [isActiveInput, setIsActiveInput] = useState(true)
   
@@ -3391,6 +3393,8 @@ function UsersPage() {
     setUsernameInput('')
     setPasswordInput('')
     setEmailInput('')
+    setFirstNameInput('')
+    setLastNameInput('')
     setRoleInput('REGULAR')
     setIsActiveInput(true)
     setFormError(null)
@@ -3402,6 +3406,8 @@ function UsersPage() {
     setUsernameInput(user.username)
     setPasswordInput('')
     setEmailInput(user.email || '')
+    setFirstNameInput(user.first_name || '')
+    setLastNameInput(user.last_name || '')
     setRoleInput(user.role)
     setIsActiveInput(user.is_active)
     setFormError(null)
@@ -3420,6 +3426,8 @@ function UsersPage() {
     const payload = {
       username: usernameInput,
       email: emailInput,
+      first_name: firstNameInput,
+      last_name: lastNameInput,
       role: roleInput,
       is_active: isActiveInput
     }
@@ -3492,6 +3500,8 @@ function UsersPage() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                   <th className="py-4.5 px-6">Username</th>
+                  <th className="py-4.5 px-6">First Name</th>
+                  <th className="py-4.5 px-6">Last Name</th>
                   <th className="py-4.5 px-6">Email</th>
                   <th className="py-4.5 px-6">Role</th>
                   <th className="py-4.5 px-6">Status</th>
@@ -3511,6 +3521,8 @@ function UsersPage() {
                           </span>
                         )}
                       </td>
+                      <td className="py-4 px-6 text-slate-300">{user.first_name || '—'}</td>
+                      <td className="py-4 px-6 text-slate-300">{user.last_name || '—'}</td>
                       <td className="py-4 px-6 text-slate-300">{user.email || '—'}</td>
                       <td className="py-4 px-6">
                         <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
@@ -3598,6 +3610,27 @@ function UsersPage() {
                   onChange={(e) => setUsernameInput(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-950 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">First Name</label>
+                  <input 
+                    type="text" 
+                    value={firstNameInput}
+                    onChange={(e) => setFirstNameInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Last Name</label>
+                  <input 
+                    type="text" 
+                    value={lastNameInput}
+                    onChange={(e) => setLastNameInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div>
