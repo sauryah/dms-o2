@@ -34,7 +34,3 @@ blob-report/
 # Cli
 .agent/
 graphify-out/
-
-# SSL certificates and binary
-mkcert
-certs/

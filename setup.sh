@@ -23,38 +23,6 @@ else
     echo ">>> Environment file .env already exists."
 fi
 
-# 2.5 Check and generate local SSL certificates for HTTPS
-if [ ! -f certs/dms.local.pem ] || [ ! -f certs/dms.local-key.pem ]; then
-    echo ">>> Local SSL certificates not found. Automating certificate generation..."
-    mkdir -p certs
-    
-    # Check if mkcert is available on system
-    MKCERT_BIN="mkcert"
-    if ! command -v mkcert &> /dev/null; then
-        if [ ! -f ./mkcert ]; then
-            echo ">>> mkcert not found on system. Downloading precompiled binary..."
-            ARCH=$(uname -m)
-            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-            if [ "$ARCH" = "x86_64" ] && [ "$OS" = "linux" ]; then
-                curl -L -o ./mkcert https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64
-                chmod +x ./mkcert
-                MKCERT_BIN="./mkcert"
-            else
-                echo "WARNING: Unsupported OS/Architecture for automated download."
-                echo "Please install mkcert manually (https://github.com/FiloSottile/mkcert) and generate certs in ./certs/"
-                exit 1
-            fi
-        else
-            MKCERT_BIN="./mkcert"
-        fi
-    fi
-    
-    # Generate the local certs
-    $MKCERT_BIN -cert-file certs/dms.local.pem -key-file certs/dms.local-key.pem dms.local "*.dms.local" localhost 127.0.0.1
-    echo ">>> Generated SSL certificates in ./certs/"
-    echo ">>> NOTE: To trust this certificate in your browser, run: $MKCERT_BIN -install"
-fi
-
 # 3. Spin up Docker containers
 echo ">>> Bootstrapping containers with Docker Compose..."
 docker compose up -d --build

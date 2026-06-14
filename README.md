@@ -88,11 +88,10 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS=12
 
 5. **Access the Application**:
    Once running, you can access the platform at:
-   - **Frontend App**: [https://localhost](https://localhost) (or `https://dms.local` / `https://<lan-ip>`)
-   - **Django Admin Interface**: [https://localhost/admin/](https://localhost/admin/)
-   - **Django REST API**: [https://localhost/api/](https://localhost/api/)
+   - **Frontend App**: [http://localhost](http://localhost) (or `http://dms.local` / `http://<lan-ip>`)
+   - **Django Admin Interface**: [http://localhost/admin/](http://localhost/admin/)
+   - **Django REST API**: [http://localhost/api/](http://localhost/api/)
 
-   *Note: HTTP requests are automatically redirected to HTTPS.*
 
 
    **Default Root Credentials**:
@@ -382,25 +381,8 @@ Make sure your `.env` contains the correct host path:
 ### Concurrent Session Logout
 If you log in with the same credentials on another browser or device, your previous JWT token is immediately invalidated (returning `401 Unauthorized`).
 
-### Local SSL Certificate Warning (Firefox/Chrome)
-When accessing `https://localhost` or `https://dms.local`, your browser may show a "Warning: Potential Security Risk Ahead" or connection untrusted warning. This occurs because the custom root Certificate Authority (CA) used by `mkcert` is not registered in your browser's trust store.
-
-To resolve this:
-1. **Trust System-Wide (Recommended)**:
-   In the root of the project directory, run:
-   ```bash
-   ./mkcert -install
-   ```
-   *Note: This command requires `sudo` password privileges to register the CA in your system's certificate store.*
-2. **Import into Firefox Manually**:
-   * Open Firefox Settings (type `about:preferences#privacy` in URL bar).
-   * Scroll down to the **Certificates** section and click **View Certificates...**.
-   * Under the **Authorities** tab, click **Import...**.
-   * Select `/home/sahil/.local/share/mkcert/rootCA.pem` and check **"Trust this CA to identify websites"**.
-   * Restart Firefox.
-3. **Accept Risk**: Alternatively, click **Advanced...** and click **Accept the Risk and Continue** for rapid development testing.
-
 ---
+
 
 
 ## Contributing

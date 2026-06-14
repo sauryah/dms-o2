@@ -1,4 +1,0 @@
-tls:
-  certificates:
-    - certFile: /etc/certs/dms.local.pem
-      keyFile: /etc/certs/dms.local-key.pem
