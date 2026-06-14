@@ -75,6 +75,9 @@ services:
       - "traefik.http.routers.django.rule=PathPrefix(`/api`) || PathPrefix(`/admin`)"
       - "traefik.http.routers.django.entrypoints=web"
       - "traefik.http.services.django.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
+      - "traefik.http.routers.django.middlewares=api-ratelimit"
 
   meilisearch:
     image: getmeili/meilisearch:v1.7
