@@ -97,7 +97,7 @@ export const useAuth = () => useContext(AuthContext)
 export const useApi = () => {
   const { token, setToken } = useAuth()
   
-  const request = async (url, options = {}) => {
+  const request = async (url: string, options: any = {}) => {
     const headers = { ...options.headers }
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json'
@@ -699,7 +699,11 @@ function DashboardPage() {
   )
 }
 
-function StatusDistributionChart({ stats }) {
+interface StatusDistributionChartProps {
+  stats: Record<string, number>;
+}
+
+function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
   const total = Object.values(stats).reduce((sum, val) => sum + val, 0)
 
   const statusThemeColors = {
@@ -766,8 +770,9 @@ function StatusDistributionChart({ stats }) {
                   transform="rotate(-90 70 70)"
                   strokeLinecap="round"
                   className="transition-all duration-300 hover:stroke-[12] cursor-pointer"
-                  title={`${seg.statusKey}: ${seg.count} (${seg.pct}%)`}
-                />
+                >
+                  <title>{`${seg.statusKey}: ${seg.count} (${seg.pct}%)`}</title>
+                </circle>
               ))}
               <text x="70" y="65" textAnchor="middle" className="fill-slate-500 font-heading text-[9px] font-bold uppercase tracking-wider">
                 Total
@@ -938,7 +943,14 @@ const isDieActive = (die) => {
   return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
 }
 
-const DiesTable = memo(function DiesTable({ diesList, navigate, onDragStartDie, onDragEndDie }) {
+interface DiesTableProps {
+  diesList: any[];
+  navigate: any;
+  onDragStartDie?: (id: string) => void;
+  onDragEndDie?: () => void;
+}
+
+const DiesTable = memo(function DiesTable({ diesList, navigate, onDragStartDie, onDragEndDie }: DiesTableProps) {
   const { role } = useAuth()
   const { request } = useApi()
   const queryClient = useQueryClient()
@@ -1411,13 +1423,13 @@ function InventoryPage() {
 
   // Create die mutation
   const createDieMutation = useMutation({
-    mutationFn: (payload) => request('/api/dies/', {
+    mutationFn: (payload: any) => request('/api/dies/', {
       method: 'POST',
       body: JSON.stringify(payload)
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['dies'])
-      queryClient.invalidateQueries(['allDiesStats'])
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       setIsCreateOpen(false)
       resetCreateForm()
     },
@@ -1431,7 +1443,7 @@ function InventoryPage() {
   const [dragOverNode, setDragOverNode] = useState(null) // { type: 'machine'|'set'|'unassigned', id: ... }
 
   const reallocateDieMutation = useMutation({
-    mutationFn: ({ dieId, setId }) => request(`/api/dies/${dieId}/`, {
+    mutationFn: ({ dieId, setId }: { dieId: any, setId: any }) => request(`/api/dies/${dieId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ current_set: setId })
     }),
@@ -1442,7 +1454,7 @@ function InventoryPage() {
   })
 
   const reallocateSetMutation = useMutation({
-    mutationFn: ({ setId, machineId }) => request(`/api/sets/${setId}/`, {
+    mutationFn: ({ setId, machineId }: { setId: any, machineId: any }) => request(`/api/sets/${setId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ machine: machineId })
     }),
@@ -1532,7 +1544,7 @@ function InventoryPage() {
     e.preventDefault()
     setCreateError(null)
     
-    const payload = {
+    const payload: any = {
       die_id: newDieId,
       die_type: newDieType,
       casing: newCasing,
@@ -2680,7 +2692,7 @@ function InventoryPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
                 <textarea 
-                  rows="3"
+                  rows={3}
                   value={newRemarks}
                   onChange={(e) => setNewRemarks(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
@@ -2697,10 +2709,10 @@ function InventoryPage() {
                 </button>
                 <button 
                   type="submit"
-                  disabled={createDieMutation.isLoading}
+                  disabled={createDieMutation.isPending}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold"
                 >
-                  {createDieMutation.isLoading ? 'Creating...' : 'Create Die'}
+                  {createDieMutation.isPending ? 'Creating...' : 'Create Die'}
                 </button>
               </div>
             </form>
@@ -2757,14 +2769,14 @@ function DieDetailPage() {
 
   // Mutation for updating die
   const updateMutation = useMutation({
-    mutationFn: (data) => request(`/api/dies/${id}/`, {
+    mutationFn: (data: any) => request(`/api/dies/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['die', id])
-      queryClient.invalidateQueries(['dies'])
-      queryClient.invalidateQueries(['allDiesStats'])
+      queryClient.invalidateQueries({ queryKey: ['die', id] })
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       setIsEditing(false)
     }
   })
@@ -2775,15 +2787,15 @@ function DieDetailPage() {
       method: 'DELETE'
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['dies'])
-      queryClient.invalidateQueries(['allDiesStats'])
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       navigate('/inventory')
     }
   })
 
   const handleSave = (e) => {
     e.preventDefault()
-    const payload = {
+    const payload: any = {
       status: statusVal,
       location,
       remarks,
@@ -2942,7 +2954,7 @@ function DieDetailPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
                 <textarea 
-                  rows="3"
+                  rows={3}
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
@@ -2959,10 +2971,10 @@ function DieDetailPage() {
                 </button>
                 <button 
                   type="submit"
-                  disabled={updateMutation.isLoading}
+                  disabled={updateMutation.isPending}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
                 >
-                  {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
+                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -3111,32 +3123,32 @@ function MachineSetsPage() {
 
   // Mutators
   const createCategory = useMutation({
-    mutationFn: (data) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: any) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['categories'])
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
       setCatName('')
       setEditingCat(null)
     }
   })
 
   const updateCategory = useMutation({
-    mutationFn: ({ id, data }) => request(`/api/categories/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/categories/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['categories'])
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
       setCatName('')
       setEditingCat(null)
     }
   })
 
   const deleteCategory = useMutation({
-    mutationFn: (id) => request(`/api/categories/${id}/`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries(['categories'])
+    mutationFn: (id: any) => request(`/api/categories/${id}/`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] })
   })
 
   const createMachine = useMutation({
-    mutationFn: (data) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: any) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['machines'])
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
       setMachName('')
       setMachCat('')
       setEditingMach(null)
@@ -3144,9 +3156,9 @@ function MachineSetsPage() {
   })
 
   const updateMachine = useMutation({
-    mutationFn: ({ id, data }) => request(`/api/machines/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/machines/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['machines'])
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
       setMachName('')
       setMachCat('')
       setEditingMach(null)
@@ -3154,16 +3166,16 @@ function MachineSetsPage() {
   })
 
   const deleteMachine = useMutation({
-    mutationFn: (id) => request(`/api/machines/${id}/`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries(['machines'])
+    mutationFn: (id: any) => request(`/api/machines/${id}/`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['machines'] })
   })
 
   const createSet = useMutation({
-    mutationFn: (data) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: any) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['sets'])
-      queryClient.invalidateQueries(['setsDropdownList'])
-      queryClient.invalidateQueries(['setsDropdownDetail'])
+      queryClient.invalidateQueries({ queryKey: ['sets'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownDetail'] })
       setNameSet('')
       setMachineSet('')
       setEditingSet(null)
@@ -3171,11 +3183,11 @@ function MachineSetsPage() {
   })
 
   const updateSet = useMutation({
-    mutationFn: ({ id, data }) => request(`/api/sets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/sets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['sets'])
-      queryClient.invalidateQueries(['setsDropdownList'])
-      queryClient.invalidateQueries(['setsDropdownDetail'])
+      queryClient.invalidateQueries({ queryKey: ['sets'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownDetail'] })
       setNameSet('')
       setMachineSet('')
       setEditingSet(null)
@@ -3183,11 +3195,11 @@ function MachineSetsPage() {
   })
 
   const deleteSet = useMutation({
-    mutationFn: (id) => request(`/api/sets/${id}/`, { method: 'DELETE' }),
+    mutationFn: (id: any) => request(`/api/sets/${id}/`, { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['sets'])
-      queryClient.invalidateQueries(['setsDropdownList'])
-      queryClient.invalidateQueries(['setsDropdownDetail'])
+      queryClient.invalidateQueries({ queryKey: ['sets'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownDetail'] })
     }
   })
 
@@ -3505,7 +3517,7 @@ function MachineSetsPage() {
                         placeholder="e.g. Mach 1, Mach 2 (comma or newline separated)"
                         value={machName}
                         onChange={(e) => setMachName(e.target.value)}
-                        rows="2"
+                        rows={2}
                         className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
                       />
                     )}
@@ -3637,7 +3649,7 @@ function MachineSetsPage() {
                         placeholder="e.g. Set A, Set B (comma or newline separated)"
                         value={nameSet}
                         onChange={(e) => setNameSet(e.target.value)}
-                        rows="2"
+                        rows={2}
                         className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
                       />
                     )}
@@ -3934,7 +3946,7 @@ function UsersPage() {
 
   // Delete Backup Mutation
   const deleteBackupMutation = useMutation({
-    mutationFn: (filename) => request('/api/backups/delete_backup/', {
+    mutationFn: (filename: any) => request('/api/backups/delete_backup/', {
       method: 'POST',
       body: JSON.stringify({ filename })
     }),
@@ -3948,7 +3960,7 @@ function UsersPage() {
 
   // Restore Backup Mutation
   const restoreBackupMutation = useMutation({
-    mutationFn: (filename) => request('/api/backups/restore/', {
+    mutationFn: (filename: any) => request('/api/backups/restore/', {
       method: 'POST',
       body: JSON.stringify({ filename })
     }),
@@ -3966,12 +3978,12 @@ function UsersPage() {
 
   // Create User Mutation
   const createUserMutation = useMutation({
-    mutationFn: (data) => request('/api/users/', {
+    mutationFn: (data: any) => request('/api/users/', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['usersListAdmin'])
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
       closeForm()
     },
     onError: (err) => {
@@ -3981,12 +3993,12 @@ function UsersPage() {
 
   // Update User Mutation
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }) => request(`/api/users/${id}/`, {
+    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/users/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['usersListAdmin'])
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
       closeForm()
     },
     onError: (err) => {
@@ -3996,22 +4008,22 @@ function UsersPage() {
 
   // Toggle user active status directly
   const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }) => request(`/api/users/${id}/`, {
+    mutationFn: ({ id, is_active }: { id: any, is_active: any }) => request(`/api/users/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify({ is_active })
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['usersListAdmin'])
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
     }
   })
 
   // Delete User Mutation
   const deleteUserMutation = useMutation({
-    mutationFn: (id) => request(`/api/users/${id}/`, {
+    mutationFn: (id: any) => request(`/api/users/${id}/`, {
       method: 'DELETE'
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['usersListAdmin'])
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
     }
   })
 
@@ -4053,7 +4065,7 @@ function UsersPage() {
     e.preventDefault()
     setFormError(null)
 
-    const payload = {
+    const payload: any = {
       username: usernameInput,
       email: emailInput,
       first_name: firstNameInput,
