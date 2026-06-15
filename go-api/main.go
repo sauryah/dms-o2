@@ -1,0 +1,418 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/lib/pq"
+	"github.com/meilisearch/meilisearch-go"
+)
+
+var (
+	db          *sql.DB
+	meiliClient *meilisearch.Client
+	indexName   = "dies"
+)
+
+// DieRepresentation matches the JSON structure expected by the React frontend.
+type DieRepresentation struct {
+	DieID            string  `json:"die_id"`
+	DieType          string  `json:"die_type"`
+	Casing           string  `json:"casing"`
+	Status           string  `json:"status"`
+	Location         string  `json:"location"`
+	SetName          string  `json:"set_name"`
+	MachineName      string  `json:"machine_name"`
+	CurrentSet       *int    `json:"current_set"`
+	CurrentSize      *string `json:"current_size,omitempty"`
+	CurrentWidth     *string `json:"current_width,omitempty"`
+	CurrentThickness *string `json:"current_thickness,omitempty"`
+	Radius           *string `json:"radius,omitempty"`
+}
+
+func main() {
+	// 1. Connect to PostgreSQL
+	initPostgres()
+
+	// 2. Connect to Meilisearch
+	initMeilisearch()
+
+	// 3. Register HTTP handlers
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/go/health", handleHealth)
+	mux.HandleFunc("GET /api/go/search", handleSearch)
+
+	port := getEnv("PORT", "8080")
+	log.Printf("Go Search Service listening on port %s...", port)
+	
+	loggingMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		mux.ServeHTTP(w, r)
+		log.Printf("%s %s %s %s", r.RemoteAddr, r.Method, r.URL.String(), time.Since(start))
+	})
+
+	if err := http.ListenAndServe(":"+port, loggingMux); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initPostgres() {
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		getEnv("POSTGRES_HOST", "db"),
+		getEnv("POSTGRES_PORT", "5432"),
+		getEnv("POSTGRES_USER", "dms_user"),
+		getEnv("POSTGRES_PASSWORD", "dms_pass_123"),
+		getEnv("POSTGRES_DB", "dms"),
+	)
+
+	var err error
+	for i := 0; i < 5; i++ {
+		db, err = sql.Open("postgres", connStr)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				log.Println("Successfully connected to PostgreSQL database.")
+				db.SetMaxIdleConns(10)
+				db.SetMaxOpenConns(50)
+				return
+			}
+		}
+		log.Printf("Failed to connect to database (attempt %d/5): %v. Retrying in 2s...", i+1, err)
+		time.Sleep(2 * time.Second)
+	}
+	log.Fatal("Could not connect to PostgreSQL database: ", err)
+}
+
+func initMeilisearch() {
+	host := getEnv("MEILI_HOST", "http://meilisearch:7700")
+	key := getEnv("MEILI_MASTER_KEY", "meili-master-key-secure-12345")
+	meiliClient = meilisearch.NewClient(meilisearch.ClientConfig{
+		Host:   host,
+		APIKey: key,
+	})
+	log.Printf("Meilisearch client initialized with host %s", host)
+}
+
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
+func handleSearch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Parse query params
+	q := r.URL.Query().Get("q")
+	dieType := r.URL.Query().Get("die_type")
+	statusVal := r.URL.Query().Get("status")
+	location := r.URL.Query().Get("location")
+	casing := r.URL.Query().Get("casing")
+
+	sizeMin := r.URL.Query().Get("size_min")
+	sizeMax := r.URL.Query().Get("size_max")
+	widthMin := r.URL.Query().Get("width_min")
+	widthMax := r.URL.Query().Get("width_max")
+	thickMin := r.URL.Query().Get("thick_min")
+	thickMax := r.URL.Query().Get("thick_max")
+
+	var dies []DieRepresentation
+	var err error
+
+	if q == "" {
+		// 1. Direct database query
+		dies, err = queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	} else {
+		// 2. Query Meilisearch first, then database
+		dies, err = queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	}
+
+	if err != nil {
+		log.Printf("Search query failed: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(dies); err != nil {
+		log.Printf("Failed to encode response JSON: %v", err)
+	}
+}
+
+func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+	var sqlParts []string
+	var args []interface{}
+	argCounter := 1
+
+	sqlParts = append(sqlParts, `
+		SELECT 
+			d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			s.name as set_name,
+			m.name as machine_name,
+			r.current_size,
+			f.current_width, f.current_thickness, f.radius
+		FROM dies_die d
+		LEFT JOIN machines_set s ON d.current_set_id = s.id
+		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN dies_rounddie r ON d.id = r.die_id
+		LEFT JOIN dies_flatdie f ON d.id = f.die_id
+		WHERE 1=1
+	`)
+
+	if dieType != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_type = $%d", argCounter))
+		args = append(args, dieType)
+		argCounter++
+	}
+	if statusVal != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.status = $%d", argCounter))
+		args = append(args, statusVal)
+		argCounter++
+	}
+	if location != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.location ILIKE $%d", argCounter))
+		args = append(args, "%"+location+"%")
+		argCounter++
+	}
+	if casing != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.casing = $%d", argCounter))
+		args = append(args, casing)
+		argCounter++
+	}
+
+	if sizeMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
+		args = append(args, sizeMin)
+		argCounter++
+	}
+	if sizeMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
+		args = append(args, sizeMax)
+		argCounter++
+	}
+
+	if widthMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
+		args = append(args, widthMin)
+		argCounter++
+	}
+	if widthMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
+		args = append(args, widthMax)
+		argCounter++
+	}
+
+	if thickMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
+		args = append(args, thickMin)
+		argCounter++
+	}
+	if thickMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
+		args = append(args, thickMax)
+		argCounter++
+	}
+
+	sqlParts = append(sqlParts, "ORDER BY d.die_id ASC LIMIT 1000")
+
+	query := strings.Join(sqlParts, "\n")
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanDies(rows)
+}
+
+func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+	// Build Meilisearch filters
+	var filters []string
+	if dieType != "" {
+		filters = append(filters, fmt.Sprintf("die_type = '%s'", dieType))
+	}
+	if statusVal != "" {
+		filters = append(filters, fmt.Sprintf("status = '%s'", statusVal))
+	}
+	if location != "" {
+		filters = append(filters, fmt.Sprintf("location = '%s'", location))
+	}
+	if casing != "" {
+		filters = append(filters, fmt.Sprintf("casing = '%s'", casing))
+	}
+
+	searchParams := meilisearch.SearchRequest{
+		Limit: 1000,
+	}
+	if len(filters) > 0 {
+		searchParams.Filter = strings.Join(filters, " AND ")
+	}
+
+	// Search Meilisearch index
+	res, err := meiliClient.Index(indexName).Search(q, &searchParams)
+	if err != nil {
+		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
+		return queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	}
+
+	if len(res.Hits) == 0 {
+		return []DieRepresentation{}, nil
+	}
+
+	// Extract matching document IDs (which are die_ids)
+	var hitIDs []string
+	for _, hit := range res.Hits {
+		if hitMap, ok := hit.(map[string]interface{}); ok {
+			if idVal, ok := hitMap["id"].(string); ok {
+				hitIDs = append(hitIDs, idVal)
+			}
+		}
+	}
+
+	if len(hitIDs) == 0 {
+		return []DieRepresentation{}, nil
+	}
+
+	// Fetch detail records from Postgres
+	var sqlParts []string
+	var args []interface{}
+	argCounter := 1
+
+	sqlParts = append(sqlParts, `
+		SELECT 
+			d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			s.name as set_name,
+			m.name as machine_name,
+			r.current_size,
+			f.current_width, f.current_thickness, f.radius
+		FROM dies_die d
+		LEFT JOIN machines_set s ON d.current_set_id = s.id
+		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN dies_rounddie r ON d.id = r.die_id
+		LEFT JOIN dies_flatdie f ON d.id = f.die_id
+		WHERE d.die_id = ANY($1)
+	`)
+	args = append(args, pq.Array(hitIDs))
+	argCounter++
+
+	if sizeMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
+		args = append(args, sizeMin)
+		argCounter++
+	}
+	if sizeMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
+		args = append(args, sizeMax)
+		argCounter++
+	}
+
+	if widthMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
+		args = append(args, widthMin)
+		argCounter++
+	}
+	if widthMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
+		args = append(args, widthMax)
+		argCounter++
+	}
+
+	if thickMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
+		args = append(args, thickMin)
+		argCounter++
+	}
+	if thickMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
+		args = append(args, thickMax)
+		argCounter++
+	}
+
+	query := strings.Join(sqlParts, "\n")
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dies, err := scanDies(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reorder dies according to Meilisearch hit order
+	dieMap := make(map[string]DieRepresentation)
+	for _, die := range dies {
+		dieMap[die.DieID] = die
+	}
+
+	var orderedDies []DieRepresentation
+	for _, hid := range hitIDs {
+		if die, ok := dieMap[hid]; ok {
+			orderedDies = append(orderedDies, die)
+		}
+	}
+
+	return orderedDies, nil
+}
+
+func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
+	var dies []DieRepresentation
+	for rows.Next() {
+		var d DieRepresentation
+		var setID sql.NullInt64
+		var setName, machineName sql.NullString
+		var size, width, thickness, radius sql.NullString
+
+		err := rows.Scan(
+			&d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
+			&setName, &machineName, &size, &width, &thickness, &radius,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if setID.Valid {
+			val := int(setID.Int64)
+			d.CurrentSet = &val
+		}
+		if setName.Valid {
+			d.SetName = setName.String
+		}
+		if machineName.Valid {
+			d.MachineName = machineName.String
+		}
+
+		if d.DieType == "ROUND" && size.Valid {
+			d.CurrentSize = &size.String
+		} else if d.DieType == "FLAT" {
+			if width.Valid {
+				d.CurrentWidth = &width.String
+			}
+			if thickness.Valid {
+				d.CurrentThickness = &thickness.String
+			}
+			if radius.Valid {
+				d.Radius = &radius.String
+			}
+		}
+
+		dies = append(dies, d)
+	}
+	return dies, nil
+}
+
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}

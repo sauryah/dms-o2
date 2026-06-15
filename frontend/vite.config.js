@@ -15,6 +15,10 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
     proxy: {
+      '/api/go': {
+        target: process.env.GO_API_TARGET || 'http://localhost',
+        changeOrigin: true,
+      },
       '/api': {
         target: process.env.API_TARGET || 'http://localhost:8000',
         changeOrigin: true,

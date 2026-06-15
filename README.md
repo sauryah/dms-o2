@@ -20,7 +20,10 @@ DMS (Die Management System) is an industrial LAN-based tracking platform designe
 ---
 
 ## Tech Stack
-- **Backend**: Python 3.11, Django 4.2, Django REST Framework, Django Simple JWT, PostgreSQL 18, Meilisearch v1.7, OpenPyXL
+- **Backend**:
+  - Python 3.11, Django 4.2, Django REST Framework, Django Simple JWT, OpenPyXL (relational CRUD, admin, auth, exports)
+  - Go (Golang) microservice (high-performance read and search APIs)
+- **Database / Search**: PostgreSQL 18, Meilisearch v1.7
 - **Frontend**: React 18, Vite, Tailwind CSS, TanStack React Query v5, React Router Dom v6, Lucide React
 - **Infra/Proxy**: Docker, Docker Compose, Traefik v3
 - **Testing**: Playwright (E2E), Vitest & JSDOM (Frontend unit), Django Test Suite (Backend unit)
@@ -269,6 +272,10 @@ dms/
 │   ├── users/                     # Authentication & User Sessions
 │   ├── dms/                       # Settings and base URLs
 │   └── manage.py
+├── go-api/                        # Go Search & Stats Microservice
+│   ├── Dockerfile                 # Optimized multi-stage Alpine build
+│   ├── main.go                    # Entrypoint, DB client, search routing
+│   └── go.mod                     # Go dependency list
 ├── frontend/                      # React Frontend
 │   ├── src/                       # Source files (App, Card components)
 │   ├── tests/e2e/                 # Playwright E2E tests
@@ -355,7 +362,7 @@ docker compose up -d --build
 For production deployments, the application uses an optimized configuration:
 - **Frontend**: Multi-stage Docker build (`frontend/Dockerfile.prod`) compiling React assets to static HTML/JS/CSS served via Nginx.
 - **Backend**: Django served by Gunicorn instead of the development server.
-- **Proxy**: Traefik routing `/api` and `/admin` to Django, and all other paths to the Nginx static server.
+- **Proxy**: Traefik routing `/api/go` to the high-performance Go microservice, `/api` and `/admin` to Django, and all other paths to the Nginx static server.
 
 To run the application in production mode manually:
 ```bash

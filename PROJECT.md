@@ -20,7 +20,7 @@ You are building the DMS app from scratch. Rules:
 
 | Layer      | Technology                        |
 |------------|-----------------------------------|
-| Backend    | Django 4.2 + Django REST Framework|
+| Backend    | Django 4.2 (CRUD, Admin, Auth) <br> Go (High-performance Search/Read APIs) |
 | Database   | PostgreSQL 18                     |
 | Search     | Meilisearch v1.7                  |
 | Frontend   | React 18 + Vite + Tailwind CSS    |
@@ -132,6 +132,10 @@ DMS/
 │   ├── machines/     (empty Django app)
 │   ├── history/      (empty Django app)
 │   └── users/        (empty Django app)
+├── go-api/
+│   ├── Dockerfile
+│   ├── main.go
+│   └── go.mod
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
@@ -325,6 +329,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-15 · feat: implement high-performance Go search API microservice with custom Postgres ANY array parsing and Vite dev server routing
 ### 2026-06-15 · perf: implement search request cancellation in frontend using AbortSignal to abort redundant concurrent database queries
 ### 2026-06-15 · feat: wrap Meilisearch syncing and SSE broadcasts in transaction.on_commit database hooks to ensure transaction safety
 ### 2026-06-15 · perf: enable dynamic Gzip/Brotli compression in Traefik middleware for both API and frontend static assets

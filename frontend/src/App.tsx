@@ -329,7 +329,7 @@ function DashboardPage() {
     queryFn: ({ signal }) => {
       if (!debouncedQ && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
       
-      let url = '/api/search/'
+      let url = '/api/go/search'
       const params = new URLSearchParams()
       if (debouncedQ) params.append('q', debouncedQ)
       if (dieType) params.append('die_type', dieType)
@@ -1399,7 +1399,7 @@ function InventoryPage() {
   const { data: dies, isLoading, error } = useQuery({
     queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
     queryFn: ({ signal }) => {
-      let url = debouncedQ ? '/api/search/' : '/api/dies/'
+      let url = '/api/go/search'
       const params = new URLSearchParams()
       
       if (debouncedQ) params.append('q', debouncedQ)
