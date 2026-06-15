@@ -326,7 +326,7 @@ function DashboardPage() {
   // Fetch fuzzy search results if search query or filters exist
   const { data: searchDies, isLoading: isSearchLoading } = useQuery({
     queryKey: ['searchDiesDashboard', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       if (!debouncedQ && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
       
       let url = '/api/search/'
@@ -344,7 +344,7 @@ function DashboardPage() {
       if (thickMax) params.append('thick_max', thickMax)
       
       url += `?${params.toString()}`
-      return request(url)
+      return request(url, { signal })
     },
     enabled: !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
   })
@@ -1386,7 +1386,7 @@ function InventoryPage() {
   // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
     queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       let url = debouncedQ ? '/api/search/' : '/api/dies/'
       const params = new URLSearchParams()
       
@@ -1405,7 +1405,7 @@ function InventoryPage() {
       if (params.toString()) {
         url += `?${params.toString()}`
       }
-      return request(url)
+      return request(url, { signal })
     }
   })
 

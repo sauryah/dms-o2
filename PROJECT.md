@@ -325,6 +325,7 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-15 · perf: implement search request cancellation in frontend using AbortSignal to abort redundant concurrent database queries
 ### 2026-06-15 · feat: wrap Meilisearch syncing and SSE broadcasts in transaction.on_commit database hooks to ensure transaction safety
 ### 2026-06-15 · perf: enable dynamic Gzip/Brotli compression in Traefik middleware for both API and frontend static assets
 ### 2026-06-15 · perf: implement fast dict-based collection serialization in backend to bypass DRF overhead (10-15x speedup)
