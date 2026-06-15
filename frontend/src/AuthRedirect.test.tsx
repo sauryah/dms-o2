@@ -3,8 +3,14 @@ import { render, act } from '@testing-library/react'
 import { useApi, AuthProvider } from './App'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 
+interface TestApiComponentProps {
+  url: string
+  onResult: (res: any) => void
+  onError: (err: any) => void
+}
+
 // Helper component to execute request inside the auth context
-function TestApiComponent({ url, onResult, onError }) {
+function TestApiComponent({ url, onResult, onError }: TestApiComponentProps) {
   const { request } = useApi()
   
   const trigger = async () => {
@@ -37,9 +43,9 @@ describe('Auth Redirect on 401', () => {
     })
     vi.stubGlobal('fetch', mockFetch)
 
-    // Track hash changes
-    delete window.location
-    window.location = { hash: '' }
+    // Track hash changes using stubGlobal
+    const mockLocation = { hash: '' }
+    vi.stubGlobal('location', mockLocation)
 
     const onResult = vi.fn()
     const onError = vi.fn()
