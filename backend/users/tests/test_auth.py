@@ -232,3 +232,35 @@ class AuthTests(APITestCase):
         self.assertEqual(user.first_name, 'Johnny')
         self.assertEqual(user.last_name, 'Smith')
 
+    def test_session_eviction_on_password_change(self):
+        # Log in to create user session
+        response = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(UserSession.objects.filter(user=self.admin_user).exists())
+
+        # Change user password
+        self.admin_user.set_password('new_password_123')
+        self.admin_user.save()
+
+        # Session should be deleted
+        self.assertFalse(UserSession.objects.filter(user=self.admin_user).exists())
+
+    def test_session_eviction_on_deactivation(self):
+        # Log in to create user session
+        response = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(UserSession.objects.filter(user=self.admin_user).exists())
+
+        # Deactivate user
+        self.admin_user.is_active = False
+        self.admin_user.save()
+
+        # Session should be deleted
+        self.assertFalse(UserSession.objects.filter(user=self.admin_user).exists())
+

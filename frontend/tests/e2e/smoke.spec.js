@@ -93,7 +93,7 @@ test.describe('DMS E2E Smoke Tests', () => {
 
     // Test range search filters combined with query
     await page.click('button:has-text("Filters")');
-    await page.fill('input[placeholder*="Search by Die ID"]', 'R-E2E');
+    await page.fill('input[placeholder*="Search by Die ID"]', '"R-E2E-1"');
     await page.selectOption('select:has(option[value="ROUND"])', 'ROUND');
     
     // Set range that matches R-E2E-1 (size is 2.5)

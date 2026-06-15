@@ -1547,36 +1547,40 @@ function InventoryPage() {
     createDieMutation.mutate(payload)
   }
 
-  // Group dies into tree data structure
-  const diesBySet = {}
-  const unassignedDies = []
-  
-  dies?.forEach(die => {
-    if (die.current_set) {
-      if (!diesBySet[die.current_set]) {
-        diesBySet[die.current_set] = []
+  // Group dies into tree data structure (Memoized to prevent high-render CPU recalculations)
+  const { diesBySet, unassignedDies, machinesWithData } = useMemo(() => {
+    const diesBySet = {}
+    const unassignedDies = []
+    
+    dies?.forEach(die => {
+      if (die.current_set) {
+        if (!diesBySet[die.current_set]) {
+          diesBySet[die.current_set] = []
+        }
+        diesBySet[die.current_set].push(die)
+      } else {
+        unassignedDies.push(die)
       }
-      diesBySet[die.current_set].push(die)
-    } else {
-      unassignedDies.push(die)
-    }
-  })
+    })
 
-  const machinesWithData = (machinesList || []).map(machine => {
-    const machineSets = (setsList || []).filter(s => s.machine === machine.id).map(set => {
-      const setDies = diesBySet[set.id] || []
+    const machinesWithData = (machinesList || []).map(machine => {
+      const machineSets = (setsList || []).filter(s => s.machine === machine.id).map(set => {
+        const setDies = diesBySet[set.id] || []
+        return {
+          ...set,
+          dies: setDies
+        }
+      }).filter(set => set.dies.length > 0)
+
       return {
-        ...set,
-        dies: setDies
+        ...machine,
+        sets: machineSets,
+        totalDies: machineSets.reduce((sum, s) => sum + s.dies.length, 0)
       }
-    }).filter(set => set.dies.length > 0)
+    }).filter(m => m.totalDies > 0)
 
-    return {
-      ...machine,
-      sets: machineSets,
-      totalDies: machineSets.reduce((sum, s) => sum + s.dies.length, 0)
-    }
-  }).filter(m => m.totalDies > 0)
+    return { diesBySet, unassignedDies, machinesWithData }
+  }, [dies, machinesList, setsList])
 
   const handleExpandAll = () => {
     const nextMachs = {}

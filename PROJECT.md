@@ -325,6 +325,8 @@ docker compose run --rm django python manage.py test dies.tests.test_models --ve
 
 
 ## Changelog
+### 2026-06-15 · perf: memoize hierarchical tree grouping in App.jsx to optimize sidebar rendering and input response
+### 2026-06-15 · sec: implement automated session eviction on user password change or account deactivation
 ### 2026-06-14 · feat: implement drag-and-drop allocations to drag dies into sets or sets onto machines directly in the sidebar tree view
 ### 2026-06-14 · fix: allow dms.local and LAN hostnames in vite.config.js server.allowedHosts
 ### 2026-06-14 · feat: configure HTTP-only routing in Traefik to allow seamless local network access without SSL warning popups
