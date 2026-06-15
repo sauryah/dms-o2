@@ -72,7 +72,8 @@ services:
       - "traefik.http.services.django.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.average=100"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
-      - "traefik.http.routers.django.middlewares=api-ratelimit"
+      - "traefik.http.routers.django.middlewares=api-ratelimit,api-compress"
+      - "traefik.http.middlewares.api-compress.compress=true"
 
   meilisearch:
     image: getmeili/meilisearch:v1.7
@@ -98,6 +99,8 @@ services:
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.frontend-compress.compress=true"
+      - "traefik.http.routers.frontend.middlewares=frontend-compress"
 
   traefik:
     image: traefik:v3
