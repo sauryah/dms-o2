@@ -1,11 +1,11 @@
 import time
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.urls import reverse
 from dies.models import Die, RoundDie
 from search.meili import client as meili_client, INDEX_NAME
 from decimal import Decimal
 
-class MeilisearchTests(TestCase):
+class MeilisearchTests(TransactionTestCase):
     def setUp(self):
         try:
             meili_client.index(INDEX_NAME).delete_all_documents()

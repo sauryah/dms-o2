@@ -1,5 +1,6 @@
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
+from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 from users.middleware import get_current_user
@@ -80,21 +81,21 @@ def log_flat_changes(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Die)
 def sync_die_post_save(sender, instance, **kwargs):
-    sync_die(instance)
-    broadcast_event('die_update', {'id': instance.die_id, 'action': 'save'})
+    transaction.on_commit(lambda: sync_die(instance))
+    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die_id, 'action': 'save'}))
 
 @receiver(post_save, sender=RoundDie)
 def sync_round_die_post_save(sender, instance, **kwargs):
-    sync_die(instance.die)
-    broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'})
+    transaction.on_commit(lambda: sync_die(instance.die))
+    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'}))
 
 @receiver(post_save, sender=FlatDie)
 def sync_flat_die_post_save(sender, instance, **kwargs):
-    sync_die(instance.die)
-    broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'})
+    transaction.on_commit(lambda: sync_die(instance.die))
+    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'}))
 
 @receiver(post_delete, sender=Die)
 def delete_die_post_delete(sender, instance, **kwargs):
-    delete_die_document(instance.die_id)
-    broadcast_event('die_update', {'id': instance.die_id, 'action': 'delete'})
+    transaction.on_commit(lambda: delete_die_document(instance.die_id))
+    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die_id, 'action': 'delete'}))
 
