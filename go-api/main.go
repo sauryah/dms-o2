@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,14 +11,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/lib/pq"
 	"github.com/meilisearch/meilisearch-go"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
 	db          *sql.DB
 	meiliClient *meilisearch.Client
+	redisClient *redis.Client
+	ctx         = context.Background()
 	indexName   = "dies"
+
+	lastReconciliationTime time.Time
+	reconciliationStatus   = "pending"
+	postgresCount          = 0
+	meiliCount             = 0
 )
 
 // DieRepresentation matches the JSON structure expected by the React frontend.
@@ -43,10 +53,17 @@ func main() {
 	// 2. Connect to Meilisearch
 	initMeilisearch()
 
+	// 3. Connect to Redis
+	initRedis()
+
+	// 4. Start Index Reconciliation Scheduler
+	startReconciliationScheduler()
+
 	// 3. Register HTTP handlers
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/go/health", handleHealth)
-	mux.HandleFunc("GET /api/go/search", handleSearch)
+	mux.Handle("GET /api/go/search", authMiddleware(http.HandlerFunc(handleSearch)))
+	mux.Handle("GET /api/go/stats", authMiddleware(http.HandlerFunc(handleStats)))
 
 	port := getEnv("PORT", "8080")
 	log.Printf("Go Search Service listening on port %s...", port)
@@ -99,10 +116,205 @@ func initMeilisearch() {
 	log.Printf("Meilisearch client initialized with host %s", host)
 }
 
+func initRedis() {
+	redisHost := getEnv("REDIS_HOST", "localhost")
+	redisPort := getEnv("REDIS_PORT", "6379")
+	addr := fmt.Sprintf("%s:%s", redisHost, redisPort)
+
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: "", // no password set by default
+		DB:       0,  // use default DB
+	})
+
+	// Ping connection
+	err := redisClient.Ping(ctx).Err()
+	if err != nil {
+		log.Printf("Warning: Failed to connect to Redis at %s: %v. Caching will be disabled.", addr, err)
+		redisClient = nil
+	} else {
+		log.Printf("Successfully connected to Redis at %s.", addr)
+	}
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	secretKey := []byte(getEnv("DJANGO_SECRET_KEY", "change_me"))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			// No token provided; allow guest access (AllowAny equivalent)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Authorization header must be Bearer token"})
+			return
+		}
+
+		tokenStr := parts[1]
+
+		// Parse and validate signature
+		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return secretKey, nil
+		})
+
+		if err != nil || !token.Valid {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid or expired token"})
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok"}`))
+
+	resp := map[string]interface{}{
+		"status": "ok",
+		"reconciliation": map[string]interface{}{
+			"last_run":       lastReconciliationTime.Format(time.RFC3339),
+			"status":         reconciliationStatus,
+			"postgres_count": postgresCount,
+			"meili_count":    meiliCount,
+		},
+	}
+	json.NewEncoder(w).Encode(resp)
+}
+
+func runReconciliation() {
+	log.Println("Starting Search Index Reconciliation...")
+
+	// 1. Get Postgres count
+	var pgCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM dies_die").Scan(&pgCount)
+	if err != nil {
+		log.Printf("Reconciliation error: Failed to count Postgres records: %v", err)
+		reconciliationStatus = "error_postgres"
+		lastReconciliationTime = time.Now()
+		return
+	}
+
+	// 2. Get Meilisearch count
+	meiliIndex := meiliClient.Index(indexName)
+	stats, err := meiliIndex.GetStats()
+	if err != nil {
+		log.Printf("Reconciliation error: Failed to get Meilisearch stats: %v", err)
+		reconciliationStatus = "error_meilisearch"
+		lastReconciliationTime = time.Now()
+		return
+	}
+	mCount := int(stats.NumberOfDocuments)
+
+	// 3. Update status
+	postgresCount = pgCount
+	meiliCount = mCount
+	lastReconciliationTime = time.Now()
+
+	if pgCount == mCount {
+		reconciliationStatus = "in_sync"
+		log.Printf("Reconciliation Success: Index is in sync. Total dies: %d.", pgCount)
+	} else {
+		reconciliationStatus = "out_of_sync"
+		log.Printf("WARNING: Search Index Mismatch! PostgreSQL has %d records, but Meilisearch has %d documents.", pgCount, mCount)
+	}
+}
+
+func startReconciliationScheduler() {
+	// Run once immediately on boot after connections are established
+	go func() {
+		// Wait 5 seconds to ensure DB and Meili are fully ready
+		time.Sleep(5 * time.Second)
+		runReconciliation()
+
+		// Tick every 24 hours
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			runReconciliation()
+		}
+	}()
+}
+
+func handleStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Try to fetch from Redis
+	if redisClient != nil {
+		cachedBytes, err := redisClient.Get(ctx, "stats").Bytes()
+		if err == nil {
+			w.WriteHeader(http.StatusOK)
+			w.Write(cachedBytes)
+			return
+		}
+	}
+
+	rows, err := db.Query("SELECT status, COUNT(*) FROM dies_die GROUP BY status")
+	if err != nil {
+		log.Printf("Failed to query statistics: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	stats := map[string]int{
+		"AVAILABLE": 0,
+		"RUNNING":   0,
+		"CLEANING":  0,
+		"POLISHING": 0,
+		"DAMAGED":   0,
+		"SCRAPPED":  0,
+		"MISSING":   0,
+	}
+	total := 0
+
+	for rows.Next() {
+		var status string
+		var count int
+		if err := rows.Scan(&status, &count); err != nil {
+			log.Printf("Failed to scan statistics row: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		stats[status] = count
+		total += count
+	}
+
+	response := map[string]interface{}{
+		"total": total,
+		"stats": stats,
+	}
+
+	respBytes, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Failed to marshal stats response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Cache in Redis for 15 seconds
+	if redisClient != nil {
+		err = redisClient.Set(ctx, "stats", respBytes, 15*time.Second).Err()
+		if err != nil {
+			log.Printf("Warning: Failed to save stats to Redis: %v", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(respBytes)
 }
 
 func handleSearch(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +334,21 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	thickMin := r.URL.Query().Get("thick_min")
 	thickMax := r.URL.Query().Get("thick_max")
 
+	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s",
+		q, dieType, statusVal, location, casing,
+		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax,
+	)
+
+	// Try to fetch from Redis
+	if redisClient != nil {
+		cachedBytes, err := redisClient.Get(ctx, cacheKey).Bytes()
+		if err == nil {
+			w.WriteHeader(http.StatusOK)
+			w.Write(cachedBytes)
+			return
+		}
+	}
+
 	var dies []DieRepresentation
 	var err error
 
@@ -140,10 +367,23 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(dies); err != nil {
-		log.Printf("Failed to encode response JSON: %v", err)
+	respBytes, err := json.Marshal(dies)
+	if err != nil {
+		log.Printf("Failed to marshal search response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+
+	// Cache in Redis for 10 seconds
+	if redisClient != nil {
+		err = redisClient.Set(ctx, cacheKey, respBytes, 10*time.Second).Err()
+		if err != nil {
+			log.Printf("Warning: Failed to save search results to Redis: %v", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(respBytes)
 }
 
 func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {

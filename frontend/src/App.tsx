@@ -317,10 +317,10 @@ function DashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch all dies to compute overall statistics
-  const { data: allDies, isLoading: isStatsLoading } = useQuery({
+  // Fetch overall statistics
+  const { data: statsData, isLoading: isStatsLoading } = useQuery({
     queryKey: ['allDiesStats'],
-    queryFn: () => request('/api/dies/')
+    queryFn: () => request('/api/go/stats')
   })
 
   // Fetch fuzzy search results if search query or filters exist
@@ -351,8 +351,8 @@ function DashboardPage() {
 
   const hasActiveFilter = !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
-  const totalCount = allDies ? allDies.length : 0
-  const stats = {
+  const totalCount = statsData ? statsData.total : 0
+  const stats = statsData ? statsData.stats : {
     AVAILABLE: 0,
     RUNNING: 0,
     CLEANING: 0,
@@ -360,13 +360,6 @@ function DashboardPage() {
     DAMAGED: 0,
     SCRAPPED: 0,
     MISSING: 0
-  }
-  if (allDies) {
-    allDies.forEach(d => {
-      if (stats[d.status] !== undefined) {
-        stats[d.status]++
-      }
-    })
   }
 
   const statusColors = {

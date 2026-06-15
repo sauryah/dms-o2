@@ -88,11 +88,16 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - MEILI_HOST=${MEILI_HOST}
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - PORT=8080
     depends_on:
       db:
         condition: service_healthy
       meilisearch:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
@@ -110,6 +115,14 @@ services:
       - meili_data:/meili_data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 3s
       timeout: 3s
       retries: 10
