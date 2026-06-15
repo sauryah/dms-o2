@@ -1,6 +1,12 @@
 import React from 'react'
+import { Die } from './types'
 
-export function FlatDieCard({ die, onClick }) {
+interface FlatDieCardProps {
+  die: Die;
+  onClick?: () => void;
+}
+
+export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
   const statusColors = {
     AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',

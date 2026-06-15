@@ -16,7 +16,7 @@ describe('RoundDieCard', () => {
 
   test('renders size, die_id, casing, set, machine, status', () => {
     const handleClick = vi.fn()
-    render(<RoundDieCard die={mockDie} onClick={handleClick} />)
+    render(<RoundDieCard die={mockDie as any} onClick={handleClick} />)
 
     // Check die_id and status
     expect(screen.getByText('R-101')).toBeInTheDocument()

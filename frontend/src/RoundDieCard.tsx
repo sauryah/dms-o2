@@ -1,6 +1,12 @@
 import React from 'react'
+import { Die } from './types'
 
-export function RoundDieCard({ die, onClick }) {
+interface RoundDieCardProps {
+  die: Die;
+  onClick?: () => void;
+}
+
+export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
   const statusColors = {
     AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',

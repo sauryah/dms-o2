@@ -18,7 +18,7 @@ describe('FlatDieCard', () => {
 
   test('renders width×thickness, die_id, casing, set, machine, status', () => {
     const handleClick = vi.fn()
-    render(<FlatDieCard die={mockDie} onClick={handleClick} />)
+    render(<FlatDieCard die={mockDie as any} onClick={handleClick} />)
 
     // Check die_id and status
     expect(screen.getByText('F-201')).toBeInTheDocument()
