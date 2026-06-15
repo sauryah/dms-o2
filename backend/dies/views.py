@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from dies.models import Die
-from dies.serializers import DieListSerializer, DieDetailSerializer, DieCreateSerializer
+from dies.serializers import DieListSerializer, DieDetailSerializer, DieCreateSerializer, serialize_die_list_fast
 from users.permissions import IsAdminOrRoot
 from search.meili import client as meili_client, INDEX_NAME
 
@@ -17,6 +17,11 @@ class DieViewSet(viewsets.ModelViewSet):
         elif self.action in ['create', 'update', 'partial_update']:
             return DieCreateSerializer
         return DieDetailSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = serialize_die_list_fast(queryset)
+        return Response(data)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -106,8 +111,8 @@ def search_dies(request):
                 dies = dies.filter(flatdie__current_thickness__lte=thick_max)
                 
             # Limit direct database query results to first 1000 items
-            serializer = DieListSerializer(dies[:1000], many=True)
-            return Response(serializer.data)
+            data = serialize_die_list_fast(dies[:1000])
+            return Response(data)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -151,8 +156,8 @@ def search_dies(request):
         die_map = {d.die_id: d for d in dies}
         ordered_dies = [die_map[hid] for hid in hit_ids if hid in die_map]
         
-        serializer = DieListSerializer(ordered_dies, many=True)
-        return Response(serializer.data)
+        data = serialize_die_list_fast(ordered_dies)
+        return Response(data)
     except Exception as e:
         print(f"Meilisearch query failed: {e}. Falling back to database direct search.")
         try:
@@ -183,8 +188,8 @@ def search_dies(request):
             if thick_max:
                 dies = dies.filter(flatdie__current_thickness__lte=thick_max)
                 
-            serializer = DieListSerializer(dies[:1000], many=True)
-            return Response(serializer.data)
+            data = serialize_die_list_fast(dies[:1000])
+            return Response(data)
         except Exception as db_err:
             return Response({"error": f"Database search fallback failed: {str(db_err)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
