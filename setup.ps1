@@ -68,11 +68,31 @@ if ($isAdmin) {
 
 # 9. Access Info
 $computerName = $env:COMPUTERNAME.ToLower()
+$lanIps = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.IPAddress -notlike "127.*" -and
+    $_.IPAddress -notlike "169.254.*" -and
+    $_.InterfaceAlias -notlike "*Loopback*" -and
+    $_.InterfaceAlias -notlike "*vEthernet*" -and
+    $_.InterfaceAlias -notlike "*docker*" -and
+    $_.InterfaceAlias -notlike "*WSL*"
+} | Select-Object -ExpandProperty IPAddress
+
+# Fallback if no specific LAN interface matches
+if (-not $lanIps) {
+    $lanIps = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -ExpandProperty IPAddress
+}
+
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host ">>> Setup Completed Successfully!" -ForegroundColor Green
 Write-Host ">>> You can now access the DMS application at:"
-Write-Host "    - Web App URL:  http://localhost"
-Write-Host "    - Django Admin: http://localhost/admin/"
-Write-Host "    - LAN Address:  http://$computerName"
+Write-Host "    - Local Web URL:  http://localhost"
+Write-Host "    - Django Admin:   http://localhost/admin/"
+if ($lanIps) {
+    foreach ($ip in $lanIps) {
+        Write-Host "    - LAN Web URL:    http://$ip"
+    }
+}
+Write-Host "    - LAN mDNS URL:   http://$computerName"
 Write-Host "======================================================" -ForegroundColor Green
+

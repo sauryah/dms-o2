@@ -69,20 +69,36 @@ docker compose exec django python manage.py create_root_user
 echo ">>> Rebuilding Meilisearch index cache..."
 docker compose exec django python manage.py sync_search
 
+# 8. Access Info
+LAN_IP=""
+if command -v ip &> /dev/null; then
+    LAN_IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
+    if [ -z "$LAN_IP" ]; then
+        LAN_IP=$(ip -o -4 addr show | grep -v '127.0.0.1' | grep -v 'docker' | grep -v 'br-' | awk '{print $4}' | cut -d/ -f1 | head -n1 || true)
+    fi
+fi
+if [ -z "$LAN_IP" ] && command -v hostname &> /dev/null; then
+    LAN_IP=$(hostname -I | awk '{print $1}' || true)
+fi
+
 CUR_HOSTNAME=$(hostname)
 echo "======================================================"
 echo ">>> Setup Completed Successfully!"
 echo ">>> You can now access the DMS application at:"
-echo "    - Web App URL: http://localhost"
-echo "    - Django Admin: http://localhost/admin/"
-if [ "$CUR_HOSTNAME" != "dms" ]; then
+echo "    - Local Web URL: http://localhost"
+echo "    - Django Admin:  http://localhost/admin/"
+if [ -n "$LAN_IP" ]; then
+    echo "    - LAN Web URL:   http://$LAN_IP"
+fi
+if [ "$CUR_HOSTNAME" = "dms" ]; then
+    echo "    - LAN mDNS URL:  http://dms.local"
+else
     echo ""
     echo ">>> LAN ACCESS SETUP NOTE:"
     echo "    Your current system hostname is '$CUR_HOSTNAME'."
     echo "    To access the app from other computers on your LAN using http://dms.local:"
     echo "    1. Run: sudo hostnamectl set-hostname dms"
     echo "    2. Run: sudo systemctl restart avahi-daemon"
-else
-    echo "    - LAN mDNS URL: http://dms.local"
 fi
 echo "======================================================"
+

@@ -76,13 +76,17 @@ We provide automated setup scripts to copy environment templates, bootstrap the 
    ```
 
 ### Windows (PowerShell)
-1. Open PowerShell, navigate to the cloned folder, and run:
+1. Open PowerShell (preferably as Administrator), navigate to the cloned folder, and run:
    ```powershell
    ./setup.ps1
    ```
    *(If prompted with execution policy errors, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
 
+> [!TIP]
+> **Automatic LAN IP Detection**: At the end of the setup, the script will automatically detect and print your host's local IP address (e.g., `http://192.168.1.15`). You can open this URL in any phone or device connected to the same Wi-Fi network to use the app immediately!
+
 ---
+
 
 ### Manual Installation (Alternative)
 If you prefer to run the steps manually:
