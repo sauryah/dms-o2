@@ -1,0 +1,1428 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { 
+  Search, 
+  SlidersHorizontal, 
+  Plus, 
+  ChevronRight, 
+  ChevronLeft, 
+  X, 
+  Menu, 
+  Cpu, 
+  Layers, 
+  Database, 
+  Sliders 
+} from 'lucide-react'
+import { useApi, useAuth, useDebounce, isDieActive } from '../App'
+import { DiesTable } from '../components/DiesTable'
+
+export function InventoryPage() {
+  const { request } = useApi()
+  const { role } = useAuth()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  
+  // Search parameters states initialized from URL if present
+  const [q, setQ] = useState(searchParams.get('q') || '')
+  const debouncedQ = useDebounce(q, 300)
+  const [dieType, setDieType] = useState(searchParams.get('die_type') || '')
+  const [statusVal, setStatusVal] = useState(searchParams.get('status') || '')
+  const [casing, setCasing] = useState(searchParams.get('casing') || '')
+  
+  // Custom ranges
+  const [sizeMin, setSizeMin] = useState(searchParams.get('size_min') || '')
+  const [sizeMax, setSizeMax] = useState(searchParams.get('size_max') || '')
+  const [widthMin, setWidthMin] = useState(searchParams.get('width_min') || '')
+  const [widthMax, setWidthMax] = useState(searchParams.get('width_max') || '')
+  const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
+  const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
+  
+  const [showFilters, setShowFilters] = useState(!!(
+    searchParams.get('die_type') || 
+    searchParams.get('status') || 
+    searchParams.get('casing') || 
+    searchParams.get('size_min') || 
+    searchParams.get('size_max') || 
+    searchParams.get('width_min') || 
+    searchParams.get('width_max') || 
+    searchParams.get('thick_min') || 
+    searchParams.get('thick_max')
+  ))
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+
+  // Fetch list of sets for the dropdown
+  const { data: setsList } = useQuery({
+    queryKey: ['setsDropdownList'],
+    queryFn: () => request('/api/sets/')
+  })
+
+  // Fetch list of machines
+  const { data: machinesList } = useQuery({
+    queryKey: ['machinesList'],
+    queryFn: () => request('/api/machines/')
+  })
+
+  // Tree expanded states
+  const [expandedMachines, setExpandedMachines] = useState<Record<string | number, boolean>>({})
+  const [expandedSets, setExpandedSets] = useState<Record<string | number, boolean>>({})
+  const [expandedUnassigned, setExpandedUnassigned] = useState(true)
+
+  const toggleMachine = useCallback((id: any) => {
+    setExpandedMachines(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
+
+  const toggleSet = useCallback((id: any) => {
+    setExpandedSets(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
+
+  // Create Die form states
+  const [newDieId, setNewDieId] = useState('')
+  const [newDieType, setNewDieType] = useState('ROUND')
+  const [newCasing, setNewCasing] = useState('')
+  const [newStatus, setNewStatus] = useState('AVAILABLE')
+  const [newLocation, setNewLocation] = useState('')
+  const [newRemarks, setNewRemarks] = useState('')
+  const [newCurrentSet, setNewCurrentSet] = useState('')
+  
+  // Round subfields
+  const [newOriginalSize, setNewOriginalSize] = useState('')
+  const [newCurrentSize, setNewCurrentSize] = useState('')
+  
+  // Flat subfields
+  const [newOriginalWidth, setNewOriginalWidth] = useState('')
+  const [newCurrentWidth, setNewCurrentWidth] = useState('')
+  const [newOriginalThickness, setNewOriginalThickness] = useState('')
+  const [newCurrentThickness, setNewCurrentThickness] = useState('')
+  const [newRadius, setNewRadius] = useState('')
+
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  // React Query Fetcher
+  const { data: dies, isLoading, error } = useQuery({
+    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
+    queryFn: ({ signal }) => {
+      let url = '/api/go/search'
+      const params = new URLSearchParams()
+      
+      if (debouncedQ) params.append('q', debouncedQ)
+      if (dieType) params.append('die_type', dieType)
+      if (statusVal) params.append('status', statusVal)
+      if (casing) params.append('casing', casing)
+      
+      if (sizeMin) params.append('size_min', sizeMin)
+      if (sizeMax) params.append('size_max', sizeMax)
+      if (widthMin) params.append('width_min', widthMin)
+      if (widthMax) params.append('width_max', widthMax)
+      if (thickMin) params.append('thick_min', thickMin)
+      if (thickMax) params.append('thick_max', thickMax)
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+      return request(url, { signal })
+    }
+  })
+
+  // Create die mutation
+  const createDieMutation = useMutation({
+    mutationFn: (payload: any) => request('/api/dies/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      setIsCreateOpen(false)
+      resetCreateForm()
+    },
+    onError: (err) => {
+      setCreateError(err.message)
+    }
+  })
+
+  // Drag and Drop State & Handler Hooks
+  const [activeDragType, setActiveDragType] = useState<string | null>(null) // 'die' or 'set'
+  const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: any } | null>(null) // { type: 'machine'|'set'|'unassigned', id: ... }
+
+  const reallocateDieMutation = useMutation({
+    mutationFn: ({ dieId, setId }: { dieId: any, setId: any }) => request(`/api/dies/${dieId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ current_set: setId })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+    }
+  })
+
+  const reallocateSetMutation = useMutation({
+    mutationFn: ({ setId, machineId }: { setId: any, machineId: any }) => request(`/api/sets/${setId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ machine: machineId })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+    }
+  })
+
+  const handleDropOnMachine = useCallback((e: React.DragEvent, machineId: any) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'set') {
+        const { id: setId, currentMachineId } = data
+        if (Number(currentMachineId) === Number(machineId)) return
+        reallocateSetMutation.mutate({ setId, machineId })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }, [role, reallocateSetMutation])
+
+  const handleDropOnSet = useCallback((e: React.DragEvent, setId: any) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'die') {
+        const { id: dieId } = data
+        reallocateDieMutation.mutate({ dieId, setId })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }, [role, reallocateDieMutation])
+
+  const handleDropOnUnassigned = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOverNode(null)
+    setActiveDragType(null)
+    if (role !== 'ROOT' && role !== 'ADMIN') return
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (data.type === 'die') {
+        const { id: dieId } = data
+        reallocateDieMutation.mutate({ dieId, setId: null })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }, [role, reallocateDieMutation])
+
+  const handleDragStartDie = useCallback((id: string) => {
+    setActiveDragType('die')
+  }, [])
+
+  const handleDragEndDie = useCallback(() => {
+    setActiveDragType(null)
+    setDragOverNode(null)
+  }, [])
+
+  const resetCreateForm = () => {
+    setNewDieId('')
+    setNewDieType('ROUND')
+    setNewCasing('')
+    setNewStatus('AVAILABLE')
+    setNewLocation('')
+    setNewRemarks('')
+    setNewCurrentSet('')
+    setNewOriginalSize('')
+    setNewCurrentSize('')
+    setNewOriginalWidth('')
+    setNewCurrentWidth('')
+    setNewOriginalThickness('')
+    setNewCurrentThickness('')
+    setNewRadius('')
+    setCreateError(null)
+  }
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreateError(null)
+    
+    const payload: any = {
+      die_id: newDieId,
+      die_type: newDieType,
+      casing: newCasing,
+      status: newStatus,
+      location: newLocation,
+      remarks: newRemarks,
+      current_set: newCurrentSet || null
+    }
+
+    if (newDieType === 'ROUND') {
+      payload.original_size = newOriginalSize
+      payload.current_size = newCurrentSize
+    } else {
+      payload.original_width = newOriginalWidth
+      payload.current_width = newCurrentWidth
+      payload.original_thickness = newOriginalThickness
+      payload.current_thickness = newCurrentThickness
+      payload.radius = newRadius
+    }
+
+    createDieMutation.mutate(payload)
+  }
+
+  // Group dies into tree data structure (Memoized to prevent high-render CPU recalculations)
+  const { diesBySet, unassignedDies, machinesWithData } = useMemo(() => {
+    const diesBySet: Record<string | number, any[]> = {}
+    const unassignedDies: any[] = []
+    
+    dies?.forEach((die: any) => {
+      if (die.current_set) {
+        if (!diesBySet[die.current_set]) {
+          diesBySet[die.current_set] = []
+        }
+        diesBySet[die.current_set].push(die)
+      } else {
+        unassignedDies.push(die)
+      }
+    })
+
+    const machinesWithData = (machinesList || []).map((machine: any) => {
+      const machineSets = (setsList || []).filter((s: any) => s.machine === machine.id).map((set: any) => {
+        const setDies = diesBySet[set.id] || []
+        return {
+          ...set,
+          dies: setDies
+        }
+      }).filter((set: any) => set.dies.length > 0)
+
+      return {
+        ...machine,
+        sets: machineSets,
+        totalDies: machineSets.reduce((sum: number, s: any) => sum + s.dies.length, 0)
+      }
+    }).filter((m: any) => m.totalDies > 0)
+
+    return { diesBySet, unassignedDies, machinesWithData }
+  }, [dies, machinesList, setsList])
+
+  const handleExpandAll = () => {
+    const nextMachs: Record<string | number, boolean> = {}
+    const nextSets: Record<string | number, boolean> = {}
+    machinesWithData.forEach((m: any) => {
+      nextMachs[m.id] = true
+      m.sets.forEach((s: any) => {
+        nextSets[s.id] = true
+      })
+    })
+    setExpandedMachines(nextMachs)
+    setExpandedSets(nextSets)
+    setExpandedUnassigned(true)
+  }
+
+  const handleCollapseAll = () => {
+    setExpandedMachines({})
+    setExpandedSets({})
+    setExpandedUnassigned(false)
+  }
+
+  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
+  const [treeSearch, setTreeSearch] = useState('')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Filtered machines list for the tree navigation search
+  const filteredMachines = useMemo(() => {
+    if (!treeSearch) return machinesWithData
+    const query = treeSearch.toLowerCase()
+    return machinesWithData.map((m: any) => {
+      const matchingSets = m.sets.filter((s: any) => s.name.toLowerCase().includes(query))
+      const machineMatches = m.name.toLowerCase().includes(query)
+      if (machineMatches || matchingSets.length > 0) {
+        return {
+          ...m,
+          sets: machineMatches ? m.sets : matchingSets
+        }
+      }
+      return null
+    }).filter(Boolean) as any[]
+  }, [machinesWithData, treeSearch])
+
+  const isSearchActive = useMemo(() => {
+    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
+  // Automatically select search node when search starts/ends
+  useEffect(() => {
+    if (isSearchActive) {
+      setSelectedNode({ type: 'search' })
+    } else {
+      setSelectedNode(null)
+    }
+  }, [isSearchActive])
+
+  // Set default selected node once data is loaded and no search is active
+  useEffect(() => {
+    if (!selectedNode && !isSearchActive) {
+      if (machinesWithData && machinesWithData.length > 0) {
+        setSelectedNode({ type: 'machine', id: machinesWithData[0].id })
+      } else if (unassignedDies && unassignedDies.length > 0) {
+        setSelectedNode({ type: 'unassigned' })
+      }
+    }
+  }, [machinesWithData, unassignedDies, selectedNode, isSearchActive])
+
+  // Compute active view based on selection and search status
+  const activeView = useMemo(() => {
+    if (isSearchActive && (!selectedNode || selectedNode.type === 'search')) {
+      return 'search'
+    }
+    if (selectedNode) {
+      return selectedNode.type
+    }
+    return 'placeholder'
+  }, [selectedNode, isSearchActive])
+
+  // Find currently selected machine details from active data
+  const selectedMachine = useMemo(() => {
+    if (selectedNode?.type === 'machine') {
+      return machinesWithData.find((m: any) => m.id === selectedNode.id)
+    }
+    return null
+  }, [selectedNode, machinesWithData])
+
+  // Find currently selected set details from active data
+  const selectedSetData = useMemo(() => {
+    if (selectedNode?.type === 'set') {
+      for (const m of machinesWithData) {
+        const s = m.sets.find((set: any) => set.id === selectedNode.id)
+        if (s) {
+          return { set: s, machine: m }
+        }
+      }
+    }
+    return null
+  }, [selectedNode, machinesWithData])
+
+  // Find raw machine and set to show empty fallback details if filtered out
+  const rawMachine = useMemo(() => {
+    if (selectedNode?.type === 'machine') {
+      return (machinesList || []).find((m: any) => m.id === selectedNode.id)
+    }
+    return null
+  }, [selectedNode, machinesList])
+
+  const rawSetData = useMemo(() => {
+    if (selectedNode?.type === 'set') {
+      const s = (setsList || []).find((set: any) => set.id === selectedNode.id)
+      if (s) {
+        const m = (machinesList || []).find((mach: any) => mach.id === s.machine)
+        return { set: s, machine: m }
+      }
+    }
+    return null
+  }, [selectedNode, setsList, machinesList])
+
+  const canCreate = role === 'ROOT' || role === 'ADMIN'
+
+  const sidebarTree = useMemo(() => (
+    <div 
+      className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 border-r border-slate-805 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      } ${
+        isSidebarCollapsed ? 'md:hidden' : 'md:flex'
+      }`}
+    >
+      {/* Sidebar Header with Tree Search */}
+      <div className="p-4 border-b border-slate-800 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-slate-200 text-xs tracking-wider uppercase">Inventory Explorer</span>
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        
+        {/* Tree Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+          <input 
+            type="text"
+            placeholder="Search machines or sets..."
+            value={treeSearch}
+            onChange={(e) => setTreeSearch(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+          />
+        </div>
+      </div>
+
+      {/* Tree Content */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div>
+          {/* Search Results Tree Node */}
+          {isSearchActive && (
+            <div className="mb-4">
+              <div
+                onClick={() => setSelectedNode({ type: 'search' })}
+                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                  selectedNode?.type === 'search'
+                    ? 'bg-blue-600/10 text-white border-blue-500'
+                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
+                <span className="text-xs font-bold truncate flex-1">Search Results</span>
+                <span className="bg-slate-950 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                  {dies?.length || 0}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <Database className="h-3.5 w-3.5 text-blue-500" />
+            <span>Machines / Production Sets</span>
+          </div>
+          
+          <div className="space-y-1 mt-2">
+            {filteredMachines.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-slate-500 italic">No matches found</div>
+            ) : (
+              filteredMachines.map((machine: any) => {
+                const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
+                const isMachineSelected = selectedNode?.type === 'machine' && selectedNode?.id === machine.id
+                const isMachineDragOver = dragOverNode?.type === 'machine' && dragOverNode?.id === machine.id
+                
+                return (
+                  <div key={machine.id} className="space-y-0.5">
+                    {/* Machine Node */}
+                    <div 
+                      className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
+                        isMachineDragOver
+                          ? 'bg-blue-650 text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
+                          : isMachineSelected 
+                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2' 
+                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
+                      }`}
+                      onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
+                      onDragOver={canCreate ? (e) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
+                      onDragEnter={canCreate ? (e) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
+                      onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                      onDrop={canCreate ? (e) => handleDropOnMachine(e, machine.id) : undefined}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleMachine(machine.id)
+                        }}
+                        className="p-1 hover:bg-slate-850 rounded transition mr-1"
+                      >
+                        {isMachineExpanded ? (
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                        )}
+                      </button>
+                      <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-500'}`} />
+                      <span className="text-xs font-semibold truncate flex-1">{machine.name}</span>
+                      <span className="bg-slate-950 text-slate-500 text-xxs px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
+                        {machine.totalDies}
+                      </span>
+                    </div>
+                    
+                    {/* Set Nodes (Children) */}
+                    {isMachineExpanded && (
+                      <div className="relative pl-4 space-y-0.5 ml-4 mt-0.5">
+                        <div className="tree-branch-line" />
+                        {machine.sets.map((set: any) => {
+                          const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
+                          const activeCount = set.dies.filter(isDieActive).length
+                          const isSetDragOver = dragOverNode?.type === 'set' && dragOverNode?.id === set.id
+                          return (
+                            <div key={set.id} className="relative pl-6">
+                              <div className="tree-leaf-line" />
+                              <div
+                                onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
+                                draggable={canCreate}
+                                onDragStart={(e) => {
+                                  if (canCreate) {
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'set', id: set.id, currentMachineId: machine.id }));
+                                    setActiveDragType('set');
+                                  }
+                                }}
+                                onDragEnd={() => {
+                                  setActiveDragType(null);
+                                  setDragOverNode(null);
+                                }}
+                                onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                                onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
+                                onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                                onDrop={canCreate ? (e) => handleDropOnSet(e, set.id) : undefined}
+                                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
+                                  canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                                } ${
+                                  isSetDragOver
+                                    ? 'bg-indigo-600/30 text-white border-indigo-500 ring-2 ring-indigo-500/20'
+                                    : isSetSelected
+                                      ? 'bg-indigo-600/10 text-white border-indigo-500'
+                                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                                }`}
+                              >
+                                <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
+                                <span className="text-xs font-medium truncate flex-1">{set.name}</span>
+                                <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
+                                  {activeCount > 0 && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
+                                  )}
+                                  {set.dies.length}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+           {/* Unassigned / Standalone Dies Node */}
+           {unassignedDies.length > 0 && (
+             <div className="pt-4 border-t border-slate-800/60 mt-4">
+               {(() => {
+                 const isUnassignedDragOver = dragOverNode?.type === 'unassigned'
+                 return (
+                   <div
+                     onClick={() => setSelectedNode({ type: 'unassigned' })}
+                     onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                     onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
+                     onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
+                     onDrop={canCreate ? (e: React.DragEvent) => handleDropOnUnassigned(e) : undefined}
+                     className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                       isUnassignedDragOver
+                         ? 'bg-amber-650 text-white border-amber-500 ring-2 ring-amber-500/20'
+                         : selectedNode?.type === 'unassigned'
+                           ? 'bg-amber-600/10 text-white border-amber-500'
+                           : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                     }`}
+                   >
+                     <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
+                     <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
+                     <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                       {unassignedDies.length}
+                     </span>
+                   </div>
+                 )
+               })()}
+             </div>
+           )}
+        </div>
+      </div>
+    </div>
+  ), [
+    isSidebarOpen,
+    isSidebarCollapsed,
+    treeSearch,
+    isSearchActive,
+    selectedNode,
+    dies?.length,
+    filteredMachines,
+    expandedMachines,
+    dragOverNode,
+    activeDragType,
+    canCreate,
+    unassignedDies,
+    expandedSets,
+    toggleMachine,
+    toggleSet,
+    handleDropOnMachine,
+    handleDropOnSet,
+    handleDropOnUnassigned
+  ])
+
+  return (
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] relative bg-slate-950 text-white font-sans">
+      
+      {/* Sidebar Overlay (Mobile only) */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* LEFT PANEL - Tree Navigation */}
+      {sidebarTree}
+
+      {/* RIGHT PANEL - Content Area */}
+      <div className="flex-1 min-w-0 bg-slate-950 flex flex-col">
+        
+        {/* Top Header & Navbar-like control */}
+        <div className="bg-slate-900 border-b border-slate-800/60 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
+          <div className="flex items-center">
+            {/* Sidebar toggle button (Mobile: Drawer, Desktop/Tablet: Collapse) */}
+            <button 
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  setIsSidebarOpen(!isSidebarOpen)
+                } else {
+                  setIsSidebarCollapsed(!isSidebarCollapsed)
+                }
+              }}
+              className="p-2 bg-slate-950 border border-slate-800 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-white transition shadow-sm mr-4"
+              title="Toggle Sidebar"
+            >
+              {/* Mobile View: Hamburger Menu */}
+              <span className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </span>
+              {/* Desktop View: Dynamic Chevrons */}
+              <span className="hidden md:inline">
+                {isSidebarCollapsed ? (
+                  <ChevronRight className="h-5 w-5 text-blue-400" />
+                ) : (
+                  <ChevronLeft className="h-5 w-5" />
+                )}
+              </span>
+            </button>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">Die Registry Inventory</h1>
+              <p className="text-slate-400 text-xs mt-0.5 hidden sm:block">Professional enterprise-grade inventory registry dashboard.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Inner Content Area */}
+        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 overflow-y-auto">
+          
+          {/* Action Bar (Search & Filter Section) */}
+          <div className="bg-slate-900 border border-slate-805 rounded-2xl p-6 shadow-xl">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                <input 
+                  type="text" 
+                  placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-350"
+                />
+              </div>
+              
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-bold transition-all duration-350 w-full md:w-auto ${
+                  showFilters 
+                    ? 'bg-blue-600/15 text-blue-400 border-blue-500/30' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+                <span>Filters</span>
+              </button>
+            </div>
+
+            {/* Secondary Actions Row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800/60">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExpandAll}
+                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCollapseAll}
+                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                >
+                  Collapse All
+                </button>
+              </div>
+
+              {canCreate && (
+                <button 
+                  onClick={() => setIsCreateOpen(true)}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs md:text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add New Die</span>
+                </button>
+              )}
+            </div>
+
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
+                  <select 
+                    value={dieType}
+                    onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Types</option>
+                    <option value="ROUND">Round</option>
+                    <option value="FLAT">Flat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <select 
+                    value={statusVal}
+                    onChange={(e) => setStatusVal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="CLEANING">Cleaning</option>
+                    <option value="POLISHING">Polishing</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="SCRAPPED">Scrapped</option>
+                    <option value="MISSING">Missing</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. 25x10"
+                    value={casing}
+                    onChange={(e) => setCasing(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {dieType === 'ROUND' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Min"
+                        value={sizeMin}
+                        onChange={(e) => setSizeMin(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        placeholder="Max"
+                        value={sizeMax}
+                        onChange={(e) => setSizeMax(e.target.value)}
+                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {dieType === 'FLAT' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={widthMin}
+                          onChange={(e) => setWidthMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={widthMax}
+                          onChange={(e) => setWidthMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-305 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Min"
+                          value={thickMin}
+                          onChange={(e) => setThickMin(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-805 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          step="0.001"
+                          placeholder="Max"
+                          value={thickMax}
+                          onChange={(e) => setThickMax(e.target.value)}
+                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-303 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Master Detail View Wrapper */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-24">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8">
+              <p className="text-rose-400 font-bold">Error loading inventory: {error.message}</p>
+            </div>
+          ) : !selectedNode ? (
+            <div className="text-center py-24 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-md">
+              <p className="text-slate-400 text-lg">No selection. Select a machine or set from the navigation tree.</p>
+            </div>
+          ) : (
+            <div>
+              
+              {/* SEARCH RESULTS VIEW */}
+              {activeView === 'search' && (
+                <div className="space-y-8 animate-fadeIn">
+                  {/* Header */}
+                  <div className="border-b border-slate-800 pb-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <Search className="h-4 w-4 text-blue-500" />
+                      <span>Search & Filter Results</span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black text-white">Matching Dies</h2>
+                    <p className="text-slate-400 text-xs mt-1">Showing all dies matching active registry filters.</p>
+                  </div>
+
+                  {dies && dies.length > 0 ? (
+                    <>
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Total Matches</span>
+                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2">{dies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {dies.length - dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Filtered Catalog</h3>
+                        <DiesTable 
+                          diesList={dies} 
+                          navigate={navigate} 
+                          onDragStartDie={handleDragStartDie}
+                          onDragEndDie={handleDragEndDie}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+                      <Search className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <p className="text-slate-400 font-medium">No dies in the registry match the current search or filters.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* MACHINE DETAILS VIEW */}
+              {activeView === 'machine' && (
+                <div className="space-y-8">
+                  {selectedMachine ? (
+                    <>
+                      {/* Header */}
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <Cpu className="h-4 w-4 text-blue-500" />
+                          <span>Machine Explorer</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{selectedMachine.name}</h2>
+                        <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 rounded-lg mt-2">
+                          {selectedMachine.category_name || 'Standard Category'}
+                        </span>
+                      </div>
+
+                      {/* Stat Cards */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Summary Statistics</h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Sets</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.sets.length}</span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.totalDies}</span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                              {selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
+                            </span>
+                          </div>
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
+                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                              {selectedMachine.totalDies - selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sets Cards Section */}
+                      <div className="pt-4">
+                        <h3 className="text-sm font-semibold text-slate-505 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-indigo-400" />
+                          <span>Assigned Sets</span>
+                        </h3>
+                        {selectedMachine.sets.length === 0 ? (
+                          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 italic">
+                            No sets found for this machine matching filters.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {selectedMachine.sets.map((set: any) => {
+                              const sTotal = set.dies.length
+                              const sActive = set.dies.filter(isDieActive).length
+                              const sInactive = sTotal - sActive
+                              return (
+                                <div
+                                  key={set.id}
+                                  onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: selectedMachine.id })}
+                                  className="bg-slate-900/55 hover:bg-slate-900 border border-slate-850 hover:border-indigo-500/40 rounded-2xl p-5 cursor-pointer transition-all duration-300 shadow-md group relative overflow-hidden"
+                                >
+                                  {/* Hover Glow */}
+                                  <div className="absolute inset-x-0 bottom-0 h-1 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+                                  
+                                  <div className="flex items-center justify-between mb-4">
+                                    <span className="font-extrabold text-white text-base group-hover:text-indigo-400 transition-colors">
+                                      {set.name}
+                                    </span>
+                                    <span className="text-xs bg-slate-950 text-indigo-400 font-bold px-2 py-0.5 rounded-full border border-slate-800">
+                                      {sTotal} {sTotal === 1 ? 'Die' : 'Dies'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-4 text-xs text-slate-400 border-t border-slate-800 pt-3">
+                                    <div>
+                                      <span className="text-emerald-400 font-bold">{sActive}</span> Active
+                                    </div>
+                                    <div>
+                                      <span className="text-rose-400 font-bold">{sInactive}</span> Inactive
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback when selected machine is filtered out */
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <Cpu className="h-4 w-4 text-blue-500" />
+                          <span>Machine Explorer</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{rawMachine?.name || 'Machine'}</h2>
+                      </div>
+                      <div className="bg-slate-900 border border-slate-850 rounded-2xl p-12 text-center shadow-lg">
+                        <Cpu className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                        <p className="text-slate-400 font-medium">No dies assigned to this machine match the current filters.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SET DETAILS VIEW */}
+              {activeView === 'set' && (
+                <div className="space-y-8">
+                  {selectedSetData ? (
+                    <>
+                      {/* Header */}
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
+                          <span>{selectedSetData.machine?.name}</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                          <span className="text-indigo-400">{selectedSetData.set.name}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{selectedSetData.set.name}</h2>
+                        <p className="text-slate-400 text-xs mt-1">Assigned to machine: {selectedSetData.machine?.name}</p>
+                      </div>
+
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedSetData.set.dies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {selectedSetData.set.dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {selectedSetData.set.dies.length - selectedSetData.set.dies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      {(() => {
+                        const total = selectedSetData.set.dies.length
+                        const active = selectedSetData.set.dies.filter(isDieActive).length
+                        const inactive = total - active
+                        const activePct = total > 0 ? ((active / total) * 100).toFixed(1) : '0.0'
+                        const inactivePct = total > 0 ? ((inactive / total) * 100).toFixed(1) : '0.0'
+                        return (
+                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                            <h3 className="text-xs font-semibold text-slate-505 uppercase tracking-wider mb-4">Operational Ratio</h3>
+                            <div className="flex justify-between text-xs font-bold text-slate-404 mb-2">
+                              <span className="text-emerald-400">Active: {active} ({activePct}%)</span>
+                              <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden flex">
+                              <div className="bg-emerald-500 h-full transition-all duration-550" style={{ width: `${activePct}%` }} />
+                              <div className="bg-rose-500 h-full transition-all duration-550" style={{ width: `${inactivePct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
+                        <DiesTable 
+                          diesList={selectedSetData.set.dies} 
+                          navigate={navigate} 
+                          onDragStartDie={handleDragStartDie}
+                          onDragEndDie={handleDragEndDie}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback when selected set is filtered out */
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-800 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <span>{rawSetData?.machine?.name || 'Machine'}</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                          <span className="text-indigo-400">{rawSetData?.set?.name || 'Set'}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white">{rawSetData?.set?.name || 'Set'}</h2>
+                      </div>
+                      <div className="bg-slate-900 border border-slate-805 rounded-2xl p-12 text-center shadow-lg">
+                        <Layers className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                        <p className="text-slate-400 font-medium">No dies assigned to this set match the current filters.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* UNASSIGNED STANDALONE DIES VIEW */}
+              {activeView === 'unassigned' && (
+                <div className="space-y-8">
+                  {/* Header */}
+                  <div className="border-b border-slate-800 pb-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <Sliders className="h-4 w-4 text-amber-500" />
+                      <span>Standalone Inventory</span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black text-white">Unassigned / Standalone Dies</h2>
+                    <p className="text-slate-400 text-xs mt-1">Production dies that are currently unassigned to any machine set.</p>
+                  </div>
+
+                  {unassignedDies.length > 0 ? (
+                    <>
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Total Standalone</span>
+                          <span className="text-2xl md:text-3xl font-black text-amber-450 mt-2">{unassignedDies.length}</span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                            {unassignedDies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                            {unassignedDies.length - unassignedDies.filter(isDieActive).length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dies Table */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-505 uppercase tracking-wider">Dies Inventory</h3>
+                        <DiesTable 
+                          diesList={unassignedDies} 
+                          navigate={navigate} 
+                          onDragStartDie={handleDragStartDie}
+                          onDragEndDie={handleDragEndDie}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+                      <Sliders className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <p className="text-slate-400 font-medium">No unassigned dies match the current filters.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Die Modal */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Create Production Die</h2>
+              <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-6">
+              {createError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-sm">
+                  {createError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID (Unique)</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={newDieId}
+                    onChange={(e) => setNewDieId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
+                  <select 
+                    value={newDieType}
+                    onChange={(e) => setNewDieType(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="ROUND">Round</option>
+                    <option value="FLAT">Flat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. 25x10"
+                    value={newCasing}
+                    onChange={(e) => setNewCasing(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <select 
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="CLEANING">Cleaning</option>
+                    <option value="POLISHING">Polishing</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="SCRAPPED">Scrapped</option>
+                    <option value="MISSING">Missing</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
+                  <input 
+                    type="text" 
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
+                  <select 
+                    value={newCurrentSet}
+                    onChange={(e) => setNewCurrentSet(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  >
+                    <option value="">— Unassigned —</option>
+                    {setsList?.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.machine_name})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic Sizing Subfields */}
+              <div className="border-t border-slate-800 pt-6">
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Dimensions Specifications</h3>
+                
+                {newDieType === 'ROUND' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Size (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalSize}
+                        onChange={(e) => setNewOriginalSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentSize}
+                        onChange={(e) => setNewCurrentSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Width (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalWidth}
+                        onChange={(e) => setNewOriginalWidth(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentWidth}
+                        onChange={(e) => setNewCurrentWidth(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Thickness (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newOriginalThickness}
+                        onChange={(e) => setNewOriginalThickness(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newCurrentThickness}
+                        onChange={(e) => setNewCurrentThickness(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Radius (mm)</label>
+                      <input 
+                        type="number" 
+                        step="0.001"
+                        required
+                        value={newRadius}
+                        onChange={(e) => setNewRadius(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
+                <textarea 
+                  rows={3}
+                  value={newRemarks}
+                  onChange={(e) => setNewRemarks(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-805 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreateOpen(false)}
+                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={createDieMutation.isPending}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold"
+                >
+                  {createDieMutation.isPending ? 'Creating...' : 'Create Die'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

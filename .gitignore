@@ -28,9 +28,13 @@ dist-ssr/
 
 # Playwright
 test-results/
+test-results-local/
 playwright-report/
 blob-report/
 
 # Cli
 .agent/
 graphify-out/
+
+# User
+*plan.md

@@ -26,6 +26,11 @@ def init_meilisearch():
     except Exception as e:
         print(f"Meilisearch connection/init failed: {e}")
 
+from concurrent.futures import ThreadPoolExecutor
+
+# Thread pool executor for offloading Meilisearch network calls
+executor = ThreadPoolExecutor(max_workers=4)
+
 def sync_die(die):
     doc = {
         'id':       die.die_id,
@@ -46,13 +51,20 @@ def sync_die(die):
         doc['width']     = float(die.flatdie.current_width)
         doc['thickness'] = float(die.flatdie.current_thickness)
         
-    try:
-        client.index(INDEX_NAME).add_documents([doc])
-    except Exception as e:
-        print(f"Failed to sync die {die.die_id} to Meilisearch: {e}")
+    def _do_sync():
+        try:
+            client.index(INDEX_NAME).add_documents([doc])
+        except Exception as e:
+            print(f"Failed to sync die {doc['die_id']} to Meilisearch: {e}")
+
+    executor.submit(_do_sync)
 
 def delete_die_document(die_id):
-    try:
-        client.index(INDEX_NAME).delete_document(die_id)
-    except Exception as e:
-        print(f"Failed to delete die {die_id} from Meilisearch: {e}")
+    def _do_delete():
+        try:
+            client.index(INDEX_NAME).delete_document(die_id)
+        except Exception as e:
+            print(f"Failed to delete die {die_id} from Meilisearch: {e}")
+
+    executor.submit(_do_delete)
+
