@@ -110,8 +110,8 @@ def search_dies(request):
             if thick_max:
                 dies = dies.filter(flatdie__current_thickness__lte=thick_max)
                 
-            # Limit direct database query results to first 1000 items
-            data = serialize_die_list_fast(dies[:1000])
+            # Limit direct database query results to first 10000 items
+            data = serialize_die_list_fast(dies[:10000])
             return Response(data)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -127,7 +127,7 @@ def search_dies(request):
     if casing:
         filters.append(f"casing = '{casing}'")
         
-    search_params = {'limit': 1000}  # Fetch up to 1000 hits to avoid 20-hit truncation before DB range filter
+    search_params = {'limit': 10000}  # Fetch up to 10000 hits to avoid truncation before DB range filter
     if filters:
         search_params['filter'] = " AND ".join(filters)
         
@@ -188,7 +188,7 @@ def search_dies(request):
             if thick_max:
                 dies = dies.filter(flatdie__current_thickness__lte=thick_max)
                 
-            data = serialize_die_list_fast(dies[:1000])
+            data = serialize_die_list_fast(dies[:10000])
             return Response(data)
         except Exception as db_err:
             return Response({"error": f"Database search fallback failed: {str(db_err)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
