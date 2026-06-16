@@ -87,7 +87,7 @@ test.describe('DMS E2E Smoke Tests', () => {
     await card.click();
     await page.waitForURL('**/#/dies/R-E2E-1');
     await expect(page.locator('h1')).toContainText('R-E2E-1');
-    await expect(page.locator('h3:has-text("Change History")')).toBeVisible();
+    await expect(page.locator('h3:has-text("Industrial Audit Log")')).toBeVisible();
 
     // 6. Visit /inventory -> inventory page renders
     await page.goto('/#/inventory');

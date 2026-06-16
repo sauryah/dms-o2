@@ -8,6 +8,7 @@ class DieHistory(models.Model):
     field_name = models.CharField(max_length=50)
     old_value  = models.TextField()
     new_value  = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     note       = models.TextField(blank=True)
 
     class Meta:

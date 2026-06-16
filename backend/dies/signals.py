@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
-from users.middleware import get_current_user
+from users.middleware import get_current_user, get_current_ip
 from search.meili import sync_die, delete_die_document
 from dms.events import broadcast_event
 
@@ -21,6 +21,7 @@ def log_die_changes(sender, instance, **kwargs):
     
     user = get_current_user()
     changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
  
     for field in DIE_WATCH_FIELDS:
         old_val = getattr(old, field)
@@ -32,6 +33,7 @@ def log_die_changes(sender, instance, **kwargs):
                 field_name=field,
                 old_value=str(old_val) if old_val is not None else '',
                 new_value=str(new_val) if new_val is not None else '',
+                ip_address=ip,
             )
 
 @receiver(pre_save, sender=RoundDie)
@@ -45,6 +47,7 @@ def log_round_size_change(sender, instance, **kwargs):
     
     user = get_current_user()
     changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
 
     if old.current_size != instance.current_size:
         DieHistory.objects.create(
@@ -53,6 +56,7 @@ def log_round_size_change(sender, instance, **kwargs):
             field_name='current_size',
             old_value=str(old.current_size),
             new_value=str(instance.current_size),
+            ip_address=ip,
         )
 
 @receiver(pre_save, sender=FlatDie)
@@ -66,6 +70,7 @@ def log_flat_changes(sender, instance, **kwargs):
     
     user = get_current_user()
     changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
 
     for field in ['current_width', 'current_thickness']:
         old_val = getattr(old, field)
@@ -77,6 +82,7 @@ def log_flat_changes(sender, instance, **kwargs):
                 field_name=field,
                 old_value=str(old_val),
                 new_value=str(new_val),
+                ip_address=ip,
             )
 
 @receiver(post_save, sender=Die)

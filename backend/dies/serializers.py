@@ -7,7 +7,7 @@ class DieHistorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DieHistory
-        fields = ['timestamp', 'field_name', 'old_value', 'new_value', 'changed_by_username', 'note']
+        fields = ['timestamp', 'field_name', 'old_value', 'new_value', 'changed_by_username', 'ip_address', 'note']
         
     def get_changed_by_username(self, obj):
         return obj.changed_by.username if obj.changed_by else ''
