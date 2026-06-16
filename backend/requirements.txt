@@ -7,3 +7,5 @@ openpyxl
 python-decouple
 gunicorn
 django-cors-headers
+celery==5.3.6
+redis==5.0.1

@@ -26,46 +26,11 @@ def init_meilisearch():
     except Exception as e:
         print(f"Meilisearch connection/init failed: {e}")
 
-from concurrent.futures import ThreadPoolExecutor
-
-# Thread pool executor for offloading Meilisearch network calls
-executor = ThreadPoolExecutor(max_workers=4)
-
 def sync_die(die):
-    doc = {
-        'id':       str(die.id),
-        'die_id':   die.die_id,
-        'type':     die.die_type,
-        'die_type': die.die_type,
-        'casing':   die.casing,
-        'status':   die.status,
-        'location': die.location,
-        'set':      die.current_set.name if die.current_set else '',
-        'machine':  die.current_set.machine.name if die.current_set else '',
-    }
-    
-    # Check for related round or flat die data
-    if hasattr(die, 'rounddie') and die.rounddie:
-        doc['size'] = float(die.rounddie.current_size)
-    if hasattr(die, 'flatdie') and die.flatdie:
-        doc['width']     = float(die.flatdie.current_width)
-        doc['thickness'] = float(die.flatdie.current_thickness)
-        
-    def _do_sync():
-        try:
-            client.index(INDEX_NAME).add_documents([doc])
-        except Exception as e:
-            print(f"Failed to sync die {doc['die_id']} to Meilisearch: {e}")
-
-    executor.submit(_do_sync)
+    from search.tasks import sync_die_task
+    sync_die_task.delay(die.id)
 
 def delete_die_document(die_db_id):
-    doc_id = str(die_db_id)
-    def _do_delete():
-        try:
-            client.index(INDEX_NAME).delete_document(doc_id)
-        except Exception as e:
-            print(f"Failed to delete die {doc_id} from Meilisearch: {e}")
-
-    executor.submit(_do_delete)
+    from search.tasks import delete_die_document_task
+    delete_die_document_task.delay(die_db_id)
 

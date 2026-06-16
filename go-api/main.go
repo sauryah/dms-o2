@@ -8,8 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -68,7 +70,6 @@ func main() {
 	mux.Handle("GET /api/go/stats", authMiddleware(http.HandlerFunc(handleStats)))
 
 	port := getEnv("PORT", "8080")
-	log.Printf("Go Search Service listening on port %s...", port)
 	
 	loggingMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -76,9 +77,36 @@ func main() {
 		log.Printf("%s %s %s %s", r.RemoteAddr, r.Method, r.URL.String(), time.Since(start))
 	})
 
-	if err := http.ListenAndServe(":"+port, loggingMux); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: loggingMux,
 	}
+
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("Go Search Service listening on port %s...", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe error: %v", err)
+		}
+	}()
+
+	sig := <-stopChan
+	log.Printf("Received signal %v. Initiating graceful shutdown...", sig)
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP server Shutdown error: %v", err)
+	}
+
+	if db != nil {
+		log.Println("Closing PostgreSQL database connections...")
+		db.Close()
+	}
+	log.Println("Go Search Service stopped cleanly.")
 }
 
 func initPostgres() {

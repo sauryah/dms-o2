@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useStatsQuery, useSearchQuery } from '../hooks/useDies'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { useApi, useAuth, useDebounce } from '../App'
+import { useAuth, useDebounce } from '../App'
 import { RoundDieCard } from '../RoundDieCard'
 import { FlatDieCard } from '../FlatDieCard'
 
@@ -112,7 +112,6 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
 }
 
 export function DashboardPage() {
-  const { request } = useApi()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const debouncedQ = useDebounce(q, 300)
@@ -142,36 +141,23 @@ export function DashboardPage() {
   }, [])
 
   // Fetch overall statistics
-  const { data: statsData, isLoading: isStatsLoading } = useQuery({
-    queryKey: ['allDiesStats'],
-    queryFn: () => request('/api/go/stats')
-  })
+  const { data: statsData, isLoading: isStatsLoading } = useStatsQuery()
 
   // Fetch fuzzy search results if search query or filters exist
-  const { data: searchDies, isLoading: isSearchLoading } = useQuery({
-    queryKey: ['searchDiesDashboard', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
-    queryFn: ({ signal }) => {
-      if (!debouncedQ && !dieType && !statusVal && !casing && !sizeMin && !sizeMax && !widthMin && !widthMax && !thickMin && !thickMax) return []
-      
-      let url = '/api/go/search'
-      const params = new URLSearchParams()
-      if (debouncedQ) params.append('q', debouncedQ)
-      if (dieType) params.append('die_type', dieType)
-      if (statusVal) params.append('status', statusVal)
-      if (casing) params.append('casing', casing)
-      
-      if (sizeMin) params.append('size_min', sizeMin)
-      if (sizeMax) params.append('size_max', sizeMax)
-      if (widthMin) params.append('width_min', widthMin)
-      if (widthMax) params.append('width_max', widthMax)
-      if (thickMin) params.append('thick_min', thickMin)
-      if (thickMax) params.append('thick_max', thickMax)
-      
-      url += `?${params.toString()}`
-      return request(url, { signal })
-    },
-    enabled: !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
-  })
+  const searchEnabled = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  const { data: searchDiesData, isLoading: isSearchLoading } = useSearchQuery({
+    q: debouncedQ,
+    die_type: dieType,
+    status: statusVal,
+    casing,
+    size_min: sizeMin,
+    size_max: sizeMax,
+    width_min: widthMin,
+    width_max: widthMax,
+    thick_min: thickMin,
+    thick_max: thickMax,
+  }, searchEnabled)
+  const searchDies = searchDiesData || []
 
   const hasActiveFilter = !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
