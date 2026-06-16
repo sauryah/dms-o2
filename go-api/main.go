@@ -60,6 +60,9 @@ func main() {
 	// 3. Connect to Redis
 	initRedis()
 
+	// Start PostgreSQL event listener for Redis cache invalidation
+	startEventListener()
+
 	// 4. Start Index Reconciliation Scheduler
 	startReconciliationScheduler()
 
@@ -387,7 +390,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	if q == "" {
 		// 1. Direct database query
-		dies, err = queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		dies, err = queryPostgresDirectly("", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	} else {
 		// 2. Query Meilisearch first, then database
 		dies, err = queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
@@ -419,7 +422,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
-func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -438,6 +441,13 @@ func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMa
 		LEFT JOIN dies_flatdie f ON d.id = f.die_id
 		WHERE 1=1
 	`)
+
+	if q != "" {
+		cleanQ := strings.Trim(q, `"'`)
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_id ILIKE $%d", argCounter))
+		args = append(args, "%"+cleanQ+"%")
+		argCounter++
+	}
 
 	if dieType != "" {
 		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_type = $%d", argCounter))
@@ -556,7 +566,7 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 	res, err := meiliClient.Index(indexName).Search(q, &searchParams)
 	if err != nil {
 		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
-		return queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		return queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	}
 
 	if len(res.Hits) == 0 {
@@ -714,4 +724,78 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func startEventListener() {
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		getEnv("POSTGRES_HOST", "db"),
+		getEnv("POSTGRES_PORT", "5432"),
+		getEnv("POSTGRES_USER", "dms_user"),
+		getEnv("POSTGRES_PASSWORD", "dms_pass_123"),
+		getEnv("POSTGRES_DB", "dms"),
+	)
+
+	reportProblem := func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			log.Printf("PostgreSQL Listener error: %v", err)
+		}
+	}
+
+	listener := pq.NewListener(connStr, 10*time.Second, time.Minute, reportProblem)
+	err := listener.Listen("dms_events")
+	if err != nil {
+		log.Printf("Failed to listen to dms_events: %v", err)
+		return
+	}
+
+	go func() {
+		defer listener.Close()
+		log.Println("Listening for database notification events on channel 'dms_events' for cache invalidation...")
+		for {
+			select {
+			case n := <-listener.Notify:
+				if n == nil {
+					continue
+				}
+				log.Printf("Received DB event: %s. Invalidating Redis search and stats caches.", n.Extra)
+				invalidateCache()
+			case <-time.After(90 * time.Second):
+				go func() {
+					err := listener.Ping()
+					if err != nil {
+						log.Printf("PostgreSQL Listener ping failed: %v", err)
+					}
+				}()
+			}
+		}
+	}()
+}
+
+func invalidateCache() {
+	if redisClient == nil {
+		return
+	}
+
+	// Delete stats key
+	err := redisClient.Del(ctx, "stats").Err()
+	if err != nil {
+		log.Printf("Failed to delete stats cache: %v", err)
+	} else {
+		log.Println("Successfully invalidated 'stats' cache.")
+	}
+
+	// Find and delete search keys
+	keys, err := redisClient.Keys(ctx, "search:*").Result()
+	if err != nil {
+		log.Printf("Failed to list cached search keys: %v", err)
+		return
+	}
+	if len(keys) > 0 {
+		err = redisClient.Del(ctx, keys...).Err()
+		if err != nil {
+			log.Printf("Failed to delete search cache keys: %v", err)
+		} else {
+			log.Printf("Successfully invalidated %d search cache keys.", len(keys))
+		}
+	}
 }
