@@ -33,7 +33,7 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 def sync_die(die):
     doc = {
-        'id':       die.die_id,
+        'id':       str(die.id),
         'die_id':   die.die_id,
         'type':     die.die_type,
         'die_type': die.die_type,
@@ -59,12 +59,13 @@ def sync_die(die):
 
     executor.submit(_do_sync)
 
-def delete_die_document(die_id):
+def delete_die_document(die_db_id):
+    doc_id = str(die_db_id)
     def _do_delete():
         try:
-            client.index(INDEX_NAME).delete_document(die_id)
+            client.index(INDEX_NAME).delete_document(doc_id)
         except Exception as e:
-            print(f"Failed to delete die {die_id} from Meilisearch: {e}")
+            print(f"Failed to delete die {doc_id} from Meilisearch: {e}")
 
     executor.submit(_do_delete)
 

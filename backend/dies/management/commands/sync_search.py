@@ -21,7 +21,7 @@ class Command(BaseCommand):
         docs = []
         for die in dies:
             doc = {
-                'id':       die.die_id,
+                'id':       str(die.id),
                 'die_id':   die.die_id,
                 'type':     die.die_type,
                 'die_type': die.die_type,

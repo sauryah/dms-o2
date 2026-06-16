@@ -58,8 +58,8 @@ R-IMP-5,ROUND,25x10,DAMAGED,Rack C,remark5,4.5,4.5
             # Wait for Meilisearch sync and check
             time.sleep(1.0)
             index = meili_client.index(INDEX_NAME)
-            doc = index.get_document("R-IMP-1")
-            self.assertEqual(doc.id, "R-IMP-1")
+            doc = index.get_document(str(rd.id))
+            self.assertEqual(doc.id, str(rd.id))
             self.assertEqual(doc.status, "AVAILABLE")
         finally:
             os.remove(filepath)
@@ -161,8 +161,8 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
             # Wait for Meilisearch sync and check
             time.sleep(1.0)
             index = meili_client.index(INDEX_NAME)
-            doc = index.get_document("F-IMP-1")
-            self.assertEqual(doc.id, "F-IMP-1")
+            doc = index.get_document(str(die1.id))
+            self.assertEqual(doc.id, str(die1.id))
             self.assertEqual(getattr(doc, 'width', None), 5.5)
             self.assertEqual(getattr(doc, 'thickness', None), 15.0)
         finally:

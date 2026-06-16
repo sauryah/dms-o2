@@ -30,8 +30,8 @@ class MeilisearchTests(TransactionTestCase):
         time.sleep(1.0)
         
         index = meili_client.index(INDEX_NAME)
-        doc = index.get_document("ROUND-MEILI")
-        self.assertEqual(doc.id, "ROUND-MEILI")
+        doc = index.get_document(str(die.id))
+        self.assertEqual(doc.id, str(die.id))
         self.assertEqual(doc.status, "AVAILABLE")
         self.assertEqual(getattr(doc, 'size', None), 3.5)
 
@@ -39,7 +39,7 @@ class MeilisearchTests(TransactionTestCase):
         die.save()
         
         time.sleep(1.0)
-        doc = index.get_document("ROUND-MEILI")
+        doc = index.get_document(str(die.id))
         self.assertEqual(doc.status, "RUNNING")
 
         url = reverse('search-dies') + "?q=ROUND-MEILI"

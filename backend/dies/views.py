@@ -136,7 +136,14 @@ def search_dies(request):
         results = index.search(q, search_params)
         hit_ids = [hit['id'] for hit in results['hits']]
         
-        dies = Die.objects.filter(die_id__in=hit_ids).select_related('rounddie', 'flatdie', 'current_set__machine')
+        db_ids = []
+        for hid in hit_ids:
+            try:
+                db_ids.append(int(hid))
+            except ValueError:
+                pass
+                
+        dies = Die.objects.filter(id__in=db_ids).select_related('rounddie', 'flatdie', 'current_set__machine')
         
         if size_min:
             dies = dies.filter(rounddie__current_size__gte=size_min)
@@ -153,7 +160,7 @@ def search_dies(request):
         if thick_max:
             dies = dies.filter(flatdie__current_thickness__lte=thick_max)
             
-        die_map = {d.die_id: d for d in dies}
+        die_map = {str(d.id): d for d in dies}
         ordered_dies = [die_map[hid] for hid in hit_ids if hid in die_map]
         
         data = serialize_die_list_fast(ordered_dies)

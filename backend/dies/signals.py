@@ -102,6 +102,6 @@ def sync_flat_die_post_save(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=Die)
 def delete_die_post_delete(sender, instance, **kwargs):
-    transaction.on_commit(lambda: delete_die_document(instance.die_id))
+    transaction.on_commit(lambda: delete_die_document(instance.id))
     transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die_id, 'action': 'delete'}))
 

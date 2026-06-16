@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ var (
 
 // DieRepresentation matches the JSON structure expected by the React frontend.
 type DieRepresentation struct {
+	ID               int64   `json:"-"`
 	DieID            string  `json:"die_id"`
 	DieType          string  `json:"die_type"`
 	Casing           string  `json:"casing"`
@@ -393,7 +395,7 @@ func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMa
 
 	sqlParts = append(sqlParts, `
 		SELECT 
-			d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
 			r.current_size,
@@ -526,12 +528,14 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 		return []DieRepresentation{}, nil
 	}
 
-	// Extract matching document IDs (which are die_ids)
-	var hitIDs []string
+	// Extract matching document IDs (which are die database integer IDs as strings)
+	var hitIDs []int64
 	for _, hit := range res.Hits {
 		if hitMap, ok := hit.(map[string]interface{}); ok {
 			if idVal, ok := hitMap["id"].(string); ok {
-				hitIDs = append(hitIDs, idVal)
+				if parsedID, err := strconv.ParseInt(idVal, 10, 64); err == nil {
+					hitIDs = append(hitIDs, parsedID)
+				}
 			}
 		}
 	}
@@ -547,7 +551,7 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 
 	sqlParts = append(sqlParts, `
 		SELECT 
-			d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
 			r.current_size,
@@ -557,7 +561,7 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 		LEFT JOIN machines_machine m ON s.machine_id = m.id
 		LEFT JOIN dies_rounddie r ON d.id = r.die_id
 		LEFT JOIN dies_flatdie f ON d.id = f.die_id
-		WHERE d.die_id = ANY($1)
+		WHERE d.id = ANY($1)
 	`)
 	args = append(args, pq.Array(hitIDs))
 	argCounter++
@@ -608,9 +612,9 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 	}
 
 	// Reorder dies according to Meilisearch hit order
-	dieMap := make(map[string]DieRepresentation)
+	dieMap := make(map[int64]DieRepresentation)
 	for _, die := range dies {
-		dieMap[die.DieID] = die
+		dieMap[die.ID] = die
 	}
 
 	var orderedDies []DieRepresentation
@@ -632,7 +636,7 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		var size, width, thickness, radius sql.NullString
 
 		err := rows.Scan(
-			&d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
+			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
 			&setName, &machineName, &size, &width, &thickness, &radius,
 		)
 		if err != nil {
