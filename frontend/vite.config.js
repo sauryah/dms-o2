@@ -9,6 +9,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    server: {
+      deps: {
+        inline: ['@exodus/bytes'],
+      },
+    },
   },
   server: {
     port: 3000,
