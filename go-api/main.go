@@ -460,7 +460,7 @@ func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMa
 		argCounter++
 	}
 
-	sqlParts = append(sqlParts, "ORDER BY d.die_id ASC LIMIT 1000")
+	sqlParts = append(sqlParts, "ORDER BY d.die_id ASC LIMIT 10000")
 
 	query := strings.Join(sqlParts, "\n")
 	rows, err := db.Query(query, args...)
@@ -509,7 +509,7 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 	}
 
 	searchParams := meilisearch.SearchRequest{
-		Limit: 1000,
+		Limit: 10000,
 	}
 	if len(filters) > 0 {
 		searchParams.Filter = strings.Join(filters, " AND ")
