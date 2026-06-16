@@ -33,7 +33,7 @@ class MeilisearchTests(TransactionTestCase):
         doc = index.get_document("ROUND-MEILI")
         self.assertEqual(doc.id, "ROUND-MEILI")
         self.assertEqual(doc.status, "AVAILABLE")
-        self.assertEqual(getattr(doc, 'size', None), "3.500")
+        self.assertEqual(getattr(doc, 'size', None), 3.5)
 
         die.status = "RUNNING"
         die.save()

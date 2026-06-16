@@ -19,8 +19,8 @@ def init_meilisearch():
     try:
         index = client.index(INDEX_NAME)
         index.update_settings({
-            'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
-            'filterableAttributes': ['die_type', 'status', 'casing', 'location'],
+            'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine'],
+            'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
             'sortableAttributes':   ['die_id'],
         })
     except Exception as e:
@@ -41,10 +41,10 @@ def sync_die(die):
     
     # Check for related round or flat die data
     if hasattr(die, 'rounddie') and die.rounddie:
-        doc['size'] = f"{die.rounddie.current_size:.3f}"
+        doc['size'] = float(die.rounddie.current_size)
     if hasattr(die, 'flatdie') and die.flatdie:
-        doc['width']     = f"{die.flatdie.current_width:.3f}"
-        doc['thickness'] = f"{die.flatdie.current_thickness:.3f}"
+        doc['width']     = float(die.flatdie.current_width)
+        doc['thickness'] = float(die.flatdie.current_thickness)
         
     try:
         client.index(INDEX_NAME).add_documents([doc])

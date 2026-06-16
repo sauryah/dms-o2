@@ -163,8 +163,8 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
             index = meili_client.index(INDEX_NAME)
             doc = index.get_document("F-IMP-1")
             self.assertEqual(doc.id, "F-IMP-1")
-            self.assertEqual(getattr(doc, 'width', None), "5.500")
-            self.assertEqual(getattr(doc, 'thickness', None), "15.000")
+            self.assertEqual(getattr(doc, 'width', None), 5.5)
+            self.assertEqual(getattr(doc, 'thickness', None), 15.0)
         finally:
             os.remove(filepath)
 

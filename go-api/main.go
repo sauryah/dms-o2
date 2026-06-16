@@ -488,6 +488,26 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 		filters = append(filters, fmt.Sprintf("casing = '%s'", casing))
 	}
 
+	// Numeric range filters in Meilisearch
+	if sizeMin != "" {
+		filters = append(filters, fmt.Sprintf("size >= %s", sizeMin))
+	}
+	if sizeMax != "" {
+		filters = append(filters, fmt.Sprintf("size <= %s", sizeMax))
+	}
+	if widthMin != "" {
+		filters = append(filters, fmt.Sprintf("width >= %s", widthMin))
+	}
+	if widthMax != "" {
+		filters = append(filters, fmt.Sprintf("width <= %s", widthMax))
+	}
+	if thickMin != "" {
+		filters = append(filters, fmt.Sprintf("thickness >= %s", thickMin))
+	}
+	if thickMax != "" {
+		filters = append(filters, fmt.Sprintf("thickness <= %s", thickMax))
+	}
+
 	searchParams := meilisearch.SearchRequest{
 		Limit: 1000,
 	}

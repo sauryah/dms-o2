@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+const API_URL = process.env.API_URL || 'http://localhost:8000';
+
 test.describe('DMS E2E Smoke Tests', () => {
   let token = '';
 
   test.beforeAll(async ({ request }) => {
     // Authenticate and get JWT token
-    const loginRes = await request.post('http://localhost:8000/api/auth/login/', {
+    const loginRes = await request.post(`${API_URL}/api/auth/login/`, {
       data: {
         username: 'root',
         password: 'root_pass_1234567890',
@@ -17,14 +19,14 @@ test.describe('DMS E2E Smoke Tests', () => {
       token = loginData.token;
 
       // Delete the test die if it exists from a previous test run
-      await request.delete('http://localhost:8000/api/dies/R-E2E-1/', {
+      await request.delete(`${API_URL}/api/dies/R-E2E-1/`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       // Create a clean test die
-      const createRes = await request.post('http://localhost:8000/api/dies/', {
+      const createRes = await request.post(`${API_URL}/api/dies/`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
