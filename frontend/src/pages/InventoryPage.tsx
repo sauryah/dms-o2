@@ -12,7 +12,11 @@ import {
   Cpu, 
   Layers, 
   Database, 
-  Sliders 
+  Sliders,
+  ChevronDown,
+  Activity,
+  FolderOpen,
+  Info
 } from 'lucide-react'
 import { useApi, useAuth, useDebounce, isDieActive } from '../App'
 import { DiesTable } from '../components/DiesTable'
@@ -428,14 +432,14 @@ export function InventoryPage() {
 
   const sidebarTree = useMemo(() => (
     <div 
-      className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 border-r border-slate-805 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
+      className={`fixed inset-y-0 left-0 z-50 w-72 glass-panel border-r border-slate-800/40 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       } ${
         isSidebarCollapsed ? 'md:hidden' : 'md:flex'
       }`}
     >
       {/* Sidebar Header with Tree Search */}
-      <div className="p-4 border-b border-slate-800 flex flex-col gap-3">
+      <div className="p-4 border-b border-slate-800/45 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="font-bold text-slate-200 text-xs tracking-wider uppercase">Inventory Explorer</span>
           {/* Close button for mobile */}
@@ -449,13 +453,13 @@ export function InventoryPage() {
         
         {/* Tree Search Input */}
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
           <input 
             type="text"
             placeholder="Search machines or sets..."
             value={treeSearch}
             onChange={(e) => setTreeSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+            className="w-full glass-input rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
           />
         </div>
       </div>
@@ -470,13 +474,13 @@ export function InventoryPage() {
                 onClick={() => setSelectedNode({ type: 'search' })}
                 className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
                   selectedNode?.type === 'search'
-                    ? 'bg-blue-600/10 text-white border-blue-500'
+                    ? 'bg-blue-600/10 text-white border-blue-500 glow-blue'
                     : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                 }`}
               >
                 <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
                 <span className="text-xs font-bold truncate flex-1">Search Results</span>
-                <span className="bg-slate-950 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                <span className="bg-slate-955 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
                   {dies?.length || 0}
                 </span>
               </div>
@@ -490,7 +494,7 @@ export function InventoryPage() {
           
           <div className="space-y-1 mt-2">
             {filteredMachines.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-slate-500 italic">No matches found</div>
+              <div className="px-3 py-2 text-xs text-slate-505 italic">No matches found</div>
             ) : (
               filteredMachines.map((machine: any) => {
                 const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
@@ -505,7 +509,7 @@ export function InventoryPage() {
                         isMachineDragOver
                           ? 'bg-blue-650 text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
                           : isMachineSelected 
-                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2' 
+                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2 glow-blue' 
                             : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
                       }`}
                       onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
@@ -569,13 +573,13 @@ export function InventoryPage() {
                                   isSetDragOver
                                     ? 'bg-indigo-600/30 text-white border-indigo-500 ring-2 ring-indigo-500/20'
                                     : isSetSelected
-                                      ? 'bg-indigo-600/10 text-white border-indigo-500'
+                                      ? 'bg-indigo-600/10 text-white border-indigo-500 glow-indigo'
                                       : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                                 }`}
                               >
                                 <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
                                 <span className="text-xs font-medium truncate flex-1">{set.name}</span>
-                                <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
+                                <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-955 border border-slate-800 shrink-0">
                                   {activeCount > 0 && (
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
                                   )}
@@ -607,9 +611,9 @@ export function InventoryPage() {
                      onDrop={canCreate ? (e: React.DragEvent) => handleDropOnUnassigned(e) : undefined}
                      className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
                        isUnassignedDragOver
-                         ? 'bg-amber-650 text-white border-amber-500 ring-2 ring-amber-500/20'
+                         ? 'bg-amber-655 text-white border-amber-500 ring-2 ring-amber-500/20'
                          : selectedNode?.type === 'unassigned'
-                           ? 'bg-amber-600/10 text-white border-amber-500'
+                           ? 'bg-amber-600/10 text-white border-amber-500 glow-amber'
                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                      }`}
                    >
@@ -665,7 +669,7 @@ export function InventoryPage() {
       <div className="flex-1 min-w-0 bg-slate-950 flex flex-col">
         
         {/* Top Header & Navbar-like control */}
-        <div className="bg-slate-900 border-b border-slate-800/60 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
+        <div className="glass-panel border-b border-slate-800/40 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
           <div className="flex items-center">
             {/* Sidebar toggle button (Mobile: Drawer, Desktop/Tablet: Collapse) */}
             <button 
@@ -703,8 +707,8 @@ export function InventoryPage() {
         <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 overflow-y-auto">
           
           {/* Action Bar (Search & Filter Section) */}
-          <div className="bg-slate-900 border border-slate-805 rounded-2xl p-6 shadow-xl">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/40 blueprint-grid relative">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between relative z-10">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                 <input 
@@ -712,16 +716,16 @@ export function InventoryPage() {
                   placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-350"
+                  className="w-full glass-input rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
                 />
               </div>
               
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-bold transition-all duration-350 w-full md:w-auto ${
+                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-bold transition-all duration-350 w-full md:w-auto btn-glow glow-blue ${
                   showFilters 
                     ? 'bg-blue-600/15 text-blue-400 border-blue-500/30' 
-                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                    : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <SlidersHorizontal className="h-5 w-5" />
@@ -730,19 +734,19 @@ export function InventoryPage() {
             </div>
 
             {/* Secondary Actions Row */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800/60">
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800/40 relative z-10">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleExpandAll}
-                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
                 >
                   Expand All
                 </button>
                 <button
                   type="button"
                   onClick={handleCollapseAll}
-                  className="bg-slate-950 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
                 >
                   Collapse All
                 </button>
@@ -751,7 +755,7 @@ export function InventoryPage() {
               {canCreate && (
                 <button 
                   onClick={() => setIsCreateOpen(true)}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs md:text-sm"
+                  className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs md:text-sm btn-glow glow-blue"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add New Die</span>
@@ -760,13 +764,13 @@ export function InventoryPage() {
             </div>
 
             {showFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/40 relative z-10">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
                   <select 
                     value={dieType}
                     onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-350 focus:outline-none text-xs"
                   >
                     <option value="">All Types</option>
                     <option value="ROUND">Round</option>
@@ -779,7 +783,7 @@ export function InventoryPage() {
                   <select 
                     value={statusVal}
                     onChange={(e) => setStatusVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-350 focus:outline-none text-xs"
                   >
                     <option value="">All Statuses</option>
                     <option value="AVAILABLE">Available</option>
@@ -799,7 +803,7 @@ export function InventoryPage() {
                     placeholder="e.g. 25x10"
                     value={casing}
                     onChange={(e) => setCasing(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-300 focus:outline-none text-xs"
                   />
                 </div>
 
@@ -813,7 +817,7 @@ export function InventoryPage() {
                         placeholder="Min"
                         value={sizeMin}
                         onChange={(e) => setSizeMin(e.target.value)}
-                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                       />
                       <input 
                         type="number" 
@@ -821,7 +825,7 @@ export function InventoryPage() {
                         placeholder="Max"
                         value={sizeMax}
                         onChange={(e) => setSizeMax(e.target.value)}
-                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                       />
                     </div>
                   </div>
@@ -838,7 +842,7 @@ export function InventoryPage() {
                           placeholder="Min"
                           value={widthMin}
                           onChange={(e) => setWidthMin(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                         />
                         <input 
                           type="number" 
@@ -846,7 +850,7 @@ export function InventoryPage() {
                           placeholder="Max"
                           value={widthMax}
                           onChange={(e) => setWidthMax(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-305 focus:outline-none"
+                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                         />
                       </div>
                     </div>
@@ -859,7 +863,7 @@ export function InventoryPage() {
                           placeholder="Min"
                           value={thickMin}
                           onChange={(e) => setThickMin(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-805 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                         />
                         <input 
                           type="number" 
@@ -867,7 +871,7 @@ export function InventoryPage() {
                           placeholder="Max"
                           value={thickMax}
                           onChange={(e) => setThickMax(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-303 focus:outline-none"
+                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
                         />
                       </div>
                     </div>
@@ -887,7 +891,7 @@ export function InventoryPage() {
               <p className="text-rose-400 font-bold">Error loading inventory: {error.message}</p>
             </div>
           ) : !selectedNode ? (
-            <div className="text-center py-24 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-md">
+            <div className="text-center py-24 glass-panel rounded-2xl p-8 shadow-md border border-slate-800/40">
               <p className="text-slate-400 text-lg">No selection. Select a machine or set from the navigation tree.</p>
             </div>
           ) : (
@@ -897,7 +901,7 @@ export function InventoryPage() {
               {activeView === 'search' && (
                 <div className="space-y-8 animate-fadeIn">
                   {/* Header */}
-                  <div className="border-b border-slate-800 pb-5">
+                  <div className="border-b border-slate-800/40 pb-5">
                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                       <Search className="h-4 w-4 text-blue-500" />
                       <span>Search & Filter Results</span>
@@ -909,20 +913,20 @@ export function InventoryPage() {
                   {dies && dies.length > 0 ? (
                     <>
                       {/* Stat Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Total Matches</span>
-                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2">{dies.length}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-blue">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Total Matches</span>
+                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2 relative z-10 font-heading">{dies.length}</span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
-                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
                             {dies.filter(isDieActive).length}
                           </span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
-                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 relative z-10 font-heading">
                             {dies.length - dies.filter(isDieActive).length}
                           </span>
                         </div>
@@ -930,17 +934,22 @@ export function InventoryPage() {
 
                       {/* Dies Table */}
                       <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Filtered Catalog</h3>
-                        <DiesTable 
-                          diesList={dies} 
-                          navigate={navigate} 
-                          onDragStartDie={handleDragStartDie}
-                          onDragEndDie={handleDragEndDie}
-                        />
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                          <Database className="h-4 w-4 text-blue-500" />
+                          <span>Filtered Catalog</span>
+                        </h3>
+                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                          <DiesTable 
+                            diesList={dies} 
+                            navigate={navigate} 
+                            onDragStartDie={handleDragStartDie}
+                            onDragEndDie={handleDragEndDie}
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+                    <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
                       <Search className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
                       <p className="text-slate-400 font-medium">No dies in the registry match the current search or filters.</p>
                     </div>
@@ -954,38 +963,41 @@ export function InventoryPage() {
                   {selectedMachine ? (
                     <>
                       {/* Header */}
-                      <div className="border-b border-slate-800 pb-5">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <div className="border-b border-slate-800/40 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
                           <Cpu className="h-4 w-4 text-blue-500" />
                           <span>Machine Explorer</span>
                         </div>
                         <h2 className="text-2xl md:text-3xl font-black text-white">{selectedMachine.name}</h2>
-                        <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 rounded-lg mt-2">
+                        <span className="inline-block px-2.5 py-1 text-xs font-semibold glass-card border border-blue-500/20 text-blue-400 rounded-lg mt-2">
                           {selectedMachine.category_name || 'Standard Category'}
                         </span>
                       </div>
 
                       {/* Stat Cards */}
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Summary Statistics</h3>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
-                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Sets</span>
-                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.sets.length}</span>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <span>Summary Statistics</span>
+                        </h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Sets</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{selectedMachine.sets.length}</span>
                           </div>
-                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
-                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedMachine.totalDies}</span>
+                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{selectedMachine.totalDies}</span>
                           </div>
-                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
-                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Active Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
                               {selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
                             </span>
                           </div>
-                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition">
-                            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 hover:-translate-y-0.5 transition-all duration-300">
+                            <span className="text-slate-455 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Inactive Dies</span>
+                            <span className="text-2xl md:text-3xl font-black text-rose-450 mt-2 relative z-10 font-heading">
                               {selectedMachine.totalDies - selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
                             </span>
                           </div>
@@ -994,12 +1006,12 @@ export function InventoryPage() {
 
                       {/* Sets Cards Section */}
                       <div className="pt-4">
-                        <h3 className="text-sm font-semibold text-slate-505 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                           <Layers className="h-4 w-4 text-indigo-400" />
                           <span>Assigned Sets</span>
                         </h3>
                         {selectedMachine.sets.length === 0 ? (
-                          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 italic">
+                          <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 italic border border-slate-800/40">
                             No sets found for this machine matching filters.
                           </div>
                         ) : (
@@ -1012,7 +1024,7 @@ export function InventoryPage() {
                                 <div
                                   key={set.id}
                                   onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: selectedMachine.id })}
-                                  className="bg-slate-900/55 hover:bg-slate-900 border border-slate-850 hover:border-indigo-500/40 rounded-2xl p-5 cursor-pointer transition-all duration-300 shadow-md group relative overflow-hidden"
+                                  className="glass-panel hover:bg-slate-900/40 border border-slate-800/40 hover:border-indigo-500/40 rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-all duration-300 shadow-md group relative overflow-hidden"
                                 >
                                   {/* Hover Glow */}
                                   <div className="absolute inset-x-0 bottom-0 h-1 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
@@ -1021,11 +1033,11 @@ export function InventoryPage() {
                                     <span className="font-extrabold text-white text-base group-hover:text-indigo-400 transition-colors">
                                       {set.name}
                                     </span>
-                                    <span className="text-xs bg-slate-950 text-indigo-400 font-bold px-2 py-0.5 rounded-full border border-slate-800">
+                                    <span className="text-xs bg-slate-950 text-indigo-400 font-bold px-2.5 py-0.5 rounded-full border border-slate-800">
                                       {sTotal} {sTotal === 1 ? 'Die' : 'Dies'}
                                     </span>
                                   </div>
-                                  <div className="flex gap-4 text-xs text-slate-400 border-t border-slate-800 pt-3">
+                                  <div className="flex gap-4 text-xs text-slate-400 border-t border-slate-800/40 pt-3">
                                     <div>
                                       <span className="text-emerald-400 font-bold">{sActive}</span> Active
                                     </div>
@@ -1043,15 +1055,15 @@ export function InventoryPage() {
                   ) : (
                     /* Fallback when selected machine is filtered out */
                     <div className="space-y-6">
-                      <div className="border-b border-slate-800 pb-5">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      <div className="border-b border-slate-800/40 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
                           <Cpu className="h-4 w-4 text-blue-500" />
                           <span>Machine Explorer</span>
                         </div>
                         <h2 className="text-2xl md:text-3xl font-black text-white">{rawMachine?.name || 'Machine'}</h2>
                       </div>
-                      <div className="bg-slate-900 border border-slate-850 rounded-2xl p-12 text-center shadow-lg">
-                        <Cpu className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
+                        <Cpu className="h-12 w-12 text-slate-600 mx-auto mb-4 animate-pulse" />
                         <p className="text-slate-400 font-medium">No dies assigned to this machine match the current filters.</p>
                       </div>
                     </div>
@@ -1065,8 +1077,8 @@ export function InventoryPage() {
                   {selectedSetData ? (
                     <>
                       {/* Header */}
-                      <div className="border-b border-slate-800 pb-5">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
+                      <div className="border-b border-slate-800/40 pb-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                           <span>{selectedSetData.machine?.name}</span>
                           <ChevronRight className="h-3.5 w-3.5" />
                           <span className="text-indigo-400">{selectedSetData.set.name}</span>
@@ -1076,20 +1088,20 @@ export function InventoryPage() {
                       </div>
 
                       {/* Stat Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
-                          <span className="text-2xl md:text-3xl font-black text-white mt-2">{selectedSetData.set.dies.length}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-indigo-500/20 transition-all duration-300">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-white mt-2 font-heading">{selectedSetData.set.dies.length}</span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
-                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 transition-all duration-300">
+                          <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 font-heading">
                             {selectedSetData.set.dies.filter(isDieActive).length}
                           </span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
-                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 transition-all duration-300">
+                          <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 font-heading">
                             {selectedSetData.set.dies.length - selectedSetData.set.dies.filter(isDieActive).length}
                           </span>
                         </div>
@@ -1103,15 +1115,18 @@ export function InventoryPage() {
                         const activePct = total > 0 ? ((active / total) * 100).toFixed(1) : '0.0'
                         const inactivePct = total > 0 ? ((inactive / total) * 100).toFixed(1) : '0.0'
                         return (
-                          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                            <h3 className="text-xs font-semibold text-slate-505 uppercase tracking-wider mb-4">Operational Ratio</h3>
-                            <div className="flex justify-between text-xs font-bold text-slate-404 mb-2">
+                          <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/40 relative overflow-hidden blueprint-grid">
+                            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                              <Activity className="h-4 w-4 text-emerald-400" />
+                              <span>Operational Ratio</span>
+                            </h3>
+                            <div className="flex justify-between text-xs font-bold mb-2">
                               <span className="text-emerald-400">Active: {active} ({activePct}%)</span>
                               <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
                             </div>
-                            <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden flex">
-                              <div className="bg-emerald-500 h-full transition-all duration-550" style={{ width: `${activePct}%` }} />
-                              <div className="bg-rose-500 h-full transition-all duration-550" style={{ width: `${inactivePct}%` }} />
+                            <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-850 p-0.5">
+                              <div className="bg-gradient-to-r from-emerald-600 to-emerald-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
+                              <div className="bg-gradient-to-r from-rose-600 to-rose-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%` }} />
                             </div>
                           </div>
                         )
@@ -1119,19 +1134,24 @@ export function InventoryPage() {
 
                       {/* Dies Table */}
                       <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Dies Inventory</h3>
-                        <DiesTable 
-                          diesList={selectedSetData.set.dies} 
-                          navigate={navigate} 
-                          onDragStartDie={handleDragStartDie}
-                          onDragEndDie={handleDragEndDie}
-                        />
+                        <h3 className="text-xs font-semibold text-slate-505 uppercase tracking-wider flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-indigo-400" />
+                          <span>Dies Inventory</span>
+                        </h3>
+                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                          <DiesTable 
+                            diesList={selectedSetData.set.dies} 
+                            navigate={navigate} 
+                            onDragStartDie={handleDragStartDie}
+                            onDragEndDie={handleDragEndDie}
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
                     /* Fallback when selected set is filtered out */
                     <div className="space-y-6">
-                      <div className="border-b border-slate-800 pb-5">
+                      <div className="border-b border-slate-800/40 pb-5">
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                           <span>{rawSetData?.machine?.name || 'Machine'}</span>
                           <ChevronRight className="h-3.5 w-3.5" />
@@ -1139,8 +1159,8 @@ export function InventoryPage() {
                         </div>
                         <h2 className="text-2xl md:text-3xl font-black text-white">{rawSetData?.set?.name || 'Set'}</h2>
                       </div>
-                      <div className="bg-slate-900 border border-slate-805 rounded-2xl p-12 text-center shadow-lg">
-                        <Layers className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                      <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
+                        <Layers className="h-12 w-12 text-slate-600 mx-auto mb-4 animate-pulse" />
                         <p className="text-slate-400 font-medium">No dies assigned to this set match the current filters.</p>
                       </div>
                     </div>
@@ -1152,8 +1172,8 @@ export function InventoryPage() {
               {activeView === 'unassigned' && (
                 <div className="space-y-8">
                   {/* Header */}
-                  <div className="border-b border-slate-800 pb-5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                  <div className="border-b border-slate-800/40 pb-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-550 uppercase tracking-wider mb-1">
                       <Sliders className="h-4 w-4 text-amber-500" />
                       <span>Standalone Inventory</span>
                     </div>
@@ -1164,20 +1184,20 @@ export function InventoryPage() {
                   {unassignedDies.length > 0 ? (
                     <>
                       {/* Stat Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Total Standalone</span>
-                          <span className="text-2xl md:text-3xl font-black text-amber-450 mt-2">{unassignedDies.length}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-amber hover:border-amber-500/20 transition-all duration-300">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Total Standalone</span>
+                          <span className="text-2xl md:text-3xl font-black text-amber-400 mt-2 relative z-10 font-heading">{unassignedDies.length}</span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Active</span>
-                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 transition-all duration-300">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Active</span>
+                          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
                             {unassignedDies.filter(isDieActive).length}
                           </span>
                         </div>
-                        <div className="bg-slate-900 border border-slate-805 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-                          <span className="text-slate-505 text-xs font-semibold uppercase tracking-wider font-bold">Inactive</span>
-                          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2">
+                        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 transition-all duration-300">
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
+                          <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 relative z-10 font-heading">
                             {unassignedDies.length - unassignedDies.filter(isDieActive).length}
                           </span>
                         </div>
@@ -1185,18 +1205,23 @@ export function InventoryPage() {
 
                       {/* Dies Table */}
                       <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-505 uppercase tracking-wider">Dies Inventory</h3>
-                        <DiesTable 
-                          diesList={unassignedDies} 
-                          navigate={navigate} 
-                          onDragStartDie={handleDragStartDie}
-                          onDragEndDie={handleDragEndDie}
-                        />
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                          <Sliders className="h-4 w-4 text-amber-400" />
+                          <span>Dies Inventory</span>
+                        </h3>
+                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                          <DiesTable 
+                            diesList={unassignedDies} 
+                            navigate={navigate} 
+                            onDragStartDie={handleDragStartDie}
+                            onDragEndDie={handleDragEndDie}
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
-                      <Sliders className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
+                    <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
+                      <Sliders className="h-12 w-12 text-slate-600 mx-auto mb-4 animate-pulse" />
                       <p className="text-slate-400 font-medium">No unassigned dies match the current filters.</p>
                     </div>
                   )}
@@ -1209,16 +1234,16 @@ export function InventoryPage() {
 
       {/* Add Die Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="glass-panel rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-800/50 blueprint-grid relative">
+            <div className="p-6 border-b border-slate-800/40 flex justify-between items-center relative z-10">
               <h2 className="text-xl font-bold text-white">Create Production Die</h2>
               <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="h-6 w-6" />
               </button>
             </div>
             
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-6 relative z-10">
               {createError && (
                 <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-sm">
                   {createError}
@@ -1227,13 +1252,14 @@ export function InventoryPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID (Unique)</label>
+                  <label className="block text-xs font-semibold text-slate-405 uppercase tracking-wider mb-2">Die ID (Unique)</label>
                   <input 
                     type="text" 
                     required
                     value={newDieId}
                     onChange={(e) => setNewDieId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                    placeholder="e.g. R-105"
                   />
                 </div>
 
@@ -1242,7 +1268,7 @@ export function InventoryPage() {
                   <select 
                     value={newDieType}
                     onChange={(e) => setNewDieType(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
                   >
                     <option value="ROUND">Round</option>
                     <option value="FLAT">Flat</option>
@@ -1257,7 +1283,7 @@ export function InventoryPage() {
                     placeholder="e.g. 25x10"
                     value={newCasing}
                     onChange={(e) => setNewCasing(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                   />
                 </div>
 
@@ -1266,7 +1292,7 @@ export function InventoryPage() {
                   <select 
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
                   >
                     <option value="AVAILABLE">Available</option>
                     <option value="RUNNING">Running</option>
@@ -1284,7 +1310,8 @@ export function InventoryPage() {
                     type="text" 
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                    placeholder="e.g. Rack A-1"
                   />
                 </div>
 
@@ -1293,7 +1320,7 @@ export function InventoryPage() {
                   <select 
                     value={newCurrentSet}
                     onChange={(e) => setNewCurrentSet(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
                   >
                     <option value="">— Unassigned —</option>
                     {setsList?.map((s: any) => (
@@ -1304,7 +1331,7 @@ export function InventoryPage() {
               </div>
 
               {/* Dynamic Sizing Subfields */}
-              <div className="border-t border-slate-800 pt-6">
+              <div className="border-t border-slate-800/40 pt-6">
                 <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Dimensions Specifications</h3>
                 
                 {newDieType === 'ROUND' ? (
@@ -1317,7 +1344,8 @@ export function InventoryPage() {
                         required
                         value={newOriginalSize}
                         onChange={(e) => setNewOriginalSize(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                        placeholder="e.g. 2.5"
                       />
                     </div>
                     <div>
@@ -1328,7 +1356,8 @@ export function InventoryPage() {
                         required
                         value={newCurrentSize}
                         onChange={(e) => setNewCurrentSize(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                        placeholder="e.g. 2.5"
                       />
                     </div>
                   </div>
@@ -1342,7 +1371,7 @@ export function InventoryPage() {
                         required
                         value={newOriginalWidth}
                         onChange={(e) => setNewOriginalWidth(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                       />
                     </div>
                     <div>
@@ -1353,7 +1382,7 @@ export function InventoryPage() {
                         required
                         value={newCurrentWidth}
                         onChange={(e) => setNewCurrentWidth(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                       />
                     </div>
                     <div>
@@ -1364,7 +1393,7 @@ export function InventoryPage() {
                         required
                         value={newOriginalThickness}
                         onChange={(e) => setNewOriginalThickness(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                       />
                     </div>
                     <div>
@@ -1375,7 +1404,7 @@ export function InventoryPage() {
                         required
                         value={newCurrentThickness}
                         onChange={(e) => setNewCurrentThickness(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                       />
                     </div>
                     <div>
@@ -1386,7 +1415,7 @@ export function InventoryPage() {
                         required
                         value={newRadius}
                         onChange={(e) => setNewRadius(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1399,24 +1428,25 @@ export function InventoryPage() {
                   rows={3}
                   value={newRemarks}
                   onChange={(e) => setNewRemarks(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-805 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                  placeholder="Additional notes..."
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800">
+              <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800/40">
                 <button 
                   type="button" 
                   onClick={() => setIsCreateOpen(false)}
-                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold"
+                  className="bg-slate-950/40 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold text-xs transition"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={createDieMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold text-xs btn-glow glow-blue flex items-center space-x-1"
                 >
-                  {createDieMutation.isPending ? 'Creating...' : 'Create Die'}
+                  <span>{createDieMutation.isPending ? 'Creating...' : 'Create Die'}</span>
                 </button>
               </div>
             </form>
@@ -1426,3 +1456,4 @@ export function InventoryPage() {
     </div>
   )
 }
+
