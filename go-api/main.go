@@ -138,7 +138,10 @@ func initPostgres() {
 
 func initMeilisearch() {
 	host := getEnv("MEILI_HOST", "http://meilisearch:7700")
-	key := getEnv("MEILI_MASTER_KEY", "meili-master-key-secure-12345")
+	key := getEnv("MEILI_SEARCH_KEY", "")
+	if key == "" {
+		key = getEnv("MEILI_MASTER_KEY", "meili-master-key-secure-12345")
+	}
 	meiliClient = meilisearch.NewClient(meilisearch.ClientConfig{
 		Host:   host,
 		APIKey: key,
