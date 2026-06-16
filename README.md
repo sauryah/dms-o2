@@ -428,8 +428,6 @@ We welcome contributions to improve the Die Management System (DMS)! Please foll
 
 **Proprietary / Internal Use Only**
 
-This software and its source code are proprietary. Users are granted a non-exclusive, non-transferable license to deploy and use this software for internal operations only.
+This software and its source code are proprietary. See the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for the full terms and conditions governing use, reproduction, and distribution.
 
-* **Ownership**: The source code, design, and architecture remain the property of the copyright holders.
-* **Restrictions**: Redistribution, modification, marketing, resale, or commercialization of the source code or binary outputs is strictly prohibited without prior written consent from the author.
 
