@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Edit, Trash2 } from 'lucide-react'
+import { Search, Edit, Trash2, Folder, Cpu, Layers, Plus } from 'lucide-react'
 import { useApi, useAuth } from '../App'
 
 export function MachineSetsPage() {
@@ -207,36 +207,94 @@ export function MachineSetsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">Machines & Sets Manager</h1>
         <p className="text-slate-400 mt-1">Configure layout, structure machine profiles, and allocate toolsets.</p>
       </div>
 
+      {/* Stats Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="glass-panel rounded-2xl p-6 relative overflow-hidden blueprint-grid glow-blue">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Categories</p>
+              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{categories?.length || 0}</h3>
+            </div>
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+              <Folder className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="glass-panel rounded-2xl p-6 relative overflow-hidden blueprint-grid glow-emerald">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Machines</p>
+              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{machines?.length || 0}</h3>
+            </div>
+            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+              <Cpu className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-2xl p-6 relative overflow-hidden blueprint-grid glow-indigo">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Tool Sets</p>
+              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{sets?.length || 0}</h3>
+            </div>
+            <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
+              <Layers className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
-      <div className="flex border-b border-slate-800 space-x-6 mb-8">
+      <div className="flex border-b border-slate-800 space-x-6 mb-8 overflow-x-auto scrollbar-none">
         <button 
           onClick={() => setActiveTab('categories')}
-          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
-            activeTab === 'categories' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
+            activeTab === 'categories' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
           }`}
         >
-          Machine Categories
+          <Folder className="h-4 w-4" />
+          <span>Machine Categories</span>
+          <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
+            activeTab === 'categories' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+          }`}>
+            {categories?.length || 0}
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('machines')}
-          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
-            activeTab === 'machines' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
+            activeTab === 'machines' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
           }`}
         >
-          Machines
+          <Cpu className="h-4 w-4" />
+          <span>Machines</span>
+          <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
+            activeTab === 'machines' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+          }`}>
+            {machines?.length || 0}
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('sets')}
-          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
-            activeTab === 'sets' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-305'
+          className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
+            activeTab === 'sets' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
           }`}
         >
-          Tool Sets
+          <Layers className="h-4 w-4" />
+          <span>Tool Sets</span>
+          <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
+            activeTab === 'sets' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+          }`}>
+            {sets?.length || 0}
+          </span>
         </button>
       </div>
 
@@ -246,41 +304,46 @@ export function MachineSetsPage() {
         {/* Categories Tab */}
         {activeTab === 'categories' && (
           <>
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <h2 className="text-lg font-bold text-white mb-4">Categories List</h2>
+            <div className="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <h2 className="text-lg font-bold text-white mb-6">Categories List</h2>
               
               {/* Search Bar */}
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+              <div className="relative mb-6">
+                <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                 <input 
                   type="text" 
                   placeholder="Search categories..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2 pl-10 pr-4 text-xs text-white focus:outline-none placeholder-slate-500 transition duration-200"
+                  className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none placeholder-slate-500"
                 />
               </div>
 
               {isCatsLoading ? (
-                <div className="text-center py-6">Loading...</div>
+                <div className="text-center py-6 text-slate-400">Loading categories...</div>
               ) : filteredCategories.length === 0 ? (
-                <p className="text-slate-500 text-sm py-4">No matching machine categories found.</p>
+                <p className="text-slate-500 text-sm py-4 text-center">No matching machine categories found.</p>
               ) : (
                 <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
                   {filteredCategories.map((cat: any) => (
-                    <div key={cat.id} className="flex justify-between items-center bg-slate-950/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
-                      <span className="font-semibold text-slate-200">{cat.name}</span>
+                    <div key={cat.id} className="glass-card flex justify-between items-center p-4 rounded-xl border border-slate-800/40 hover:border-blue-500/30 hover:bg-slate-800/20 hover:-translate-y-0.5 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-500/5 text-blue-400 rounded-lg border border-blue-500/10">
+                          <Folder className="h-4 w-4" />
+                        </div>
+                        <span className="font-semibold text-slate-200">{cat.name}</span>
+                      </div>
                       {isWritable && (
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => { setEditingCat(cat); setCatName(cat.name); }}
-                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => { if (window.confirm('Delete this category?')) deleteCategory.mutate(cat.id); }}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -293,9 +356,10 @@ export function MachineSetsPage() {
             </div>
 
             {isWritable && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
-                <h2 className="text-lg font-bold text-white mb-4">
-                  {editingCat ? 'Edit Category' : 'Create Category'}
+              <div className="glass-panel rounded-2xl p-6 shadow-xl h-fit border-l-2 border-l-blue-500/50">
+                <h2 className="text-lg font-bold text-white mb-6 flex items-center space-x-2">
+                  <Folder className="h-5 w-5 text-blue-400" />
+                  <span>{editingCat ? 'Edit Category' : 'Create Category'}</span>
                 </h2>
                 <form onSubmit={handleCatSubmit} className="space-y-4">
                   <div>
@@ -305,24 +369,26 @@ export function MachineSetsPage() {
                       required
                       value={catName}
                       onChange={(e) => setCatName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                      placeholder="e.g. Press Machine"
                     />
                   </div>
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-2 pt-2">
                     {editingCat && (
                       <button 
                         type="button"
                         onClick={() => { setEditingCat(null); setCatName(''); }}
-                        className="bg-slate-950 border border-slate-800 text-slate-305 px-4 py-2 rounded-xl text-sm"
+                        className="bg-slate-950/50 hover:bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
                       >
                         Cancel
                       </button>
                     )}
                     <button 
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-505 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition btn-glow glow-blue flex items-center space-x-1"
                     >
-                      {editingCat ? 'Save' : 'Create'}
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{editingCat ? 'Save' : 'Create'}</span>
                     </button>
                   </div>
                 </form>
@@ -334,26 +400,26 @@ export function MachineSetsPage() {
         {/* Machines Tab */}
         {activeTab === 'machines' && (
           <>
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <h2 className="text-lg font-bold text-white mb-4">Machines List</h2>
+            <div className="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <h2 className="text-lg font-bold text-white mb-6">Machines List</h2>
 
               {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-500" />
+                  <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                   <input 
                     type="text" 
                     placeholder="Search machines..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2 pl-10 pr-4 text-xs text-white focus:outline-none placeholder-slate-500 transition duration-200"
+                    className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none placeholder-slate-500"
                   />
                 </div>
                 {categories && (
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="bg-slate-955 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-blue-500"
+                    className="glass-input rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none"
                   >
                     <option value="">All Categories</option>
                     {categories.map((cat: any) => (
@@ -364,28 +430,33 @@ export function MachineSetsPage() {
               </div>
 
               {isMachsLoading ? (
-                <div className="text-center py-6">Loading...</div>
+                <div className="text-center py-6 text-slate-400">Loading machines...</div>
               ) : filteredMachines.length === 0 ? (
-                <p className="text-slate-505 text-sm py-4">No matching machines found.</p>
+                <p className="text-slate-500 text-sm py-4 text-center">No matching machines found.</p>
               ) : (
                 <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
                   {filteredMachines.map((mach: any) => (
-                    <div key={mach.id} className="flex justify-between items-center bg-slate-955/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
-                      <div>
-                        <span className="font-semibold text-slate-200 block">{mach.name}</span>
-                        <span className="text-xs text-slate-500">Category: {mach.category_name}</span>
+                    <div key={mach.id} className="glass-card flex justify-between items-center p-4 rounded-xl border border-slate-800/40 hover:border-emerald-500/30 hover:bg-slate-800/20 hover:-translate-y-0.5 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-emerald-500/5 text-emerald-400 rounded-lg border border-emerald-500/10">
+                          <Cpu className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-200 block">{mach.name}</span>
+                          <span className="text-xs text-slate-450">Category: <span className="text-slate-300 font-medium">{mach.category_name}</span></span>
+                        </div>
                       </div>
                       {isWritable && (
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => { setEditingMach(mach); setMachName(mach.name); setMachCat(mach.category); }}
-                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => { if (window.confirm('Delete this machine?')) deleteMachine.mutate(mach.id); }}
-                            className="p-1.5 text-slate-400 hover:text-rose-450 hover:bg-slate-900 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-rose-450 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -398,13 +469,14 @@ export function MachineSetsPage() {
             </div>
 
             {isWritable && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
-                <h2 className="text-lg font-bold text-white mb-4">
-                  {editingMach ? 'Edit Machine' : 'Create Machine'}
+              <div className="glass-panel rounded-2xl p-6 shadow-xl h-fit border-l-2 border-l-emerald-500/50">
+                <h2 className="text-lg font-bold text-white mb-6 flex items-center space-x-2">
+                  <Cpu className="h-5 w-5 text-emerald-400" />
+                  <span>{editingMach ? 'Edit Machine' : 'Create Machine'}</span>
                 </h2>
                 <form onSubmit={handleMachSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-404 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-semibold text-slate-455 uppercase tracking-wider mb-2">
                       {editingMach ? 'Machine Name' : 'Machine Name(s)'}
                     </label>
                     {editingMach ? (
@@ -413,26 +485,27 @@ export function MachineSetsPage() {
                         required
                         value={machName}
                         onChange={(e) => setMachName(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                        placeholder="e.g. Press-01"
                       />
                     ) : (
                       <textarea 
                         required
-                        placeholder="e.g. Mach 1, Mach 2 (comma or newline separated)"
+                        placeholder="e.g. Press-01, Press-02 (comma or newline separated)"
                         value={machName}
                         onChange={(e) => setMachName(e.target.value)}
                         rows={2}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none placeholder-slate-600"
                       />
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                    <label className="block text-xs font-semibold text-slate-450 uppercase tracking-wider mb-2">Category</label>
                     <select 
                       required
                       value={machCat}
                       onChange={(e) => setMachCat(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                     >
                       <option value="">— Select Category —</option>
                       {categories?.map((cat: any) => (
@@ -440,21 +513,22 @@ export function MachineSetsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-2 pt-2">
                     {editingMach && (
                       <button 
                         type="button"
                         onClick={() => { setEditingMach(null); setMachName(''); setMachCat(''); }}
-                        className="bg-slate-950 border border-slate-805 text-slate-300 px-4 py-2 rounded-xl text-sm"
+                        className="bg-slate-955/50 hover:bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
                       >
                         Cancel
                       </button>
                     )}
                     <button 
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition btn-glow glow-emerald flex items-center space-x-1"
                     >
-                      {editingMach ? 'Save' : 'Create'}
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{editingMach ? 'Save' : 'Create'}</span>
                     </button>
                   </div>
                 </form>
@@ -466,26 +540,26 @@ export function MachineSetsPage() {
         {/* Tool Sets Tab */}
         {activeTab === 'sets' && (
           <>
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <h2 className="text-lg font-bold text-white mb-4">Tool Sets List</h2>
+            <div className="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <h2 className="text-lg font-bold text-white mb-6">Tool Sets List</h2>
 
               {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-505" />
+                  <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                   <input 
                     type="text" 
                     placeholder="Search tool sets..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2 pl-10 pr-4 text-xs text-white focus:outline-none placeholder-slate-500 transition duration-200"
+                    className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none placeholder-slate-500"
                   />
                 </div>
                 {machines && (
                   <select
                     value={filterMachine}
                     onChange={(e) => setFilterMachine(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-blue-500 max-w-xs"
+                    className="glass-input rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none max-w-xs"
                   >
                     <option value="">All Machines</option>
                     {machines.map((mach: any) => (
@@ -496,28 +570,33 @@ export function MachineSetsPage() {
               </div>
 
               {isSetsLoading ? (
-                <div className="text-center py-6">Loading...</div>
+                <div className="text-center py-6 text-slate-400">Loading tool sets...</div>
               ) : filteredSets.length === 0 ? (
-                <p className="text-slate-505 text-sm py-4">No matching tool sets found.</p>
+                <p className="text-slate-505 text-sm py-4 text-center">No matching tool sets found.</p>
               ) : (
                 <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
                   {filteredSets.map((s: any) => (
-                    <div key={s.id} className="flex justify-between items-center bg-slate-955/40 p-4 border border-slate-850 rounded-xl hover:border-slate-800 transition-all">
-                      <div>
-                        <span className="font-semibold text-slate-202 block">{s.name}</span>
-                        <span className="text-xs text-slate-500">Machine: {s.machine_name} ({s.category_name})</span>
+                    <div key={s.id} className="glass-card flex justify-between items-center p-4 rounded-xl border border-slate-800/40 hover:border-indigo-500/30 hover:bg-slate-800/20 hover:-translate-y-0.5 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-indigo-500/5 text-indigo-400 rounded-lg border border-indigo-500/10">
+                          <Layers className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-200 block">{s.name}</span>
+                          <span className="text-xs text-slate-450">Machine: <span className="text-slate-300 font-medium">{s.machine_name}</span> <span className="text-slate-500">({s.category_name})</span></span>
+                        </div>
                       </div>
                       {isWritable && (
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => { setEditingSet(s); setNameSet(s.name); setMachineSet(s.machine); }}
-                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => { if (window.confirm('Delete this set?')) deleteSet.mutate(s.id); }}
-                            className="p-1.5 text-slate-400 hover:text-rose-455 hover:bg-slate-905 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-rose-455 hover:bg-slate-900/50 rounded-lg transition"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -530,13 +609,14 @@ export function MachineSetsPage() {
             </div>
 
             {isWritable && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-fit">
-                <h2 className="text-lg font-bold text-white mb-4">
-                  {editingSet ? 'Edit Set' : 'Create Set'}
+              <div className="glass-panel rounded-2xl p-6 shadow-xl h-fit border-l-2 border-l-indigo-500/50">
+                <h2 className="text-lg font-bold text-white mb-6 flex items-center space-x-2">
+                  <Layers className="h-5 w-5 text-indigo-400" />
+                  <span>{editingSet ? 'Edit Set' : 'Create Set'}</span>
                 </h2>
                 <form onSubmit={handleSetSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-405 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-semibold text-slate-455 uppercase tracking-wider mb-2">
                       {editingSet ? 'Set Name' : 'Set Name(s)'}
                     </label>
                     {editingSet ? (
@@ -545,16 +625,17 @@ export function MachineSetsPage() {
                         required
                         value={nameSet}
                         onChange={(e) => setNameSet(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                        placeholder="e.g. Set-Alpha"
                       />
                     ) : (
                       <textarea 
                         required
-                        placeholder="e.g. Set A, Set B (comma or newline separated)"
+                        placeholder="e.g. Set-Alpha, Set-Beta (comma or newline separated)"
                         value={nameSet}
                         onChange={(e) => setNameSet(e.target.value)}
                         rows={2}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                        className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none placeholder-slate-600"
                       />
                     )}
                   </div>
@@ -564,7 +645,7 @@ export function MachineSetsPage() {
                       required
                       value={machineSet}
                       onChange={(e) => setMachineSet(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none"
+                      className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                     >
                       <option value="">— Select Machine —</option>
                       {machines?.map((mach: any) => (
@@ -572,21 +653,22 @@ export function MachineSetsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-2 pt-2">
                     {editingSet && (
                       <button 
                         type="button"
                         onClick={() => { setEditingSet(null); setNameSet(''); setMachineSet(''); }}
-                        className="bg-slate-950 border border-slate-805 text-slate-300 px-4 py-2 rounded-xl text-sm"
+                        className="bg-slate-905/50 hover:bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
                       >
                         Cancel
                       </button>
                     )}
                     <button 
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-505 text-white px-5 py-2 rounded-xl text-sm font-semibold transition"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition btn-glow glow-indigo flex items-center space-x-1"
                     >
-                      {editingSet ? 'Save' : 'Create'}
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{editingSet ? 'Save' : 'Create'}</span>
                     </button>
                   </div>
                 </form>
