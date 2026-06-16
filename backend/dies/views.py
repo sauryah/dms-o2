@@ -116,16 +116,21 @@ def search_dies(request):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def escape_meili_string(val):
+        if not val:
+            return val
+        return val.replace("'", "\\'")
+
     # If search query q is present, query Meilisearch first
     filters = []
     if die_type:
-        filters.append(f"die_type = '{die_type}'")
+        filters.append(f"die_type = '{escape_meili_string(die_type)}'")
     if status_val:
-        filters.append(f"status = '{status_val}'")
+        filters.append(f"status = '{escape_meili_string(status_val)}'")
     if location:
-        filters.append(f"location = '{location}'")
+        filters.append(f"location = '{escape_meili_string(location)}'")
     if casing:
-        filters.append(f"casing = '{casing}'")
+        filters.append(f"casing = '{escape_meili_string(casing)}'")
         
     search_params = {'limit': 10000}  # Fetch up to 10000 hits to avoid truncation before DB range filter
     if filters:

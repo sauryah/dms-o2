@@ -474,20 +474,24 @@ func queryPostgresDirectly(dieType, statusVal, location, casing, sizeMin, sizeMa
 	return scanDies(rows)
 }
 
+func escapeMeiliString(s string) string {
+	return strings.ReplaceAll(s, "'", "\\'")
+}
+
 func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
 	// Build Meilisearch filters
 	var filters []string
 	if dieType != "" {
-		filters = append(filters, fmt.Sprintf("die_type = '%s'", dieType))
+		filters = append(filters, fmt.Sprintf("die_type = '%s'", escapeMeiliString(dieType)))
 	}
 	if statusVal != "" {
-		filters = append(filters, fmt.Sprintf("status = '%s'", statusVal))
+		filters = append(filters, fmt.Sprintf("status = '%s'", escapeMeiliString(statusVal)))
 	}
 	if location != "" {
-		filters = append(filters, fmt.Sprintf("location = '%s'", location))
+		filters = append(filters, fmt.Sprintf("location = '%s'", escapeMeiliString(location)))
 	}
 	if casing != "" {
-		filters = append(filters, fmt.Sprintf("casing = '%s'", casing))
+		filters = append(filters, fmt.Sprintf("casing = '%s'", escapeMeiliString(casing)))
 	}
 
 	// Numeric range filters in Meilisearch
