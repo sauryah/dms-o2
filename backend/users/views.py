@@ -310,6 +310,10 @@ class BackupViewSet(viewsets.ViewSet):
 class EventStreamView(APIView):
     permission_classes = [AllowAny]
 
+    def perform_content_negotiation(self, request, force=False):
+        from rest_framework.renderers import JSONRenderer
+        return (JSONRenderer(), 'application/json')
+
     def get(self, request):
         token = request.query_params.get('token')
         if not token:
