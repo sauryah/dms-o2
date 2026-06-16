@@ -85,7 +85,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A dms worker -l info
+    command: celery -A dms worker -l info --concurrency=2
     volumes:
       - ./backend:/app
     environment:

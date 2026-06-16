@@ -132,7 +132,24 @@ def search_dies(request):
     if casing:
         filters.append(f"casing = '{escape_meili_string(casing)}'")
         
-    search_params = {'limit': 10000}  # Fetch up to 10000 hits to avoid truncation before DB range filter
+    # Apply numeric range filters directly to Meilisearch
+    try:
+        if size_min:
+            filters.append(f"size >= {float(size_min)}")
+        if size_max:
+            filters.append(f"size <= {float(size_max)}")
+        if width_min:
+            filters.append(f"width >= {float(width_min)}")
+        if width_max:
+            filters.append(f"width <= {float(width_max)}")
+        if thick_min:
+            filters.append(f"thickness >= {float(thick_min)}")
+        if thick_max:
+            filters.append(f"thickness <= {float(thick_max)}")
+    except ValueError:
+        pass
+        
+    search_params = {'limit': 10000}
     if filters:
         search_params['filter'] = " AND ".join(filters)
         
@@ -150,21 +167,6 @@ def search_dies(request):
                 
         dies = Die.objects.filter(id__in=db_ids).select_related('rounddie', 'flatdie', 'current_set__machine')
         
-        if size_min:
-            dies = dies.filter(rounddie__current_size__gte=size_min)
-        if size_max:
-            dies = dies.filter(rounddie__current_size__lte=size_max)
-            
-        if width_min:
-            dies = dies.filter(flatdie__current_width__gte=width_min)
-        if width_max:
-            dies = dies.filter(flatdie__current_width__lte=width_max)
-            
-        if thick_min:
-            dies = dies.filter(flatdie__current_thickness__gte=thick_min)
-        if thick_max:
-            dies = dies.filter(flatdie__current_thickness__lte=thick_max)
-            
         die_map = {str(d.id): d for d in dies}
         ordered_dies = [die_map[hid] for hid in hit_ids if hid in die_map]
         

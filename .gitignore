@@ -34,6 +34,7 @@ blob-report/
 
 # Cli
 .agent/
+.agents/
 graphify-out/
 
 # User

@@ -174,4 +174,11 @@ import sys
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv
 CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
 
+from django.core.exceptions import ImproperlyConfigured
+if not DEBUG:
+    if SECRET_KEY == 'django-insecure-development-secret-key-12345':
+        raise ImproperlyConfigured("Insecure DJANGO_SECRET_KEY detected in production!")
+    if MEILI_MASTER_KEY == 'change_me':
+        raise ImproperlyConfigured("Insecure MEILI_MASTER_KEY detected in production!")
+
 
