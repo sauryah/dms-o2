@@ -1,6 +1,9 @@
 import sys
+import logging
 import meilisearch
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 # Initialize client
 client = meilisearch.Client(settings.MEILI_HOST, settings.MEILI_MASTER_KEY)
@@ -13,8 +16,8 @@ def init_meilisearch():
     try:
         # Create index if it does not exist
         client.create_index(INDEX_NAME, {'primaryKey': 'id'})
-    except Exception:
-        pass
+    except Exception as e:
+        logger.info(f"Meilisearch index already exists or initialization note: {e}")
     
     try:
         index = client.index(INDEX_NAME)
@@ -23,8 +26,11 @@ def init_meilisearch():
             'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
             'sortableAttributes':   ['die_id'],
         })
+        logger.info(f"Meilisearch index '{INDEX_NAME}' initialized successfully")
     except Exception as e:
-        print(f"Meilisearch connection/init failed: {e}")
+        logger.error(f"Meilisearch connection/init failed: {e}")
+        if not settings.DEBUG:
+            raise
 
 def sync_die(die):
     from search.tasks import sync_die_task

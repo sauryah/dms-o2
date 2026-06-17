@@ -15,12 +15,13 @@ import {
   Sliders,
   ChevronDown,
   Activity,
-  FolderOpen,
-  Info
+  FolderOpen
 } from 'lucide-react'
 import { useApi, useAuth, useDebounce, isDieActive } from '../App'
 import { DiesTable } from '../components/DiesTable'
 import { CreateDieModal } from '../components/CreateDieModal'
+import { FilterPanel } from '../components/FilterPanel'
+import { DieStats } from '../components/DieStats'
 
 export function InventoryPage() {
   const { request } = useApi()
@@ -703,120 +704,26 @@ export function InventoryPage() {
             </div>
 
             {showFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/40 relative z-10">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
-                  <select 
-                    value={dieType}
-                    onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
-                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-350 focus:outline-none text-xs"
-                  >
-                    <option value="">All Types</option>
-                    <option value="ROUND">Round</option>
-                    <option value="FLAT">Flat</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-                  <select 
-                    value={statusVal}
-                    onChange={(e) => setStatusVal(e.target.value)}
-                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-350 focus:outline-none text-xs"
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="AVAILABLE">Available</option>
-                    <option value="RUNNING">Running</option>
-                    <option value="CLEANING">Cleaning</option>
-                    <option value="POLISHING">Polishing</option>
-                    <option value="DAMAGED">Damaged</option>
-                    <option value="SCRAPPED">Scrapped</option>
-                    <option value="MISSING">Missing</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 25x10"
-                    value={casing}
-                    onChange={(e) => setCasing(e.target.value)}
-                    className="w-full glass-input rounded-xl py-2.5 px-3.5 text-slate-300 focus:outline-none text-xs"
-                  />
-                </div>
-
-                {dieType === 'ROUND' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        step="0.001"
-                        placeholder="Min"
-                        value={sizeMin}
-                        onChange={(e) => setSizeMin(e.target.value)}
-                        className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                      />
-                      <input 
-                        type="number" 
-                        step="0.001"
-                        placeholder="Max"
-                        value={sizeMax}
-                        onChange={(e) => setSizeMax(e.target.value)}
-                        className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {dieType === 'FLAT' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="number" 
-                          step="0.001"
-                          placeholder="Min"
-                          value={widthMin}
-                          onChange={(e) => setWidthMin(e.target.value)}
-                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                        />
-                        <input 
-                          type="number" 
-                          step="0.001"
-                          placeholder="Max"
-                          value={widthMax}
-                          onChange={(e) => setWidthMax(e.target.value)}
-                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="number" 
-                          step="0.001"
-                          placeholder="Min"
-                          value={thickMin}
-                          onChange={(e) => setThickMin(e.target.value)}
-                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                        />
-                        <input 
-                          type="number" 
-                          step="0.001"
-                          placeholder="Max"
-                          value={thickMax}
-                          onChange={(e) => setThickMax(e.target.value)}
-                          className="w-1/2 glass-input rounded-xl py-2.5 px-3 text-slate-300 focus:outline-none text-xs"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+              <FilterPanel
+                dieType={dieType}
+                statusVal={statusVal}
+                casing={casing}
+                sizeMin={sizeMin}
+                sizeMax={sizeMax}
+                widthMin={widthMin}
+                widthMax={widthMax}
+                thickMin={thickMin}
+                thickMax={thickMax}
+                onDieTypeChange={setDieType}
+                onStatusChange={setStatusVal}
+                onCasingChange={setCasing}
+                onSizeMinChange={setSizeMin}
+                onSizeMaxChange={setSizeMax}
+                onWidthMinChange={setWidthMin}
+                onWidthMaxChange={setWidthMax}
+                onThickMinChange={setThickMin}
+                onThickMaxChange={setThickMax}
+              />
             )}
           </div>
 
@@ -914,34 +821,11 @@ export function InventoryPage() {
                       </div>
 
                       {/* Stat Cards */}
-                      <div>
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                          <Info className="h-4 w-4 text-blue-500" />
-                          <span>Summary Statistics</span>
-                        </h3>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Sets</span>
-                            <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{selectedMachine.sets.length}</span>
-                          </div>
-                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{selectedMachine.totalDies}</span>
-                          </div>
-                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Active Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
-                              {selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
-                            </span>
-                          </div>
-                          <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 hover:-translate-y-0.5 transition-all duration-300">
-                            <span className="text-slate-455 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Inactive Dies</span>
-                            <span className="text-2xl md:text-3xl font-black text-rose-450 mt-2 relative z-10 font-heading">
-                              {selectedMachine.totalDies - selectedMachine.sets.reduce((sum: number, s: any) => sum + s.dies.filter(isDieActive).length, 0)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <DieStats 
+                        totalSets={selectedMachine.sets.length}
+                        totalDies={selectedMachine.totalDies}
+                        dies={selectedMachine.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], [])}
+                      />
 
                       {/* Sets Cards Section */}
                       <div className="pt-4">

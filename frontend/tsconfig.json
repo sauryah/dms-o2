@@ -14,9 +14,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Incremental Migration Settings */
-    "allowJs": true,
-    "strict": false,
+    /* Strict Type Checking (Incremental Migration) */
+    "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
