@@ -19,7 +19,7 @@ def init_meilisearch():
     try:
         index = client.index(INDEX_NAME)
         index.update_settings({
-            'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine'],
+            'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
             'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
             'sortableAttributes':   ['die_id'],
         })
