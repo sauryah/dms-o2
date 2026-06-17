@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from dies.views import DieViewSet, search_dies, ImportDiesView
+from dies.views import DieViewSet, ImportDiesView
 from users.views import LoginView, UserViewSet, KeepAliveView, BackupViewSet, EventStreamView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet
 
@@ -18,7 +18,6 @@ urlpatterns = [
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/keep-alive/', KeepAliveView.as_view(), name='keep-alive'),
     path('api/import/', ImportDiesView.as_view(), name='import-dies'),
-    path('api/search/', search_dies, name='search-dies'),
     path('api/events/', EventStreamView.as_view(), name='events'),
     path('api/', include(router.urls)),
 ]

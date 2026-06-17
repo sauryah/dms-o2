@@ -37,17 +37,14 @@ class MeilisearchTests(TransactionTestCase):
 
         die.status = "RUNNING"
         die.save()
-        
         time.sleep(1.0)
         doc = index.get_document(str(die.id))
         self.assertEqual(doc.status, "RUNNING")
 
-        url = reverse('search-dies') + "?q=ROUND-MEILI"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'ROUND-MEILI')
-        self.assertEqual(response.data[0]['status'], 'RUNNING')
+        results = index.search("ROUND-MEILI")
+        self.assertEqual(len(results['hits']), 1)
+        self.assertEqual(results['hits'][0]['die_id'], 'ROUND-MEILI')
+        self.assertEqual(results['hits'][0]['status'], 'RUNNING')
 
     def test_search_with_range_filters(self):
         die1 = Die.objects.create(
@@ -78,19 +75,16 @@ class MeilisearchTests(TransactionTestCase):
         
         time.sleep(1.0)
         
+        index = meili_client.index(INDEX_NAME)
         # Test max filter
-        url = reverse('search-dies') + "?q=ROUND-FILTER&size_max=4.000"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'ROUND-FILTER-1')
+        results = index.search("ROUND-FILTER", {"filter": "size <= 4.0"})
+        self.assertEqual(len(results['hits']), 1)
+        self.assertEqual(results['hits'][0]['die_id'], 'ROUND-FILTER-1')
 
         # Test min filter
-        url = reverse('search-dies') + "?q=ROUND-FILTER&size_min=4.000"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'ROUND-FILTER-2')
+        results = index.search("ROUND-FILTER", {"filter": "size >= 4.0"})
+        self.assertEqual(len(results['hits']), 1)
+        self.assertEqual(results['hits'][0]['die_id'], 'ROUND-FILTER-2')
 
     def test_search_with_single_quote_filters(self):
         die = Die.objects.create(
@@ -108,17 +102,14 @@ class MeilisearchTests(TransactionTestCase):
         
         time.sleep(1.0)
         
+        index = meili_client.index(INDEX_NAME)
         # Test search with single quote in location
-        url = reverse('search-dies') + "?q=ROUND-QUOTE&location=Rack A's shelf"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'ROUND-QUOTE-1')
+        results = index.search("ROUND-QUOTE", {"filter": "location = 'Rack A\\'s shelf'"})
+        self.assertEqual(len(results['hits']), 1)
+        self.assertEqual(results['hits'][0]['die_id'], 'ROUND-QUOTE-1')
 
         # Test search with single quote in casing
-        url = reverse('search-dies') + "?q=ROUND-QUOTE&casing=25'x10'"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'ROUND-QUOTE-1')
+        results = index.search("ROUND-QUOTE", {"filter": "casing = '25\\'x10\\''"})
+        self.assertEqual(len(results['hits']), 1)
+        self.assertEqual(results['hits'][0]['die_id'], 'ROUND-QUOTE-1')
 
