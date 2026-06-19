@@ -22,37 +22,47 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 hover:bg-slate-800/85 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-blue-500/5 group"
+      className="bg-slate-900/60 backdrop-blur-md border border-slate-850 hover:border-blue-500/30 hover:bg-slate-900/90 transition-all duration-300 cursor-pointer shadow-xl rounded-xl p-6 flex flex-col justify-between group h-full"
     >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Flat Die</span>
-          <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors mt-0.5">{die.die_id}</h3>
+      <div>
+        <div className="flex justify-between items-start mb-4 gap-4">
+          <div className="flex-1 min-w-0">
+            <span className="text-xxs font-mono font-bold text-indigo-400/80 uppercase tracking-widest block mb-1">Flat Die</span>
+            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={die.die_id}>{die.die_id}</h3>
+          </div>
+          <div className="flex flex-col items-end gap-2.5 shrink-0">
+            <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
+              {die.status}
+            </span>
+            <svg className="w-10 h-10 text-indigo-500/20 opacity-70 group-hover:text-indigo-500/35 transition-colors" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="20" y="30" width="60" height="40" strokeDasharray="3 3" />
+              <rect x="28" y="38" width="44" height="24" strokeWidth="2.5" className="text-indigo-500/40 group-hover:text-indigo-500/65 transition-colors" />
+              <line x1="50" y1="10" x2="50" y2="90" strokeDasharray="2 2" />
+              <line x1="10" y1="50" x2="90" y2="50" strokeDasharray="2 2" />
+            </svg>
+          </div>
         </div>
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
-          {die.status}
-        </span>
       </div>
       
-      <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm border-t border-slate-700/50 pt-4">
+      <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs border-t border-slate-800/80 pt-4 mt-2">
         <div>
-          <span className="text-slate-500 block text-xs">Width × Thickness</span>
-          <span className="font-semibold text-slate-200">
+          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Width × Thickness</span>
+          <span className="font-semibold text-slate-200 font-mono">
             {die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness}` : 'N/A'} mm
             {die.radius ? ` (R: ${die.radius} mm)` : ''}
           </span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xs">Casing</span>
-          <span className="font-semibold text-slate-200">{die.casing}</span>
+          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Casing</span>
+          <span className="font-semibold text-slate-200 font-mono truncate block" title={die.casing}>{die.casing || '—'}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xs">Location</span>
+          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Location</span>
           <span className="font-semibold text-slate-200 truncate block" title={die.location || undefined}>{die.location || '—'}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xs">Set / Machine</span>
-          <span className="font-semibold text-slate-200 truncate block" title={`${die.set_name} / ${die.machine_name}`}>
+          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Set / Machine</span>
+          <span className="font-semibold text-slate-200 truncate block" title={die.set_name ? `${die.set_name} (${die.machine_name})` : undefined}>
             {die.set_name ? `${die.set_name} (${die.machine_name})` : '—'}
           </span>
         </div>

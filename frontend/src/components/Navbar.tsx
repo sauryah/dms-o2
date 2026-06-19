@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Layers, LogOut, LogIn, X, Menu } from 'lucide-react'
 import { useAuth } from '../App'
 
@@ -9,12 +9,12 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <nav className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="border-b border-slate-900 bg-slate-950/85 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center space-x-8">
             <Link to="/" className="flex items-center space-x-3 text-white group" onClick={() => setIsOpen(false)}>
-              <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg group-hover:scale-105 transition-transform duration-300">
+              <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md shadow-blue-500/10">
                 <Layers className="h-5 w-5 text-white" />
               </div>
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
@@ -22,25 +22,70 @@ export function Navbar() {
               </span>
             </Link>
             
-            <div className="hidden sm:flex space-x-4">
-              <Link to="/" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <div className="hidden sm:flex items-center space-x-1">
+              <NavLink 
+                to="/" 
+                className={({ isActive }) => 
+                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                    isActive 
+                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                  }`
+                }
+              >
                 Dashboard
-              </Link>
-              <Link to="/inventory" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              </NavLink>
+              <NavLink 
+                to="/inventory" 
+                className={({ isActive }) => 
+                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                    isActive 
+                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                  }`
+                }
+              >
                 Die Inventory
-              </Link>
-              <Link to="/machines" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              </NavLink>
+              <NavLink 
+                to="/machines" 
+                className={({ isActive }) => 
+                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                    isActive 
+                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                  }`
+                }
+              >
                 Machine Sets
-              </Link>
+              </NavLink>
               {(role === 'ROOT' || role === 'ADMIN') && (
-                <Link to="/import" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <NavLink 
+                  to="/import" 
+                  className={({ isActive }) => 
+                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                      isActive 
+                        ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                    }`
+                  }
+                >
                   Bulk Import
-                </Link>
+                </NavLink>
               )}
               {role === 'ROOT' && (
-                <Link to="/users" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <NavLink 
+                  to="/users" 
+                  className={({ isActive }) => 
+                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                      isActive 
+                        ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                    }`
+                  }
+                >
                   Users
-                </Link>
+                </NavLink>
               )}
             </div>
           </div>

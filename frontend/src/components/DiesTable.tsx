@@ -137,10 +137,21 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     }
   }
 
+  const statusColors: Record<string, string> = {
+    AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    CLEANING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    POLISHING: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    DAMAGED: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    MISSING: 'bg-red-500/10 text-red-400 border-red-500/20',
+    MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  }
+
   const Row = ({ index, style }: RowComponentProps) => {
     const die = sortedDies[index];
     if (!die) return null;
-    const active = isDieActive(die);
     const isSelected = selectedDieIds.has(die.die_id);
     return (
       <div
@@ -168,9 +179,9 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             />
           </div>
         )}
-        <div className="px-6 text-white font-bold truncate">{die.die_id}</div>
-        <div className="px-6 text-slate-300 truncate">{die.casing}</div>
-        <div className="px-6 text-slate-300 font-semibold truncate">
+        <div className="px-6 text-white font-bold truncate font-mono text-sm">{die.die_id}</div>
+        <div className="px-6 text-slate-300 truncate font-mono text-sm">{die.casing}</div>
+        <div className="px-6 text-slate-300 font-semibold truncate font-mono text-sm">
           {die.die_type === 'ROUND' ? (
             <span>Ø {die.current_size || '—'} mm</span>
           ) : (
@@ -180,22 +191,20 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             </span>
           )}
         </div>
-        <div className="px-6 text-slate-300 truncate">{die.location || '—'}</div>
+        <div className="px-6 text-slate-300 truncate text-sm">{die.location || '—'}</div>
         <div className="px-6 text-slate-300">
-          <span className="px-2 py-0.5 text-xxs font-semibold bg-slate-800 rounded border border-slate-700/50">
+          <span className="px-2 py-0.5 text-xxs font-mono font-semibold bg-slate-800 rounded border border-slate-700/50">
             {die.die_type}
           </span>
         </div>
         <div className="px-6">
-          <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${
-            active
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+          <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${
+            statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
           }`}>
             {die.status}
           </span>
         </div>
-        <div className="px-6 text-slate-400 text-xs">
+        <div className="px-6 text-slate-400 text-xs font-mono">
           {new Date(die.updated_at).toLocaleDateString()}
         </div>
         <div className="px-6 text-right">

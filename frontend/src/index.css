@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,7 +12,23 @@ body {
 }
 
 h1, h2, h3, h4, .font-heading {
-  font-family: 'Fira Code', monospace;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
 
 /* Glassmorphism Styles */
@@ -155,4 +171,31 @@ h1, h2, h3, h4, .font-heading {
 .animate-dash {
   stroke-dasharray: 5;
   animation: dash-scroll 10s linear infinite;
+}
+
+/* Global Premium Input/Select Overrides */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+input:not([type]),
+select,
+textarea {
+  background: rgba(3, 7, 18, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  color: #f8fafc !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input:not([type]):focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+  background: rgba(3, 7, 18, 0.8) !important;
+  outline: none !important;
 }
