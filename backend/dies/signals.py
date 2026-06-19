@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
-from users.middleware import get_current_user, get_current_ip
+from users.middleware import get_current_user, get_current_ip, _thread_locals
 from search.meili import sync_die, delete_die_document
 from dms.events import broadcast_event
 
@@ -85,20 +85,48 @@ def log_flat_changes(sender, instance, **kwargs):
                 ip_address=ip,
             )
 
+def queue_die_sync(die_id):
+    if not hasattr(_thread_locals, 'pending_sync_die_ids'):
+        _thread_locals.pending_sync_die_ids = set()
+    
+    if die_id not in _thread_locals.pending_sync_die_ids:
+        _thread_locals.pending_sync_die_ids.add(die_id)
+        
+        def run_sync():
+            _thread_locals.pending_sync_die_ids.discard(die_id)
+            from search.tasks import sync_die_task
+            sync_die_task.delay(die_id)
+            
+        transaction.on_commit(run_sync)
+
+def queue_die_broadcast(die_id, action):
+    if not hasattr(_thread_locals, 'pending_broadcast_keys'):
+        _thread_locals.pending_broadcast_keys = set()
+        
+    broadcast_key = (die_id, action)
+    if broadcast_key not in _thread_locals.pending_broadcast_keys:
+        _thread_locals.pending_broadcast_keys.add(broadcast_key)
+        
+        def run_broadcast():
+            _thread_locals.pending_broadcast_keys.discard(broadcast_key)
+            broadcast_event('die_update', {'id': die_id, 'action': action})
+            
+        transaction.on_commit(run_broadcast)
+
 @receiver(post_save, sender=Die)
 def sync_die_post_save(sender, instance, **kwargs):
-    transaction.on_commit(lambda: sync_die(instance))
-    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die_id, 'action': 'save'}))
+    queue_die_sync(instance.id)
+    queue_die_broadcast(instance.die_id, 'save')
 
 @receiver(post_save, sender=RoundDie)
 def sync_round_die_post_save(sender, instance, **kwargs):
-    transaction.on_commit(lambda: sync_die(instance.die))
-    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'}))
+    queue_die_sync(instance.die.id)
+    queue_die_broadcast(instance.die.die_id, 'save')
 
 @receiver(post_save, sender=FlatDie)
 def sync_flat_die_post_save(sender, instance, **kwargs):
-    transaction.on_commit(lambda: sync_die(instance.die))
-    transaction.on_commit(lambda: broadcast_event('die_update', {'id': instance.die.die_id, 'action': 'save'}))
+    queue_die_sync(instance.die.id)
+    queue_die_broadcast(instance.die.die_id, 'save')
 
 @receiver(post_delete, sender=Die)
 def delete_die_post_delete(sender, instance, **kwargs):

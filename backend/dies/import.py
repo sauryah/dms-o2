@@ -12,6 +12,7 @@ def import_dies(file_path: str, file_ext: str, user) -> dict:
     updated = 0
     skipped = 0
     errors = []
+    successful_die_ids = []
 
     # Associate user with current thread for DieHistory tracking
     _thread_locals.user = user
@@ -204,8 +205,8 @@ def import_dies(file_path: str, file_ext: str, user) -> dict:
                         }
                     )
 
-                # Explicitly sync to Meilisearch
-                sync_die(die)
+                # Collect ID for batch sync
+                successful_die_ids.append(die.id)
 
                 if is_created:
                     created += 1
@@ -221,6 +222,12 @@ def import_dies(file_path: str, file_ext: str, user) -> dict:
     # Clear thread local
     if hasattr(_thread_locals, 'user'):
         del _thread_locals.user
+
+    if successful_die_ids:
+        from search.tasks import sync_dies_batch_task
+        from dms.events import broadcast_event
+        sync_dies_batch_task.delay(successful_die_ids)
+        broadcast_event('die_update', {'action': 'bulk_import'})
 
     return {
         'created': created,

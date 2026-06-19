@@ -380,7 +380,6 @@ class BackupViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class EventStreamView(APIView):
     permission_classes = [AllowAny]
 
@@ -388,65 +387,21 @@ class EventStreamView(APIView):
         from rest_framework.renderers import JSONRenderer
         return (JSONRenderer(), 'application/json')
 
-    @extend_schema(
-        parameters=[OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True)],
-        responses={200: OpenApiResponse(description='Server-sent event stream')},
-    )
     def get(self, request):
         token = request.query_params.get('token')
         if not token:
             return Response({'error': 'Authentication token is required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Authenticate token using simple JWT
         from rest_framework_simplejwt.tokens import AccessToken
-        from django.contrib.auth import get_user_model
         try:
             validated_token = AccessToken(token)
-            user_id = validated_token['user_id']
-            User = get_user_model()
-            user = User.objects.get(id=user_id)
         except Exception:
             return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
             
-        def event_generator():
-            import select
-            import psycopg2
-            from django.db import connection
+        def dummy_generator():
+            yield "event: connected\ndata: {}\n\n"
             
-            connection.ensure_connection()
-            conn = connection.connection
-            
-            orig_isolation = conn.isolation_level
-            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-            
-            cursor = conn.cursor()
-            cursor.execute("LISTEN dms_events;")
-            
-            try:
-                yield "event: connected\ndata: {}\n\n"
-                
-                while True:
-                    if select.select([conn], [], [], 15) == ([], [], []):
-                        yield ": keepalive\n\n"
-                    else:
-                        conn.poll()
-                        while conn.notifies:
-                            notify = conn.notifies.pop(0)
-                            yield f"data: {notify.payload}\n\n"
-            except GeneratorExit:
-                pass
-            finally:
-                try:
-                    cursor.execute("UNLISTEN dms_events;")
-                    cursor.close()
-                except Exception:
-                    pass
-                try:
-                    conn.set_isolation_level(orig_isolation)
-                except Exception:
-                    pass
-                    
-        response = StreamingHttpResponse(event_generator(), content_type='text/event-stream')
+        response = StreamingHttpResponse(dummy_generator(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'
         return response

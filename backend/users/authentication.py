@@ -40,8 +40,10 @@ class CustomJWTAuthentication(JWTAuthentication):
             session.delete()
             raise AuthenticationFailed("Session replaced on another device or expired")
             
-        # Update last_seen
-        session.save()
+        # Update last_seen (throttled to once per minute to reduce DB writes)
+        if now - session.last_seen > timedelta(minutes=1):
+            session.last_seen = now
+            session.save(update_fields=['last_seen'])
         
         # Set thread local user for history tracking
         _thread_locals.user = user

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -33,6 +35,55 @@ var (
 	meiliCount             = 0
 )
 
+type contextKey string
+const userContextKey contextKey = "user_id"
+const roleContextKey contextKey = "user_role"
+
+// Client channel type for broadcasting SSE messages
+type Client chan string
+
+// EventManager handles connections and broadcasts
+type EventManager struct {
+	clients    map[Client]bool
+	register   chan Client
+	unregister chan Client
+	broadcast  chan string
+}
+
+var eventManager = EventManager{
+	clients:    make(map[Client]bool),
+	register:   make(chan Client),
+	unregister: make(chan Client),
+	broadcast:  make(chan string),
+}
+
+func (m *EventManager) start() {
+	for {
+		select {
+		case client := <-m.register:
+			m.clients[client] = true
+			log.Printf("SSE Client registered. Total active clients: %d", len(m.clients))
+		case client := <-m.unregister:
+			if _, ok := m.clients[client]; ok {
+				delete(m.clients, client)
+				close(client)
+				log.Printf("SSE Client unregistered. Total active clients: %d", len(m.clients))
+			}
+		case message := <-m.broadcast:
+			for client := range m.clients {
+				select {
+				case client <- message:
+				default:
+					log.Println("SSE Client buffer full or blocked. Unregistering client.")
+					go func(c Client) {
+						m.unregister <- c
+					}(client)
+				}
+			}
+		}
+	}
+}
+
 // DieRepresentation matches the JSON structure expected by the React frontend.
 type DieRepresentation struct {
 	ID               int64   `json:"-"`
@@ -60,6 +111,9 @@ func main() {
 	// 3. Connect to Redis
 	initRedis()
 
+	// Start Go Event Manager for SSE broadcasts
+	go eventManager.start()
+
 	// Start PostgreSQL event listener for Redis cache invalidation
 	startEventListener()
 
@@ -71,6 +125,7 @@ func main() {
 	mux.HandleFunc("GET /api/go/health", handleHealth)
 	mux.Handle("GET /api/go/search", authMiddleware(http.HandlerFunc(handleSearch)))
 	mux.Handle("GET /api/go/stats", authMiddleware(http.HandlerFunc(handleStats)))
+	mux.Handle("GET /api/events/", authMiddleware(http.HandlerFunc(handleEvents)))
 
 	port := getEnv("PORT", "8080")
 	
@@ -176,23 +231,35 @@ func initRedis() {
 func authMiddleware(next http.Handler) http.Handler {
 	secretKey := []byte(getEnv("DJANGO_SECRET_KEY", "change_me"))
 
+	idleLimitMinStr := getEnv("SESSION_IDLE_TIMEOUT_MINUTES", "30")
+	idleLimitMin, err := strconv.Atoi(idleLimitMinStr)
+	if err != nil {
+		idleLimitMin = 30
+	}
+
+	absoluteLimitHoursStr := getEnv("SESSION_ABSOLUTE_TIMEOUT_HOURS", "12")
+	absoluteLimitHours, err := strconv.Atoi(absoluteLimitHoursStr)
+	if err != nil {
+		absoluteLimitHours = 12
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenStr := ""
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenStr = parts[1]
+			}
+		} else {
+			tokenStr = r.URL.Query().Get("token")
+		}
+
+		if tokenStr == "" {
 			// No token provided; allow guest access (AllowAny equivalent)
 			next.ServeHTTP(w, r)
 			return
 		}
-
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Authorization header must be Bearer token"})
-			return
-		}
-
-		tokenStr := parts[1]
 
 		// Parse and validate signature
 		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
@@ -209,7 +276,77 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token claims"})
+			return
+		}
+
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid user ID claim"})
+			return
+		}
+		userID := int(userIDFloat)
+
+		// Calculate SHA-256 hash of the token string
+		hasher := sha256.New()
+		hasher.Write([]byte(tokenStr))
+		tokenHash := hex.EncodeToString(hasher.Sum(nil))
+
+		// Check UserSession in database
+		var lastSeen, createdAt time.Time
+		var isActive bool
+		var role string
+		err = db.QueryRow(`
+			SELECT s.last_seen, s.created_at, u.is_active, u.role 
+			FROM users_usersession s 
+			JOIN users_user u ON s.user_id = u.id 
+			WHERE s.token_hash = $1 AND s.user_id = $2`, 
+			tokenHash, userID).Scan(&lastSeen, &createdAt, &isActive, &role)
+
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Session not found or expired"})
+			return
+		}
+
+		if !isActive {
+			db.Exec("DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "User account is deactivated"})
+			return
+		}
+
+		now := time.Now()
+		idleLimit := lastSeen.Add(time.Duration(idleLimitMin) * time.Minute)
+		absoluteLimit := createdAt.Add(time.Duration(absoluteLimitHours) * time.Hour)
+
+		if now.After(idleLimit) || now.After(absoluteLimit) {
+			db.Exec("DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Session has expired due to inactivity or age"})
+			return
+		}
+
+		// Throttle database writes: only update if last_seen was > 1 minute ago
+		if now.Sub(lastSeen) > 1*time.Minute {
+			_, updateErr := db.Exec("UPDATE users_usersession SET last_seen = NOW() WHERE token_hash = $1", tokenHash)
+			if updateErr != nil {
+				log.Printf("Failed to update last_seen for token: %v", updateErr)
+			}
+		}
+
+		ctx := context.WithValue(r.Context(), userContextKey, userID)
+		ctx = context.WithValue(ctx, roleContextKey, role)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -777,6 +914,12 @@ func startEventListener() {
 				}
 				log.Printf("Received DB event: %s. Invalidating Redis search and stats caches.", n.Extra)
 				invalidateCache()
+				// Broadcast notification payload to all SSE clients
+				select {
+				case eventManager.broadcast <- n.Extra:
+				default:
+					log.Println("Warning: eventManager broadcast queue full, skipping broadcast.")
+				}
 			case <-time.After(90 * time.Second):
 				go func() {
 					err := listener.Ping()
@@ -814,6 +957,60 @@ func invalidateCache() {
 			log.Printf("Failed to delete search cache keys: %v", err)
 		} else {
 			log.Printf("Successfully invalidated %d search cache keys.", len(keys))
+		}
+	}
+}
+
+func handleEvents(w http.ResponseWriter, r *http.Request) {
+	// Require authentication: check if user_id is set in request context
+	userID := r.Context().Value(userContextKey)
+	if userID == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Authentication token is required or session expired"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	// Create SSE connection channel
+	clientChan := make(Client, 10)
+	eventManager.register <- clientChan
+
+	defer func() {
+		eventManager.unregister <- clientChan
+	}()
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		log.Println("Streaming unsupported by web server")
+		return
+	}
+
+	// Send connection established event
+	fmt.Fprintf(w, "event: connected\ndata: {}\n\n")
+	flusher.Flush()
+
+	// Keep alive ticker
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case msg, ok := <-clientChan:
+			if !ok {
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			flusher.Flush()
+		case <-ticker.C:
+			fmt.Fprintf(w, ": keepalive\n\n")
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
 		}
 	}
 }

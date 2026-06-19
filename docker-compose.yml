@@ -135,7 +135,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`)"
+      - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`) || PathPrefix(`/api/events`)"
       - "traefik.http.routers.go-api.entrypoints=web"
       - "traefik.http.routers.go-api.priority=100"
       - "traefik.http.services.go-api.loadbalancer.server.port=8080"

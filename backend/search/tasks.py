@@ -89,3 +89,51 @@ def delete_die_document_task(self, die_db_id):
         # Retry with exponential backoff: 60s, 300s, 600s
         retry_delay = 60 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=retry_delay)
+
+@shared_task(bind=True, max_retries=3)
+def sync_dies_batch_task(self, die_ids):
+    """
+    Sync a batch of dies to Meilisearch index.
+    
+    Retries up to 3 times on failure with exponential backoff.
+    Args:
+        die_ids: List of database IDs of the dies to sync
+    """
+    try:
+        logger.info(f"Starting batch sync for {len(die_ids)} dies")
+        dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=die_ids)
+    except Exception as exc:
+        logger.error(f"Failed to query dies for batch: {exc}")
+        raise self.retry(exc=exc, countdown=10)
+
+    docs = []
+    for die in dies:
+        doc = {
+            'id':       str(die.id),
+            'die_id':   die.die_id,
+            'type':     die.die_type,
+            'die_type': die.die_type,
+            'casing':   die.casing,
+            'status':   die.status,
+            'location': die.location,
+            'set':      die.current_set.name if die.current_set else '',
+            'machine':  die.current_set.machine.name if die.current_set else '',
+        }
+        if hasattr(die, 'rounddie') and die.rounddie:
+            doc['size'] = float(die.rounddie.current_size)
+        if hasattr(die, 'flatdie') and die.flatdie:
+            doc['width']     = float(die.flatdie.current_width)
+            doc['thickness'] = float(die.flatdie.current_thickness)
+        docs.append(doc)
+
+    if not docs:
+        return {'status': 'empty'}
+
+    try:
+        meili_client.index(INDEX_NAME).add_documents(docs)
+        logger.info(f"Successfully batch-synced {len(docs)} dies to Meilisearch")
+        return {'status': 'synced', 'count': len(docs)}
+    except Exception as exc:
+        logger.error(f"Failed to batch-sync dies to Meilisearch (attempt {self.request.retries}): {exc}")
+        retry_delay = 60 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=retry_delay)
