@@ -730,8 +730,17 @@ export function InventoryPage() {
 
           {/* Master Detail View Wrapper */}
           {isLoading ? (
-            <div className="flex justify-center items-center py-24">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="space-y-4 animate-pulse">
+              <div className="h-10 bg-slate-900/60 border border-slate-800/40 rounded-xl w-1/4"></div>
+              <div className="flex gap-6">
+                <div className="flex-1 space-y-3">
+                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
+                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
+                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
+                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
+                </div>
+                <div className="w-80 h-96 bg-slate-900/60 border border-slate-800/40 rounded-xl hidden lg:block"></div>
+              </div>
             </div>
           ) : error ? (
             <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8">

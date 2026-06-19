@@ -66,7 +66,7 @@ test.describe('DMS E2E Smoke Tests', () => {
     await expect(page.locator('nav')).toContainText('root');
 
     // 4. Type a die_id on dashboard -> result card appears
-    await page.fill('input[placeholder*="Search by Die ID"]', 'R-E2E-1');
+    await page.fill('input[placeholder*="Search Die ID"]', 'R-E2E-1');
     const card = page.locator('h3').filter({ hasText: /^R-E2E-1$/ });
     await expect(card).toBeVisible();
 
@@ -95,23 +95,23 @@ test.describe('DMS E2E Smoke Tests', () => {
 
     // Test range search filters combined with query
     await page.click('button:has-text("Filters")');
-    await page.fill('input[placeholder*="Search by Die ID"]', '"R-E2E-1"');
+    await page.fill('input[placeholder*="Search Die ID"]', '"R-E2E-1"');
     await page.selectOption('select:has(option[value="ROUND"])', 'ROUND');
     
     // Set range that matches R-E2E-1 (size is 2.5)
     await page.fill('input[placeholder="Min"]', '1.0');
     await page.fill('input[placeholder="Max"]', '4.0');
-    await expect(page.locator('h3').filter({ hasText: /^R-E2E-1$/ })).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^R-E2E-1$/ })).toBeVisible();
 
     // Set range that excludes R-E2E-1
     await page.fill('input[placeholder="Min"]', '3.0');
-    await expect(page.locator('h3').filter({ hasText: /^R-E2E-1$/ })).not.toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^R-E2E-1$/ })).not.toBeVisible();
 
     // Reset filters
     await page.fill('input[placeholder="Min"]', '');
     await page.fill('input[placeholder="Max"]', '');
     await page.selectOption('select:has(option[value="ROUND"])', '');
-    await page.fill('input[placeholder*="Search by Die ID"]', '');
+    await page.fill('input[placeholder*="Search Die ID"]', '');
     await page.click('button:has-text("Filters")');
 
     // 7. Visit /import -> import page renders

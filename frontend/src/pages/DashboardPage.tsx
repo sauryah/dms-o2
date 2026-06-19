@@ -472,8 +472,10 @@ export function DashboardPage() {
           </div>
 
           {isSearchLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-slate-900/60 border border-slate-850 rounded-2xl h-40"></div>
+              ))}
             </div>
           ) : searchDies?.length === 0 ? (
             <div className="text-center py-12 bg-slate-900 border border-slate-850 rounded-2xl">

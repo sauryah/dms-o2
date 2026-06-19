@@ -284,14 +284,32 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userIDFloat, ok := claims["user_id"].(float64)
-		if !ok {
+		var userID int
+		switch val := claims["user_id"].(type) {
+		case float64:
+			userID = int(val)
+		case string:
+			id, err := strconv.Atoi(val)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid user ID format"})
+				return
+			}
+			userID = id
+		case int:
+			userID = val
+		case nil:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid user ID claim"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "User ID claim is missing"})
+			return
+		default:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid user ID claim type"})
 			return
 		}
-		userID := int(userIDFloat)
 
 		// Calculate SHA-256 hash of the token string
 		hasher := sha256.New()
