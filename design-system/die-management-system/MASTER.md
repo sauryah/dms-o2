@@ -1,79 +1,105 @@
-# Design System Master File
+# Die Management System — Design System Specification
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
-> If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
+This specification governs the UI components, color systems, typography tokens, layouts, and accessibility standards for the Die Management System (DMS).
 
 ---
 
-**Project:** Die Management System
-**Generated:** 2026-06-14 20:30:32
-**Category:** Financial Dashboard
+## 📖 Table of Contents
+1. [Core Design Logic](#1-core-design-logic)
+2. [Global Style Tokens](#2-global-style-tokens)
+   - [Color Palette](#color-palette)
+   - [Typography specs](#typography-specs)
+   - [Spacing Variables](#spacing-variables)
+   - [Shadow Depths](#shadow-depths)
+3. [CSS Component Specifications](#3-css-component-specifications)
+   - [Buttons](#buttons)
+   - [Cards](#cards)
+   - [Inputs](#inputs)
+   - [Modals](#modals)
+4. [Page Design Guidelines](#4-page-design-guidelines)
+5. [Anti-Patterns & Accessibility Checks](#5-anti-patterns--accessibility-checks)
+6. [See Also](#see-also)
 
 ---
 
-## Global Rules
+## 1. Core Design Logic
+
+> [!NOTE]
+> When building or refactoring a specific interface route, check for a matching page-specific document under `design-system/pages/[page-name].md`. If present, those rules **override** this master spec. Otherwise, strictly follow the global rules listed below.
+
+*   **Design Paradigm**: Industrial OLED Dark Mode (high-contrast, minimal glow, power efficient).
+*   **Target Device Environment**: Shop floor desktop screens, rugged operator tablets, and LAN administrative interfaces.
+
+---
+
+## 2. Global Style Tokens
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#0F172A` | `--color-primary` |
-| Secondary | `#1E293B` | `--color-secondary` |
-| CTA/Accent | `#22C55E` | `--color-cta` |
-| Background | `#020617` | `--color-background` |
-| Text | `#F8FAFC` | `--color-text` |
+| Role | Color Value (Hex) | CSS Variable | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Primary** | `#0F172A` | `--color-primary` | Main surface panels and container fills |
+| **Secondary**| `#1E293B` | `--color-secondary`| Borders, table lines, dividing indicators |
+| **Accent/CTA**| `#22C55E` | `--color-cta` | Primary actions, success indicators, valid alerts |
+| **Background**| `#020617` | `--color-background`| Main app shell page background |
+| **Text** | `#F8FAFC` | `--color-text` | Primary body and heading content text |
 
-**Color Notes:** Dark bg + green positive indicators
+---
 
-### Typography
+### Typography specs
 
-- **Heading Font:** Fira Code
-- **Body Font:** Fira Sans
-- **Mood:** dashboard, data, analytics, code, technical, precise
-- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.google.com/share?selection.family=Fira+Code:wght@400;500;600;700|Fira+Sans:wght@300;400;500;600;700)
+*   **Heading Font**: `Fira Code` (for codes, numeric sizes, and parameters)
+*   **Body Font**: `Fira Sans` (for remarks, labels, and text descriptions)
+*   **Design Mood**: Data-dense, analytical, precise, technical
+*   **Google Fonts Link**: [Fira Code & Fira Sans Family Selection](https://fonts.google.com/share?selection.family=Fira+Code:wght@400;500;600;700%7CFira+Sans:wght@300;400;500;600;700)
 
-**CSS Import:**
+#### Stylesheet Import
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
 ```
 
+---
+
 ### Spacing Variables
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `4px` / `0.25rem` | Tight gaps |
-| `--space-sm` | `8px` / `0.5rem` | Icon gaps, inline spacing |
-| `--space-md` | `16px` / `1rem` | Standard padding |
-| `--space-lg` | `24px` / `1.5rem` | Section padding |
-| `--space-xl` | `32px` / `2rem` | Large gaps |
-| `--space-2xl` | `48px` / `3rem` | Section margins |
-| `--space-3xl` | `64px` / `4rem` | Hero padding |
+Use these predefined tokens to maintain layout consistency:
 
-### Shadow Depths
-
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
+| Token | Pixel Value | Rem Equiv | Standard Application |
+| :--- | :--- | :--- | :--- |
+| `--space-xs` | `4px` | `0.25rem` | Inner element gaps, detail labels |
+| `--space-sm` | `8px` | `0.5rem` | Inline icon gaps, small button padding |
+| `--space-md` | `16px` | `1.0rem` | Grid card padding, table column cell gaps |
+| `--space-lg` | `24px` | `1.5rem` | Main container padding, section margins |
+| `--space-xl` | `32px` | `2.0rem` | Modal margins, title block offsets |
 
 ---
 
-## Component Specs
+### Shadow Depths
+
+All card layouts and panels must use standardized box-shadow styles:
+
+| Token Name | Box Shadow Rule | Application |
+| :--- | :--- | :--- |
+| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Micro elements, tabs |
+| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Surface grids and inventory lists |
+| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Dropdown selections, hovering filters |
+| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Central pop-up modals, confirmation boxes |
+
+---
+
+## 3. CSS Component Specifications
 
 ### Buttons
 
 ```css
-/* Primary Button */
+/* Primary Green Accent Button */
 .btn-primary {
   background: #22C55E;
-  color: white;
+  color: #ffffff;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
-  transition: all 200ms ease;
+  transition: all 200ms ease-out;
   cursor: pointer;
 }
 
@@ -82,7 +108,7 @@
   transform: translateY(-1px);
 }
 
-/* Secondary Button */
+/* Secondary Button Outline */
 .btn-secondary {
   background: transparent;
   color: #0F172A;
@@ -90,7 +116,7 @@
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
-  transition: all 200ms ease;
+  transition: all 200ms ease-out;
   cursor: pointer;
 }
 ```
@@ -103,7 +129,7 @@
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 
@@ -127,7 +153,7 @@
 .input:focus {
   border-color: #0F172A;
   outline: none;
-  box-shadow: 0 0 0 3px #0F172A20;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
 }
 ```
 
@@ -135,12 +161,12 @@
 
 ```css
 .modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
 }
 
 .modal {
-  background: white;
+  background: #0f172a;
   border-radius: 16px;
   padding: 32px;
   box-shadow: var(--shadow-xl);
@@ -151,56 +177,44 @@
 
 ---
 
-## Style Guidelines
+## 4. Page Design Guidelines
 
-**Style:** Dark Mode (OLED)
+### Layout Pattern: Bento Grid Showcase
+Designed to display status distribution charts, CAD drawings, and quick metrics lists simultaneously.
 
-**Keywords:** Dark theme, low light, high contrast, deep black, midnight blue, eye-friendly, OLED, night mode, power efficient
-
-**Best For:** Night-mode apps, coding platforms, entertainment, eye-strain prevention, OLED devices, low-light
-
-**Key Effects:** Minimal glow (text-shadow: 0 0 10px), dark-to-light transitions, low white emission, high readability, visible focus
-
-### Page Pattern
-
-**Pattern Name:** Horizontal Scroll Journey
-
-- **Conversion Strategy:** Immersive product discovery. High engagement. Keep navigation visible.
-28,Bento Grid Showcase,bento,  grid,  features,  modular,  apple-style,  showcase", 1. Hero, 2. Bento Grid (Key Features), 3. Detail Cards, 4. Tech Specs, 5. CTA, Floating Action Button or Bottom of Grid, Card backgrounds: #F5F5F7 or Glass. Icons: Vibrant brand colors. Text: Dark., Hover card scale (1.02), video inside cards, tilt effect, staggered reveal, Scannable value props. High information density without clutter. Mobile stack.
-29,Interactive 3D Configurator,3d,  configurator,  customizer,  interactive,  product", 1. Hero (Configurator), 2. Feature Highlight (synced), 3. Price/Specs, 4. Purchase, Inside Configurator UI + Sticky Bottom Bar, Neutral studio background. Product: Realistic materials. UI: Minimal overlay., Real-time rendering, material swap animation, camera rotate/zoom, light reflection, Increases ownership feeling. 360 view reduces return rates. Direct add-to-cart.
-30,AI-Driven Dynamic Landing,ai,  dynamic,  personalized,  adaptive,  generative", 1. Prompt/Input Hero, 2. Generated Result Preview, 3. How it Works, 4. Value Prop, Input Field (Hero) + 'Try it' Buttons, Adaptive to user input. Dark mode for compute feel. Neon accents., Typing text effects, shimmering generation loaders, morphing layouts, Immediate value demonstration. 'Show, don't tell'. Low friction start.
-- **CTA Placement:** Floating Sticky CTA or End of Horizontal Track
-- **Section Order:** 1. Intro (Vertical), 2. The Journey (Horizontal Track), 3. Detail Reveal, 4. Vertical Footer
+#### Structural Order:
+1.  **Header Title Block**: Page title, scale settings, local time, and current active operators list.
+2.  **Bento Grid Matrix**:
+    *   *Grid Card A*: CAD Vector Simulation (MM format).
+    *   *Grid Card B*: Real-time Status Donut chart.
+    *   *Grid Card C*: Parameter Filter controls.
+3.  **Detail Data Panel**: Double-buffered tables showing die metrics.
 
 ---
 
-## Anti-Patterns (Do NOT Use)
+## 5. Anti-Patterns & Accessibility Checks
 
-- ❌ Light mode default
-- ❌ Slow rendering
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+### ⚠️ Forbidden Patterns (Do NOT Use)
+*   ❌ **Defaulting to Light Mode**: DMS is strictly dark-mode first for high visibility in low-light industrial environments.
+*   ❌ **Using Emojis as Interface Icons**: Always use standardized vector icons from `Lucide React` or `Heroicons`.
+*   ❌ **Oversized Layout-Shifting Hovers**: Do not use massive scales or transforms that force adjacent text elements to warp.
+*   ❌ **Low Contrast Indicators**: All status alerts (e.g. Scrapped, Missing) must maintain a minimum contrast ratio of 4.5:1.
+*   ❌ **Hidden Keyboard Focus**: Focus states (`:focus-visible`) must highlight clearly for tablet/keyboard operators.
 
 ---
 
-## Pre-Delivery Checklist
+### 📋 Pre-Delivery UI Checklist
+- [ ] Icons are completely consistent, using vector SVG representations.
+- [ ] `cursor-pointer` is applied to all clickable elements.
+- [ ] Hover and click transitions are defined within 150-300ms windows.
+- [ ] Focus outlines are visible when navigating using the Tab key.
+- [ ] Layout shifts are blocked during asynchronous loads.
+- [ ] Media queries are defined for tablets (768px), laptops (1024px), and desktops (1440px).
 
-Before delivering any UI code, verify:
+---
 
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
-- [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
+## 6. See Also
+
+*   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System environment initialization and run instructions.
+*   [ARCHITECTURE.md](file:///home/sahil/Projects/dms-o2/docs/ARCHITECTURE.md) - Database connection specifications and search route logic.
+ horizontal scroll on mobile

@@ -1,433 +1,412 @@
 # DMS — Die Management System
 
-## Overview
-DMS (Die Management System) is an industrial LAN-based tracking platform designed to monitor production dies, record history of every change, and provide fast search functionality. The application manages different types of dies (Round and Flat dies), assigns them to machine sets, tracks status updates (e.g., Available, Running, Cleaning, etc.), and maintains a detailed history log of all status and parameter updates.
+<div align="center">
+  <p><strong>Industrial Local Area Network (LAN) Die Tracking & Inventory Platform</strong></p>
+  <p>High-performance search, real-time sync, signal-driven auditing, and nightly backups for shop floor operations.</p>
+</div>
 
 ---
 
-## Features
-- **Die Tracking**: Support for Round dies (size) and Flat dies (width, thickness, radius).
-- **Audit History**: Automatic, signal-driven tracking of status, set changes, location, and parameters.
-- **Fuzzy & Parametric Search**: Blazing fast search using Meilisearch for text/casing/location and PostgreSQL for decimal ranges.
-- **Role-Based Access Control**:
-  - *Unauthenticated*: Search and view only.
-  - *Admin*: Add, edit, delete, and bulk import dies.
-  - *Root*: Admin management (create/deactivate admins) and system configuration.
-- **Session Management**: One active session per user with automatic idle timeout (30 min) and absolute timeout (12 hours).
-- **Bulk Import**: Idempotent spreadsheet import (CSV and Excel/XLSX) with detailed row-by-row validation.
-- **Dockerized Architecture**: Simplified deployment using Docker Compose and Traefik v3.
+## 📖 Table of Contents
+- [DMS — Die Management System](#dms--die-management-system)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [💡 System Architecture](#-system-architecture)
+  - [🚀 Features](#-features)
+  - [💻 Tech Stack](#-tech-stack)
+  - [🏁 Quick Start Guide](#-quick-start-guide)
+    - [Prerequisites](#prerequisites)
+    - [Automated Setup](#automated-setup)
+    - [Manual Installation (Alternative)](#manual-installation-alternative)
+  - [⚙️ Environment Configuration](#️-environment-configuration)
+  - [🛠️ Container Management Reference](#️-container-management-reference)
+    - [Start container stack](#start-container-stack)
+    - [Stop containers (temporary)](#stop-containers-temporary)
+    - [Shut down container stack (clean)](#shut-down-container-stack-clean)
+    - [View real-time logs](#view-real-time-logs)
+    - [Interactive PostgreSQL console](#interactive-postgresql-console)
+    - [Execute Django management command](#execute-django-management-command)
+  - [💾 Nightly Database Backups](#-nightly-database-backups)
+  - [🧑‍💻 Local Development Setup](#-local-development-setup)
+    - [Backend Local Setup](#backend-local-setup)
+    - [Frontend Local Setup](#frontend-local-setup)
+  - [🧪 Quality Assurance & Scripts](#-quality-assurance--scripts)
+  - [📋 Project Directory Overview](#-project-directory-overview)
+  - [🔌 API Endpoint Reference](#-api-endpoint-reference)
+  - [🚀 Production Deployment & Upgrades](#-production-deployment--upgrades)
+  - [❓ FAQ & Common Scenarios](#-faq--common-scenarios)
+  - [⚠️ Troubleshooting Guide](#️-troubleshooting-guide)
+  - [🤝 Contributing Guidelines](#-contributing-guidelines)
+  - [📄 License](#-license)
 
 ---
 
-## Tech Stack
-- **Backend**:
-  - Python 3.11, Django 4.2, Django REST Framework, Django Simple JWT, OpenPyXL (relational CRUD, admin, auth, exports)
-  - Go (Golang) microservice (high-performance read and search APIs)
-- **Database / Search**: PostgreSQL 18, Meilisearch v1.7
-- **Frontend**: React 18, Vite, Tailwind CSS, TanStack React Query v5, React Router Dom v6, Lucide React
-- **Infra/Proxy**: Docker, Docker Compose, Traefik v3
-- **Testing**: Playwright (E2E), Vitest & JSDOM (Frontend unit), Django Test Suite (Backend unit)
+## 💡 System Architecture
 
----
+DMS is built as a microservice-oriented application designed to serve high-concurrency requests over local area networks with low latency:
 
-## Screenshots
-> TODO: Verify manually (place screenshots in this section once UI is visually customized on your network)
-
----
-
-## Prerequisites
-- **Docker** and **Docker Compose** installed on the host machine.
-- **Node.js** (v18+) and **npm** (for local frontend development only).
-- **Python 3.11** (for local backend development only).
-
----
-
-## Environment Variables
-Create a `.env` file in the project root (use `.env.example` as a template):
-
-```ini
-POSTGRES_DB=dms
-POSTGRES_USER=dms_user
-POSTGRES_PASSWORD=your_db_password
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-DJANGO_SECRET_KEY=your_django_secret_key
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=192.168.1.100,localhost,127.0.0.1
-MEILI_HOST=http://meilisearch:7700
-MEILI_MASTER_KEY=your_meilisearch_master_key
-ROOT_USERNAME=root
-ROOT_PASSWORD=your_strong_root_password
-SESSION_IDLE_TIMEOUT_MINUTES=30
-SESSION_ABSOLUTE_TIMEOUT_HOURS=12
+```mermaid
+graph TD
+    User([LAN Operator / Administrator]) -->|HTTP/HTTPS| Traefik[Traefik v3 Reverse Proxy]
+    
+    subgraph Container Stack
+        Traefik -->|/api/go/*| GoAPI[Go Search API Microservice]
+        Traefik -->|/api/* & /admin/*| Django[Django 4.2 Web Server]
+        Traefik -->|/*| Nginx[Nginx Static Frontend Server]
+        
+        Django -->|Celery Workers| Celery[Celery Tasks]
+        Django -->|Relational SQL / Audit Signals| Postgres[(PostgreSQL 18)]
+        
+        GoAPI -->|Fuzzy Lookup| Meili[(Meilisearch v1.7)]
+        GoAPI -->|Cache Store| Redis[(Redis 7)]
+        GoAPI -->|Range Queries| Postgres
+        
+        Postgres -->|LISTEN/NOTIFY Cache Invalidation| GoAPI
+    end
 ```
 
 ---
 
-## Installation
+## 🚀 Features
 
-We provide automated setup scripts to copy environment templates, bootstrap the Docker container stack, run database migrations, seed the default root account, and index Meilisearch in a single step.
+*   **Precision Die Tracking**: Explicit modeling for **Round dies** (casing, current size, original size) and **Flat dies** (width, thickness, corner radius).
+*   **Immutable Audit Logging**: Signal-driven system capturing all changes to status, location, tool sets, and dimensions.
+*   **Fuzzy & Parametric Search**: Combined lookup using Go, Meilisearch (fuzzy string matching) and PostgreSQL (decimal range queries).
+*   **Granular RBAC Matrix**:
+    *   **Unauthenticated**: Search and view only.
+    *   **Admin**: Status and location edits, die CRUD operations, and bulk import.
+    *   **Root**: User administration, database backup/restore, and global parameters.
+*   **Concurrent Session Control**: Single active session enforcement. New sign-ins instantly evict previous logins.
+*   **Sheet-to-Database Import**: Idempotent upload for CSV and Excel (.xlsx) spreadsheets with validation reports.
+*   **High Availability Docker Stack**: Zero-downtime proxy configuration using Traefik v3.
 
-### Linux & macOS
-1. Open your terminal, navigate to the cloned folder, and run:
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
+---
 
-### Windows (PowerShell)
-1. Open PowerShell (preferably as Administrator), navigate to the cloned folder, and run:
-   ```powershell
-   ./setup.ps1
-   ```
-   *(If prompted with execution policy errors, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
+## 💻 Tech Stack
+
+*   **Backend Framework**: Python 3.11, Django 4.2, Django REST Framework, Django Simple JWT, OpenPyXL
+*   **Search Microservice**: Go (Golang) 1.21
+*   **Databases & Caches**: PostgreSQL 18, Meilisearch v1.7, Redis 7 (alpine-based)
+*   **Frontend SPA**: React 18, Vite, Vanilla CSS, TanStack React Query v5, React Router DOM v6
+*   **Ingress & Infras**: Traefik v3, Docker, Docker Compose
+*   **Testing Engines**: Playwright (E2E Integration), Vitest & JSDOM (Frontend unit), PyTest / Django Test Suite (Backend)
+
+---
+
+## 🏁 Quick Start Guide
+
+### Prerequisites
+*   **Docker** and **Docker Compose** (V2+) installed.
+*   **Node.js** (v18+) and **npm** (only required for local developer execution).
+*   **Python 3.11** (only required for local django execution).
+
+### Automated Setup
+
+We provide unified installation scripts that duplicate configuration variables, bootstrap all Docker services, apply migrations, seed the default root account, and synchronize Meilisearch indices.
+
+#### Linux & macOS
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+#### Windows (PowerShell)
+```powershell
+# Run Bypass if PowerShell blocks execution policy
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+./setup.ps1
+```
 
 > [!TIP]
-> **Automatic LAN IP Detection**: At the end of the setup, the script will automatically detect and print your host's local IP address (e.g., `http://192.168.1.15`). You can open this URL in any phone or device connected to the same Wi-Fi network to use the app immediately!
+> **LAN Access Made Simple**
+> At the end of the installation process, the setup script automatically outputs your local host IP address (e.g., `http://192.168.1.15`). Any computer or tablet connected to the same Wi-Fi/LAN network can access the application immediately using this link.
 
 ---
-
 
 ### Manual Installation (Alternative)
-If you prefer to run the steps manually:
-1. **Configure Environment File**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials and configuration
-   ```
-2. **Build and Run Containers**:
-   ```bash
-   docker compose up -d --build
-   ```
-3. **Initialize Root Account & Sync Search**:
-   ```bash
-   docker compose exec django python manage.py migrate
-   docker compose exec django python manage.py create_root_user
-   docker compose exec django python manage.py sync_search
-   ```
 
+For developers who prefer executing individual bootstrap steps:
 
-5. **Access the Application**:
-   Once running, you can access the platform at:
-   - **Frontend App**: [http://localhost](http://localhost) (or `http://dms.local` / `http://<lan-ip>`)
-   - **Django Admin Interface**: [http://localhost/admin/](http://localhost/admin/)
-   - **Django REST API**: [http://localhost/api/](http://localhost/api/)
-
-
-
-   **Default Root Credentials**:
-   - **Username**: `root`
-   - **Password**: `root123` (as defined in the default environment configuration)
+1.  **Duplicate Environment File**:
+    ```bash
+    cp .env.example .env
+    ```
+2.  **Start the Docker Container Stack**:
+    ```bash
+    docker compose up -d --build
+    ```
+3.  **Execute Database Setup & Search Synchronization**:
+    ```bash
+    docker compose exec django python manage.py migrate
+    docker compose exec django python manage.py create_root_user
+    docker compose exec django python manage.py sync_search
+    ```
+4.  **Application Access Interfaces**:
+    *   **Frontend Portal**: [http://localhost](http://localhost)
+    *   **Django Administrator Dashboard**: [http://localhost/admin/](http://localhost/admin/)
+    *   **Django REST API Root**: [http://localhost/api/](http://localhost/api/)
+    *   **Default Root Credentials**: Username: `root` | Password: `root123` (Set in your `.env`)
 
 ---
 
-## Docker Container Management
+## ⚙️ Environment Configuration
 
-Here are the essential commands for managing your Docker containers in development or production.
+DMS uses a centralized `.env` configuration file in the project root. Maintain secure values in production environments.
 
-### 1. Starting the Application
-If you are starting the application for the first time or after making changes to dependencies (like `package.json` or `requirements.txt`):
-```bash
-docker compose up -d --build
-```
-*If no configurations or dependencies changed, you can start it without the `--build` flag:*
+> [!WARNING]
+> Do not expose database passwords or Meilisearch master keys in version control. Keep `.env` added to your `.gitignore`.
+
+| Variable | Default Value | Purpose |
+| :--- | :--- | :--- |
+| `POSTGRES_DB` | `dms` | Target PostgreSQL database name |
+| `POSTGRES_USER` | `dms_user` | Database user account |
+| `POSTGRES_PASSWORD` | `your_db_password` | Database access password |
+| `POSTGRES_HOST` | `db` | Database service host inside Docker network |
+| `POSTGRES_PORT` | `5432` | PostgreSQL network port |
+| `DJANGO_SECRET_KEY` | *auto-generated* | Django cryptography hash key |
+| `DJANGO_DEBUG` | `False` | Enables/disables debug mode (always `False` in prod) |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Authorized host domain names / IP range |
+| `MEILI_HOST` | `http://meilisearch:7700` | Search service connection endpoint |
+| `MEILI_MASTER_KEY` | *auto-generated* | Meilisearch authorization key |
+| `ROOT_USERNAME` | `root` | Superuser username |
+| `ROOT_PASSWORD` | `root123` | Default administrator password |
+| `SESSION_IDLE_TIMEOUT_MINUTES` | `30` | Minutes before idle session expires |
+| `SESSION_ABSOLUTE_TIMEOUT_HOURS`| `12` | Absolute hours before user is forced to log in again |
+
+---
+
+## 🛠️ Container Management Reference
+
+Here is a checklist of common administrative docker commands:
+
+### Start container stack
 ```bash
 docker compose up -d
 ```
+*Add `--build` to compile dependency changes (e.g. `package.json` updates).*
 
-### 2. Stopping the Application (Temporarily)
-To stop the running containers without removing them or affecting any data:
+### Stop containers (temporary)
 ```bash
 docker compose stop
 ```
-*To start them back up after stopping:*
-```bash
-docker compose start
-```
+*Restarts containers using `docker compose start`.*
 
-### 3. Shutting Down and Re-initializing (Clean Shutdown)
-To fully stop and remove the containers and the local virtual network (useful if you face network/port binding issues):
+### Shut down container stack (clean)
 ```bash
 docker compose down
 ```
-To bring everything back up after a shutdown:
-```bash
-docker compose up -d
-```
 
 > [!IMPORTANT]
-> **Data Persistence Warning:** 
-> Running `docker compose down` preserves all your database records and search indexes because they are saved in persistent volumes.
-> **DO NOT** run `docker compose down -v` unless you explicitly want to delete all database and search index data.
+> **Data Preservation Rule**
+> Using `docker compose down` will **never** delete your database records or search indices because they are saved on persistent external volumes. **DO NOT** execute `docker compose down -v` unless you intend to completely erase all data records.
 
-### 4. Viewing Application Logs
-To view combined logs from all running containers in real-time:
+### View real-time logs
 ```bash
 docker compose logs -f
-```
-To view logs of a specific service (e.g., just Django or Traefik):
-```bash
+# Or target a single container
 docker compose logs -f django
-docker compose logs -f traefik
 ```
 
-### 5. Running Database Commands / Shell
-To enter the PostgreSQL database interactive console:
+### Interactive PostgreSQL console
 ```bash
 docker compose exec db psql -U dms_user -d dms
 ```
-To run Django management commands (e.g. creating users, running migrations):
+
+### Execute Django management command
 ```bash
 docker compose exec django python manage.py <command>
 ```
 
-### 6. Initializing and Creating Users
-If the database is fresh and there are no users:
-1. **Initialize the Root User**:
-   ```bash
-   docker compose exec django python manage.py create_root_user
-   ```
-   *This initializes the superuser with the credentials defined in your `.env` file (by default: username `root` and password `root_pass_1234567890`).*
+---
 
-2. **Add Other Users**:
-   Log in as the `root` user on the web app or at `http://localhost/admin/`, and use the User Administration panel to add new Admin or Regular users.
+## 💾 Nightly Database Backups
 
-### 7. Database Backups and Restoration
-The application features a built-in automated backup container that takes compressed custom-format snapshots (`.dump` files) every night at **2:00 AM** and stores them on the host machine in the `./backups/` directory with a **14-day retention cycle**.
+The system includes an automated postgres backup container that:
+1.  Triggers a compressed custom binary database snapshot (`.dump` files) nightly at **2:00 AM**.
+2.  Persists the snapshots on the host disk at `./backups/`.
+3.  Enforces a **14-day retention cycle**, automatically pruning older archives.
 
-You can also use the host-level utility script `./dms-backup.sh` to trigger backups, list them, or restore them easily:
+### Manual Backup Commands
 
-* **Trigger a Manual Backup**:
-  ```bash
-  ./dms-backup.sh backup
-  ```
-* **List Available Backups**:
-  ```bash
-  ./dms-backup.sh list
-  ```
-* **Restore a Backup**:
-  ```bash
-  ./dms-backup.sh restore <backup_filename.dump>
-  # Example:
-  ./dms-backup.sh restore dms_backup_20260614_152834.dump
-  ```
-  *Note: The restore command will overwrite current data and automatically rebuild your Meilisearch search index.*
+A host-level database management utility is provided via `./dms-backup.sh`:
+
+*   **Generate an Instant Backup**:
+    ```bash
+    ./dms-backup.sh backup
+    ```
+*   **List Available Backups**:
+    ```bash
+    ./dms-backup.sh list
+    ```
+*   **Restore the Database from an Archive**:
+    ```bash
+    ./dms-backup.sh restore <backup_filename.dump>
+    ```
+    *Note: Restoring a backup completely overwrites current database tables and triggers automated search index rebuilding.*
 
 ---
 
-## Running Locally
+## 🧑‍💻 Local Development Setup
 
-For rapid frontend/backend development without rebuilding Docker containers constantly, you can run services individually:
+For faster frontend/backend iterations without waiting for Docker compilation steps:
 
-### Backend Setup
-1. Create a virtual environment and activate it:
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run migrations and start the Django dev server:
-   ```bash
-   python manage.py migrate
-   python manage.py runserver 8000
-   ```
+### Backend Local Setup
 
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Run the Vite development server (proxies API requests to backend at port 8000):
-   ```bash
-   npm run dev
-   ```
+1.  Navigate to the backend directory, initialize and activate a virtual environment:
+    ```bash
+    cd backend
+    python -m venv venv
+    source venv/bin/activate  # macOS/Linux
+    # venv\Scripts\activate   # Windows PowerShell
+    ```
+2.  Install python package dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Apply SQL migrations and start the Django development server:
+    ```bash
+    python manage.py migrate
+    python manage.py runserver 8000
+    ```
 
----
+### Frontend Local Setup
 
-## Available Scripts
-
-### Backend Commands
-- `python manage.py migrate`: Apply database schema migrations.
-- `python manage.py test`: Run all backend API and model unit tests.
-- `python manage.py create_root_user`: Initialize the ROOT superuser account.
-- `python manage.py expire_sessions`: Prune expired/idle JWT sessions.
-
-### Frontend (package.json)
-- `npm run dev`: Launch the Vite dev server at `http://localhost:3000`.
-- `npm run build`: Compile the production-ready build into `/dist`.
-- `npm run test`: Run frontend unit tests (Vitest).
-- `npm run test:e2e`: Run Playwright E2E smoke tests.
+1.  Navigate to the frontend directory and install dependencies:
+    ```bash
+    cd frontend
+    npm install
+    ```
+2.  Start the Vite hot-reloading development server:
+    ```bash
+    npm run dev
+    ```
+    *All API queries are automatically proxied to port 8000.*
 
 ---
 
-## Project Structure
+## 🧪 Quality Assurance & Scripts
+
+### Backend Actions
+*   `python manage.py test`: Execute Django API, signal auditing, and model unit tests.
+*   `python manage.py create_root_user`: Seed the root administrator profile.
+*   `python manage.py expire_sessions`: System cron job to prune idle user sessions.
+
+### Frontend Actions
+*   `npm run dev`: Start development hot reloading.
+*   `npm run build`: Compile static production bundles into `dist/`.
+*   `npm run test`: Run frontend unit and mock tests using Vitest.
+*   `npm run test:e2e`: Execute end-to-end user flows using Playwright.
+
+---
+
+## 📋 Project Directory Overview
+
 ```
-dms/
-├── .github/workflows/deploy.yml   # CI/CD Deployment configuration
+DMS/
+├── .github/workflows/deploy.yml   # CI/CD Deployment configurations
 ├── backend/                       # Python Django Backend
-│   ├── dies/                      # Die Models, Signals & Views
-│   ├── machines/                  # Machine and Set configurations
-│   ├── history/                   # Audit history tracking
-│   ├── users/                     # Authentication & User Sessions
-│   ├── dms/                       # Settings and base URLs
-│   └── manage.py
+│   ├── dies/                      # Die models, database signals, and views
+│   ├── machines/                  # Machine assets, categories, and tool sets
+│   ├── history/                   # Signal-based audit logging
+│   ├── users/                     # RBAC management & user session monitoring
+│   └── dms/                       # Configuration, URL mapping, and WSGI setup
 ├── go-api/                        # Go Search & Stats Microservice
-│   ├── Dockerfile                 # Optimized multi-stage Alpine build
-│   ├── main.go                    # Entrypoint, DB client, search routing
-│   └── go.mod                     # Go dependency list
-├── frontend/                      # React Frontend
-│   ├── src/                       # Source files (App, Card components)
-│   ├── tests/e2e/                 # Playwright E2E tests
-│   ├── vite.config.js             # Vite configuration with API proxy
-│   ├── playwright.config.js       # Playwright E2E config
-│   └── Dockerfile.prod            # Production multi-stage Nginx build
-├── scripts/                       # Git hooks and utility scripts
-├── docker-compose.yml             # Development Docker Compose configuration
-├── docker-compose.prod.yml        # Production Docker Compose configuration
-├── deploy.sh                      # Production upgrade and deployment script
-├── traefik.yml                    # Traefik routing configuration
-└── PROJECT.md                     # Roadmap and progress checklist
+│   ├── Dockerfile                 # Optimized multi-stage build configuration
+│   └── main.go                    # Microservice entrypoint and Redis connection
+├── frontend/                      # React Frontend Single Page App
+│   ├── src/                       # Components, pages, hooks, styling
+│   ├── tests/e2e/                 # Playwright E2E system smoke tests
+│   └── Dockerfile.prod            # Production multi-stage Nginx configuration
+├── scripts/                       # Local Git hooks and utility tools
+├── docker-compose.yml             # Local developer container stack
+├── docker-compose.prod.yml        # Production optimized configuration
+├── deploy.sh                      # Zero-downtime system upgrade script
+├── traefik.yml                    # Traefik routing rules
+└── PROJECT.md                     # Roadmap and checklist logs
 ```
 
 ---
 
-## API Documentation
+## 🔌 API Endpoint Reference
 
-### Authentication
-* **POST** `/api/auth/login/`
-  * Body: `{ "username": "...", "password": "..." }`
-  * Returns: `{ "token": "<JWT>", "role": "ROOT|ADMIN|REGULAR" }`
+All endpoints are configured with JWT Bearer Token validation. Add `Authorization: Bearer <token>` in the HTTP headers.
 
-### Dies Inventory
-* **GET** `/api/dies/`
-  * Query parameters for filtering: `die_type`, `status`, `casing`, `location`, `size_min`, `size_max`, `width_min`, `width_max`, `thick_min`, `thick_max`.
-* **POST** `/api/dies/` (Admin/Root)
-  * Body: Create Round or Flat Die.
-* **GET** `/api/dies/<die_id>/`
-  * Returns detailed die parameters along with its entire audit change history.
-* **PATCH** `/api/dies/<die_id>/` (Admin/Root)
-  * Modify location, status, remarks, or current dimensions.
-* **DELETE** `/api/dies/<die_id>/` (Admin/Root)
-  * Remove die from registry.
-
-### Fuzzy Search
-* **GET** `/api/search/`
-  * Query parameters: `q` (fuzzy text query), `die_type`, `status`, `location`, `casing`.
-  * Queries Meilisearch and retrieves detailed information from PostgreSQL.
-
-### Bulk Import
-* **POST** `/api/import/` (Admin/Root)
-  * Multipart Form Data containing `file` (Excel `.xlsx` or CSV).
-  * Returns: `{ "created": X, "updated": Y, "skipped": Z, "errors": [...] }`.
-
-### User Management
-* **GET/POST/PUT/PATCH/DELETE** `/api/users/` (Root Only)
-  * Manage administrative user accounts.
-
-### Machine Sets Management
-* **GET/POST** `/api/categories/` (Admin/Root for write operations)
-  * View or create machine categories.
-* **GET/PATCH/DELETE** `/api/categories/<id>/` (Admin/Root for write operations)
-  * View, modify, or delete a machine category.
-* **GET/POST** `/api/machines/` (Admin/Root for write operations)
-  * View or create machines.
-* **GET/PATCH/DELETE** `/api/machines/<id>/` (Admin/Root for write operations)
-  * View, modify, or delete a machine.
-* **GET/POST** `/api/sets/` (Admin/Root for write operations)
-  * View or create machine sets.
-* **GET/PATCH/DELETE** `/api/sets/<id>/` (Admin/Root for write operations)
-  * View, modify, or delete a machine set.
+| Endpoint | Method | Role Required | Request Body | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `/api/auth/login/` | `POST` | Public | `{username, password}` | Generates JWT credentials |
+| `/api/auth/keep-alive/`| `POST` | Regular/Admin/Root | None | Extends session validity |
+| `/api/dies/` | `GET` | Public | None | Lists dies with range filters |
+| `/api/dies/` | `POST` | Admin/Root | Die attributes | Creates a new die |
+| `/api/dies/{id}/` | `GET` | Public | None | Returns detail & historical logs |
+| `/api/dies/{id}/` | `PATCH`| Admin/Root | Partial attributes | Edits status, location, remarks |
+| `/api/dies/{id}/` | `DELETE`| Admin/Root | None | Removes die from inventory |
+| `/api/go/search` | `GET` | Public | None | High-performance fuzzy lookups |
+| `/api/import/` | `POST` | Admin/Root | Multipart File | Idempotent bulk import |
+| `/api/users/` | `GET/POST`| Root | User attributes | Manages administrator accounts |
+| `/api/backups/` | `GET/POST`| Root | None | Lists or generates DB dumps |
 
 ---
 
-## Database Setup
-The database schema is managed automatically by Django.
-To manually verify database connection or run schema inspections:
+## 🚀 Production Deployment & Upgrades
+
+The application uses an optimized configuration for production deployment:
+*   **Nginx Serving Static Assets**: React is compiled and served from lightweight Nginx alpine images.
+*   **Gunicorn serving Django**: High concurrency WSGI serving for database writes.
+*   **High Performance Go Endpoint**: All requests matching `/api/go/*` bypass Django entirely, queried directly by Go and cached in Redis.
+
+### Semi-Automated Upgrades (`deploy.sh`)
+
+When pushing new code changes to the server, execute the automated upgrade script:
 ```bash
-docker compose exec db psql -U dms_user -d dms
-```
-
----
-
-## Deployment & Upgrades
-
-### Development Mode
-For local development, use the default `docker-compose.yml` configuration. This mounts the source code directories directly into the containers to support hot reloading:
-```bash
-docker compose up -d --build
-```
-
-### Production Mode
-For production deployments, the application uses an optimized configuration:
-- **Frontend**: Multi-stage Docker build (`frontend/Dockerfile.prod`) compiling React assets to static HTML/JS/CSS served via Nginx.
-- **Backend**: Django served by Gunicorn instead of the development server.
-- **Proxy**: Traefik routing `/api/go` to the high-performance Go microservice, `/api` and `/admin` to Django, and all other paths to the Nginx static server.
-
-To run the application in production mode manually:
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### Automated Upgrade and Deploy Script (`deploy.sh`)
-For safe upgrades when new code is pulled from GitHub, a custom `./deploy.sh` script is provided. It automates:
-1. Pulling the latest changes from the repository.
-2. Validating the active `.env` configuration against `.env.example` to ensure new features have their configuration keys.
-3. Re-building docker containers to apply any new package dependencies (`package.json` or `requirements.txt`).
-4. Applying database migrations automatically.
-5. Creating or synchronizing the `ROOT` superuser based on environment variables.
-6. Pruning unused Docker images to free up disk space.
-
-To run the upgrade script:
-```bash
-chmod +x deploy.sh
 ./deploy.sh
 ```
-
-### CI/CD Deployment
-Automated deployment is configured via GitHub Actions in `.github/workflows/deploy.yml`. On push to the `main` branch, the workflow:
-1. Runs the test suite against temporary PostgreSQL and Meilisearch services.
-2. Backs up the remote production database.
-3. SSHs into the production server, pulls modifications, builds, and starts the container stack.
+This script pulls from origin, validates environment configuration keys, compiles container changes, runs migrations, and prunes unused images to keep host disk usage low.
 
 ---
 
-## Troubleshooting
+## ❓ FAQ & Common Scenarios
 
-### Meilisearch connection fails
-Make sure your `.env` contains the correct host path:
-- Inside docker network: `MEILI_HOST=http://meilisearch:7700`
-- Outside docker network (local development): `MEILI_HOST=http://localhost:7700`
+#### How are session evictions handled?
+If a user log in from a new computer, the system invalidates any previously active session immediately (returning `401 Unauthorized` to the old client). If the user remains idle for 30 minutes, they are automatically logged out.
 
-### Concurrent Session Logout
-If you log in with the same credentials on another browser or device, your previous JWT token is immediately invalidated (returning `401 Unauthorized`).
+#### What happens if Meilisearch indexes fall out of sync?
+If you suspect discrepancy between database records and Meilisearch, execute:
+```bash
+docker compose exec django python manage.py sync_search
+```
+This pulls postgres tables and updates Meilisearch keys cleanly.
 
----
-
-
-
-## Contributing
-
-We welcome contributions to improve the Die Management System (DMS)! Please follow these steps to contribute:
-
-1. **Fork the Repository**: Create a personal copy of the project.
-2. **Create a Feature Branch**: Use descriptive names (e.g., `feature/add-wear-charts` or `bugfix/session-timeout`).
-3. **Write Tests**: Ensure any backend additions are covered by Django unit tests and frontend changes are covered by Vitest suites.
-4. **Run Quality Checks**:
-   * Run backend unit tests: `docker compose exec django python manage.py test`
-   * Run frontend unit tests: `npm run test` (inside the `frontend` folder)
-5. **Submit a Pull Request**: Provide a detailed description of your changes and reference any relevant issue numbers.
+#### Can normal Operators update the location of a die?
+Regular/unauthenticated users can search and view items. Updating status or location requires an **Admin** or **Root** account.
 
 ---
 
-## License
+## ⚠️ Troubleshooting Guide
 
-**Proprietary / Internal Use Only**
+| Issue | Root Cause | Solution |
+| :--- | :--- | :--- |
+| **Meilisearch Connection Fails** | Incorrect host variable in local developer context | If running inside Docker, set `MEILI_HOST=http://meilisearch:7700`. If running locally outside Docker, use `MEILI_HOST=http://localhost:7700`. |
+| **Port 80/443 Conflicts** | Another web server (e.g. Apache, Nginx) is running on the host | Run `sudo systemctl stop nginx` or change the port mapping in `docker-compose.yml` to a free port. |
+| **EACCES Permission Denied on build** | Root-owned files generated inside mounting volume | Execute `docker compose exec frontend rm -rf dist` (or run `docker compose down` and restart). |
+| **401 Session Expired immediately** | Database reset or user logged in elsewhere | Clear browser local storage and request a new login token. |
 
-This software and its source code are proprietary. See the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for the full terms and conditions governing use, reproduction, and distribution.
+---
+
+## 🤝 Contributing Guidelines
+
+1.  **Fork** the repository and create a feature branch (e.g. `feature/add-wear-charts`).
+2.  Include Vitest test specs for frontend features, or Django unit tests for backend changes.
+3.  Format and check code quality:
+    *   Backend: `docker compose exec django python manage.py test`
+    *   Frontend: `npm run test`
+4.  Open a Pull Request with details about design decisions and target impacts.
+
+---
+
+## 📄 License
+
+**Proprietary / Internal Business Use Only**
+
+This software and source code are proprietary. See the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for terms and conditions.
+
 
 
