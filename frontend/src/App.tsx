@@ -13,6 +13,7 @@ import {
 
 // Component & Page Imports
 import { Navbar } from './components/Navbar'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { DieDetailPage } from './pages/DieDetailPage'
@@ -67,9 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => useContext(AuthContext)
 
-// API Fetch Helper
+// API Fetch Helper with Retry Logic
 export const useApi = () => {
   const { token, setToken } = useAuth()
+  
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
   
   const request = async (url: string, options: any = {}) => {
     const headers = { ...options.headers }
@@ -80,21 +83,71 @@ export const useApi = () => {
       headers['Authorization'] = `Bearer ${token}`
     }
     
-    const res = await fetch(url, { ...options, headers })
+    const maxRetries = 3
+    let lastError: Error | null = null
     
-    if (res.status === 401) {
-      setToken(null)
-      window.location.hash = '/login'
-      throw new Error('Unauthorized')
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, { ...options, headers })
+        
+        if (res.status === 401) {
+          setToken(null)
+          window.location.hash = '/login'
+          throw new Error('Unauthorized')
+        }
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          let errMsg = errorData.detail || errorData.error
+          if (!errMsg && typeof errorData === 'object' && errorData !== null) {
+            const fieldErrors = Object.entries(errorData).map(([key, val]) => {
+              const valStr = Array.isArray(val) ? val.join(', ') : String(val)
+              return `${key}: ${valStr}`
+            })
+            if (fieldErrors.length > 0) {
+              errMsg = fieldErrors.join('; ')
+            }
+          }
+          lastError = new Error(errMsg || 'Request failed')
+          
+          // Retry on 5xx errors, don't retry on 4xx (except 429)
+          if (res.status < 500 && res.status !== 429) {
+            throw lastError
+          }
+          
+          // If last attempt, throw the error
+          if (attempt === maxRetries - 1) {
+            throw lastError
+          }
+          
+          // Exponential backoff: 1s, 2s, 4s
+          const delayMs = Math.pow(2, attempt) * 1000
+          await sleep(delayMs)
+          continue
+        }
+        
+        if (res.status === 204) return null
+        return res.json()
+      } catch (error) {
+        lastError = error as Error
+        
+        // Don't retry on client errors (4xx except 429)
+        if (error instanceof TypeError || (error instanceof Error && error.message === 'Unauthorized')) {
+          throw error
+        }
+        
+        // If last attempt, throw the error
+        if (attempt === maxRetries - 1) {
+          throw error
+        }
+        
+        // Exponential backoff: 1s, 2s, 4s
+        const delayMs = Math.pow(2, attempt) * 1000
+        await sleep(delayMs)
+      }
     }
     
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.error || 'Request failed')
-    }
-    
-    if (res.status === 204) return null
-    return res.json()
+    throw lastError || new Error('Request failed after retries')
   }
 
   return { request }
@@ -242,11 +295,11 @@ function AppContent() {
       <SessionTimeoutManager />
       <Routes>
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/inventory" element={<InventoryPage />} />
-        <Route path="/dies/:id" element={<DieDetailPage />} />
-        <Route path="/machines" element={<MachineSetsPage />} />
-        <Route path="/import" element={<ImportPage />} />
-        <Route path="/users" element={<UsersPage />} />
+        <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
+        <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
+        <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
+        <Route path="/import" element={<ErrorBoundary><ImportPage /></ErrorBoundary>} />
+        <Route path="/users" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
     </div>
@@ -255,13 +308,15 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

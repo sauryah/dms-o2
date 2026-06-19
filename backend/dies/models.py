@@ -4,6 +4,7 @@ STATUS_CHOICES = [
     ('AVAILABLE','Available'), ('RUNNING','Running'),
     ('CLEANING','Cleaning'), ('POLISHING','Polishing'),
     ('DAMAGED','Damaged'), ('SCRAPPED','Scrapped'), ('MISSING','Missing'),
+    ('MAINTENANCE','Maintenance'), ('SCRAP','Scrap'),
 ]
 
 class Die(models.Model):

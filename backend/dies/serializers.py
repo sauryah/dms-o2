@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 
@@ -9,6 +10,7 @@ class DieHistorySerializer(serializers.ModelSerializer):
         model = DieHistory
         fields = ['timestamp', 'field_name', 'old_value', 'new_value', 'changed_by_username', 'ip_address', 'note']
         
+    @extend_schema_field(serializers.CharField)
     def get_changed_by_username(self, obj):
         return obj.changed_by.username if obj.changed_by else ''
 
@@ -20,9 +22,11 @@ class DieListSerializer(serializers.ModelSerializer):
         model = Die
         fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set']
         
+    @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
         return obj.current_set.name if obj.current_set else ''
         
+    @extend_schema_field(serializers.CharField)
     def get_machine_name(self, obj):
         return obj.current_set.machine.name if obj.current_set and obj.current_set.machine else ''
 
@@ -45,9 +49,11 @@ class DieDetailSerializer(serializers.ModelSerializer):
         model = Die
         fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set']
         
+    @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
         return obj.current_set.name if obj.current_set else ''
         
+    @extend_schema_field(serializers.CharField)
     def get_machine_name(self, obj):
         return obj.current_set.machine.name if obj.current_set and obj.current_set.machine else ''
         
@@ -80,6 +86,14 @@ class DieCreateSerializer(serializers.ModelSerializer):
                   'original_size', 'current_size', 'original_width', 'current_width',
                   'original_thickness', 'current_thickness', 'radius']
                   
+    def to_internal_value(self, data):
+        if 'status' in data and data['status']:
+            if hasattr(data, 'copy'):
+                data = data.copy()
+            status_val = str(data['status']).strip().upper()
+            data['status'] = status_val
+        return super().to_internal_value(data)
+
     def validate(self, attrs):
         die_type = attrs.get('die_type')
         if die_type == 'ROUND':

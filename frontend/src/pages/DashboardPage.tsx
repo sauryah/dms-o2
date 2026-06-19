@@ -224,7 +224,7 @@ export function DashboardPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-center">
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold text-white">Find a Die</h2>
-              <p className="text-slate-400 text-sm mt-1">Type the Die ID, Casing, or Location to search instantly. Use double quotes (e.g. "2.500") for exact matches.</p>
+              <p className="text-slate-400 text-sm mt-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1 (use quotes for exact match, e.g. "2.500")</p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -232,7 +232,7 @@ export function DashboardPage() {
                 <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
+                  placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
                   value={q}
                   onChange={(e) => { setQ(e.target.value); setShowDropdown(true); }}
                   onFocus={() => setShowDropdown(true)}
@@ -344,6 +344,8 @@ export function DashboardPage() {
                     <option value="DAMAGED">Damaged</option>
                     <option value="SCRAPPED">Scrapped</option>
                     <option value="MISSING">Missing</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="SCRAP">Scrap</option>
                   </select>
                 </div>
 

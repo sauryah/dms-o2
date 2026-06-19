@@ -1,20 +1,20 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
-import { InventoryPage } from './pages/InventoryPage'
+import { InventoryPage } from './InventoryPage'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the API and auth context
-vi.mock('./App', () => ({
+vi.mock('../App', () => ({
   useApi: () => ({
     request: vi.fn().mockResolvedValue([])
   }),
   useAuth: () => ({
     role: 'ADMIN'
   }),
-  useDebounce: (value) => value,
-  isDieActive: (die) => ['AVAILABLE', 'RUNNING'].includes(die.status)
+  useDebounce: <T,>(value: T) => value,
+  isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
 }))
 
 const createTestQueryClient = () =>
@@ -25,7 +25,7 @@ const createTestQueryClient = () =>
     }
   })
 
-function Wrapper({ children }) {
+function Wrapper({ children }: { children: React.ReactNode }) {
   const testQueryClient = createTestQueryClient()
   return (
     <QueryClientProvider client={testQueryClient}>
@@ -71,7 +71,7 @@ describe('InventoryPage - Drag & Drop Die Allocation', () => {
     ])
 
     // Create a custom wrapper with mocked request
-    const TestWrapper = ({ children }) => {
+    const TestWrapper = ({ children }: { children: React.ReactNode }) => {
       const testQueryClient = createTestQueryClient()
       return (
         <QueryClientProvider client={testQueryClient}>

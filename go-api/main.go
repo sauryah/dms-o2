@@ -306,13 +306,15 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	stats := map[string]int{
-		"AVAILABLE": 0,
-		"RUNNING":   0,
-		"CLEANING":  0,
-		"POLISHING": 0,
-		"DAMAGED":   0,
-		"SCRAPPED":  0,
-		"MISSING":   0,
+		"AVAILABLE":   0,
+		"RUNNING":     0,
+		"CLEANING":    0,
+		"POLISHING":   0,
+		"DAMAGED":     0,
+		"SCRAPPED":    0,
+		"MISSING":     0,
+		"MAINTENANCE": 0,
+		"SCRAP":       0,
 	}
 	total := 0
 
@@ -444,8 +446,22 @@ func queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, siz
 
 	if q != "" {
 		cleanQ := strings.Trim(q, `"'`)
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_id ILIKE $%d", argCounter))
-		args = append(args, "%"+cleanQ+"%")
+		likeVal := "%" + cleanQ + "%"
+		log.Printf("queryPostgresDirectly: searching across all fields for %q", cleanQ)
+		sqlParts = append(sqlParts, fmt.Sprintf(`
+			AND (
+				d.die_id ILIKE $%d 
+				OR d.casing ILIKE $%d 
+				OR d.location ILIKE $%d 
+				OR d.status ILIKE $%d 
+				OR s.name ILIKE $%d 
+				OR m.name ILIKE $%d
+				OR CAST(r.current_size AS TEXT) ILIKE $%d
+				OR CAST(f.current_width AS TEXT) ILIKE $%d
+				OR CAST(f.current_thickness AS TEXT) ILIKE $%d
+			)
+		`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter))
+		args = append(args, likeVal)
 		argCounter++
 	}
 
@@ -562,12 +578,14 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 		searchParams.Filter = strings.Join(filters, " AND ")
 	}
 
+	log.Printf("queryMeilisearchAndPostgres: executing search for %q with filters: %q", q, searchParams.Filter)
 	// Search Meilisearch index
 	res, err := meiliClient.Index(indexName).Search(q, &searchParams)
 	if err != nil {
 		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
 		return queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	}
+	log.Printf("queryMeilisearchAndPostgres: Meilisearch returned %d hits for query %q", len(res.Hits), q)
 
 	if len(res.Hits) == 0 {
 		return []DieRepresentation{}, nil

@@ -7,6 +7,35 @@ from users.permissions import IsAdminOrRoot
 from search.meili import client as meili_client, INDEX_NAME
 
 class DieViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing die inventory.
+    
+    Supports full CRUD operations for dies with filtering and pagination.
+    
+    - **Create** (POST): Add new die (ROUND or FLAT type)
+    - **Read** (GET): List all dies with optional filters, or retrieve single die
+    - **Update** (PUT/PATCH): Modify die properties
+    - **Delete** (DELETE): Remove die from inventory
+    
+    **Filtering Parameters (GET only):**
+    - `die_type`: Filter by die type (ROUND or FLAT)
+    - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+    - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+    - `location`: Filter by storage location (partial match, case-insensitive)
+    - `size_min`, `size_max`: Range filter for ROUND die current_size
+    - `width_min`, `width_max`: Range filter for FLAT die current_width
+    - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+    - `page`: Pagination (100 items per page)
+    
+    **Examples:**
+    - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+    - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+    - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+    
+    **Permissions:** ADMIN or ROOT user only
+    
+    **Authentication:** Required (JWT Bearer token)
+    """
     queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine')
     lookup_field = 'die_id'
     permission_classes = [IsAdminOrRoot]
@@ -71,14 +100,61 @@ import tempfile
 import os
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
+from rest_framework import serializers
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 import importlib
 import_module_dies = importlib.import_module("dies.import")
 import_dies = import_module_dies.import_dies
 
 class ImportDiesView(APIView):
+    """
+    Bulk import dies from CSV or XLSX file.
+    
+    **Description:**
+    Upload a spreadsheet file to create multiple dies at once.
+    Supports CSV and XLSX formats with columns:
+    - die_id, die_type (ROUND|FLAT), casing, status, location, current_set
+    - For ROUND: original_size, current_size
+    - For FLAT: original_width, current_width, original_thickness, current_thickness, radius
+    
+    **Request:**
+    - Method: POST
+    - Content-Type: multipart/form-data
+    - Field: `file` (CSV or XLSX file)
+    
+    **Response:**
+    - `201 Created`: Import completed with summary
+    - `400 Bad Request`: Invalid file format or missing file
+    
+    **Example Response:**
+    ```json
+    {
+      "imported": 42,
+      "skipped": 3,
+      "errors": [
+        {"row": 5, "error": "Invalid die_type: INVALID"}
+      ]
+    }
+    ```
+    
+    **Permissions:** ADMIN or ROOT user only
+    **Authentication:** Required (JWT Bearer token)
+    """
     permission_classes = [IsAdminOrRoot]
     parser_classes = [MultiPartParser]
 
+    @extend_schema(
+        request={
+            'multipart/form-data': inline_serializer(
+                name='ImportDiesRequest',
+                fields={'file': serializers.FileField()},
+            )
+        },
+        responses={
+            200: OpenApiResponse(description='Import completed with summary'),
+            400: OpenApiResponse(description='Invalid file upload'),
+        },
+    )
     def post(self, request, *args, **kwargs):
         file_obj = request.FILES.get('file')
         if not file_obj:
@@ -99,4 +175,3 @@ class ImportDiesView(APIView):
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-

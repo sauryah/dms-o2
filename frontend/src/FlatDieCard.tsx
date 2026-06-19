@@ -1,5 +1,5 @@
 import React from 'react'
-import { Die } from './types'
+import { Die, DieStatus } from './types'
 
 interface FlatDieCardProps {
   die: Die;
@@ -7,7 +7,7 @@ interface FlatDieCardProps {
 }
 
 export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
-  const statusColors = {
+  const statusColors: Record<DieStatus, string> = {
     AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     CLEANING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
@@ -15,6 +15,8 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
     DAMAGED: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
     MISSING: 'bg-red-500/10 text-red-400 border-red-500/20',
+    MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   }
 
   return (
@@ -46,7 +48,7 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
         </div>
         <div>
           <span className="text-slate-500 block text-xs">Location</span>
-          <span className="font-semibold text-slate-200 truncate block" title={die.location}>{die.location || '—'}</span>
+          <span className="font-semibold text-slate-200 truncate block" title={die.location || undefined}>{die.location || '—'}</span>
         </div>
         <div>
           <span className="text-slate-500 block text-xs">Set / Machine</span>

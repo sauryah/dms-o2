@@ -172,6 +172,8 @@ export function DieDetailPage() {
                     <option value="DAMAGED">Damaged</option>
                     <option value="SCRAPPED">Scrapped</option>
                     <option value="MISSING">Missing</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="SCRAP">Scrap</option>
                   </select>
                 </div>
                 <div>

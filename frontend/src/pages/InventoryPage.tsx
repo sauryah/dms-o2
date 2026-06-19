@@ -61,13 +61,13 @@ export function InventoryPage() {
   // Fetch list of sets for the dropdown
   const { data: setsList } = useQuery({
     queryKey: ['setsDropdownList'],
-    queryFn: () => request('/api/sets/')
+    queryFn: () => request('/api/sets/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   // Fetch list of machines
   const { data: machinesList } = useQuery({
     queryKey: ['machinesList'],
-    queryFn: () => request('/api/machines/')
+    queryFn: () => request('/api/machines/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   // Tree expanded states
@@ -653,11 +653,12 @@ export function InventoryPage() {
                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder='Search by Die ID, casing, location... (use quotes for exact match, e.g. "2.500")'
+                  placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   className="w-full glass-input rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
                 />
+                <p className="text-slate-400 text-xs mt-1.5 ml-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1</p>
               </div>
               
               <button 
@@ -780,10 +781,15 @@ export function InventoryPage() {
 
                       {/* Dies Table */}
                       <div className="space-y-4">
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                          <Database className="h-4 w-4 text-blue-500" />
-                          <span>Filtered Catalog</span>
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <Database className="h-4 w-4 text-blue-500" />
+                            <span>Filtered Catalog</span>
+                          </h3>
+                          <span className="text-sm font-semibold text-slate-400">
+                            Showing {dies.length} {dies.length === 1 ? 'result' : 'results'}
+                          </span>
+                        </div>
                         <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
                           <DiesTable 
                             diesList={dies} 
@@ -798,6 +804,9 @@ export function InventoryPage() {
                     <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
                       <Search className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
                       <p className="text-slate-400 font-medium">No dies in the registry match the current search or filters.</p>
+                      <span className="text-sm font-semibold text-slate-500 block mt-2">
+                        Showing 0 results
+                      </span>
                     </div>
                   )}
                 </div>

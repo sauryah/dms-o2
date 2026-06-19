@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     
     # Local apps
@@ -78,10 +79,15 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('POSTGRES_DB', default='dms'),
         'USER': config('POSTGRES_USER', default='dms_user'),
-        'PASSWORD': config('POSTGRES_PASSWORD', default='dms_pass_123'),
+        'PASSWORD': config('POSTGRES_PASSWORD', default='dms_pass_password'),
         'HOST': config('POSTGRES_HOST', default='db'),
         'PORT': config('POSTGRES_PORT', default='5432', cast=int),
-        'CONN_MAX_AGE': config('DATABASE_CONN_MAX_AGE', default=60, cast=int),
+        'CONN_MAX_AGE': config('DATABASE_CONN_MAX_AGE', default=300, cast=int),  # 5 minutes
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000',  # 30 second query timeout
+        },
+        'ATOMIC_REQUESTS': True,  # Wrap request in transaction
     }
 }
 
@@ -129,8 +135,20 @@ CORS_ALLOW_ALL_ORIGINS = True  # In production, restrict this.
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'users.authentication.CustomJWTAuthentication',
-        'django.contrib.auth.backends.ModelBackend',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100,
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'DMS API',
+    'DESCRIPTION': 'DMS Django REST API for dies, machines, users, backups, and real-time events.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # Simple JWT Settings
@@ -175,11 +193,45 @@ import sys
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv
 CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'dms.logging.JsonFormatter',
+        },
+        'console': {
+            'format': '[{levelname}] {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': config('LOG_FORMAT', default='json'),
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': config('LOG_LEVEL', default='INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['console'],
+            'level': config('CELERY_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+    },
+}
+
 from django.core.exceptions import ImproperlyConfigured
 if not DEBUG:
     if SECRET_KEY == 'django-insecure-development-secret-key-12345':
         raise ImproperlyConfigured("Insecure DJANGO_SECRET_KEY detected in production!")
     if MEILI_MASTER_KEY == 'change_me':
         raise ImproperlyConfigured("Insecure MEILI_MASTER_KEY detected in production!")
-
-

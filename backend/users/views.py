@@ -7,10 +7,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User, UserSession
-from users.serializers import UserSerializer, LoginSerializer
+from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer
 from users.permissions import IsRootOnly
 from dms.events import broadcast_event
 from django.http import StreamingHttpResponse
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
+from rest_framework import serializers
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -23,6 +25,19 @@ def get_client_ip(request):
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: inline_serializer(
+                name='LoginResponse',
+                fields={
+                    'token': serializers.CharField(),
+                    'role': serializers.CharField(),
+                },
+            ),
+            401: OpenApiResponse(description='Invalid credentials or inactive account'),
+        },
+    )
     def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -73,13 +88,34 @@ class UserViewSet(viewsets.ModelViewSet):
 class KeepAliveView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='KeepAliveResponse',
+                fields={'status': serializers.CharField()},
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         return Response({"status": "active"}, status=status.HTTP_200_OK)
 
 
 class BackupViewSet(viewsets.ViewSet):
     permission_classes = [IsRootOnly]
+    serializer_class = BackupSerializer
 
+    @extend_schema(
+        responses=inline_serializer(
+            name='BackupListItem',
+            many=True,
+            fields={
+                'filename': serializers.CharField(),
+                'size_kb': serializers.FloatField(),
+                'created_at': serializers.DateTimeField(),
+            },
+        )
+    )
     def list(self, request):
         import os
         from django.utils import timezone
@@ -108,6 +144,19 @@ class BackupViewSet(viewsets.ViewSet):
         
         return Response(backups)
 
+    @extend_schema(
+        request=None,
+        responses={
+            201: inline_serializer(
+                name='BackupCreateResponse',
+                fields={
+                    'status': serializers.CharField(),
+                    'filename': serializers.CharField(),
+                    'size_kb': serializers.FloatField(),
+                },
+            )
+        },
+    )
     def create(self, request):
         import os
         import subprocess
@@ -167,6 +216,10 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
+    @extend_schema(
+        request=BackupFilenameSerializer,
+        responses={200: inline_serializer(name='BackupRestoreResponse', fields={'status': serializers.CharField()})},
+    )
     def restore(self, request):
         import os
         import subprocess
@@ -228,6 +281,10 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
+    @extend_schema(
+        request=BackupFilenameSerializer,
+        responses={200: inline_serializer(name='BackupDeleteResponse', fields={'status': serializers.CharField()})},
+    )
     def delete_backup(self, request):
         import os
         
@@ -252,6 +309,10 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get'])
+    @extend_schema(
+        parameters=[OpenApiParameter('filename', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True)],
+        responses={200: OpenApiResponse(description='Backup dump file')},
+    )
     def download_backup(self, request):
         import os
         from django.http import FileResponse
@@ -275,6 +336,19 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
+    @extend_schema(
+        request={'multipart/form-data': BackupUploadSerializer},
+        responses={
+            201: inline_serializer(
+                name='BackupUploadResponse',
+                fields={
+                    'status': serializers.CharField(),
+                    'filename': serializers.CharField(),
+                    'size_kb': serializers.FloatField(),
+                },
+            )
+        },
+    )
     def upload_backup(self, request):
         import os
         
@@ -314,6 +388,10 @@ class EventStreamView(APIView):
         from rest_framework.renderers import JSONRenderer
         return (JSONRenderer(), 'application/json')
 
+    @extend_schema(
+        parameters=[OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True)],
+        responses={200: OpenApiResponse(description='Server-sent event stream')},
+    )
     def get(self, request):
         token = request.query_params.get('token')
         if not token:

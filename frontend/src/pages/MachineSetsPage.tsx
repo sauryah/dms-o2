@@ -12,17 +12,17 @@ export function MachineSetsPage() {
   // Queries
   const { data: categories, isLoading: isCatsLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => request('/api/categories/')
+    queryFn: () => request('/api/categories/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   const { data: machines, isLoading: isMachsLoading } = useQuery({
     queryKey: ['machines'],
-    queryFn: () => request('/api/machines/')
+    queryFn: () => request('/api/machines/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   const { data: sets, isLoading: isSetsLoading } = useQuery({
     queryKey: ['sets'],
-    queryFn: () => request('/api/sets/')
+    queryFn: () => request('/api/sets/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   // Mutators

@@ -92,7 +92,7 @@ export function UsersPage() {
   // Fetch users
   const { data: users, isLoading, error } = useQuery({
     queryKey: ['usersListAdmin'],
-    queryFn: () => request('/api/users/'),
+    queryFn: () => request('/api/users/').then(data => Array.isArray(data) ? data : data.results),
     enabled: role === 'ROOT'
   })
 
@@ -499,7 +499,7 @@ export function UsersPage() {
 
             {/* Right Column: Backups List */}
             <div className="lg:col-span-2">
-              {!backups || backups.length === 0 ? (
+              {!Array.isArray(backups) || backups.length === 0 ? (
                 <div className="text-center py-20 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-center items-center">
                   <Database className="h-12 w-12 text-slate-600 mb-4" />
                   <h3 className="text-xl font-bold text-white mb-2">No backups found</h3>
@@ -532,7 +532,7 @@ export function UsersPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
-                        {backups.map((backup: any) => {
+                        {Array.isArray(backups) && backups.map((backup: any) => {
                           const dateStr = new Date(backup.created_at).toLocaleString()
                           return (
                             <tr key={backup.filename} className="hover:bg-slate-850/30 transition-colors duration-200">

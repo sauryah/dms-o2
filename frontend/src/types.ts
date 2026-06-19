@@ -7,7 +7,9 @@ export type DieStatus =
   | 'POLISHING' 
   | 'DAMAGED' 
   | 'SCRAPPED' 
-  | 'MISSING';
+  | 'MISSING'
+  | 'MAINTENANCE'
+  | 'SCRAP';
 
 export interface Die {
   die_id: string;
