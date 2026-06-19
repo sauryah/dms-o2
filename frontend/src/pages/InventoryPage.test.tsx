@@ -13,6 +13,9 @@ vi.mock('../App', () => ({
   useAuth: () => ({
     role: 'ADMIN'
   }),
+  useToast: () => ({
+    showToast: vi.fn()
+  }),
   useDebounce: <T,>(value: T) => value,
   isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
 }))

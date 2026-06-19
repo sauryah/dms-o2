@@ -17,7 +17,7 @@ import {
   Activity,
   FolderOpen
 } from 'lucide-react'
-import { useApi, useAuth, useDebounce, isDieActive } from '../App'
+import { useApi, useAuth, useDebounce, isDieActive, useToast } from '../App'
 import { DiesTable } from '../components/DiesTable'
 import { CreateDieModal } from '../components/CreateDieModal'
 import { FilterPanel } from '../components/FilterPanel'
@@ -26,6 +26,7 @@ import { DieStats } from '../components/DieStats'
 export function InventoryPage() {
   const { request } = useApi()
   const { role } = useAuth()
+  const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -61,13 +62,13 @@ export function InventoryPage() {
   // Fetch list of sets for the dropdown
   const { data: setsList } = useQuery({
     queryKey: ['setsDropdownList'],
-    queryFn: () => request('/api/sets/').then(data => Array.isArray(data) ? data : data.results)
+    queryFn: () => request('/api/sets/')
   })
 
   // Fetch list of machines
   const { data: machinesList } = useQuery({
     queryKey: ['machinesList'],
-    queryFn: () => request('/api/machines/').then(data => Array.isArray(data) ? data : data.results)
+    queryFn: () => request('/api/machines/')
   })
 
   // Tree expanded states
@@ -136,9 +137,212 @@ export function InventoryPage() {
       method: 'PATCH',
       body: JSON.stringify({ current_set: setId })
     }),
-    onSuccess: () => {
+    onMutate: async ({ dieId, setId }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['dies'] })
+      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+      await queryClient.cancelQueries({ queryKey: ['machinesList'] })
+      await queryClient.cancelQueries({ queryKey: ['setsDropdownList'] })
+
+      // Snapshot
+      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+      const previousMachines = queryClient.getQueryData(['machinesList'])
+      const previousSets = queryClient.getQueryData(['setsDropdownList'])
+
+      // Find set name if setId is provided
+      let newSetName = ''
+      if (setId) {
+        const sets: any[] = (previousSets as any[]) || []
+        const foundSet = sets.find((s: any) => Number(s.id) === Number(setId))
+        if (foundSet) {
+          newSetName = foundSet.name
+        } else if (previousMachines) {
+          for (const machine of (previousMachines as any[])) {
+            const foundSetInMachine = machine.sets?.find((s: any) => Number(s.id) === Number(setId))
+            if (foundSetInMachine) {
+              newSetName = foundSetInMachine.name
+              break
+            }
+          }
+        }
+      }
+
+      // Optimistically update list queries
+      const updateCurrentSet = (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((die: any) => {
+          if (String(die.die_id) === String(dieId)) {
+            return {
+              ...die,
+              current_set: setId ? Number(setId) : null,
+              current_set_name: newSetName || undefined,
+              set_name: newSetName || undefined,
+            }
+          }
+          return die
+        })
+      }
+      queryClient.setQueriesData({ queryKey: ['dies'] }, updateCurrentSet)
+      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateCurrentSet)
+
+      // Optimistically update sets dropdown query
+      if (previousSets) {
+        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
+          if (!Array.isArray(old)) return old
+          let foundDie: any = null
+          const updatedSets = old.map((set: any) => {
+            const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
+            if (hasDie) {
+              foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
+              return {
+                ...set,
+                dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
+              }
+            }
+            return set
+          })
+
+          if (!foundDie) {
+            for (const [, diesData] of previousDiesQueries) {
+              if (Array.isArray(diesData)) {
+                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
+                if (foundDie) break
+              }
+            }
+          }
+
+          if (foundDie) {
+            const updatedDie = {
+              ...foundDie,
+              current_set: setId ? Number(setId) : null,
+              current_set_name: newSetName || undefined,
+              set_name: newSetName || undefined,
+            }
+            return updatedSets.map((set: any) => {
+              if (setId && Number(set.id) === Number(setId)) {
+                const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
+                return {
+                  ...set,
+                  dies: [...otherDies, updatedDie]
+                }
+              }
+              return set
+            })
+          }
+          return old
+        })
+      }
+
+      // Optimistically update machines list
+      if (previousMachines) {
+        queryClient.setQueryData(['machinesList'], (old: any) => {
+          if (!Array.isArray(old)) return old
+          let foundDie: any = null
+          const updatedMachines = old.map((machine: any) => {
+            if (!machine.sets) return machine
+            const updatedSets = machine.sets.map((set: any) => {
+              const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
+              if (hasDie) {
+                foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
+                return {
+                  ...set,
+                  dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
+                }
+              }
+              return set
+            })
+            return { ...machine, sets: updatedSets }
+          })
+
+          if (!foundDie) {
+            for (const [, diesData] of previousDiesQueries) {
+              if (Array.isArray(diesData)) {
+                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
+                if (foundDie) break
+              }
+            }
+          }
+
+          if (foundDie) {
+            const updatedDie = {
+              ...foundDie,
+              current_set: setId ? Number(setId) : null,
+              current_set_name: newSetName || undefined,
+              set_name: newSetName || undefined,
+            }
+            return updatedMachines.map((machine: any) => {
+              if (!machine.sets) return machine
+              const updatedSets = machine.sets.map((set: any) => {
+                if (setId && Number(set.id) === Number(setId)) {
+                  const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
+                  return {
+                    ...set,
+                    dies: [...otherDies, updatedDie]
+                  }
+                }
+                return set
+              })
+              return { ...machine, sets: updatedSets }
+            })
+          }
+          return old
+        })
+      }
+
+      // Update individual die detail queries as well (if any are cached)
+      const p1 = queryClient.getQueryData(['die', dieId])
+      const p2 = queryClient.getQueryData(['dieDetail', dieId])
+      if (p1 !== undefined) {
+        queryClient.setQueryData(['die', dieId], (old: any) => old ? {
+          ...old,
+          current_set: setId ? Number(setId) : null,
+          current_set_name: newSetName || undefined,
+          set_name: newSetName || undefined,
+        } : old)
+      }
+      if (p2 !== undefined) {
+        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? {
+          ...old,
+          current_set: setId ? Number(setId) : null,
+          current_set_name: newSetName || undefined,
+          set_name: newSetName || undefined,
+        } : old)
+      }
+
+      return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets, previousDie: p1, previousDieDetail: p2 }
+    },
+    onError: (err, variables, context: any) => {
+      if (context) {
+        if (context.previousDiesQueries) {
+          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousSearchDiesQueries) {
+          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousMachines !== undefined) {
+          queryClient.setQueryData(['machinesList'], context.previousMachines)
+        }
+        if (context.previousSets !== undefined) {
+          queryClient.setQueryData(['setsDropdownList'], context.previousSets)
+        }
+        if (context.previousDie !== undefined) {
+          queryClient.setQueryData(['die', variables.dieId], context.previousDie)
+        }
+        if (context.previousDieDetail !== undefined) {
+          queryClient.setQueryData(['dieDetail', variables.dieId], context.previousDieDetail)
+        }
+      }
+      showToast(`Failed to allocate die: ${err.message}`, 'error')
+    },
+    onSettled: (data, err, variables) => {
       queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['die', variables.dieId] })
+      queryClient.invalidateQueries({ queryKey: ['dieDetail', variables.dieId] })
     }
   })
 
@@ -147,9 +351,127 @@ export function InventoryPage() {
       method: 'PATCH',
       body: JSON.stringify({ machine: machineId })
     }),
-    onSuccess: () => {
+    onMutate: async ({ setId, machineId }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['dies'] })
+      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+      await queryClient.cancelQueries({ queryKey: ['machinesList'] })
+      await queryClient.cancelQueries({ queryKey: ['setsDropdownList'] })
+
+      // Snapshot
+      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+      const previousMachines = queryClient.getQueryData(['machinesList'])
+      const previousSets = queryClient.getQueryData(['setsDropdownList'])
+
+      // Find machine name
+      let newMachineName = ''
+      if (machineId && previousMachines) {
+        const foundMachine = (previousMachines as any[]).find((m: any) => Number(m.id) === Number(machineId))
+        if (foundMachine) {
+          newMachineName = foundMachine.name
+        }
+      }
+
+      // Optimistically update sets dropdown query
+      if (previousSets) {
+        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
+          if (!Array.isArray(old)) return old
+          return old.map((set: any) => {
+            if (Number(set.id) === Number(setId)) {
+              return {
+                ...set,
+                machine: machineId ? Number(machineId) : null,
+                machine_name: newMachineName || undefined,
+              }
+            }
+            return set
+          })
+        })
+      }
+
+      // Optimistically update machines list
+      if (previousMachines) {
+        queryClient.setQueryData(['machinesList'], (old: any) => {
+          if (!Array.isArray(old)) return old
+          let foundSet: any = null
+          const updatedMachines = old.map((machine: any) => {
+            const hasSet = machine.sets?.some((s: any) => Number(s.id) === Number(setId))
+            if (hasSet) {
+              foundSet = machine.sets.find((s: any) => Number(s.id) === Number(setId))
+              return {
+                ...machine,
+                sets: machine.sets.filter((s: any) => Number(s.id) !== Number(setId))
+              }
+            }
+            return machine
+          })
+
+          if (!foundSet && previousSets) {
+            foundSet = (previousSets as any[]).find((s: any) => Number(s.id) === Number(setId))
+          }
+
+          if (foundSet) {
+            const updatedSet = {
+              ...foundSet,
+              machine: machineId ? Number(machineId) : null,
+              machine_name: newMachineName || undefined,
+            }
+            return updatedMachines.map((machine: any) => {
+              if (machineId && Number(machine.id) === Number(machineId)) {
+                const otherSets = (machine.sets || []).filter((s: any) => Number(s.id) !== Number(setId))
+                return {
+                  ...machine,
+                  sets: [...otherSets, updatedSet]
+                }
+              }
+              return machine
+            })
+          }
+          return old
+        })
+      }
+
+      // Optimistically update dies lists (dies in that set get machine_name updated)
+      const updateSetMachine = (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((die: any) => {
+          if (Number(die.current_set) === Number(setId)) {
+            return {
+              ...die,
+              machine_name: newMachineName || undefined,
+            }
+          }
+          return die
+        })
+      }
+      queryClient.setQueriesData({ queryKey: ['dies'] }, updateSetMachine)
+      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateSetMachine)
+
+      return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets }
+    },
+    onError: (err, variables, context: any) => {
+      if (context) {
+        if (context.previousDiesQueries) {
+          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousSearchDiesQueries) {
+          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousMachines !== undefined) {
+          queryClient.setQueryData(['machinesList'], context.previousMachines)
+        }
+        if (context.previousSets !== undefined) {
+          queryClient.setQueryData(['setsDropdownList'], context.previousSets)
+        }
+      }
+      showToast(`Failed to allocate set: ${err.message}`, 'error')
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
       queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
     }
   })
 

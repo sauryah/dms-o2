@@ -90,10 +90,9 @@ export function UsersPage() {
     }
   }
 
-  // Fetch users
   const { data: users, isLoading, error } = useQuery({
     queryKey: ['usersListAdmin'],
-    queryFn: () => request('/api/users/').then(data => Array.isArray(data) ? data : data.results),
+    queryFn: () => request('/api/users/'),
     enabled: role === 'ROOT'
   })
 

@@ -180,7 +180,11 @@ export const useApi = () => {
         }
         
         if (res.status === 204) return null
-        return res.json()
+        const data = await res.json()
+        if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+          return data.results
+        }
+        return data
       } catch (error) {
         lastError = error as Error
         
@@ -313,7 +317,10 @@ function SessionTimeoutManager() {
 // Main App Container
 function AppContent() {
   const { token } = useAuth()
+  const { request } = useApi()
+  const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const recentEvents = useRef(new Set<string>())
 
   useEffect(() => {
     if (!token) return
@@ -326,8 +333,58 @@ function AppContent() {
         const payload = JSON.parse(event.data)
         console.log('Real-time sync event received:', payload)
         
-        // Invalidate all active queries to fetch fresh data from the server in the background
+        // Deduplicate events to prevent double alerts
+        const signature = `${payload.type}-${payload.data?.id || payload.data?.filename || ''}-${payload.data?.action || ''}`
+        if (recentEvents.current.has(signature)) {
+          return
+        }
+        recentEvents.current.add(signature)
+        setTimeout(() => {
+          recentEvents.current.delete(signature)
+        }, 3000)
+
+        // Invalidate cache
         queryClient.invalidateQueries()
+
+        // Construct dynamic notifications
+        if (payload.type === 'die_update') {
+          if (payload.data?.action === 'delete') {
+            showToast(`Die ${payload.data.id} has been deleted.`, 'info')
+          } else if (payload.data?.action === 'bulk_import') {
+            showToast('Bulk import of dies completed.', 'success')
+          } else if (payload.data?.action === 'save') {
+            // Asynchronously fetch current state to present formatted message
+            request(`/api/dies/${payload.data.id}/`)
+              .then(die => {
+                let locationMsg = ''
+                if (die.set_name) {
+                  locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
+                } else if (die.location) {
+                  locationMsg = ` in ${die.location}`
+                }
+                showToast(`Die ${die.die_id} is now ${die.status}${locationMsg}.`, 'info')
+              })
+              .catch(() => {
+                showToast(`Die ${payload.data.id} was updated.`, 'info')
+              })
+          }
+        } else if (payload.type === 'set_update') {
+          showToast('Die sets have been updated.', 'info')
+        } else if (payload.type === 'machine_update') {
+          showToast('Machine configurations have been updated.', 'info')
+        } else if (payload.type === 'backup_update') {
+          const action = payload.data?.action
+          const filename = payload.data?.filename || ''
+          if (action === 'backup') {
+            showToast(`Database backup "${filename}" created successfully.`, 'success')
+          } else if (action === 'restore') {
+            showToast(`Database restore from "${filename}" executed successfully.`, 'success')
+          } else if (action === 'delete') {
+            showToast(`Backup "${filename}" deleted.`, 'info')
+          } else if (action === 'upload') {
+            showToast(`Backup "${filename}" uploaded successfully.`, 'success')
+          }
+        }
       } catch (e) {
         console.error('Failed to parse event data:', e)
       }
@@ -340,7 +397,7 @@ function AppContent() {
     return () => {
       eventSource.close()
     }
-  }, [token, queryClient])
+  }, [token, queryClient, request, showToast])
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">

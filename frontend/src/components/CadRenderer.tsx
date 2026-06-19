@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 interface DieData {
   die_type: string
@@ -22,6 +22,42 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
   if (!die) return null
 
   const isRound = die.die_type === 'ROUND'
+  const [activeTooltip, setActiveTooltip] = useState<{
+    title: string
+    content: string
+    details: string
+    isPinned?: boolean
+  } | null>(null)
+
+  const handleDimClick = (title: string, content: string, details: string) => {
+    setActiveTooltip(prev => {
+      if (prev && prev.title === title && prev.isPinned) {
+        return null
+      }
+      return { title, content, details, isPinned: true }
+    })
+  }
+
+  const handleDimMouseEnter = (title: string, content: string, details: string) => {
+    setActiveTooltip(prev => {
+      if (prev?.isPinned) return prev
+      return { title, content, details, isPinned: false }
+    })
+  }
+
+  const handleDimMouseLeave = () => {
+    setActiveTooltip(prev => {
+      if (prev?.isPinned) return prev
+      return null
+    })
+  }
+
+  const handleDimKeyDown = (e: React.KeyboardEvent, title: string, content: string, details: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleDimClick(title, content, details)
+    }
+  }
 
   return (
     <div className="relative glass-panel rounded-xl p-5 border border-slate-800/80 shadow-2xl blueprint-grid min-h-[280px] flex flex-col justify-between overflow-hidden">
@@ -51,7 +87,28 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
               className="blueprint-outline animate-dash" 
             />
             <circle cx="100" cy="100" r="3" fill="#3b82f6" />
-            <g>
+            <g
+              className="interactive-dim-group"
+              role="button"
+              tabIndex={0}
+              onClick={() => handleDimClick(
+                "Diameter / Current Size",
+                "Specifies the active extrusion diameter of the round die (mm).",
+                "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
+              )}
+              onMouseEnter={() => handleDimMouseEnter(
+                "Diameter / Current Size",
+                "Specifies the active extrusion diameter of the round die (mm).",
+                "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
+              )}
+              onMouseLeave={handleDimMouseLeave}
+              onKeyDown={(e) => handleDimKeyDown(e,
+                "Diameter / Current Size",
+                "Specifies the active extrusion diameter of the round die (mm).",
+                "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
+              )}
+              aria-label="Diameter information"
+            >
               <line x1="25" y1="100" x2="175" y2="100" className="blueprint-dim-line" strokeDasharray="3 3" />
               <path d="M 25 100 L 32 97 L 32 103 Z" fill="#10b981" />
               <path d="M 175 100 L 168 97 L 168 103 Z" fill="#10b981" />
@@ -61,7 +118,28 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
               </text>
             </g>
             {die.original_size && die.original_size !== die.current_size && (
-              <g>
+              <g
+                className="interactive-dim-group"
+                role="button"
+                tabIndex={0}
+                onClick={() => handleDimClick(
+                  "Original Size",
+                  "The brand-new factory dimension of the die before any operational wear (mm).",
+                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                )}
+                onMouseEnter={() => handleDimMouseEnter(
+                  "Original Size",
+                  "The brand-new factory dimension of the die before any operational wear (mm).",
+                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                )}
+                onMouseLeave={handleDimMouseLeave}
+                onKeyDown={(e) => handleDimKeyDown(e,
+                  "Original Size",
+                  "The brand-new factory dimension of the die before any operational wear (mm).",
+                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                )}
+                aria-label="Original size information"
+              >
                 <line x1="100" y1="25" x2="145" y2="25" className="blueprint-dim-line" />
                 <circle cx="100" cy="25" r="2" fill="#10b981" />
                 <text x="150" y="28" className="blueprint-dim-text" textAnchor="start">
@@ -109,7 +187,28 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                   className="blueprint-outline animate-dash" 
                 />
                 <circle cx="100" cy="100" r="3" fill="#3b82f6" />
-                <g>
+                <g
+                  className="interactive-dim-group"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleDimClick(
+                    "Width",
+                    "Active width dimension of the flat die extrusion path (mm).",
+                    "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
+                  )}
+                  onMouseEnter={() => handleDimMouseEnter(
+                    "Width",
+                    "Active width dimension of the flat die extrusion path (mm).",
+                    "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
+                  )}
+                  onMouseLeave={handleDimMouseLeave}
+                  onKeyDown={(e) => handleDimKeyDown(e,
+                    "Width",
+                    "Active width dimension of the flat die extrusion path (mm).",
+                    "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
+                  )}
+                  aria-label="Width information"
+                >
                   <line x1={x} y1={y + t + 15} x2={x + w} y2={y + t + 15} className="blueprint-dim-line" />
                   <line x1={x} y1={y + t + 5} x2={x} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
                   <line x1={x + w} y1={y + t + 5} x2={x + w} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
@@ -120,7 +219,28 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                     W: {die.current_width}
                   </text>
                 </g>
-                <g>
+                <g
+                  className="interactive-dim-group"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleDimClick(
+                    "Thickness",
+                    "Thickness dimension of the flat extrusion channel (mm).",
+                    "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
+                  )}
+                  onMouseEnter={() => handleDimMouseEnter(
+                    "Thickness",
+                    "Thickness dimension of the flat extrusion channel (mm).",
+                    "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
+                  )}
+                  onMouseLeave={handleDimMouseLeave}
+                  onKeyDown={(e) => handleDimKeyDown(e,
+                    "Thickness",
+                    "Thickness dimension of the flat extrusion channel (mm).",
+                    "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
+                  )}
+                  aria-label="Thickness information"
+                >
                   <line x1={x - 15} y1={y} x2={x - 15} y2={y + t} className="blueprint-dim-line" />
                   <line x1={x - 20} y1={y} x2={x - 5} y2={y} className="blueprint-dim-line" strokeWidth="0.5" />
                   <line x1={x - 20} y1={y + t} x2={x - 5} y2={y + t} className="blueprint-dim-line" strokeWidth="0.5" />
@@ -131,7 +251,28 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                   </text>
                 </g>
                 {radius > 0 && (
-                  <g>
+                  <g
+                    className="interactive-dim-group"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleDimClick(
+                      "Corner Radius",
+                      "Fillet radius of the flat die corners (mm).",
+                      "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
+                    )}
+                    onMouseEnter={() => handleDimMouseEnter(
+                      "Corner Radius",
+                      "Fillet radius of the flat die corners (mm).",
+                      "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
+                    )}
+                    onMouseLeave={handleDimMouseLeave}
+                    onKeyDown={(e) => handleDimKeyDown(e,
+                      "Corner Radius",
+                      "Fillet radius of the flat die corners (mm).",
+                      "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
+                    )}
+                    aria-label="Corner radius information"
+                  >
                     <path d={`M ${x + w - r + r * Math.cos(Math.PI/4)} ${y + r - r * Math.sin(Math.PI/4)} L ${x + w + 12} ${y - 12}`} className="blueprint-dim-line" fill="none" strokeWidth="0.75" />
                     <circle cx={x + w - r + r * Math.cos(Math.PI/4)} cy={y + r - r * Math.sin(Math.PI/4)} r="2" fill="#10b981" />
                     <text x={x + w + 16} y={y - 10} className="blueprint-dim-text" textAnchor="start">
@@ -146,9 +287,83 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
       </div>
       
       <div className="flex justify-between items-center text-slate-500 text-[9px] font-mono mt-3 pt-2 border-t border-slate-800/80">
-        <span>Casing: {die.casing || '—'}</span>
-        <span>Status: {die.status}</span>
+        <span 
+          className="hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors"
+          role="button"
+          tabIndex={0}
+          onClick={() => handleDimClick(
+            "Casing Group",
+            "The outer supporting ring housing the die insert.",
+            "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
+          )}
+          onMouseEnter={() => handleDimMouseEnter(
+            "Casing Group",
+            "The outer supporting ring housing the die insert.",
+            "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
+          )}
+          onMouseLeave={handleDimMouseLeave}
+          onKeyDown={(e) => handleDimKeyDown(e,
+            "Casing Group",
+            "The outer supporting ring housing the die insert.",
+            "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
+          )}
+          aria-label="Casing information"
+        >
+          Casing: {die.casing || '—'}
+        </span>
+        <span 
+          className="hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors"
+          role="button"
+          tabIndex={0}
+          onClick={() => handleDimClick(
+            "Operational Status",
+            `Current Operational Status: ${die.status}.`,
+            "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
+          )}
+          onMouseEnter={() => handleDimMouseEnter(
+            "Operational Status",
+            `Current Operational Status: ${die.status}.`,
+            "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
+          )}
+          onMouseLeave={handleDimMouseLeave}
+          onKeyDown={(e) => handleDimKeyDown(e,
+            "Operational Status",
+            `Current Operational Status: ${die.status}.`,
+            "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
+          )}
+          aria-label="Status information"
+        >
+          Status: {die.status}
+        </span>
       </div>
+
+      {activeTooltip && (
+        <div className="absolute inset-x-3 bottom-3 bg-slate-950/95 backdrop-blur-md border border-blue-500/40 rounded-lg p-3 text-xs shadow-2xl z-10 animate-fadeIn">
+          <div className="flex justify-between items-start mb-1">
+            <h4 className="text-blue-400 font-bold tracking-wide text-[11px]">{activeTooltip.title}</h4>
+            <div className="flex items-center gap-1.5">
+              {activeTooltip.isPinned ? (
+                <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1 py-0.2 rounded font-semibold font-mono">Pinned</span>
+              ) : (
+                <span className="text-[8px] bg-slate-800 text-slate-400 px-1 py-0.2 rounded font-semibold font-mono">Hovering</span>
+              )}
+              <button 
+                onClick={() => setActiveTooltip(null)} 
+                className="text-slate-400 hover:text-white transition-colors font-bold text-sm leading-none"
+                aria-label="Close tooltip"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+          <p className="text-slate-200 font-medium mb-1 leading-relaxed text-[10.5px]">{activeTooltip.content}</p>
+          {activeTooltip.isPinned && (
+            <div className="text-[10px] text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 leading-normal animate-slideDown">
+              <strong className="text-slate-300">Engineering Note:</strong> {activeTooltip.details}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

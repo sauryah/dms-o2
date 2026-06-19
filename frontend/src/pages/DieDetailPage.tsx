@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, Trash2 } from 'lucide-react'
-import { useApi, useAuth } from '../App'
+import { useApi, useAuth, useToast } from '../App'
 import { DieBlueprint } from '../components/CadRenderer'
 import { Timeline } from '../components/Timeline'
 
@@ -10,6 +10,7 @@ export function DieDetailPage() {
   const { id } = useParams()
   const { request } = useApi()
   const { role } = useAuth()
+  const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   
@@ -46,7 +47,7 @@ export function DieDetailPage() {
   // Fetch sets list for editing dropdown
   const { data: setsList } = useQuery({
     queryKey: ['setsDropdownDetail'],
-    queryFn: () => request('/api/sets/').then(data => Array.isArray(data) ? data : data.results)
+    queryFn: () => request('/api/sets/')
   })
 
   // Mutation for updating die
@@ -55,9 +56,53 @@ export function DieDetailPage() {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
-    onSuccess: () => {
+    onMutate: async (data) => {
+      // Cancel queries
+      await queryClient.cancelQueries({ queryKey: ['die', id] })
+      await queryClient.cancelQueries({ queryKey: ['dieDetail', id] })
+      await queryClient.cancelQueries({ queryKey: ['dies'] })
+      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+
+      // Snapshot previous data
+      const previousDie = queryClient.getQueryData(['die', id])
+      const previousDieDetail = queryClient.getQueryData(['dieDetail', id])
+      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+
+      // Optimistically update single die caches
+      queryClient.setQueryData(['die', id], (old: any) => old ? { ...old, ...data } : old)
+      queryClient.setQueryData(['dieDetail', id], (old: any) => old ? { ...old, ...data } : old)
+
+      // Optimistically update list caches
+      queryClient.setQueriesData({ queryKey: ['dies'] }, (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((d: any) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
+      })
+      queryClient.setQueriesData({ queryKey: ['searchDies'] }, (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((d: any) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
+      })
+
+      return { previousDie, previousDieDetail, previousDiesQueries, previousSearchDiesQueries }
+    },
+    onError: (err, data, context: any) => {
+      if (context) {
+        if (context.previousDie !== undefined) queryClient.setQueryData(['die', id], context.previousDie)
+        if (context.previousDieDetail !== undefined) queryClient.setQueryData(['dieDetail', id], context.previousDieDetail)
+        if (context.previousDiesQueries) {
+          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousSearchDiesQueries) {
+          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+      }
+      showToast(`Failed to update die: ${err.message}`, 'error')
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['die', id] })
+      queryClient.invalidateQueries({ queryKey: ['dieDetail', id] })
       queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       setIsEditing(false)
     }

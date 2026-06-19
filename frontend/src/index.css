@@ -214,3 +214,38 @@ textarea:focus {
 .animate-fadeIn {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.interactive-dim-group {
+  cursor: pointer;
+  outline: none;
+}
+.interactive-dim-group:hover .blueprint-dim-text,
+.interactive-dim-group:focus-visible .blueprint-dim-text {
+  fill: #60a5fa !important;
+  text-shadow: 0 0 4px rgba(59, 130, 246, 0.6);
+}
+.interactive-dim-group:hover .blueprint-dim-line,
+.interactive-dim-group:focus-visible .blueprint-dim-line {
+  stroke: #60a5fa !important;
+}
+.interactive-dim-group:focus-visible text {
+  outline: 1.5px dashed #60a5fa;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 100px;
+    margin-top: 6px;
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+  overflow: hidden;
+}

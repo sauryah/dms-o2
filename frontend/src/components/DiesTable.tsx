@@ -93,48 +93,156 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   const handleBulkStatusUpdate = async () => {
     if (!bulkStatus) return
     setIsUpdating(true)
+
+    // Cancel queries
+    await queryClient.cancelQueries({ queryKey: ['dies'] })
+    await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+
+    // Snapshot previous data
+    const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+    const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+
+    // Optimistically update list caches
+    const updateStatus = (old: any) => {
+      if (!Array.isArray(old)) return old
+      return old.map((die: any) => {
+        if (selectedDieIds.has(die.die_id)) {
+          return { ...die, status: bulkStatus }
+        }
+        return die
+      })
+    }
+    queryClient.setQueriesData({ queryKey: ['dies'] }, updateStatus)
+    queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateStatus)
+
+    // Update individual die detail queries as well (if any are cached)
+    const affectedDieIds = Array.from(selectedDieIds)
+    const previousIndividualDies: [any, any][] = []
+    affectedDieIds.forEach(dieId => {
+      const p1 = queryClient.getQueryData(['die', dieId])
+      const p2 = queryClient.getQueryData(['dieDetail', dieId])
+      if (p1 !== undefined) {
+        previousIndividualDies.push([['die', dieId], p1])
+        queryClient.setQueryData(['die', dieId], (old: any) => old ? { ...old, status: bulkStatus } : old)
+      }
+      if (p2 !== undefined) {
+        previousIndividualDies.push([['dieDetail', dieId], p2])
+        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? { ...old, status: bulkStatus } : old)
+      }
+    })
+
+    const snapshotDieIds = new Set(selectedDieIds)
+    setSelectedDieIds(new Set())
+    setBulkStatus('')
+
     try {
-      for (const dieId of selectedDieIds) {
+      for (const dieId of snapshotDieIds) {
         await request(`/api/dies/${dieId}/`, {
           method: 'PATCH',
           body: JSON.stringify({ status: bulkStatus })
         })
       }
-      setSelectedDieIds(new Set())
-      setBulkStatus('')
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
-      showToast(`Successfully updated status of ${selectedDieIds.size} dies to ${bulkStatus}.`, 'success')
+      showToast(`Successfully updated status of ${snapshotDieIds.size} dies to ${bulkStatus}.`, 'success')
     } catch (err: any) {
       console.error(err)
+      // Rollback
+      if (previousDiesQueries) {
+        previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      if (previousSearchDiesQueries) {
+        previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      previousIndividualDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
       showToast(`Error updating statuses: ${err.message}`, 'error')
     } finally {
       setIsUpdating(false)
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
+      affectedDieIds.forEach(dieId => {
+        queryClient.invalidateQueries({ queryKey: ['die', dieId] })
+        queryClient.invalidateQueries({ queryKey: ['dieDetail', dieId] })
+      })
     }
   }
 
   const handleBulkLocationUpdate = async () => {
     if (!bulkLocation.trim()) return
     setIsUpdating(true)
+
+    const nextLocation = bulkLocation.trim()
+
+    // Cancel queries
+    await queryClient.cancelQueries({ queryKey: ['dies'] })
+    await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+
+    // Snapshot previous data
+    const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+    const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+
+    // Optimistically update list caches
+    const updateLocation = (old: any) => {
+      if (!Array.isArray(old)) return old
+      return old.map((die: any) => {
+        if (selectedDieIds.has(die.die_id)) {
+          return { ...die, location: nextLocation }
+        }
+        return die
+      })
+    }
+    queryClient.setQueriesData({ queryKey: ['dies'] }, updateLocation)
+    queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLocation)
+
+    // Update individual die detail queries as well (if any are cached)
+    const affectedDieIds = Array.from(selectedDieIds)
+    const previousIndividualDies: [any, any][] = []
+    affectedDieIds.forEach(dieId => {
+      const p1 = queryClient.getQueryData(['die', dieId])
+      const p2 = queryClient.getQueryData(['dieDetail', dieId])
+      if (p1 !== undefined) {
+        previousIndividualDies.push([['die', dieId], p1])
+        queryClient.setQueryData(['die', dieId], (old: any) => old ? { ...old, location: nextLocation } : old)
+      }
+      if (p2 !== undefined) {
+        previousIndividualDies.push([['dieDetail', dieId], p2])
+        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? { ...old, location: nextLocation } : old)
+      }
+    })
+
+    const snapshotDieIds = new Set(selectedDieIds)
+    setSelectedDieIds(new Set())
+    setBulkLocation('')
+
     try {
-      for (const dieId of selectedDieIds) {
+      for (const dieId of snapshotDieIds) {
         await request(`/api/dies/${dieId}/`, {
           method: 'PATCH',
-          body: JSON.stringify({ location: bulkLocation.trim() })
+          body: JSON.stringify({ location: nextLocation })
         })
       }
-      setSelectedDieIds(new Set())
-      setBulkLocation('')
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
-      showToast(`Successfully updated location of ${selectedDieIds.size} dies to "${bulkLocation}".`, 'success')
+      showToast(`Successfully updated location of ${snapshotDieIds.size} dies to "${nextLocation}".`, 'success')
     } catch (err: any) {
       console.error(err)
+      // Rollback
+      if (previousDiesQueries) {
+        previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      if (previousSearchDiesQueries) {
+        previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      previousIndividualDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
       showToast(`Error updating locations: ${err.message}`, 'error')
     } finally {
       setIsUpdating(false)
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
+      affectedDieIds.forEach(dieId => {
+        queryClient.invalidateQueries({ queryKey: ['die', dieId] })
+        queryClient.invalidateQueries({ queryKey: ['dieDetail', dieId] })
+      })
     }
   }
 
