@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo } from 'react'
 import { List, RowComponentProps } from 'react-window'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth, useApi } from '../App'
+import { useAuth, useApi, useToast } from '../App'
 
 const isDieActive = (die: any) => {
   return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
@@ -17,6 +17,7 @@ interface DiesTableProps {
 export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDragStartDie, onDragEndDie }: DiesTableProps) {
   const { role } = useAuth()
   const { request } = useApi()
+  const { showToast } = useToast()
   const queryClient = useQueryClient()
 
   const canEdit = role === 'ROOT' || role === 'ADMIN'
@@ -104,10 +105,10 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
       queryClient.invalidateQueries({ queryKey: ['dies'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
-      alert(`Successfully updated status of ${selectedDieIds.size} dies to ${bulkStatus}.`)
+      showToast(`Successfully updated status of ${selectedDieIds.size} dies to ${bulkStatus}.`, 'success')
     } catch (err: any) {
       console.error(err)
-      alert(`Error updating statuses: ${err.message}`)
+      showToast(`Error updating statuses: ${err.message}`, 'error')
     } finally {
       setIsUpdating(false)
     }
@@ -128,10 +129,10 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
       queryClient.invalidateQueries({ queryKey: ['dies'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
-      alert(`Successfully updated location of ${selectedDieIds.size} dies to "${bulkLocation}".`)
+      showToast(`Successfully updated location of ${selectedDieIds.size} dies to "${bulkLocation}".`, 'success')
     } catch (err: any) {
       console.error(err)
-      alert(`Error updating locations: ${err.message}`)
+      showToast(`Error updating locations: ${err.message}`, 'error')
     } finally {
       setIsUpdating(false)
     }

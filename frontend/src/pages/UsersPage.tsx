@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, RefreshCw, Database, Trash2, Upload, Download, AlertTriangle, X } from 'lucide-react'
-import { useApi, useAuth } from '../App'
+import { useApi, useAuth, useToast } from '../App'
 
 export function UsersPage() {
   const { request } = useApi()
+  const { showToast } = useToast()
   const { role, username: currentUsername, token } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -57,7 +58,7 @@ export function UsersPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: any) {
-      alert(err.message || 'Failed to download backup')
+      showToast(err.message || 'Failed to download backup', 'error')
     }
   }
 
@@ -66,7 +67,7 @@ export function UsersPage() {
     if (!file) return
     
     if (!file.name.endsWith('.dump')) {
-      alert('Only .dump files are allowed')
+      showToast('Only .dump files are allowed', 'error')
       return
     }
 
@@ -79,10 +80,10 @@ export function UsersPage() {
         method: 'POST',
         body: formData
       })
-      alert(`Backup "${res.filename}" uploaded successfully!`)
+      showToast(`Backup "${res.filename}" uploaded successfully!`, 'success')
       queryClient.invalidateQueries({ queryKey: ['backupsList'] })
     } catch (err: any) {
-      alert(err.message || 'Failed to upload backup')
+      showToast(err.message || 'Failed to upload backup', 'error')
     } finally {
       setIsUploading(false)
       e.target.value = ''
@@ -112,7 +113,7 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['backupsList'] })
     },
     onError: (err) => {
-      alert(err.message || 'Failed to create backup')
+      showToast(err.message || 'Failed to create backup', 'error')
     }
   })
 
@@ -123,10 +124,11 @@ export function UsersPage() {
       body: JSON.stringify({ filename })
     }),
     onSuccess: () => {
+      showToast('Backup deleted successfully', 'success')
       queryClient.invalidateQueries({ queryKey: ['backupsList'] })
     },
     onError: (err) => {
-      alert(err.message || 'Failed to delete backup')
+      showToast(err.message || 'Failed to delete backup', 'error')
     }
   })
 
@@ -140,11 +142,13 @@ export function UsersPage() {
       setShowRestoreConfirmModal(false)
       setSelectedBackup(null)
       setRestoreConfirmInput('')
-      alert('Database restore completed successfully! Search index has been rebuilt.')
-      window.location.reload()
+      showToast('Database restore completed successfully! Search index has been rebuilt.', 'success')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
     },
     onError: (err) => {
-      alert(err.message || 'Failed to restore backup')
+      showToast(err.message || 'Failed to restore backup', 'error')
     }
   })
 
@@ -266,7 +270,7 @@ export function UsersPage() {
 
   const handleToggleActive = (user: any) => {
     if (user.username === currentUsername) {
-      alert('You cannot deactivate your own account.')
+      showToast('You cannot deactivate your own account.', 'error')
       return
     }
     toggleActiveMutation.mutate({ id: user.id, is_active: !user.is_active })
@@ -274,7 +278,7 @@ export function UsersPage() {
 
   const handleDeleteUser = (user: any) => {
     if (user.username === currentUsername) {
-      alert('You cannot delete your own account.')
+      showToast('You cannot delete your own account.', 'error')
       return
     }
     if (window.confirm(`Are you sure you want to permanently delete user "${user.username}"?`)) {
