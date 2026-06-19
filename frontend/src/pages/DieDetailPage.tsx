@@ -46,7 +46,7 @@ export function DieDetailPage() {
   // Fetch sets list for editing dropdown
   const { data: setsList } = useQuery({
     queryKey: ['setsDropdownDetail'],
-    queryFn: () => request('/api/sets/')
+    queryFn: () => request('/api/sets/').then(data => Array.isArray(data) ? data : data.results)
   })
 
   // Mutation for updating die
