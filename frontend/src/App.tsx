@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, Suspense } from 'react'
 import { 
   HashRouter as Router, 
   Routes, 
@@ -14,13 +14,15 @@ import {
 // Component & Page Imports
 import { Navbar } from './components/Navbar'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { DashboardPage } from './pages/DashboardPage'
-import { InventoryPage } from './pages/InventoryPage'
-import { DieDetailPage } from './pages/DieDetailPage'
-import { MachineSetsPage } from './pages/MachineSetsPage'
-import { ImportPage } from './pages/ImportPage'
-import { UsersPage } from './pages/UsersPage'
-import { LoginPage } from './pages/LoginPage'
+
+// Lazy loaded page components for code splitting
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const InventoryPage = React.lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const DieDetailPage = React.lazy(() => import('./pages/DieDetailPage').then(m => ({ default: m.DieDetailPage })))
+const MachineSetsPage = React.lazy(() => import('./pages/MachineSetsPage').then(m => ({ default: m.MachineSetsPage })))
+const ImportPage = React.lazy(() => import('./pages/ImportPage').then(m => ({ default: m.ImportPage })))
+const UsersPage = React.lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })))
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 
 // React Query Client
 const queryClient = new QueryClient()
@@ -338,6 +340,18 @@ function SessionTimeoutManager() {
   )
 }
 
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center py-12">
+    <div className="relative w-16 h-16">
+      <div className="absolute inset-0 rounded-full border-4 border-slate-800/80 animate-pulse" />
+      <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+    </div>
+    <span className="mt-4 text-xs font-mono font-bold tracking-widest text-slate-500 uppercase animate-pulse">
+      Loading interface...
+    </span>
+  </div>
+)
+
 // Main App Container
 function AppContent() {
   const { token } = useAuth()
@@ -427,15 +441,17 @@ function AppContent() {
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
       <Navbar />
       <SessionTimeoutManager />
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
-        <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
-        <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
-        <Route path="/import" element={<ErrorBoundary><ImportPage /></ErrorBoundary>} />
-        <Route path="/users" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
-        <Route path="/login" element={<LoginPage />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
+          <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
+          <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
+          <Route path="/import" element={<ErrorBoundary><ImportPage /></ErrorBoundary>} />
+          <Route path="/users" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </Suspense>
     </div>
   )
 }
