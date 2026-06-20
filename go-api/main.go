@@ -54,7 +54,7 @@ var eventManager = EventManager{
 	clients:    make(map[Client]bool),
 	register:   make(chan Client),
 	unregister: make(chan Client),
-	broadcast:  make(chan string),
+	broadcast:  make(chan string, 256),
 }
 
 func (m *EventManager) start() {
@@ -316,11 +316,14 @@ func authMiddleware(next http.Handler) http.Handler {
 		hasher.Write([]byte(tokenStr))
 		tokenHash := hex.EncodeToString(hasher.Sum(nil))
 
+		queryCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+
 		// Check UserSession in database
 		var lastSeen, createdAt time.Time
 		var isActive bool
 		var role string
-		err = db.QueryRow(`
+		err = db.QueryRowContext(queryCtx, `
 			SELECT s.last_seen, s.created_at, u.is_active, u.role 
 			FROM users_usersession s 
 			JOIN users_user u ON s.user_id = u.id 
@@ -335,7 +338,7 @@ func authMiddleware(next http.Handler) http.Handler {
 		}
 
 		if !isActive {
-			db.Exec("DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
+			db.ExecContext(queryCtx, "DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "User account is deactivated"})
@@ -347,7 +350,7 @@ func authMiddleware(next http.Handler) http.Handler {
 		absoluteLimit := createdAt.Add(time.Duration(absoluteLimitHours) * time.Hour)
 
 		if now.After(idleLimit) || now.After(absoluteLimit) {
-			db.Exec("DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
+			db.ExecContext(queryCtx, "DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Session has expired due to inactivity or age"})
@@ -356,7 +359,7 @@ func authMiddleware(next http.Handler) http.Handler {
 
 		// Throttle database writes: only update if last_seen was > 1 minute ago
 		if now.Sub(lastSeen) > 1*time.Minute {
-			_, updateErr := db.Exec("UPDATE users_usersession SET last_seen = NOW() WHERE token_hash = $1", tokenHash)
+			_, updateErr := db.ExecContext(queryCtx, "UPDATE users_usersession SET last_seen = NOW() WHERE token_hash = $1", tokenHash)
 			if updateErr != nil {
 				log.Printf("Failed to update last_seen for token: %v", updateErr)
 			}
@@ -387,9 +390,12 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 func runReconciliation() {
 	log.Println("Starting Search Index Reconciliation...")
 
+	queryCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	// 1. Get Postgres count
 	var pgCount int
-	err := db.QueryRow("SELECT COUNT(*) FROM dies_die").Scan(&pgCount)
+	err := db.QueryRowContext(queryCtx, "SELECT COUNT(*) FROM dies_die").Scan(&pgCount)
 	if err != nil {
 		log.Printf("Reconciliation error: Failed to count Postgres records: %v", err)
 		reconciliationStatus = "error_postgres"
@@ -451,7 +457,10 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rows, err := db.Query("SELECT status, COUNT(*) FROM dies_die GROUP BY status")
+	queryCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	rows, err := db.QueryContext(queryCtx, "SELECT status, COUNT(*) FROM dies_die GROUP BY status")
 	if err != nil {
 		log.Printf("Failed to query statistics: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -510,6 +519,14 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
+func validateFloatParam(s string) bool {
+	if s == "" {
+		return true
+	}
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
+}
+
 func handleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -526,6 +543,15 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	widthMax := r.URL.Query().Get("width_max")
 	thickMin := r.URL.Query().Get("thick_min")
 	thickMax := r.URL.Query().Get("thick_max")
+
+	// Validate numeric query parameters to prevent Meilisearch filter injection or database cast crashes
+	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
+		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
+		!validateFloatParam(thickMin) || !validateFloatParam(thickMax) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid decimal parameter format"})
+		return
+	}
 
 	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s",
 		q, dieType, statusVal, location, casing,
@@ -547,10 +573,10 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	if q == "" {
 		// 1. Direct database query
-		dies, err = queryPostgresDirectly("", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		dies, err = queryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	} else {
 		// 2. Query Meilisearch first, then database
-		dies, err = queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		dies, err = queryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	}
 
 	if err != nil {
@@ -579,7 +605,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
-func queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func queryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -676,8 +702,11 @@ func queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, siz
 
 	sqlParts = append(sqlParts, "ORDER BY d.die_id ASC LIMIT 10000")
 
+	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	query := strings.Join(sqlParts, "\n")
-	rows, err := db.Query(query, args...)
+	rows, err := db.QueryContext(queryCtx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -690,7 +719,7 @@ func escapeMeiliString(s string) string {
 	return strings.ReplaceAll(s, "'", "\\'")
 }
 
-func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func queryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
 	// Build Meilisearch filters
 	var filters []string
 	if dieType != "" {
@@ -738,7 +767,7 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 	res, err := meiliClient.Index(indexName).Search(q, &searchParams)
 	if err != nil {
 		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
-		return queryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		return queryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	}
 	log.Printf("queryMeilisearchAndPostgres: Meilisearch returned %d hits for query %q", len(res.Hits), q)
 
@@ -817,8 +846,11 @@ func queryMeilisearchAndPostgres(q, dieType, statusVal, location, casing, sizeMi
 		argCounter++
 	}
 
+	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	query := strings.Join(sqlParts, "\n")
-	rows, err := db.Query(query, args...)
+	rows, err := db.QueryContext(queryCtx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -963,19 +995,30 @@ func invalidateCache() {
 		log.Println("Successfully invalidated 'stats' cache.")
 	}
 
-	// Find and delete search keys
-	keys, err := redisClient.Keys(ctx, "search:*").Result()
-	if err != nil {
-		log.Printf("Failed to list cached search keys: %v", err)
-		return
-	}
-	if len(keys) > 0 {
-		err = redisClient.Del(ctx, keys...).Err()
+	// Find and delete search keys using non-blocking SCAN
+	var cursor uint64
+	totalDeleted := 0
+	for {
+		keys, nextCursor, err := redisClient.Scan(ctx, cursor, "search:*", 100).Result()
 		if err != nil {
-			log.Printf("Failed to delete search cache keys: %v", err)
-		} else {
-			log.Printf("Successfully invalidated %d search cache keys.", len(keys))
+			log.Printf("Failed to scan cached search keys: %v", err)
+			break
 		}
+		if len(keys) > 0 {
+			err = redisClient.Del(ctx, keys...).Err()
+			if err != nil {
+				log.Printf("Failed to delete scanned search cache keys: %v", err)
+			} else {
+				totalDeleted += len(keys)
+			}
+		}
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+	if totalDeleted > 0 {
+		log.Printf("Successfully invalidated %d search cache keys.", totalDeleted)
 	}
 }
 

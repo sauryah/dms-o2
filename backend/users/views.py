@@ -260,18 +260,47 @@ class BackupViewSet(viewsets.ViewSet):
             filepath
         ]
 
+        # Capture the restorer's active session data before restoration
+        current_session_data = None
         try:
-            # Evict all other active user sessions (Option 3 - Session Eviction)
+            header = request.META.get('HTTP_AUTHORIZATION')
+            if header and header.startswith('Bearer '):
+                token_str = header.split(' ')[1]
+                token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+                current_session = UserSession.objects.get(user=request.user, token_hash=token_hash)
+                current_session_data = {
+                    'user_id': current_session.user_id,
+                    'token_hash': current_session.token_hash,
+                    'ip_address': current_session.ip_address,
+                    'device': current_session.device
+                }
+        except Exception:
+            pass
+
+        try:
+            # Run the restore process
+            subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+
+            # Evict all restored sessions to prevent unauthorized reuse of restored sessions
             try:
                 from django.contrib.sessions.models import Session
-                # Terminate Django session store records
                 Session.objects.all().delete()
-                # Terminate DMS custom session records for other users
-                UserSession.objects.exclude(user=request.user).delete()
+                UserSession.objects.all().delete()
             except Exception:
                 pass
 
-            subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+            # Restore the restorer's session so they stay logged in
+            if current_session_data:
+                try:
+                    UserSession.objects.create(
+                        user_id=current_session_data['user_id'],
+                        token_hash=current_session_data['token_hash'],
+                        ip_address=current_session_data['ip_address'],
+                        device=current_session_data['device']
+                    )
+                except Exception:
+                    pass
+
             call_command('sync_search')
             broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
             return Response({'status': 'success'}, status=status.HTTP_200_OK)

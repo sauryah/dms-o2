@@ -32,4 +32,6 @@ class CurrentUserMiddleware:
                 del _thread_locals.ip
             if hasattr(_thread_locals, 'pending_sync_die_ids'):
                 del _thread_locals.pending_sync_die_ids
+            if hasattr(_thread_locals, 'pending_broadcast_keys'):
+                del _thread_locals.pending_broadcast_keys
         return response
