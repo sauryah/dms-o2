@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, act } from '@testing-library/react'
-import { useApi, AuthProvider } from './App'
+import { useApi, AuthProvider, useAuth } from './App'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 
 interface TestApiComponentProps {
@@ -25,13 +25,28 @@ function TestApiComponent({ url, onResult, onError }: TestApiComponentProps) {
   return <button onClick={trigger}>Trigger Request</button>
 }
 
+function TestAuthComponent() {
+  const { token, role, username, login, logout } = useAuth()
+  return (
+    <div>
+      <span data-testid="token">{token}</span>
+      <span data-testid="role">{role}</span>
+      <span data-testid="username">{username}</span>
+      <button onClick={() => login('new_token', 'admin', 'john_doe')}>Login</button>
+      <button onClick={logout}>Logout</button>
+    </div>
+  )
+}
+
 describe('Auth Redirect on 401', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    localStorage.clear()
   })
 
   test('401 response sets token to null and redirects to /login', async () => {
@@ -71,5 +86,39 @@ describe('Auth Redirect on 401', () => {
 
     // Expect hash redirect
     expect(window.location.hash).toBe('/login')
+  })
+
+  test('initializes state from localStorage and updates localStorage on changes', async () => {
+    localStorage.setItem('dms_token', 'test-token')
+    localStorage.setItem('dms_role', 'operator')
+    localStorage.setItem('dms_username', 'bob')
+
+    const { getByTestId, getByText } = render(
+      <AuthProvider>
+        <TestAuthComponent />
+      </AuthProvider>
+    )
+
+    expect(getByTestId('token').textContent).toBe('test-token')
+    expect(getByTestId('role').textContent).toBe('operator')
+    expect(getByTestId('username').textContent).toBe('bob')
+
+    // Trigger login
+    await act(async () => {
+      getByText('Login').click()
+    })
+
+    expect(localStorage.getItem('dms_token')).toBe('new_token')
+    expect(localStorage.getItem('dms_role')).toBe('admin')
+    expect(localStorage.getItem('dms_username')).toBe('john_doe')
+
+    // Trigger logout
+    await act(async () => {
+      getByText('Logout').click()
+    })
+
+    expect(localStorage.getItem('dms_token')).toBeNull()
+    expect(localStorage.getItem('dms_role')).toBeNull()
+    expect(localStorage.getItem('dms_username')).toBeNull()
   })
 })

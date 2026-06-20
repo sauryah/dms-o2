@@ -43,9 +43,33 @@ export function useDebounce<T>(value: T, delay = 300): T {
 const AuthContext = createContext<any>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [role, setRole] = useState<string | null>(null)
-  const [username, setUsername] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('dms_token'))
+  const [role, setRole] = useState<string | null>(() => localStorage.getItem('dms_role'))
+  const [username, setUsername] = useState<string | null>(() => localStorage.getItem('dms_username'))
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('dms_token', token)
+    } else {
+      localStorage.removeItem('dms_token')
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (role) {
+      localStorage.setItem('dms_role', role)
+    } else {
+      localStorage.removeItem('dms_role')
+    }
+  }, [role])
+
+  useEffect(() => {
+    if (username) {
+      localStorage.setItem('dms_username', username)
+    } else {
+      localStorage.removeItem('dms_username')
+    }
+  }, [username])
 
   const login = (newToken: string, userRole: string, userN: string) => {
     setToken(newToken)
