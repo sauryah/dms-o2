@@ -49,6 +49,10 @@ class DieViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            data = serialize_die_list_fast(page)
+            return self.get_paginated_response(data)
         data = serialize_die_list_fast(queryset)
         return Response(data)
 

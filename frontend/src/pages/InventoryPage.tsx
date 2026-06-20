@@ -85,6 +85,7 @@ export function InventoryPage() {
   }, [])
 
   const [createError, setCreateError] = useState<string | null>(null)
+  const [showEmptyNodes, setShowEmptyNodes] = useState(true)
 
   // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
@@ -561,17 +562,17 @@ export function InventoryPage() {
           ...set,
           dies: setDies
         }
-      }).filter((set: any) => set.dies.length > 0)
+      }).filter((set: any) => showEmptyNodes || set.dies.length > 0)
 
       return {
         ...machine,
         sets: machineSets,
         totalDies: machineSets.reduce((sum: number, s: any) => sum + s.dies.length, 0)
       }
-    }).filter((m: any) => m.totalDies > 0)
+    }).filter((m: any) => showEmptyNodes || m.totalDies > 0)
 
     return { diesBySet, unassignedDies, machinesWithData }
-  }, [dies, machinesList, setsList])
+  }, [dies, machinesList, setsList, showEmptyNodes])
 
   const handleExpandAll = () => {
     const nextMachs: Record<string | number, boolean> = {}
@@ -723,6 +724,17 @@ export function InventoryPage() {
             onChange={(e) => setTreeSearch(e.target.value)}
             className="w-full glass-input rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
           />
+        </div>
+
+        {/* Toggle to show/hide empty nodes */}
+        <div 
+          className="flex items-center justify-between px-1 mt-1 text-slate-450 hover:text-slate-200 transition-colors select-none cursor-pointer" 
+          onClick={() => setShowEmptyNodes(!showEmptyNodes)}
+        >
+          <span className="text-[10px] font-medium tracking-wider uppercase text-slate-400">Show empty machines & sets</span>
+          <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 shrink-0 ${showEmptyNodes ? 'bg-blue-600' : 'bg-slate-800'}`}>
+            <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${showEmptyNodes ? 'translate-x-4' : 'translate-x-0'}`} />
+          </div>
         </div>
       </div>
 

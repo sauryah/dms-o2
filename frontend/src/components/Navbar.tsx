@@ -44,7 +44,7 @@ export function Navbar() {
     })
     queryClient.prefetchQuery({
       queryKey: ['setsList'],
-      queryFn: () => request('/api/machines/sets/')
+      queryFn: () => request('/api/sets/')
     })
     queryClient.prefetchQuery({
       queryKey: ['machineCategories'],

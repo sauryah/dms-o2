@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:18-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -44,6 +45,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
       - ./backend:/app
       - ./backups:/backups
@@ -80,6 +82,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     command: celery -A dms worker -l info --concurrency=2
     volumes:
       - ./backend:/app
@@ -108,6 +111,7 @@ services:
     build:
       context: ./go-api
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -136,6 +140,7 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:v1.7
+    restart: unless-stopped
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - MEILI_ENV=production
@@ -149,6 +154,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -159,6 +165,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+    restart: unless-stopped
     depends_on:
       - django
     labels:
@@ -171,6 +178,7 @@ services:
 
   traefik:
     image: traefik:v3
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:

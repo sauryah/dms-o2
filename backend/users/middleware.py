@@ -30,4 +30,6 @@ class CurrentUserMiddleware:
                 del _thread_locals.user
             if hasattr(_thread_locals, 'ip'):
                 del _thread_locals.ip
+            if hasattr(_thread_locals, 'pending_sync_die_ids'):
+                del _thread_locals.pending_sync_die_ids
         return response

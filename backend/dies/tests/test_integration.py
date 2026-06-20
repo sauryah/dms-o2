@@ -144,12 +144,12 @@ class DieWorkflowIntegrationTest(TestCase):
         # LIST all dies
         response = self.client.get('/api/dies/')
         self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(len(response.data), 3)
+        self.assertGreaterEqual(len(response.data['results']), 3)
         
         # LIST dies filtered by type
         response = self.client.get('/api/dies/?die_type=ROUND')
         self.assertEqual(response.status_code, 200)
-        round_dies = response.data
+        round_dies = response.data['results']
         self.assertTrue(all(d['die_type'] == 'ROUND' for d in round_dies))
 
     def test_delete_die_flow(self):
@@ -234,7 +234,7 @@ class SearchIntegrationTest(TestCase):
         # SEARCH by die_id (using internal Django endpoint for testing)
         response = self.client.get('/api/dies/?die_type=ROUND')
         self.assertEqual(response.status_code, 200)
-        results = response.data
+        results = response.data['results']
         matching = [d for d in results if 'SEARCH-TEST-001' in d.get('die_id', '')]
         self.assertGreater(len(matching), 0)
 
@@ -255,7 +255,7 @@ class SearchIntegrationTest(TestCase):
         # SEARCH by status
         response = self.client.get('/api/dies/?status=RUNNING')
         self.assertEqual(response.status_code, 200)
-        results = response.data
+        results = response.data['results']
         self.assertTrue(all(d['status'] == 'RUNNING' for d in results))
 
     def test_search_with_range_filter(self):
@@ -275,7 +275,7 @@ class SearchIntegrationTest(TestCase):
         # SEARCH with size range filter
         response = self.client.get('/api/dies/?die_type=ROUND&size_min=2.5&size_max=3.5')
         self.assertEqual(response.status_code, 200)
-        results = response.data
+        results = response.data['results']
         # Verify all results are within range
         for die in results:
             if die.get('current_size'):

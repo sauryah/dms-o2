@@ -10,8 +10,10 @@ from dms.events import broadcast_event
 def sync_set_dies(sender, instance, **kwargs):
     # Resync all dies that belong to this set
     def resync():
-        for die in Die.objects.filter(current_set=instance):
-            sync_die(die)
+        die_ids = list(Die.objects.filter(current_set=instance).values_list('id', flat=True))
+        if die_ids:
+            from search.tasks import sync_dies_batch_task
+            sync_dies_batch_task.delay(die_ids)
     transaction.on_commit(resync)
     transaction.on_commit(lambda: broadcast_event('set_update', {'id': instance.id, 'action': 'save'}))
 
@@ -19,8 +21,10 @@ def sync_set_dies(sender, instance, **kwargs):
 def sync_machine_dies(sender, instance, **kwargs):
     # Resync all dies in sets belonging to this machine
     def resync():
-        for die in Die.objects.filter(current_set__machine=instance):
-            sync_die(die)
+        die_ids = list(Die.objects.filter(current_set__machine=instance).values_list('id', flat=True))
+        if die_ids:
+            from search.tasks import sync_dies_batch_task
+            sync_dies_batch_task.delay(die_ids)
     transaction.on_commit(resync)
     transaction.on_commit(lambda: broadcast_event('machine_update', {'id': instance.id, 'action': 'save'}))
 

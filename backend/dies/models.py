@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 STATUS_CHOICES = [
     ('AVAILABLE','Available'), ('RUNNING','Running'),
@@ -21,9 +22,9 @@ class Die(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['status']),
-            models.Index(fields=['casing']),
             models.Index(fields=['die_type']),
-            models.Index(fields=['location']),
+            GinIndex(name='die_location_trgm_idx', fields=['location'], opclasses=['gin_trgm_ops']),
+            GinIndex(name='die_casing_trgm_idx', fields=['casing'], opclasses=['gin_trgm_ops']),
         ]
 
     def __str__(self):

@@ -66,7 +66,7 @@ export function useSetsQuery() {
   const { request } = useApi()
   return useQuery({
     queryKey: ['setsList'],
-    queryFn: () => request('/api/machines/sets/'),
+    queryFn: () => request('/api/sets/'),
   })
 }
 

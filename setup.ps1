@@ -11,9 +11,31 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 
 # 2. Check environment file
 if (-not (Test-Path .env)) {
-    Write-Host ">>> Creating .env file from template..."
-    Copy-Item .env.example .env
-    Write-Host ">>> Created .env file. Please edit it if you need custom database ports or passwords."
+    Write-Host ">>> Creating .env file from template with secure dynamic keys..."
+    
+    function Generate-Secret {
+        param ($length = 32)
+        $guidStr = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")
+        return $guidStr.Substring(0, $length)
+    }
+
+    $dbPass = Generate-Secret 24
+    $djangoKey = Generate-Secret 60
+    $meiliMaster = Generate-Secret 32
+    $meiliSearch = Generate-Secret 32
+    $rootPass = Generate-Secret 16
+
+    $examplePath = Resolve-Path .env.example
+    $content = [System.IO.File]::ReadAllText($examplePath)
+    $content = $content.Replace('POSTGRES_PASSWORD=change_me', "POSTGRES_PASSWORD=$dbPass")
+    $content = $content.Replace('DJANGO_SECRET_KEY=md7db91F0^W3*t)skUXp$vzfHU<]Nx@+]DcS5Kz?hm<fPg&&gd=5EvWu&zuevm](', "DJANGO_SECRET_KEY=$djangoKey")
+    $content = $content.Replace('MEILI_MASTER_KEY=Kk?UEj]Uk1dDSFNfK.fXHj0jP<DB*yJ9>4Dsh:6&Wwh96waja>2.1@R+8%t4%K4(', "MEILI_MASTER_KEY=$meiliMaster")
+    $content = $content.Replace('MEILI_SEARCH_KEY=B5wT65kBM$UG!tnWk@tkR59T]tuSTwnSG#%xUGQZC@q@$auPem&Sub1$02hDuGNb', "MEILI_SEARCH_KEY=$meiliSearch")
+    $content = $content.Replace('ROOT_PASSWORD=root_pass_1234567890', "ROOT_PASSWORD=$rootPass")
+
+    $envPath = Join-Path (Get-Location) ".env"
+    [System.IO.File]::WriteAllText($envPath, $content)
+    Write-Host ">>> Created .env file with generated secure keys and passwords."
 } else {
     Write-Host ">>> Environment file .env already exists."
 }

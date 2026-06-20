@@ -44,7 +44,7 @@ class QueryCountTests(APITestCase):
         
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 50)
+        self.assertEqual(len(response.data['results']), 50)
         
         query_count = len(connection.queries)
         print(f"Query count: {query_count}")

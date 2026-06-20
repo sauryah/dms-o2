@@ -59,8 +59,8 @@ class DieAPITests(APITestCase):
         url = reverse('die-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        first_item = response.data[0]
+        self.assertEqual(len(response.data['results']), 2)
+        first_item = response.data['results'][0]
         self.assertIn('die_id', first_item)
         self.assertIn('die_type', first_item)
         self.assertIn('casing', first_item)
@@ -73,22 +73,22 @@ class DieAPITests(APITestCase):
         url = reverse('die-list') + '?status=AVAILABLE'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'R-101')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['die_id'], 'R-101')
 
     def test_filter_by_size_range(self):
         url = reverse('die-list') + '?size_min=2.3&size_max=2.5'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'R-101')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['die_id'], 'R-101')
 
     def test_filter_by_width_range(self):
         url = reverse('die-list') + '?width_min=5.0&width_max=6.0'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['die_id'], 'F-201')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['die_id'], 'F-201')
 
     def test_get_detail_with_history(self):
         DieHistory.objects.create(
