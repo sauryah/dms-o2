@@ -333,8 +333,8 @@ export function DashboardPage() {
                       <>
                         {searchDies.slice(0, 6).map((die: any, index: number) => {
                           const sizeStr = die.die_type === 'ROUND' 
-                            ? `${die.size || die.rounddie?.current_size || '—'} mm` 
-                            : `${die.width || die.flatdie?.current_width || '—'} × ${die.thickness || die.flatdie?.current_thickness || '—'} mm`
+                            ? `${die.current_size || '—'} mm` 
+                            : `${die.current_width || '—'} × ${die.current_thickness || '—'} mm`
                           const isHighlighted = index === activeIndex
                           return (
                             <div 
