@@ -41,7 +41,23 @@ if (-not (Test-Path .env)) {
 }
 
 # 3. Spin up Docker containers
-Write-Host ">>> Bootstrapping containers with Docker Compose..."
+Write-Host ">>> Pre-pulling required Docker images sequentially to prevent connection timeouts..." -ForegroundColor Cyan
+$images = @(
+    "postgres:18-alpine",
+    "getmeili/meilisearch:v1.7",
+    "redis:7-alpine",
+    "traefik:v3",
+    "python:3.11-slim",
+    "golang:1.22-alpine",
+    "node:18-alpine",
+    "alpine:latest"
+)
+foreach ($img in $images) {
+    Write-Host ">>> Pulling $img..."
+    docker pull $img
+}
+
+Write-Host ">>> Bootstrapping containers with Docker Compose..." -ForegroundColor Green
 docker compose up -d --build
 
 # 4. Wait for database container to become healthy

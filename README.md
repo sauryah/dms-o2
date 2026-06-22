@@ -134,6 +134,21 @@ For developers who prefer executing individual bootstrap steps:
     ```bash
     docker compose up -d --build
     ```
+
+    > [!TIP]
+    > **TLS Handshake Timeout?**
+    > If you encounter a `net/http: TLS handshake timeout` error while pulling images on a slower or congested connection, it is because Docker is downloading multiple images concurrently. You can resolve this by pre-pulling the required base/service images one-by-one:
+    > ```bash
+    > docker pull postgres:18-alpine
+    > docker pull getmeili/meilisearch:v1.7
+    > docker pull redis:7-alpine
+    > docker pull traefik:v3
+    > docker pull python:3.11-slim
+    > docker pull golang:1.22-alpine
+    > docker pull node:18-alpine
+    > docker pull alpine:latest
+    > ```
+    > Alternatively, simply run the automated `./setup.sh` (or `./setup.ps1` on Windows) which handles this sequential pre-pulling process automatically.
 3.  **Execute Database Setup & Search Synchronization**:
     ```bash
     docker compose exec django python manage.py migrate

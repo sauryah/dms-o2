@@ -55,6 +55,22 @@ elif command -v ufw &>/dev/null && sudo ufw status | grep -q "Status: active" &>
 fi
 
 # 3. Spin up Docker containers
+echo ">>> Pre-pulling required Docker images sequentially to prevent connection timeouts..."
+IMAGES=(
+    "postgres:18-alpine"
+    "getmeili/meilisearch:v1.7"
+    "redis:7-alpine"
+    "traefik:v3"
+    "python:3.11-slim"
+    "golang:1.22-alpine"
+    "node:18-alpine"
+    "alpine:latest"
+)
+for img in "${IMAGES[@]}"; do
+    echo ">>> Pulling $img..."
+    docker pull "$img" || echo ">>> WARNING: Failed to pre-pull $img, continuing..."
+done
+
 echo ">>> Bootstrapping containers with Docker Compose..."
 docker compose up -d --build
 
