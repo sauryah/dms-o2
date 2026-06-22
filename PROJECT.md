@@ -120,6 +120,11 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-22 · feat: implement bidirectional CAD-to-specification highlights, keyboard search dropdown navigation, and visual interactive rack layout grids
+- Added bidirectional hover interactions between specifications tables and SVG blueprints.
+- Implemented keyboard-only navigation for the search dropdown, supporting Tab/Shift+Tab and Arrow keys.
+- Developed an interactive HTML5 drag-and-drop Rack Grid Layout component to visually relocate dies and manage storage slots.
+
 ### 2026-06-20 · feat: implement React Query optimistic updates and SVG dimension tooltips
 - Added central optimistic state mutation triggers to speed up drag-and-drop set/die relocations.
 - Equipped the CAD vector renderer with hover and click tooltips explaining safety wear tolerances.

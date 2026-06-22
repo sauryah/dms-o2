@@ -159,6 +159,7 @@ h1, h2, h3, h4, .font-heading {
 .blueprint-dim-line {
   stroke: #10b981;
   stroke-width: 1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .blueprint-dim-text {
@@ -166,6 +167,17 @@ h1, h2, h3, h4, .font-heading {
   font-family: 'Outfit', monospace;
   font-size: 10px;
   font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-dim-group.highlighted .blueprint-dim-text {
+  fill: #60a5fa !important;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+}
+.interactive-dim-group.highlighted .blueprint-dim-line {
+  stroke: #60a5fa !important;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.8));
 }
 
 .animate-dash {

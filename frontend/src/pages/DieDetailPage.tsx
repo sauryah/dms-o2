@@ -24,6 +24,7 @@ export function DieDetailPage() {
   const [currentSize, setCurrentSize] = useState('')
   const [currentWidth, setCurrentWidth] = useState('')
   const [currentThickness, setCurrentThickness] = useState('')
+  const [highlightedDim, setHighlightedDim] = useState<string | null>(null)
 
   // Query details
   const { data: die, isLoading, error } = useQuery({
@@ -311,48 +312,108 @@ export function DieDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Specifications</h3>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Status</span>
-                    <span className="font-semibold text-slate-200">{die.status}</span>
+                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 space-y-2">
+                  <div 
+                    className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                      highlightedDim === 'status' 
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                        : 'border-transparent'
+                    }`}
+                    onMouseEnter={() => setHighlightedDim('status')}
+                    onMouseLeave={() => setHighlightedDim(null)}
+                  >
+                    <span className={highlightedDim === 'status' ? 'text-blue-400' : 'text-slate-500'}>Status</span>
+                    <span className={`font-semibold ${highlightedDim === 'status' ? 'text-blue-300' : 'text-slate-200'}`}>{die.status}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between px-2 py-1.5">
                     <span className="text-slate-500">Location</span>
                     <span className="font-semibold text-slate-200">{die.location || '—'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between px-2 py-1.5">
                     <span className="text-slate-500">Set Assignment</span>
                     <span className="font-semibold text-slate-200">{die.set_name || '—'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between px-2 py-1.5">
                     <span className="text-slate-500">Machine</span>
                     <span className="font-semibold text-slate-200">{die.machine_name || '—'}</span>
+                  </div>
+                  <div 
+                    className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                      highlightedDim === 'casing' 
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                        : 'border-transparent'
+                    }`}
+                    onMouseEnter={() => setHighlightedDim('casing')}
+                    onMouseLeave={() => setHighlightedDim(null)}
+                  >
+                    <span className={highlightedDim === 'casing' ? 'text-blue-400' : 'text-slate-500'}>Casing</span>
+                    <span className={`font-semibold ${highlightedDim === 'casing' ? 'text-blue-300' : 'text-slate-200'}`}>{die.casing || '—'}</span>
                   </div>
 
                   {die.die_type === 'ROUND' ? (
                     <>
-                      <div className="flex justify-between border-t border-slate-800/80 pt-3">
-                        <span className="text-slate-500">Original Size</span>
-                        <span className="font-semibold text-slate-200">{die.original_size} mm</span>
+                      <div 
+                        className={`flex justify-between border-t border-slate-800/80 mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                          highlightedDim === 'original_size' 
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
+                            : 'border-transparent'
+                        }`}
+                        onMouseEnter={() => setHighlightedDim('original_size')}
+                        onMouseLeave={() => setHighlightedDim(null)}
+                      >
+                        <span className={highlightedDim === 'original_size' ? 'text-indigo-400' : 'text-slate-500'}>Original Size</span>
+                        <span className={`font-semibold ${highlightedDim === 'original_size' ? 'text-indigo-300' : 'text-slate-200'}`}>{die.original_size} mm</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Current Size</span>
-                        <span className="font-semibold text-slate-200">{die.current_size} mm</span>
+                      <div 
+                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                          highlightedDim === 'current_size' 
+                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                            : 'border-transparent'
+                        }`}
+                        onMouseEnter={() => setHighlightedDim('current_size')}
+                        onMouseLeave={() => setHighlightedDim(null)}
+                      >
+                        <span className={highlightedDim === 'current_size' ? 'text-blue-400' : 'text-slate-500'}>Current Size</span>
+                        <span className={`font-semibold ${highlightedDim === 'current_size' ? 'text-blue-300' : 'text-slate-200'}`}>{die.current_size} mm</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex justify-between border-t border-slate-800/80 pt-3">
-                        <span className="text-slate-500">Original Width × Thickness</span>
-                        <span className="font-semibold text-slate-200">{die.original_width} × {die.original_thickness} mm</span>
+                      <div 
+                        className={`flex justify-between border-t border-slate-800/80 mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                          highlightedDim === 'original_width_thickness' 
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
+                            : 'border-transparent'
+                        }`}
+                        onMouseEnter={() => setHighlightedDim('original_width_thickness')}
+                        onMouseLeave={() => setHighlightedDim(null)}
+                      >
+                        <span className={highlightedDim === 'original_width_thickness' ? 'text-indigo-400' : 'text-slate-500'}>Original Size (W×T)</span>
+                        <span className={`font-semibold ${highlightedDim === 'original_width_thickness' ? 'text-indigo-300' : 'text-slate-200'}`}>{die.original_width} × {die.original_thickness} mm</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Current Width × Thickness</span>
-                        <span className="font-semibold text-slate-200">{die.current_width} × {die.current_thickness} mm</span>
+                      <div 
+                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                          highlightedDim === 'width_thickness' 
+                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                            : 'border-transparent'
+                        }`}
+                        onMouseEnter={() => setHighlightedDim('width_thickness')}
+                        onMouseLeave={() => setHighlightedDim(null)}
+                      >
+                        <span className={highlightedDim === 'width_thickness' ? 'text-blue-400' : 'text-slate-500'}>Current Size (W×T)</span>
+                        <span className={`font-semibold ${highlightedDim === 'width_thickness' ? 'text-blue-300' : 'text-slate-200'}`}>{die.current_width} × {die.current_thickness} mm</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Radius</span>
-                        <span className="font-semibold text-slate-200">{die.radius} mm</span>
+                      <div 
+                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                          highlightedDim === 'radius' 
+                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                            : 'border-transparent'
+                        }`}
+                        onMouseEnter={() => setHighlightedDim('radius')}
+                        onMouseLeave={() => setHighlightedDim(null)}
+                      >
+                        <span className={highlightedDim === 'radius' ? 'text-blue-400' : 'text-slate-500'}>Radius</span>
+                        <span className={`font-semibold ${highlightedDim === 'radius' ? 'text-blue-300' : 'text-slate-200'}`}>{die.radius} mm</span>
                       </div>
                     </>
                   )}
@@ -361,7 +422,11 @@ export function DieDetailPage() {
 
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">CAD Blueprint</h3>
-                <DieBlueprint die={die} />
+                <DieBlueprint 
+                  die={die} 
+                  activeHighlight={highlightedDim}
+                  onHoverDim={setHighlightedDim}
+                />
               </div>
 
               <div className="md:col-span-2 lg:col-span-1">

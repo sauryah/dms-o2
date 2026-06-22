@@ -294,10 +294,10 @@ export function DashboardPage() {
                   onKeyDown={(e) => {
                     if (!showDropdown || !searchDies || searchDies.length === 0) return;
                     const maxLen = Math.min(searchDies.length, 6);
-                    if (e.key === 'ArrowDown') {
+                    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
                       e.preventDefault();
                       setActiveIndex(prev => (prev < maxLen - 1 ? prev + 1 : prev));
-                    } else if (e.key === 'ArrowUp') {
+                    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
                       e.preventDefault();
                       setActiveIndex(prev => (prev > -1 ? prev - 1 : prev));
                     } else if (e.key === 'Enter') {
@@ -368,7 +368,7 @@ export function DashboardPage() {
                           )
                         })}
                         <div className="p-2 bg-slate-950/60 text-center text-slate-500 text-[10px] font-mono border-t border-slate-800/40">
-                          Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓</kbd> / <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↑</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to select
+                          Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓/↑</kbd> or <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Tab</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to open
                         </div>
                         {searchDies.length > 6 && (
                           <div 

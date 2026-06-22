@@ -28,8 +28,8 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
         <div className="flex justify-between items-start mb-4 gap-4">
           <div className="flex-1 min-w-0">
             <span className="text-xxs font-mono font-bold text-indigo-400/80 uppercase tracking-widest block mb-1">Flat Die</span>
-            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm` : 'N/A'}>
-              {die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm` : 'N/A'}
+            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm${die.radius ? ` (R: ${die.radius} mm)` : ''}` : 'N/A'}>
+              {die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm${die.radius ? ` (R: ${die.radius} mm)` : ''}` : 'N/A'}
             </h3>
           </div>
           <div className="flex flex-col items-end gap-2.5 shrink-0">

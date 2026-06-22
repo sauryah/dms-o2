@@ -69,6 +69,9 @@ graph TD
 ## 🚀 Features
 
 *   **Precision Die Tracking**: Explicit modeling for **Round dies** (casing, current size, original size) and **Flat dies** (width, thickness, corner radius).
+*   **Bidirectional CAD Highlights**: Hovering over specifications dynamically highlights CAD blueprint elements (and vice-versa) with smooth vector glows.
+*   **Visual Storage Rack Map**: Dynamic grid visualization of racks and shelves with drag-and-drop die storage relocation.
+*   **Enhanced Keyboard Navigation**: Fast search indexing search dropdown traversal using Tab/Shift+Tab and Arrow keys.
 *   **Immutable Audit Logging**: Signal-driven system capturing all changes to status, location, tool sets, and dimensions.
 *   **Fuzzy & Parametric Search**: Combined lookup using Go, Meilisearch (fuzzy string matching) and PostgreSQL (decimal range queries).
 *   **Granular RBAC Matrix**:

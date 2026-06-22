@@ -75,7 +75,7 @@ Authorization: Bearer <your_jwt_access_token>
 | **Dies** | `GET` | `/api/dies/` | Public | Lists all dies with range filters |
 | | `POST` | `/api/dies/` | Admin / Root | Registers a new die |
 | | `GET` | `/api/dies/{id}/` | Public | Details a single die + change log |
-| | `PATCH`| `/api/dies/{id}/` | Admin / Root | Partial updates (casing, status, remarks) |
+| | `PATCH`| `/api/dies/{id}/` | Admin / Root | Partial updates (casing, status, location, remarks) |
 | | `DELETE`| `/api/dies/{id}/` | Admin / Root | Deletes die from inventory |
 | **Assets**| `GET` | `/api/categories/` | Public | Lists machine categories |
 | | `POST` | `/api/categories/` | Admin / Root | Creates a new machine category |

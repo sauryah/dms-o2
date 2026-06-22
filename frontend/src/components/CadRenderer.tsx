@@ -16,9 +16,11 @@ interface DieData {
 
 interface DieBlueprintProps {
   die: DieData | null
+  activeHighlight?: string | null
+  onHoverDim?: (dim: string | null) => void
 }
 
-export function DieBlueprint({ die }: DieBlueprintProps) {
+export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintProps) {
   if (!die) return null
 
   const isRound = die.die_type === 'ROUND'
@@ -77,7 +79,15 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
             <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
             <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
             {die.original_size && (
-              <circle cx="100" cy="100" r="75" fill="none" className="blueprint-outline-secondary" />
+              <circle 
+                cx="100" 
+                cy="100" 
+                r="75" 
+                fill="none" 
+                className={`blueprint-outline-secondary transition-all duration-300 ${
+                  activeHighlight === 'original_size' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
+                }`} 
+              />
             )}
             <circle 
               cx="100" 
@@ -88,7 +98,7 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
             />
             <circle cx="100" cy="100" r="3" fill="#3b82f6" />
             <g
-              className="interactive-dim-group"
+              className={`interactive-dim-group${activeHighlight === 'current_size' ? ' highlighted' : ''}`}
               role="button"
               tabIndex={0}
               onClick={() => handleDimClick(
@@ -96,12 +106,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                 "Specifies the active extrusion diameter of the round die (mm).",
                 "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
               )}
-              onMouseEnter={() => handleDimMouseEnter(
-                "Diameter / Current Size",
-                "Specifies the active extrusion diameter of the round die (mm).",
-                "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
-              )}
-              onMouseLeave={handleDimMouseLeave}
+              onMouseEnter={() => {
+                handleDimMouseEnter(
+                  "Diameter / Current Size",
+                  "Specifies the active extrusion diameter of the round die (mm).",
+                  "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
+                )
+                onHoverDim?.('current_size')
+              }}
+              onMouseLeave={() => {
+                handleDimMouseLeave()
+                onHoverDim?.(null)
+              }}
               onKeyDown={(e) => handleDimKeyDown(e,
                 "Diameter / Current Size",
                 "Specifies the active extrusion diameter of the round die (mm).",
@@ -119,7 +135,7 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
             </g>
             {die.original_size && die.original_size !== die.current_size && (
               <g
-                className="interactive-dim-group"
+                className={`interactive-dim-group${activeHighlight === 'original_size' ? ' highlighted' : ''}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => handleDimClick(
@@ -127,12 +143,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                   "The brand-new factory dimension of the die before any operational wear (mm).",
                   "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
                 )}
-                onMouseEnter={() => handleDimMouseEnter(
-                  "Original Size",
-                  "The brand-new factory dimension of the die before any operational wear (mm).",
-                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
-                )}
-                onMouseLeave={handleDimMouseLeave}
+                onMouseEnter={() => {
+                  handleDimMouseEnter(
+                    "Original Size",
+                    "The brand-new factory dimension of the die before any operational wear (mm).",
+                    "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                  )
+                  onHoverDim?.('original_size')
+                }}
+                onMouseLeave={() => {
+                  handleDimMouseLeave()
+                  onHoverDim?.(null)
+                }}
                 onKeyDown={(e) => handleDimKeyDown(e,
                   "Original Size",
                   "The brand-new factory dimension of the die before any operational wear (mm).",
@@ -174,7 +196,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                 <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
                 <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
                 {die.original_width && (
-                  <rect x={ox} y={oy} width={ow} height={ot} rx={r} ry={r} fill="none" className="blueprint-outline-secondary" />
+                  <rect 
+                    x={ox} 
+                    y={oy} 
+                    width={ow} 
+                    height={ot} 
+                    rx={r} 
+                    ry={r} 
+                    fill="none" 
+                    className={`blueprint-outline-secondary transition-all duration-300 ${
+                      activeHighlight === 'original_width_thickness' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
+                    }`} 
+                  />
                 )}
                 <rect 
                   x={x} 
@@ -188,7 +221,7 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                 />
                 <circle cx="100" cy="100" r="3" fill="#3b82f6" />
                 <g
-                  className="interactive-dim-group"
+                  className={`interactive-dim-group${activeHighlight === 'current_width' ? ' highlighted' : ''}`}
                   role="button"
                   tabIndex={0}
                   onClick={() => handleDimClick(
@@ -196,12 +229,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                     "Active width dimension of the flat die extrusion path (mm).",
                     "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
                   )}
-                  onMouseEnter={() => handleDimMouseEnter(
-                    "Width",
-                    "Active width dimension of the flat die extrusion path (mm).",
-                    "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
-                  )}
-                  onMouseLeave={handleDimMouseLeave}
+                  onMouseEnter={() => {
+                    handleDimMouseEnter(
+                      "Width",
+                      "Active width dimension of the flat die extrusion path (mm).",
+                      "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
+                    )
+                    onHoverDim?.('current_width')
+                  }}
+                  onMouseLeave={() => {
+                    handleDimMouseLeave()
+                    onHoverDim?.(null)
+                  }}
                   onKeyDown={(e) => handleDimKeyDown(e,
                     "Width",
                     "Active width dimension of the flat die extrusion path (mm).",
@@ -220,7 +259,7 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                   </text>
                 </g>
                 <g
-                  className="interactive-dim-group"
+                  className={`interactive-dim-group${activeHighlight === 'current_thickness' ? ' highlighted' : ''}`}
                   role="button"
                   tabIndex={0}
                   onClick={() => handleDimClick(
@@ -228,12 +267,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                     "Thickness dimension of the flat extrusion channel (mm).",
                     "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
                   )}
-                  onMouseEnter={() => handleDimMouseEnter(
-                    "Thickness",
-                    "Thickness dimension of the flat extrusion channel (mm).",
-                    "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
-                  )}
-                  onMouseLeave={handleDimMouseLeave}
+                  onMouseEnter={() => {
+                    handleDimMouseEnter(
+                      "Thickness",
+                      "Thickness dimension of the flat extrusion channel (mm).",
+                      "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
+                    )
+                    onHoverDim?.('current_thickness')
+                  }}
+                  onMouseLeave={() => {
+                    handleDimMouseLeave()
+                    onHoverDim?.(null)
+                  }}
                   onKeyDown={(e) => handleDimKeyDown(e,
                     "Thickness",
                     "Thickness dimension of the flat extrusion channel (mm).",
@@ -252,7 +297,7 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                 </g>
                 {radius > 0 && (
                   <g
-                    className="interactive-dim-group"
+                    className={`interactive-dim-group${activeHighlight === 'radius' ? ' highlighted' : ''}`}
                     role="button"
                     tabIndex={0}
                     onClick={() => handleDimClick(
@@ -260,12 +305,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
                       "Fillet radius of the flat die corners (mm).",
                       "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
                     )}
-                    onMouseEnter={() => handleDimMouseEnter(
-                      "Corner Radius",
-                      "Fillet radius of the flat die corners (mm).",
-                      "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
-                    )}
-                    onMouseLeave={handleDimMouseLeave}
+                    onMouseEnter={() => {
+                      handleDimMouseEnter(
+                        "Corner Radius",
+                        "Fillet radius of the flat die corners (mm).",
+                        "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
+                      )
+                      onHoverDim?.('radius')
+                    }}
+                    onMouseLeave={() => {
+                      handleDimMouseLeave()
+                      onHoverDim?.(null)
+                    }}
                     onKeyDown={(e) => handleDimKeyDown(e,
                       "Corner Radius",
                       "Fillet radius of the flat die corners (mm).",
@@ -288,7 +339,9 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
       
       <div className="flex justify-between items-center text-slate-500 text-[9px] font-mono mt-3 pt-2 border-t border-slate-800/80">
         <span 
-          className="hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors"
+          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
+            activeHighlight === 'casing' ? 'text-blue-400 font-bold scale-105' : ''
+          }`}
           role="button"
           tabIndex={0}
           onClick={() => handleDimClick(
@@ -296,12 +349,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
             "The outer supporting ring housing the die insert.",
             "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
           )}
-          onMouseEnter={() => handleDimMouseEnter(
-            "Casing Group",
-            "The outer supporting ring housing the die insert.",
-            "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
-          )}
-          onMouseLeave={handleDimMouseLeave}
+          onMouseEnter={() => {
+            handleDimMouseEnter(
+              "Casing Group",
+              "The outer supporting ring housing the die insert.",
+              "Maintenance rule: Inspect casing every 100 cycles for fatigue cracks. Casing dimensions must strictly match set adapter specs."
+            )
+            onHoverDim?.('casing')
+          }}
+          onMouseLeave={() => {
+            handleDimMouseLeave()
+            onHoverDim?.(null)
+          }}
           onKeyDown={(e) => handleDimKeyDown(e,
             "Casing Group",
             "The outer supporting ring housing the die insert.",
@@ -312,7 +371,9 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
           Casing: {die.casing || '—'}
         </span>
         <span 
-          className="hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors"
+          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
+            activeHighlight === 'status' ? 'text-blue-400 font-bold scale-105' : ''
+          }`}
           role="button"
           tabIndex={0}
           onClick={() => handleDimClick(
@@ -320,12 +381,18 @@ export function DieBlueprint({ die }: DieBlueprintProps) {
             `Current Operational Status: ${die.status}.`,
             "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
           )}
-          onMouseEnter={() => handleDimMouseEnter(
-            "Operational Status",
-            `Current Operational Status: ${die.status}.`,
-            "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
-          )}
-          onMouseLeave={handleDimMouseLeave}
+          onMouseEnter={() => {
+            handleDimMouseEnter(
+              "Operational Status",
+              `Current Operational Status: ${die.status}.`,
+              "AVAILABLE means ready for install. RUNNING means active on a machine. CLEANING, POLISHING, and MAINTENANCE prevent defects. DAMAGED or SCRAPPED represent offline states."
+            )
+            onHoverDim?.('status')
+          }}
+          onMouseLeave={() => {
+            handleDimMouseLeave()
+            onHoverDim?.(null)
+          }}
           onKeyDown={(e) => handleDimKeyDown(e,
             "Operational Status",
             `Current Operational Status: ${die.status}.`,

@@ -22,6 +22,7 @@ import { DiesTable } from '../components/DiesTable'
 import { CreateDieModal } from '../components/CreateDieModal'
 import { FilterPanel } from '../components/FilterPanel'
 import { DieStats } from '../components/DieStats'
+import { RackLayoutGrid } from '../components/RackLayoutGrid'
 
 export function InventoryPage() {
   const { request } = useApi()
@@ -30,6 +31,7 @@ export function InventoryPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
@@ -126,6 +128,48 @@ export function InventoryPage() {
     },
     onError: (err) => {
       setCreateError(err.message)
+    }
+  })
+
+  // Mutation for updating die location (visual grid)
+  const moveDieLocationMutation = useMutation({
+    mutationFn: ({ dieId, location }: { dieId: string, location: string }) => request(`/api/dies/${dieId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ location })
+    }),
+    onMutate: async ({ dieId, location }) => {
+      await queryClient.cancelQueries({ queryKey: ['dies'] })
+      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+      const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
+      const previousSearch = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+
+      const updateLoc = (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((d: any) => String(d.die_id) === String(dieId) ? { ...d, location } : d)
+      }
+      queryClient.setQueriesData({ queryKey: ['dies'] }, updateLoc)
+      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLoc)
+
+      return { previousDies, previousSearch }
+    },
+    onError: (err, variables, context: any) => {
+      if (context) {
+        if (context.previousDies) {
+          context.previousDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+        if (context.previousSearch) {
+          context.previousSearch.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+        }
+      }
+      showToast(`Failed to move die: ${err.message}`, 'error')
+    },
+    onSuccess: (data, variables) => {
+      showToast(`Successfully moved die ${variables.dieId} to ${variables.location}.`, 'success')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
     }
   })
 
@@ -691,6 +735,14 @@ export function InventoryPage() {
     return null
   }, [selectedNode, setsList, machinesList])
 
+  const activeDiesList = useMemo(() => {
+    if (activeView === 'search') return dies || []
+    if (activeView === 'machine') return selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
+    if (activeView === 'set') return selectedSetData?.set.dies || []
+    if (activeView === 'unassigned') return unassignedDies || []
+    return []
+  }, [activeView, dies, selectedMachine, selectedSetData, unassignedDies])
+
   const canCreate = role === 'ROOT' || role === 'ADMIN'
 
   const sidebarTree = useMemo(() => (
@@ -1027,6 +1079,32 @@ export function InventoryPage() {
                 </button>
               </div>
 
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-1 rounded-xl shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                    viewMode === 'list' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-slate-450 hover:text-white'
+                  }`}
+                >
+                  List View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                    viewMode === 'grid' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-slate-450 hover:text-white'
+                  }`}
+                >
+                  Rack Grid View
+                </button>
+              </div>
+
               {canCreate && (
                 <button 
                   onClick={() => setIsCreateOpen(true)}
@@ -1127,20 +1205,29 @@ export function InventoryPage() {
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <Database className="h-4 w-4 text-blue-500" />
-                            <span>Filtered Catalog</span>
+                            <span>{viewMode === 'grid' ? 'Location Rack Grid' : 'Filtered Catalog'}</span>
                           </h3>
                           <span className="text-sm font-semibold text-slate-400">
                             Showing {dies.length} {dies.length === 1 ? 'result' : 'results'}
                           </span>
                         </div>
-                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
-                          <DiesTable 
-                            diesList={dies} 
-                            navigate={navigate} 
-                            onDragStartDie={handleDragStartDie}
-                            onDragEndDie={handleDragEndDie}
+                        {viewMode === 'grid' ? (
+                          <RackLayoutGrid 
+                            dies={activeDiesList} 
+                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            canMove={canCreate} 
+                            navigate={navigate}
                           />
-                        </div>
+                        ) : (
+                          <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                            <DiesTable 
+                              diesList={dies} 
+                              navigate={navigate} 
+                              onDragStartDie={handleDragStartDie}
+                              onDragEndDie={handleDragEndDie}
+                            />
+                          </div>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -1183,9 +1270,16 @@ export function InventoryPage() {
                       <div className="pt-4">
                         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                           <Layers className="h-4 w-4 text-indigo-400" />
-                          <span>Assigned Sets</span>
+                          <span>{viewMode === 'grid' ? 'Location Rack Grid' : 'Assigned Sets'}</span>
                         </h3>
-                        {selectedMachine.sets.length === 0 ? (
+                        {viewMode === 'grid' ? (
+                          <RackLayoutGrid 
+                            dies={activeDiesList} 
+                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            canMove={canCreate} 
+                            navigate={navigate}
+                          />
+                        ) : selectedMachine.sets.length === 0 ? (
                           <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 italic border border-slate-800/40">
                             No sets found for this machine matching filters.
                           </div>
@@ -1311,16 +1405,25 @@ export function InventoryPage() {
                       <div className="space-y-4">
                         <h3 className="text-xs font-semibold text-slate-505 uppercase tracking-wider flex items-center gap-2">
                           <Layers className="h-4 w-4 text-indigo-400" />
-                          <span>Dies Inventory</span>
+                          <span>{viewMode === 'grid' ? 'Location Rack Grid' : 'Dies Inventory'}</span>
                         </h3>
-                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
-                          <DiesTable 
-                            diesList={selectedSetData.set.dies} 
-                            navigate={navigate} 
-                            onDragStartDie={handleDragStartDie}
-                            onDragEndDie={handleDragEndDie}
+                        {viewMode === 'grid' ? (
+                          <RackLayoutGrid 
+                            dies={activeDiesList} 
+                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            canMove={canCreate} 
+                            navigate={navigate}
                           />
-                        </div>
+                        ) : (
+                          <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                            <DiesTable 
+                              diesList={selectedSetData.set.dies} 
+                              navigate={navigate} 
+                              onDragStartDie={handleDragStartDie}
+                              onDragEndDie={handleDragEndDie}
+                            />
+                          </div>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -1380,18 +1483,27 @@ export function InventoryPage() {
 
                       {/* Dies Table */}
                       <div className="space-y-4">
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                          <Sliders className="h-4 w-4 text-amber-400" />
-                          <span>Dies Inventory</span>
+                        <h3 className="text-xs font-semibold text-slate-505 uppercase tracking-wider flex items-center gap-2">
+                          <Sliders className="h-4 w-4 text-amber-450" />
+                          <span>{viewMode === 'grid' ? 'Location Rack Grid' : 'Dies Inventory'}</span>
                         </h3>
-                        <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
-                          <DiesTable 
-                            diesList={unassignedDies} 
-                            navigate={navigate} 
-                            onDragStartDie={handleDragStartDie}
-                            onDragEndDie={handleDragEndDie}
+                        {viewMode === 'grid' ? (
+                          <RackLayoutGrid 
+                            dies={activeDiesList} 
+                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            canMove={canCreate} 
+                            navigate={navigate}
                           />
-                        </div>
+                        ) : (
+                          <div className="glass-panel rounded-2xl p-6 border border-slate-800/40">
+                            <DiesTable 
+                              diesList={unassignedDies} 
+                              navigate={navigate} 
+                              onDragStartDie={handleDragStartDie}
+                              onDragEndDie={handleDragEndDie}
+                            />
+                          </div>
+                        )}
                       </div>
                     </>
                   ) : (

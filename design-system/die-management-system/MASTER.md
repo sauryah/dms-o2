@@ -175,6 +175,15 @@ All card layouts and panels must use standardized box-shadow styles:
 }
 ```
 
+### Visual Storage Rack Grid & Drag-Drop Map
+*   **Grid Containers**: Renders dynamic grid cells aligned under Rack columns and Shelf rows.
+*   **Hover/Drag States**: Drag-over target cells must highlight with a glowing blue border and blue shadow depth (`bg-blue-600/10 border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.25)]`).
+*   **Draggable Nodes**: Hovering over draggable die badges should display a detailed floating card/tooltip.
+
+### Bidirectional Hover Highlighting
+*   **Vector Blueprint Highlights**: SVG dimension lines and text trigger highlights with stroke glows.
+*   **Specification Table Row Highlights**: Hovering over specification rows applies a blue backdrop glow and transitions text colors using `cubic-bezier` timing curves (`transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)`).
+
 ---
 
 ## 4. Page Design Guidelines
