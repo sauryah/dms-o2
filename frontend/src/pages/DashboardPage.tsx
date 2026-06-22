@@ -128,6 +128,7 @@ export function DashboardPage() {
   
   const [showFilters, setShowFilters] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
   const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -234,8 +235,31 @@ export function DashboardPage() {
                   type="text" 
                   placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
                   value={q}
-                  onChange={(e) => { setQ(e.target.value); setShowDropdown(true); }}
-                  onFocus={() => setShowDropdown(true)}
+                  onChange={(e) => { setQ(e.target.value); setShowDropdown(true); setActiveIndex(-1); }}
+                  onFocus={() => { setShowDropdown(true); setActiveIndex(-1); }}
+                  onKeyDown={(e) => {
+                    if (!showDropdown || !searchDies || searchDies.length === 0) return;
+                    const maxLen = Math.min(searchDies.length, 6);
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setActiveIndex(prev => (prev < maxLen - 1 ? prev + 1 : prev));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setActiveIndex(prev => (prev > -1 ? prev - 1 : prev));
+                    } else if (e.key === 'Enter') {
+                      if (activeIndex >= 0 && activeIndex < maxLen) {
+                        e.preventDefault();
+                        const selectedDie = searchDies[activeIndex];
+                        navigate(`/dies/${selectedDie.die_id}`);
+                        setQ('');
+                        setShowDropdown(false);
+                        setActiveIndex(-1);
+                      }
+                    } else if (e.key === 'Escape') {
+                      setShowDropdown(false);
+                      setActiveIndex(-1);
+                    }
+                  }}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
                 />
 
@@ -253,10 +277,11 @@ export function DashboardPage() {
                       </div>
                     ) : (
                       <>
-                        {searchDies.slice(0, 6).map((die: any) => {
+                        {searchDies.slice(0, 6).map((die: any, index: number) => {
                           const sizeStr = die.die_type === 'ROUND' 
                             ? `${die.size || die.rounddie?.current_size || '—'} mm` 
                             : `${die.width || die.flatdie?.current_width || '—'} × ${die.thickness || die.flatdie?.current_thickness || '—'} mm`
+                          const isHighlighted = index === activeIndex
                           return (
                             <div 
                               key={die.die_id}
@@ -264,8 +289,11 @@ export function DashboardPage() {
                                 navigate(`/dies/${die.die_id}`)
                                 setQ('')
                                 setShowDropdown(false)
+                                setActiveIndex(-1)
                               }}
-                              className="p-4 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition duration-150"
+                              className={`p-4 cursor-pointer flex justify-between items-center transition duration-150 ${
+                                isHighlighted ? 'bg-slate-800/80 border-l-2 border-blue-500' : 'hover:bg-slate-800'
+                              }`}
                             >
                               <div className="flex flex-col text-left">
                                 <span className="font-bold text-white text-sm">{sizeStr}</span>
@@ -285,6 +313,9 @@ export function DashboardPage() {
                             </div>
                           )
                         })}
+                        <div className="p-2 bg-slate-950/60 text-center text-slate-500 text-[10px] font-mono border-t border-slate-800/40">
+                          Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓</kbd> / <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↑</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to select
+                        </div>
                         {searchDies.length > 6 && (
                           <div 
                             onClick={() => {
