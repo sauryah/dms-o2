@@ -28,7 +28,7 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
         <div className="flex justify-between items-start mb-4 gap-4">
           <div className="flex-1 min-w-0">
             <span className="text-xxs font-mono font-bold text-blue-400/80 uppercase tracking-widest block mb-1">Round Die</span>
-            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={die.die_id}>{die.die_id}</h3>
+            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={`${die.current_size || 'N/A'} mm`}>{die.current_size || 'N/A'} mm</h3>
           </div>
           <div className="flex flex-col items-end gap-2.5 shrink-0">
             <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
@@ -46,8 +46,8 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
       
       <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs border-t border-slate-800/80 pt-4 mt-2">
         <div>
-          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Size</span>
-          <span className="font-semibold text-slate-200 font-mono">{die.current_size || 'N/A'} mm</span>
+          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Die ID</span>
+          <span className="font-semibold text-slate-200 font-mono truncate block" title={die.die_id}>{die.die_id}</span>
         </div>
         <div>
           <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Casing</span>
