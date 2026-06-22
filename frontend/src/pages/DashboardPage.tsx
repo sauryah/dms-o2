@@ -268,9 +268,9 @@ export function DashboardPage() {
                               className="p-4 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition duration-150"
                             >
                               <div className="flex flex-col text-left">
-                                <span className="font-bold text-white text-sm">{die.die_id}</span>
+                                <span className="font-bold text-white text-sm">{sizeStr}</span>
                                 <span className="text-xs text-slate-400 mt-0.5">
-                                  {die.die_type} • {sizeStr} • {die.location || 'No Location'}
+                                  {die.die_type} • {die.die_id} • {die.location || 'No Location'}
                                 </span>
                               </div>
                               <span className={`px-2 py-0.5 text-xxs font-bold rounded-full border ${
