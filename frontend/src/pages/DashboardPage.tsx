@@ -12,6 +12,14 @@ interface StatusDistributionChartProps {
 
 function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
   const total = Object.values(stats).reduce((sum, val) => sum + val, 0)
+  const [hoveredSegment, setHoveredSegment] = useState<any>(null)
+  const [isAnimated, setIsAnimated] = useState(false)
+
+  useEffect(() => {
+    // Delay slightly to trigger the SVG draw-in animation on mount
+    const timer = setTimeout(() => setIsAnimated(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   const statusThemeColors: Record<string, string> = {
     AVAILABLE: '#10b981', // Emerald
@@ -63,47 +71,93 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
           <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full" viewBox="0 0 140 140">
               <circle cx="70" cy="70" r="50" fill="none" stroke="#111827" strokeWidth="10" />
-              {segments.map((seg) => (
-                <circle
-                  key={seg.statusKey}
-                  cx="70"
-                  cy="70"
-                  r="50"
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth="10"
-                  strokeDasharray={seg.strokeDasharray}
-                  strokeDashoffset={seg.strokeDashoffset}
-                  transform="rotate(-90 70 70)"
-                  strokeLinecap="round"
-                  className="transition-all duration-300 hover:stroke-[12] cursor-pointer"
-                >
-                  <title>{`${seg.statusKey}: ${seg.count} (${seg.pct}%)`}</title>
-                </circle>
-              ))}
-              <text x="70" y="65" textAnchor="middle" className="fill-slate-500 font-heading text-[9px] font-bold uppercase tracking-wider">
-                Total
-              </text>
-              <text x="70" y="86" textAnchor="middle" className="fill-white font-heading text-2xl font-black">
-                {total}
-              </text>
+              {segments.map((seg) => {
+                const active = hoveredSegment?.statusKey === seg.statusKey
+                return (
+                  <circle
+                    key={seg.statusKey}
+                    cx="70"
+                    cy="70"
+                    r="50"
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth={active ? "13" : "10"}
+                    strokeDasharray={isAnimated ? seg.strokeDasharray : `0 ${circumference}`}
+                    strokeDashoffset={seg.strokeDashoffset}
+                    transform="rotate(-90 70 70)"
+                    strokeLinecap="round"
+                    onMouseEnter={() => setHoveredSegment(seg)}
+                    onMouseLeave={() => setHoveredSegment(null)}
+                    className="transition-all duration-500 ease-out cursor-pointer"
+                  />
+                )
+              })}
+              
+              {hoveredSegment ? (
+                <>
+                  <text 
+                    x="70" 
+                    y="63" 
+                    textAnchor="middle" 
+                    className="font-heading text-[8px] font-black uppercase tracking-wider transition-all duration-300"
+                    style={{ fill: hoveredSegment.color }}
+                  >
+                    {hoveredSegment.statusKey}
+                  </text>
+                  <text 
+                    x="70" 
+                    y="82" 
+                    textAnchor="middle" 
+                    className="fill-white font-heading text-base font-extrabold transition-all duration-300"
+                  >
+                    {hoveredSegment.count}
+                  </text>
+                  <text 
+                    x="70" 
+                    y="95" 
+                    textAnchor="middle" 
+                    className="fill-slate-400 font-heading text-[9px] font-semibold transition-all duration-300"
+                  >
+                    {hoveredSegment.pct}%
+                  </text>
+                </>
+              ) : (
+                <>
+                  <text x="70" y="65" textAnchor="middle" className="fill-slate-500 font-heading text-[9px] font-bold uppercase tracking-wider">
+                    Total
+                  </text>
+                  <text x="70" y="86" textAnchor="middle" className="fill-white font-heading text-2xl font-black">
+                    {total}
+                  </text>
+                </>
+              )}
             </svg>
           </div>
 
           {/* Legend Grid */}
           <div className="flex-grow space-y-1.5 w-full sm:w-auto">
-            {segments.map((seg) => (
-              <div key={seg.statusKey} className="flex items-center justify-between text-xs py-1 border-b border-slate-800/40">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full dot-glow" style={{ backgroundColor: seg.color }} />
-                  <span className="font-semibold text-slate-300">{seg.statusKey}</span>
+            {segments.map((seg) => {
+              const active = hoveredSegment?.statusKey === seg.statusKey
+              return (
+                <div 
+                  key={seg.statusKey} 
+                  onMouseEnter={() => setHoveredSegment(seg)}
+                  onMouseLeave={() => setHoveredSegment(null)}
+                  className={`flex items-center justify-between text-xs py-1 px-2 rounded-lg border-b border-slate-800/40 transition-colors duration-250 cursor-pointer ${
+                    active ? 'bg-slate-850/60 border-slate-800/80 text-white' : 'hover:bg-slate-800/20'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full dot-glow" style={{ backgroundColor: seg.color }} />
+                    <span className={`font-semibold transition-colors duration-200 ${active ? 'text-white' : 'text-slate-300'}`}>{seg.statusKey}</span>
+                  </div>
+                  <div className="text-slate-400 font-mono">
+                    <span className="text-slate-200 font-bold">{seg.count}</span>
+                    <span className="text-[9px] text-slate-500 ml-1">({seg.pct}%)</span>
+                  </div>
                 </div>
-                <div className="text-slate-400 font-mono">
-                  <span className="text-slate-200 font-bold">{seg.count}</span>
-                  <span className="text-[9px] text-slate-500 ml-1">({seg.pct}%)</span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
