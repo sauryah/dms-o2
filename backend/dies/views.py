@@ -38,6 +38,7 @@ class DieViewSet(viewsets.ModelViewSet):
     """
     queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine')
     lookup_field = 'die_id'
+    lookup_value_regex = '[^?#]+'
     permission_classes = [IsAdminOrRoot]
 
     def get_serializer_class(self):
