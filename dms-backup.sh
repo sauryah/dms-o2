@@ -49,9 +49,21 @@ case "$ACTION" in
             exit 0
         fi
         
+        # Set up an interrupt and exit trap to ensure services are restarted
+        cleanup() {
+            echo ">>> Cleanup: Ensuring database client services (django, worker, go-api) are running..."
+            docker compose start django worker go-api || true
+        }
+        trap cleanup EXIT INT TERM
+        
+        echo ">>> Stopping database client services (django, worker, go-api) to release active connections..."
+        docker compose stop django worker go-api
+        
         echo ">>> Restoring database from ./backups/$FILE..."
-        # Run pg_restore inside the backup container (which matches the PostgreSQL 18 server version)
+        # Disable set -e temporarily since pg_restore with --clean returns non-zero when dropping non-existent tables/indexes (which is expected)
+        set +e
         docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup pg_restore -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --no-owner "/backups/$FILE"
+        set -e
         
         echo ">>> Rebuilding Meilisearch search index..."
         docker compose exec -T django python manage.py sync_search
