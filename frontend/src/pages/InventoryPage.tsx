@@ -599,8 +599,20 @@ export function InventoryPage() {
       }
     })
 
+    // Index sets by machine ID in O(S) time to avoid O(M * S) nested iterations
+    const setsByMachine: Record<string | number, any[]> = {}
+    setsList?.forEach((set: any) => {
+      if (set.machine) {
+        if (!setsByMachine[set.machine]) {
+          setsByMachine[set.machine] = []
+        }
+        setsByMachine[set.machine].push(set)
+      }
+    })
+
     const machinesWithData = (machinesList || []).map((machine: any) => {
-      const machineSets = (setsList || []).filter((s: any) => s.machine === machine.id).map((set: any) => {
+      const setsForMachine = setsByMachine[machine.id] || []
+      const machineSets = setsForMachine.map((set: any) => {
         const setDies = diesBySet[set.id] || []
         return {
           ...set,

@@ -168,7 +168,7 @@ class AuthTests(APITestCase):
         # Admin token POST /api/users/ → 403 (root only)
         response = self.client.post(self.users_list_url, {
             'username': 'admin_new',
-            'password': 'password123',
+            'password': 'secure_test_password_123',
             'role': 'ADMIN',
             'email': 'new_admin@dms.local'
         })
@@ -186,7 +186,7 @@ class AuthTests(APITestCase):
         # Root token POST /api/users/ → 201
         response = self.client.post(self.users_list_url, {
             'username': 'admin_new',
-            'password': 'password123',
+            'password': 'secure_test_password_123',
             'role': 'ADMIN',
             'email': 'new_admin@dms.local'
         })
@@ -205,7 +205,7 @@ class AuthTests(APITestCase):
         # Create user with first_name and last_name
         response = self.client.post(self.users_list_url, {
             'username': 'john_doe',
-            'password': 'password123',
+            'password': 'secure_test_password_123',
             'role': 'ADMIN',
             'email': 'john@dms.local',
             'first_name': 'John',

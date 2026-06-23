@@ -120,7 +120,16 @@ graph TD
 
 ## 8. Chronological Changelog
 
-### 2026-06-24 · fix: disable pagination for Category, Machine, Set, and User endpoints
+### 2026-06-24 · feat: implement P0 and P1 audit improvements for security, performance, and caching
+- Optimized CustomJWTAuthentication to perform cache-first lookups and throttled last_seen database writes.
+- Enforced password strength validation in UserSerializer using Django's validator framework.
+- Modified IsRootOnly permission check to permit authenticated self-profile updates for non-ROOT users.
+- Secured frontend endpoints by creating a ProtectedRoute component mapping roles to routes.
+- Reduced React sidebar tree rendering complexity from O(M * S) to O(M + S) via hash map sets indexing.
+- Optimized database pre_save signals to query only target auditing fields via values() instead of model instantiation.
+- Implemented zero-downtime search reindexing in sync_search command via atomic index swapping.
+- Accelerated bulk CSV imports through set pre-caching and database transaction savepoints.
+
 - Fixed an issue where the global 100-item page size limit caused sets, machines, categories, and users to not render in the frontend beyond 100 entries.
 - Set `pagination_class = None` on `SetViewSet`, `MachineViewSet`, `MachineCategoryViewSet`, and `UserViewSet`.
 

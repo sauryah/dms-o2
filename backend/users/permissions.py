@@ -16,11 +16,21 @@ class IsAdminOrRoot(permissions.BasePermission):
 
 class IsRootOnly(permissions.BasePermission):
     """
-    Permission check: only ROOT users can view or execute.
+    Permission check: only ROOT users can view or execute actions globally.
+    Authenticated users can retrieve or update their own user profile.
     """
     def has_permission(self, request, view):
-        return (
-            request.user and
-            request.user.is_authenticated and
-            (request.user.role == 'ROOT' or request.user.is_superuser)
-        )
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if request.user.role == 'ROOT' or request.user.is_superuser:
+            return True
+        # Allow non-ROOT users to retrieve or update detail views (has_object_permission checks ownership)
+        if view.action in ['retrieve', 'update', 'partial_update']:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.role == 'ROOT' or request.user.is_superuser:
+            return True
+        return request.user == obj
+

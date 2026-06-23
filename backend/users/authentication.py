@@ -25,54 +25,87 @@ class CustomJWTAuthentication(JWTAuthentication):
         from datetime import timedelta
         from django.conf import settings
 
-        # Look up UserSession (Cache-first check with self-healing DB restore)
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.conf import settings
         from django.core.cache import cache
-        session = None
+        from users.models import UserSession
+
+        now = timezone.now()
         cache_key = f"user_session:{user.id}:{token_hash}"
         cached_data = cache.get(cache_key)
+        
+        session_created_at = None
+        session_last_seen = None
+        ip_address = ""
+        device = ""
 
         if cached_data:
             try:
-                session = UserSession.objects.get(user=user, token_hash=token_hash)
-            except UserSession.DoesNotExist:
-                # DB was restored, but Redis cache is still active! Recreate the DB row seamlessly.
-                session = UserSession.objects.create(
-                    user=user,
-                    token_hash=token_hash,
-                    ip_address=cached_data.get('ip_address'),
-                    device=cached_data.get('device')
-                )
-                if 'created_at' in cached_data:
-                    UserSession.objects.filter(pk=session.pk).update(created_at=cached_data['created_at'])
-                    session.refresh_from_db()
-        else:
+                session_created_at = timezone.datetime.fromisoformat(cached_data['created_at'])
+                session_last_seen = timezone.datetime.fromisoformat(cached_data['last_seen'])
+                ip_address = cached_data.get('ip_address', '')
+                device = cached_data.get('device', '')
+            except (KeyError, ValueError, TypeError):
+                # Cache corrupted or old format, trigger DB fetch
+                cached_data = None
+
+        if not cached_data:
             try:
                 session = UserSession.objects.get(user=user, token_hash=token_hash)
-                # Cache it in Redis for next queries
+                session_created_at = session.created_at
+                session_last_seen = session.last_seen
+                ip_address = session.ip_address
+                device = session.device
+                
+                # Cache the session parameters
                 cache_data = {
-                    'ip_address': session.ip_address,
-                    'device': session.device,
-                    'created_at': session.created_at.isoformat() if session.created_at else None
+                    'ip_address': ip_address,
+                    'device': device,
+                    'created_at': session_created_at.isoformat(),
+                    'last_seen': session_last_seen.isoformat(),
                 }
                 cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
             except UserSession.DoesNotExist:
                 raise AuthenticationFailed("Session replaced on another device or expired")
 
         # Check idle and absolute timeouts
-        now = timezone.now()
         idle_limit = now - timedelta(minutes=settings.SESSION_IDLE_TIMEOUT_MINUTES)
         absolute_limit = now - timedelta(hours=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS)
 
-        if session.last_seen < idle_limit or session.created_at < absolute_limit:
-            session.delete()
+        if session_last_seen < idle_limit or session_created_at < absolute_limit:
+            # Cleanup DB & Cache
+            UserSession.objects.filter(user=user, token_hash=token_hash).delete()
+            cache.delete(cache_key)
             raise AuthenticationFailed("Session replaced on another device or expired")
-            
+
         # Update last_seen (throttled to once per minute to reduce DB writes)
-        if now - session.last_seen > timedelta(minutes=1):
-            session.last_seen = now
-            session.save(update_fields=['last_seen'])
-        
+        if now - session_last_seen > timedelta(minutes=1):
+            session_last_seen = now
+            # Update database
+            updated_count = UserSession.objects.filter(user=user, token_hash=token_hash).update(last_seen=now)
+            if updated_count == 0:
+                # DB was restored, recreate DB row seamlessly using cache data
+                UserSession.objects.create(
+                    user=user,
+                    token_hash=token_hash,
+                    ip_address=ip_address,
+                    device=device,
+                    created_at=session_created_at,
+                    last_seen=now
+                )
+            
+            # Update cache
+            cache_data = {
+                'ip_address': ip_address,
+                'device': device,
+                'created_at': session_created_at.isoformat(),
+                'last_seen': session_last_seen.isoformat(),
+            }
+            cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
+
         # Set thread local user for history tracking
         _thread_locals.user = user
         
         return user, validated_token
+

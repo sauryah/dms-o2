@@ -3,7 +3,8 @@ import {
   HashRouter as Router, 
   Routes, 
   Route, 
-  useNavigate
+  useNavigate,
+  Navigate
 } from 'react-router-dom'
 import { 
   QueryClient, 
@@ -446,15 +447,53 @@ function AppContent() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
           <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
-          <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
-          <Route path="/import" element={<ErrorBoundary><ImportPage /></ErrorBoundary>} />
-          <Route path="/users" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
+          <Route path="/machines" element={
+            <ErrorBoundary>
+              <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
+                <MachineSetsPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/import" element={
+            <ErrorBoundary>
+              <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
+                <ImportPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/users" element={
+            <ErrorBoundary>
+              <ProtectedRoute allowedRoles={['ROOT']}>
+                <UsersPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
           <Route path="/login" element={<LoginPage />} />
         </Routes>
       </Suspense>
     </div>
   )
 }
+
+interface ProtectedRouteProps {
+  children: React.ReactElement;
+  allowedRoles?: string[];
+}
+
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+  const { token, role } = useAuth()
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
+
 
 function App() {
   return (

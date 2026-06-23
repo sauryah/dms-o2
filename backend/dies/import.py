@@ -62,162 +62,179 @@ def import_dies(file_path: str, file_ext: str, user) -> dict:
 
     status_values = [choice[0] for choice in STATUS_CHOICES]
 
-    for line_num, row_data in rows:
-        try:
-            # Validate required fields
-            die_id = row_data.get('die_id')
-            if not die_id:
-                raise ValueError("Missing 'die_id'")
-            die_id = str(die_id).strip()
+    # Pre-cache all Sets to eliminate N+1 database reads
+    all_sets = list(Set.objects.select_related('machine').all())
+    sets_by_id = {s.id: s for s in all_sets}
+    
+    # Group by name for iexact lookups
+    sets_by_name = {}
+    for s in all_sets:
+        name_lower = s.name.lower()
+        if name_lower not in sets_by_name:
+            sets_by_name[name_lower] = []
+        sets_by_name[name_lower].append(s)
 
-            die_type = row_data.get('die_type')
-            if not die_type:
-                raise ValueError("Missing 'die_type'")
-            die_type = str(die_type).strip().upper()
-            if die_type not in ['ROUND', 'FLAT']:
-                raise ValueError(f"Invalid die_type '{die_type}'. Must be ROUND or FLAT.")
+    with transaction.atomic():
+        for line_num, row_data in rows:
+            try:
+                # Validate required fields
+                die_id = row_data.get('die_id')
+                if not die_id:
+                    raise ValueError("Missing 'die_id'")
+                die_id = str(die_id).strip()
 
-            casing = row_data.get('casing')
-            if not casing:
-                raise ValueError("Missing 'casing'")
-            casing = str(casing).strip()
+                die_type = row_data.get('die_type')
+                if not die_type:
+                    raise ValueError("Missing 'die_type'")
+                die_type = str(die_type).strip().upper()
+                if die_type not in ['ROUND', 'FLAT']:
+                    raise ValueError(f"Invalid die_type '{die_type}'. Must be ROUND or FLAT.")
 
-            status_val = row_data.get('status')
-            if status_val:
-                status_val = str(status_val).strip().upper()
-                if status_val not in status_values:
-                    raise ValueError(f"Invalid status '{status_val}'. Must be one of {', '.join(status_values)}.")
-            else:
-                status_val = 'AVAILABLE'
+                casing = row_data.get('casing')
+                if not casing:
+                    raise ValueError("Missing 'casing'")
+                casing = str(casing).strip()
 
-            location = row_data.get('location', '')
-            if location is None:
-                location = ''
-            location = str(location).strip()
-
-            remarks = row_data.get('remarks', '')
-            if remarks is None:
-                remarks = ''
-            remarks = str(remarks).strip()
-
-            current_set_val = row_data.get('current_set') or row_data.get('current_set_id')
-            set_name_val = row_data.get('set_name')
-            machine_name_val = row_data.get('machine_name') or row_data.get('machine')
-            current_set = None
-
-            if current_set_val:
-                current_set_val_str = str(current_set_val).strip()
-                is_numeric = False
-                try:
-                    float(current_set_val_str)
-                    is_numeric = True
-                except ValueError:
-                    pass
-
-                if is_numeric:
-                    try:
-                        current_set = Set.objects.get(pk=int(float(current_set_val_str)))
-                    except (ValueError, TypeError, Set.DoesNotExist):
-                        raise ValueError(f"Set with ID '{current_set_val_str}' does not exist")
+                status_val = row_data.get('status')
+                if status_val:
+                    status_val = str(status_val).strip().upper()
+                    if status_val not in status_values:
+                        raise ValueError(f"Invalid status '{status_val}'. Must be one of {', '.join(status_values)}.")
                 else:
-                    set_name_val = current_set_val_str
+                    status_val = 'AVAILABLE'
 
-            if not current_set and set_name_val:
-                set_name_str = str(set_name_val).strip()
-                qs = Set.objects.filter(name__iexact=set_name_str)
-                if qs.count() == 1:
-                    current_set = qs.first()
-                elif qs.count() > 1:
-                    if machine_name_val:
-                        mach_name_str = str(machine_name_val).strip()
-                        qs = qs.filter(machine__name__iexact=mach_name_str)
-                        if qs.count() == 1:
-                            current_set = qs.first()
-                        elif qs.count() > 1:
-                            raise ValueError(f"Multiple sets named '{set_name_str}' found under machine '{mach_name_str}'")
-                        else:
-                            raise ValueError(f"Set '{set_name_str}' not found under machine '{mach_name_str}'")
+                location = row_data.get('location', '')
+                if location is None:
+                    location = ''
+                location = str(location).strip()
+
+                remarks = row_data.get('remarks', '')
+                if remarks is None:
+                    remarks = ''
+                remarks = str(remarks).strip()
+
+                current_set_val = row_data.get('current_set') or row_data.get('current_set_id')
+                set_name_val = row_data.get('set_name')
+                machine_name_val = row_data.get('machine_name') or row_data.get('machine')
+                current_set = None
+
+                if current_set_val:
+                    current_set_val_str = str(current_set_val).strip()
+                    is_numeric = False
+                    try:
+                        float(current_set_val_str)
+                        is_numeric = True
+                    except ValueError:
+                        pass
+
+                    if is_numeric:
+                        try:
+                            set_id_int = int(float(current_set_val_str))
+                            current_set = sets_by_id.get(set_id_int)
+                            if not current_set:
+                                raise ValueError(f"Set with ID '{current_set_val_str}' does not exist")
+                        except (ValueError, TypeError):
+                            raise ValueError(f"Set with ID '{current_set_val_str}' does not exist")
                     else:
-                        raise ValueError(f"Multiple sets named '{set_name_str}' exist. Please specify a unique set name or provide the machine_name to resolve ambiguity.")
-                else:
-                    raise ValueError(f"Set with name '{set_name_str}' does not exist")
+                        set_name_val = current_set_val_str
 
-            with transaction.atomic():
-                # update_or_create Die on die_id
-                die, is_created = Die.objects.update_or_create(
-                    die_id=die_id,
-                    defaults={
-                        'die_type': die_type,
-                        'casing': casing,
-                        'status': status_val,
-                        'location': location,
-                        'remarks': remarks,
-                        'current_set': current_set,
-                    }
-                )
+                if not current_set and set_name_val:
+                    set_name_str = str(set_name_val).strip().lower()
+                    qs = sets_by_name.get(set_name_str, [])
+                    if len(qs) == 1:
+                        current_set = qs[0]
+                    elif len(qs) > 1:
+                        if machine_name_val:
+                            mach_name_str = str(machine_name_val).strip().lower()
+                            filtered = [s for s in qs if s.machine.name.lower() == mach_name_str]
+                            if len(filtered) == 1:
+                                current_set = filtered[0]
+                            elif len(filtered) > 1:
+                                raise ValueError(f"Multiple sets named '{set_name_val}' found under machine '{machine_name_val}'")
+                            else:
+                                raise ValueError(f"Set '{set_name_val}' not found under machine '{machine_name_val}'")
+                        else:
+                            raise ValueError(f"Multiple sets named '{set_name_val}' exist. Please specify a unique set name or provide the machine_name to resolve ambiguity.")
+                    else:
+                        raise ValueError(f"Set with name '{set_name_val}' does not exist")
 
-                if die_type == 'ROUND':
-                    orig_size_val = row_data.get('original_size')
-                    curr_size_val = row_data.get('current_size')
-                    if orig_size_val is None or curr_size_val is None or orig_size_val == '' or curr_size_val == '':
-                        raise ValueError("ROUND die requires 'original_size' and 'current_size'")
-
-                    try:
-                        orig_size = Decimal(str(orig_size_val))
-                        curr_size = Decimal(str(curr_size_val))
-                    except Exception:
-                        raise ValueError("Invalid decimal format for size fields")
-
-                    RoundDie.objects.update_or_create(
-                        die=die,
+                with transaction.atomic():
+                    # update_or_create Die on die_id
+                    die, is_created = Die.objects.update_or_create(
+                        die_id=die_id,
                         defaults={
-                            'original_size': orig_size,
-                            'current_size': curr_size,
-                        }
-                    )
-                else:  # FLAT
-                    orig_width_val = row_data.get('original_width')
-                    curr_width_val = row_data.get('current_width')
-                    orig_thick_val = row_data.get('original_thickness')
-                    curr_thick_val = row_data.get('current_thickness')
-                    radius_val = row_data.get('radius')
-
-                    if any(v is None or v == '' for v in [orig_width_val, curr_width_val, orig_thick_val, curr_thick_val, radius_val]):
-                        raise ValueError("FLAT die requires 'original_width', 'current_width', 'original_thickness', 'current_thickness', and 'radius'")
-
-                    try:
-                        orig_width = Decimal(str(orig_width_val))
-                        curr_width = Decimal(str(curr_width_val))
-                        orig_thick = Decimal(str(orig_thick_val))
-                        curr_thick = Decimal(str(curr_thick_val))
-                        radius = Decimal(str(radius_val))
-                    except Exception:
-                        raise ValueError("Invalid decimal format for FLAT die fields")
-
-                    FlatDie.objects.update_or_create(
-                        die=die,
-                        defaults={
-                            'original_width': orig_width,
-                            'current_width': curr_width,
-                            'original_thickness': orig_thick,
-                            'current_thickness': curr_thick,
-                            'radius': radius,
+                            'die_type': die_type,
+                            'casing': casing,
+                            'status': status_val,
+                            'location': location,
+                            'remarks': remarks,
+                            'current_set': current_set,
                         }
                     )
 
-                # Collect ID for batch sync
-                successful_die_ids.append(die.id)
+                    if die_type == 'ROUND':
+                        orig_size_val = row_data.get('original_size')
+                        curr_size_val = row_data.get('current_size')
+                        if orig_size_val is None or curr_size_val is None or orig_size_val == '' or curr_size_val == '':
+                            raise ValueError("ROUND die requires 'original_size' and 'current_size'")
 
-                if is_created:
-                    created += 1
-                else:
-                    updated += 1
+                        try:
+                            orig_size = Decimal(str(orig_size_val))
+                            curr_size = Decimal(str(curr_size_val))
+                        except Exception:
+                            raise ValueError("Invalid decimal format for size fields")
 
-        except Exception as e:
-            errors.append({
-                'row': line_num,
-                'error': str(e)
-            })
+                        RoundDie.objects.update_or_create(
+                            die=die,
+                            defaults={
+                                'original_size': orig_size,
+                                'current_size': curr_size,
+                            }
+                        )
+                    else:  # FLAT
+                        orig_width_val = row_data.get('original_width')
+                        curr_width_val = row_data.get('current_width')
+                        orig_thick_val = row_data.get('original_thickness')
+                        curr_thick_val = row_data.get('current_thickness')
+                        radius_val = row_data.get('radius')
+
+                        if any(v is None or v == '' for v in [orig_width_val, curr_width_val, orig_thick_val, curr_thick_val, radius_val]):
+                            raise ValueError("FLAT die requires 'original_width', 'current_width', 'original_thickness', 'current_thickness', and 'radius'")
+
+                        try:
+                            orig_width = Decimal(str(orig_width_val))
+                            curr_width = Decimal(str(curr_width_val))
+                            orig_thick = Decimal(str(orig_thick_val))
+                            curr_thick = Decimal(str(curr_thick_val))
+                            radius = Decimal(str(radius_val))
+                        except Exception:
+                            raise ValueError("Invalid decimal format for FLAT die fields")
+
+                        FlatDie.objects.update_or_create(
+                            die=die,
+                            defaults={
+                                'original_width': orig_width,
+                                'current_width': curr_width,
+                                'original_thickness': orig_thick,
+                                'current_thickness': curr_thick,
+                                'radius': radius,
+                            }
+                        )
+
+                    # Collect ID for batch sync
+                    successful_die_ids.append(die.id)
+
+                    if is_created:
+                        created += 1
+                    else:
+                        updated += 1
+
+            except Exception as e:
+                errors.append({
+                    'row': line_num,
+                    'error': str(e)
+                })
+
 
     # Clear thread local
     if hasattr(_thread_locals, 'user'):

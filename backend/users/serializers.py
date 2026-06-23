@@ -13,8 +13,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get('request')
+        
+        # Enforce system password validation rules
+        new_password = attrs.get('password')
+        if new_password:
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError
+            try:
+                validate_password(new_password, user=self.instance)
+            except ValidationError as e:
+                raise serializers.ValidationError({"password": list(e.messages)})
+
         if request and self.instance and request.user == self.instance:
-            new_password = attrs.get('password')
             new_email = attrs.get('email')
             
             # Require current_password when updating sensitive details (password or email)
@@ -25,6 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
                 if not self.instance.check_password(current_password):
                     raise serializers.ValidationError({"current_password": "Incorrect current password."})
         return attrs
+
 
     def validate_role(self, value):
         if value == 'ROOT':
