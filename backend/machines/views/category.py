@@ -22,3 +22,5 @@ class MachineCategoryViewSet(viewsets.ModelViewSet):
     queryset = MachineCategory.objects.all()
     serializer_class = MachineCategorySerializer
     permission_classes = [IsAdminOrRoot]
+    pagination_class = None
+

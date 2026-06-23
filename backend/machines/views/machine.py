@@ -34,3 +34,5 @@ class MachineViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.select_related('category').all()
     serializer_class = MachineSerializer
     permission_classes = [IsAdminOrRoot]
+    pagination_class = None
+

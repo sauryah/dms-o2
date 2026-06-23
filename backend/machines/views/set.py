@@ -22,3 +22,5 @@ class SetViewSet(viewsets.ModelViewSet):
     queryset = Set.objects.select_related('machine__category').all()
     serializer_class = SetSerializer
     permission_classes = [IsAdminOrRoot]
+    pagination_class = None
+

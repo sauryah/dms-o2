@@ -120,7 +120,12 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-24 · fix: disable pagination for Category, Machine, Set, and User endpoints
+- Fixed an issue where the global 100-item page size limit caused sets, machines, categories, and users to not render in the frontend beyond 100 entries.
+- Set `pagination_class = None` on `SetViewSet`, `MachineViewSet`, `MachineCategoryViewSet`, and `UserViewSet`.
+
 ### 2026-06-22 · feat: implement bidirectional CAD-to-specification highlights, keyboard search dropdown navigation, and visual interactive rack layout grids
+
 - Added bidirectional hover interactions between specifications tables and SVG blueprints.
 - Implemented keyboard-only navigation for the search dropdown, supporting Tab/Shift+Tab and Arrow keys.
 - Developed an interactive HTML5 drag-and-drop Rack Grid Layout component to visually relocate dies and manage storage slots.
