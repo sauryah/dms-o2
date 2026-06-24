@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -246,7 +247,65 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
+func scoreDie(die database.DieRepresentation, q string) int {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return 0
+	}
+	qLower := strings.ToLower(q)
+	dieIDLower := strings.ToLower(die.DieID)
+
+	// 1. Exact size/dimension match
+	qFloat, err := strconv.ParseFloat(q, 64)
+	if err == nil {
+		if die.DieType == "ROUND" && die.CurrentSize != nil {
+			szFloat, err := strconv.ParseFloat(*die.CurrentSize, 64)
+			if err == nil && szFloat == qFloat {
+				return 100
+			}
+		} else if die.DieType == "FLAT" {
+			if die.CurrentWidth != nil {
+				wFloat, err := strconv.ParseFloat(*die.CurrentWidth, 64)
+				if err == nil && wFloat == qFloat {
+					return 100
+				}
+			}
+			if die.CurrentThickness != nil {
+				tFloat, err := strconv.ParseFloat(*die.CurrentThickness, 64)
+				if err == nil && tFloat == qFloat {
+					return 100
+				}
+			}
+		}
+	}
+
+	// 2. Exact die_id match
+	if dieIDLower == qLower {
+		return 90
+	}
+
+	// 3. Starts-with matches
+	if strings.HasPrefix(dieIDLower, qLower) {
+		return 80
+	}
+
+	// 4. Partial matches (substring in die_id or other fields)
+	if strings.Contains(dieIDLower, qLower) ||
+		strings.Contains(strings.ToLower(die.Casing), qLower) ||
+		strings.Contains(strings.ToLower(die.Location), qLower) ||
+		strings.Contains(strings.ToLower(die.SetName), qLower) ||
+		strings.Contains(strings.ToLower(die.MachineName), qLower) ||
+		strings.Contains(strings.ToLower(die.Status), qLower) {
+		return 70
+	}
+
+	// 5. Fuzzy match / baseline
+	return 50
+}
+
 func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+	slog.Info("Received search query", "q", q)
+
 	// Build Meilisearch filters
 	var filters []string
 	if dieType != "" {
@@ -289,55 +348,93 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		searchParams.Filter = strings.Join(filters, " AND ")
 	}
 
-	slog.Info("Executing search", "query", q, "filters", searchParams.Filter)
+	slog.Info("Generated Meilisearch request", "filter", searchParams.Filter)
+
+	var meiliDies []database.DieRepresentation
+
 	// Search Meilisearch index
 	res, err := h.search.Search(q, &searchParams)
 	if err != nil {
-		slog.Error("Meilisearch search error, falling back to DB", "error", err)
-		return h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
-	}
-	slog.Info("Meilisearch search success", "hits", len(res.Hits), "query", q)
-
-	if len(res.Hits) == 0 {
-		return []database.DieRepresentation{}, nil
-	}
-
-	// Extract matching document IDs
-	var hitIDs []int64
-	for _, hit := range res.Hits {
-		if hitMap, ok := hit.(map[string]interface{}); ok {
-			if idVal, ok := hitMap["id"].(string); ok {
-				if parsedID, err := strconv.ParseInt(idVal, 10, 64); err == nil {
-					hitIDs = append(hitIDs, parsedID)
+		slog.Error("Meilisearch search error", "error", err)
+	} else {
+		slog.Info("Meilisearch search success", "hits", len(res.Hits), "query", q)
+		if len(res.Hits) > 0 {
+			var hitIDs []int64
+			for _, hit := range res.Hits {
+				if hitMap, ok := hit.(map[string]interface{}); ok {
+					if idVal, ok := hitMap["id"].(string); ok {
+						if parsedID, err := strconv.ParseInt(idVal, 10, 64); err == nil {
+							hitIDs = append(hitIDs, parsedID)
+						}
+					}
+				}
+			}
+			if len(hitIDs) > 0 {
+				diesFromDB, err := h.db.QueryPostgresByIDs(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+				if err != nil {
+					slog.Error("Failed to query Postgres by Meilisearch IDs", "error", err)
+				} else {
+					// Order them in original Meilisearch hit order
+					dieMap := make(map[int64]database.DieRepresentation)
+					for _, die := range diesFromDB {
+						dieMap[die.ID] = die
+					}
+					for _, hid := range hitIDs {
+						if die, ok := dieMap[hid]; ok {
+							meiliDies = append(meiliDies, die)
+						}
+					}
 				}
 			}
 		}
 	}
 
-	if len(hitIDs) == 0 {
-		return []database.DieRepresentation{}, nil
-	}
-
-	// Fetch detail records from Postgres
-	dies, err := h.db.QueryPostgresByIDs(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	// Query Postgres directly to find any additional matches (e.g. numeric exact matches or wildcard matches)
+	postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
 	if err != nil {
-		return nil, err
+		slog.Error("Postgres direct query error", "error", err)
 	}
 
-	// Reorder dies according to Meilisearch hit order
-	dieMap := make(map[int64]database.DieRepresentation)
-	for _, die := range dies {
-		dieMap[die.ID] = die
-	}
+	// Merge results (removing duplicates, preserving Meilisearch hit order first)
+	seen := make(map[int64]bool)
+	var combined []database.DieRepresentation
 
-	var orderedDies []database.DieRepresentation
-	for _, hid := range hitIDs {
-		if die, ok := dieMap[hid]; ok {
-			orderedDies = append(orderedDies, die)
+	for _, die := range meiliDies {
+		if !seen[die.ID] {
+			combined = append(combined, die)
+			seen[die.ID] = true
 		}
 	}
 
-	return orderedDies, nil
+	for _, die := range postgresDies {
+		if !seen[die.ID] {
+			combined = append(combined, die)
+			seen[die.ID] = true
+		}
+	}
+
+	slog.Info("Search results count before relevance sorting", "count", len(combined))
+
+	// Score and sort results based on the priority rules
+	sort.SliceStable(combined, func(i, j int) bool {
+		scoreI := scoreDie(combined[i], q)
+		scoreJ := scoreDie(combined[j], q)
+		return scoreI > scoreJ // Higher score first
+	})
+
+	// Truncate to limit
+	if len(combined) > limit {
+		combined = combined[:limit]
+	}
+
+	slog.Info("Search results count after sorting and limit truncation", "count", len(combined))
+
+	// Log scores of the first 5 results
+	for i := 0; i < len(combined) && i < 5; i++ {
+		slog.Info("Search result score", "index", i, "die_id", combined[i].DieID, "score", scoreDie(combined[i], q))
+	}
+
+	return combined, nil
 }
 
 func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {

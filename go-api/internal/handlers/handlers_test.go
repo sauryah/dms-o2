@@ -308,3 +308,94 @@ func TestHandleSearch_MeilisearchAndPostgres(t *testing.T) {
 		t.Errorf("unexpected search response: %+v", resp)
 	}
 }
+
+func TestRelevanceSorting(t *testing.T) {
+	cfg := &config.Config{}
+
+	// Setup candidates to be returned by mock DB
+	size1600 := "1.600"
+	size2500 := "2.500"
+	
+	candidates := []database.DieRepresentation{
+		{ID: 1, DieID: "DIE-OTHER", DieType: "ROUND", CurrentSize: &size2500, Casing: "other-casing", MachineName: "machine-other"},
+		{ID: 2, DieID: "DIE-EXACT-ID", DieType: "ROUND", CurrentSize: &size2500, Casing: "other-casing", MachineName: "machine-other"},
+		{ID: 3, DieID: "DIE-SIZE-16", DieType: "ROUND", CurrentSize: &size1600, Casing: "other-casing", MachineName: "machine-other"},
+		{ID: 4, DieID: "DIE-START-WITH-EXACT", DieType: "ROUND", CurrentSize: &size2500, Casing: "other-casing", MachineName: "machine-other"},
+		{ID: 5, DieID: "DIE-CASING-MATCH", DieType: "ROUND", CurrentSize: &size2500, Casing: "casing-target", MachineName: "machine-other"},
+	}
+
+	mockDb := &MockDatabase{
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+			return candidates, nil
+		},
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+			return candidates, nil
+		},
+	}
+
+	mockSearch := &MockSearch{
+		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+			return &meilisearch.SearchResponse{
+				Hits: []interface{}{
+					map[string]interface{}{"id": "1"},
+					map[string]interface{}{"id": "2"},
+					map[string]interface{}{"id": "3"},
+					map[string]interface{}{"id": "4"},
+					map[string]interface{}{"id": "5"},
+				},
+			}, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, mockSearch, nil)
+
+	// Test Case 1: Exact size match prioritization
+	// When searching for "1.600", candidate 3 (DIE-SIZE-16, size: "1.600") should be first
+	results, err := h.QueryMeilisearchAndPostgres(context.Background(), "1.600", "", "", "", "", "", "", "", "", "", "", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) == 0 || results[0].DieID != "DIE-SIZE-16" {
+		t.Errorf("expected DIE-SIZE-16 to be ranked first for size query, got: %+v", results)
+	}
+
+	// Test Case 2: Exact size match normalized
+	// Searching "1.6" should also rank DIE-SIZE-16 first
+	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "1.6", "", "", "", "", "", "", "", "", "", "", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) == 0 || results[0].DieID != "DIE-SIZE-16" {
+		t.Errorf("expected DIE-SIZE-16 to be ranked first for normalized size query, got: %+v", results)
+	}
+
+	// Test Case 3: Exact die_id match prioritization
+	// When searching for "DIE-EXACT-ID", candidate 2 should be first
+	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-EXACT-ID", "", "", "", "", "", "", "", "", "", "", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) == 0 || results[0].DieID != "DIE-EXACT-ID" {
+		t.Errorf("expected DIE-EXACT-ID to be ranked first, got: %+v", results)
+	}
+
+	// Test Case 4: Starts-with match prioritization
+	// When searching for "DIE-START", candidate 4 (DIE-START-WITH-EXACT) should be ranked first because "DIE-START-WITH-EXACT" prefix matches.
+	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-START", "", "", "", "", "", "", "", "", "", "", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) == 0 || results[0].DieID != "DIE-START-WITH-EXACT" {
+		t.Errorf("expected DIE-START-WITH-EXACT to be ranked first, got: %+v", results)
+	}
+
+	// Test Case 5: Casing / attribute match
+	// When searching for "casing-target", candidate 5 (DIE-CASING-MATCH) should be ranked higher than other unrelated candidates
+	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "casing-target", "", "", "", "", "", "", "", "", "", "", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) == 0 || results[0].DieID != "DIE-CASING-MATCH" {
+		t.Errorf("expected DIE-CASING-MATCH to be ranked first for casing query, got: %+v", results)
+	}
+}
