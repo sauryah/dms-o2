@@ -13,12 +13,29 @@ import (
 
 	"github.com/meilisearch/meilisearch-go"
 	"dms-go-api/internal/auth"
-	"dms-go-api/internal/cache"
 	"dms-go-api/internal/config"
 	"dms-go-api/internal/database"
 	"dms-go-api/internal/events"
-	"dms-go-api/internal/search"
 )
+
+type Database interface {
+	GetStats(ctx context.Context) (map[string]int, int, error)
+	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error)
+	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
+	GetCount(ctx context.Context) (int, error)
+}
+
+type Cache interface {
+	Enabled() bool
+	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, val []byte, expiration time.Duration) error
+	Invalidate(ctx context.Context)
+}
+
+type Search interface {
+	GetStats() (int64, error)
+	Search(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error)
+}
 
 type ProblemDetails struct {
 	Type     string `json:"type,omitempty"`
@@ -42,9 +59,9 @@ func writeProblemDetails(w http.ResponseWriter, r *http.Request, title string, s
 
 type Handler struct {
 	cfg          *config.Config
-	db           *database.PostgresDB
-	cache        *cache.Cache
-	search       *search.SearchClient
+	db           Database
+	cache        Cache
+	search       Search
 	eventManager *events.EventManager
 
 	reconMu      sync.RWMutex
@@ -56,9 +73,9 @@ type Handler struct {
 
 func NewHandler(
 	cfg *config.Config,
-	db *database.PostgresDB,
-	c *cache.Cache,
-	s *search.SearchClient,
+	db Database,
+	c Cache,
+	s Search,
 	em *events.EventManager,
 ) *Handler {
 	return &Handler{

@@ -1,0 +1,310 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/meilisearch/meilisearch-go"
+	"dms-go-api/internal/config"
+	"dms-go-api/internal/database"
+)
+
+// Mock definitions
+type MockDatabase struct {
+	GetStatsFn              func(ctx context.Context) (map[string]int, int, error)
+	QueryPostgresDirectlyFn func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error)
+	QueryPostgresByIDsFn    func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
+	GetCountFn              func(ctx context.Context) (int, error)
+}
+
+func (m *MockDatabase) GetStats(ctx context.Context) (map[string]int, int, error) {
+	if m.GetStatsFn != nil {
+		return m.GetStatsFn(ctx)
+	}
+	return nil, 0, nil
+}
+
+func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+	if m.QueryPostgresDirectlyFn != nil {
+		return m.QueryPostgresDirectlyFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
+	}
+	return nil, nil
+}
+
+func (m *MockDatabase) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+	if m.QueryPostgresByIDsFn != nil {
+		return m.QueryPostgresByIDsFn(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	}
+	return nil, nil
+}
+
+func (m *MockDatabase) GetCount(ctx context.Context) (int, error) {
+	if m.GetCountFn != nil {
+		return m.GetCountFn(ctx)
+	}
+	return 0, nil
+}
+
+type MockCache struct {
+	EnabledFn    func() bool
+	GetFn        func(ctx context.Context, key string) ([]byte, error)
+	SetFn        func(ctx context.Context, key string, val []byte, expiration time.Duration) error
+	InvalidateFn func(ctx context.Context)
+}
+
+func (m *MockCache) Enabled() bool {
+	if m.EnabledFn != nil {
+		return m.EnabledFn()
+	}
+	return false
+}
+
+func (m *MockCache) Get(ctx context.Context, key string) ([]byte, error) {
+	if m.GetFn != nil {
+		return m.GetFn(ctx, key)
+	}
+	return nil, errors.New("key not found")
+}
+
+func (m *MockCache) Set(ctx context.Context, key string, val []byte, expiration time.Duration) error {
+	if m.SetFn != nil {
+		return m.SetFn(ctx, key, val, expiration)
+	}
+	return nil
+}
+
+func (m *MockCache) Invalidate(ctx context.Context) {
+	if m.InvalidateFn != nil {
+		m.InvalidateFn(ctx)
+	}
+}
+
+type MockSearch struct {
+	GetStatsFn func() (int64, error)
+	SearchFn   func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error)
+}
+
+func (m *MockSearch) GetStats() (int64, error) {
+	if m.GetStatsFn != nil {
+		return m.GetStatsFn()
+	}
+	return 0, nil
+}
+
+func (m *MockSearch) Search(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+	if m.SearchFn != nil {
+		return m.SearchFn(query, searchRequest)
+	}
+	return nil, nil
+}
+
+func TestHandleHealth(t *testing.T) {
+	cfg := &config.Config{}
+	h := NewHandler(cfg, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+	h.reconStatus = "in_sync"
+	h.pgCount = 42
+	h.meiliCount = 42
+	h.lastRecon = time.Date(2026, 6, 24, 10, 0, 0, 0, time.UTC)
+
+	req := httptest.NewRequest("GET", "/api/go/health", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleHealth(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp["status"] != "ok" {
+		t.Errorf("expected status 'ok', got %v", resp["status"])
+	}
+
+	recon, ok := resp["reconciliation"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing reconciliation field in response")
+	}
+
+	if recon["status"] != "in_sync" {
+		t.Errorf("expected status 'in_sync', got %v", recon["status"])
+	}
+	if recon["postgres_count"].(float64) != 42 {
+		t.Errorf("expected postgres_count 42, got %v", recon["postgres_count"])
+	}
+}
+
+func TestHandleStats_CacheHit(t *testing.T) {
+	cfg := &config.Config{}
+	expectedStats := map[string]interface{}{
+		"total": 10,
+		"stats": map[string]int{"AVAILABLE": 10},
+	}
+	cachedBytes, _ := json.Marshal(expectedStats)
+
+	mockCache := &MockCache{
+		EnabledFn: func() bool { return true },
+		GetFn: func(ctx context.Context, key string) ([]byte, error) {
+			if key == "stats" {
+				return cachedBytes, nil
+			}
+			return nil, errors.New("key not found")
+		},
+	}
+
+	h := NewHandler(cfg, &MockDatabase{}, mockCache, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/stats", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleStats(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp["total"].(float64) != 10 {
+		t.Errorf("expected total 10, got %v", resp["total"])
+	}
+}
+
+func TestHandleStats_CacheMiss(t *testing.T) {
+	cfg := &config.Config{}
+	mockDb := &MockDatabase{
+		GetStatsFn: func(ctx context.Context) (map[string]int, int, error) {
+			return map[string]int{"AVAILABLE": 15}, 15, nil
+		},
+	}
+
+	cacheSetCalled := false
+	mockCache := &MockCache{
+		EnabledFn: func() bool { return true },
+		GetFn:     func(ctx context.Context, key string) ([]byte, error) { return nil, errors.New("miss") },
+		SetFn: func(ctx context.Context, key string, val []byte, expiration time.Duration) error {
+			if key == "stats" {
+				cacheSetCalled = true
+			}
+			return nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, mockCache, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/stats", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleStats(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp["total"].(float64) != 15 {
+		t.Errorf("expected total 15, got %v", resp["total"])
+	}
+
+	if !cacheSetCalled {
+		t.Error("expected stats to be saved in cache on cache miss")
+	}
+}
+
+func TestHandleSearch_DirectPostgres(t *testing.T) {
+	cfg := &config.Config{}
+	expectedDies := []database.DieRepresentation{
+		{DieID: "ROUND-1", DieType: "ROUND", Status: "AVAILABLE"},
+	}
+
+	mockDb := &MockDatabase{
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+			if q == "" && dieType == "ROUND" {
+				return expectedDies, nil
+			}
+			return nil, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/search?die_type=ROUND", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp []database.DieRepresentation
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if len(resp) != 1 || resp[0].DieID != "ROUND-1" {
+		t.Errorf("unexpected response content: %+v", resp)
+	}
+}
+
+func TestHandleSearch_MeilisearchAndPostgres(t *testing.T) {
+	cfg := &config.Config{}
+	mockSearch := &MockSearch{
+		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+			if query == "ROUND" {
+				return &meilisearch.SearchResponse{
+					Hits: []interface{}{
+						map[string]interface{}{"id": "101"},
+					},
+				}, nil
+			}
+			return &meilisearch.SearchResponse{Hits: []interface{}{}}, nil
+		},
+	}
+
+	mockDb := &MockDatabase{
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+			if len(hitIDs) == 1 && hitIDs[0] == 101 {
+				return []database.DieRepresentation{
+					{ID: 101, DieID: "ROUND-101", DieType: "ROUND", Status: "AVAILABLE"},
+				}, nil
+			}
+			return nil, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, mockSearch, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/search?q=ROUND", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp []database.DieRepresentation
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if len(resp) != 1 || resp[0].DieID != "ROUND-101" {
+		t.Errorf("unexpected search response: %+v", resp)
+	}
+}
