@@ -17,9 +17,9 @@ import { Navbar } from './components/Navbar'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Lazy loaded page components for code splitting
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const InventoryPage = React.lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })))
-const DieDetailPage = React.lazy(() => import('./pages/DieDetailPage').then(m => ({ default: m.DieDetailPage })))
+const DashboardPage = React.lazy(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const InventoryPage = React.lazy(() => import('./features/inventory/components/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const DieDetailPage = React.lazy(() => import('./features/inventory/components/DieDetailPage').then(m => ({ default: m.DieDetailPage })))
 const MachineSetsPage = React.lazy(() => import('./pages/MachineSetsPage').then(m => ({ default: m.MachineSetsPage })))
 const ImportPage = React.lazy(() => import('./pages/ImportPage').then(m => ({ default: m.ImportPage })))
 const UsersPage = React.lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })))

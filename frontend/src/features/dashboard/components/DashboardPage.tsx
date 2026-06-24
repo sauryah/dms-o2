@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useStatsQuery, useSearchQuery } from '../hooks/useDies'
+import { useStatsQuery, useSearchQuery } from '../hooks/useDashboard'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { useAuth, useDebounce } from '../App'
-import { RoundDieCard } from '../RoundDieCard'
-import { FlatDieCard } from '../FlatDieCard'
+import { useAuth, useDebounce } from '../../../App'
+import { RoundDieCard } from './RoundDieCard'
+import { FlatDieCard } from './FlatDieCard'
 
 interface StatusDistributionChartProps {
   stats: Record<string, number>;

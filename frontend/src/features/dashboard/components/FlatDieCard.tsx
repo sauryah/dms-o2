@@ -1,12 +1,12 @@
 import React from 'react'
-import { Die, DieStatus } from './types'
+import { Die, DieStatus } from '../../../types'
 
-interface RoundDieCardProps {
+interface FlatDieCardProps {
   die: Die;
   onClick?: () => void;
 }
 
-export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
+export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
   const statusColors: Record<DieStatus, string> = {
     AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -27,16 +27,18 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
       <div>
         <div className="flex justify-between items-start mb-4 gap-4">
           <div className="flex-1 min-w-0">
-            <span className="text-xxs font-mono font-bold text-blue-400/80 uppercase tracking-widest block mb-1">Round Die</span>
-            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={`${die.current_size || 'N/A'} mm`}>{die.current_size || 'N/A'} mm</h3>
+            <span className="text-xxs font-mono font-bold text-indigo-400/80 uppercase tracking-widest block mb-1">Flat Die</span>
+            <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm${die.radius ? ` (R: ${die.radius} mm)` : ''}` : 'N/A'}>
+              {die.current_width && die.current_thickness ? `${die.current_width} × ${die.current_thickness} mm${die.radius ? ` (R: ${die.radius} mm)` : ''}` : 'N/A'}
+            </h3>
           </div>
           <div className="flex flex-col items-end gap-2.5 shrink-0">
             <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
               {die.status}
             </span>
-            <svg className="w-10 h-10 text-blue-500/20 opacity-70 group-hover:text-blue-500/35 transition-colors" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="50" cy="50" r="32" strokeDasharray="3 3" />
-              <circle cx="50" cy="50" r="22" strokeWidth="2.5" className="text-blue-500/40 group-hover:text-blue-500/65 transition-colors" />
+            <svg className="w-10 h-10 text-indigo-500/20 opacity-70 group-hover:text-indigo-500/35 transition-colors" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="20" y="30" width="60" height="40" strokeDasharray="3 3" />
+              <rect x="28" y="38" width="44" height="24" strokeWidth="2.5" className="text-indigo-500/40 group-hover:text-indigo-500/65 transition-colors" />
               <line x1="50" y1="10" x2="50" y2="90" strokeDasharray="2 2" />
               <line x1="10" y1="50" x2="90" y2="50" strokeDasharray="2 2" />
             </svg>

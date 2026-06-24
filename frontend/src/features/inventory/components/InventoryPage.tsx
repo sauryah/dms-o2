@@ -17,12 +17,12 @@ import {
   Activity,
   FolderOpen
 } from 'lucide-react'
-import { useApi, useAuth, useDebounce, isDieActive, useToast } from '../App'
-import { DiesTable } from '../components/DiesTable'
-import { CreateDieModal } from '../components/CreateDieModal'
-import { FilterPanel } from '../components/FilterPanel'
-import { DieStats } from '../components/DieStats'
-import { RackLayoutGrid } from '../components/RackLayoutGrid'
+import { useApi, useAuth, useDebounce, isDieActive, useToast } from '../../../App'
+import { DiesTable } from './DiesTable'
+import { CreateDieModal } from './CreateDieModal'
+import { FilterPanel } from './FilterPanel'
+import { DieStats } from '../../dashboard/components/DieStats'
+import { RackLayoutGrid } from './RackLayoutGrid'
 
 export function InventoryPage() {
   const { request } = useApi()

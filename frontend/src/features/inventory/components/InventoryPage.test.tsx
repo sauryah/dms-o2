@@ -6,7 +6,7 @@ import { InventoryPage } from './InventoryPage'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the API and auth context
-vi.mock('../App', () => ({
+vi.mock('../../../App', () => ({
   useApi: () => ({
     request: vi.fn().mockResolvedValue([])
   }),

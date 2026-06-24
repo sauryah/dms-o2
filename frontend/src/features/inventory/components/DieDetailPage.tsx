@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, Trash2 } from 'lucide-react'
-import { useApi, useAuth, useToast } from '../App'
-import { DieBlueprint } from '../components/CadRenderer'
-import { Timeline } from '../components/Timeline'
+import { useApi, useAuth, useToast } from '../../../App'
+import { DieBlueprint } from './CadRenderer'
+import { Timeline } from './Timeline'
 
 export function DieDetailPage() {
   const { id } = useParams()

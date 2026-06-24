@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo } from 'react'
 import { List, RowComponentProps } from 'react-window'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth, useApi, useToast } from '../App'
+import { useAuth, useApi, useToast } from '../../../App'
 
 const isDieActive = (die: any) => {
   return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
