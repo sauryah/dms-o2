@@ -20,7 +20,10 @@ import (
 
 func main() {
 	// Load configuration
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Configuration error: %v", err)
+	}
 
 	// Connect to PostgreSQL
 	db, err := database.NewPostgresDB(cfg)

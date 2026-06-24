@@ -48,15 +48,12 @@ test.describe('DMS E2E Smoke Tests', () => {
   });
 
   test('unauthenticated search page and login flow', async ({ page }) => {
-    // 1. Visit / -> dashboard page renders
+    // 1. Visit / -> redirected to /login because authentication is required
     await page.goto('/#/');
-    await expect(page.locator('h1')).toContainText('Die Tracking Dashboard');
-
-    // 2. Visit /login -> login form renders
-    await page.goto('/#/login');
+    await page.waitForURL('**/#/login');
     await expect(page.locator('h2')).toContainText('Sign In');
 
-    // 3. Login with root credentials -> redirected to /
+    // 2. Login with root credentials -> redirected to /
     await page.fill('input[type="text"]', 'root');
     await page.fill('input[type="password"]', 'root123');
     await page.click('button[type="submit"]');
@@ -64,6 +61,9 @@ test.describe('DMS E2E Smoke Tests', () => {
 
     // Verify navbar shows user's name
     await expect(page.locator('nav')).toContainText('root');
+
+    // Verify dashboard page renders
+    await expect(page.locator('h1')).toContainText('Die Tracking Dashboard');
 
     // 4. Type a die_id on dashboard -> result card appears
     await page.fill('input[placeholder*="Search Die ID"]', 'R-E2E-1');

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -21,32 +22,91 @@ type Config struct {
 	SessionAbsoluteTimeoutHours string
 }
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
+func Load() (*Config, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
-	return fallback
-}
 
-func Load() *Config {
-	meiliKey := getEnv("MEILI_SEARCH_KEY", "")
+	pgHost := os.Getenv("POSTGRES_HOST")
+	if pgHost == "" {
+		pgHost = "db"
+	}
+
+	pgPort := os.Getenv("POSTGRES_PORT")
+	if pgPort == "" {
+		pgPort = "5432"
+	}
+
+	pgUser := os.Getenv("POSTGRES_USER")
+	if pgUser == "" {
+		pgUser = "dms_user"
+	}
+
+	pgPass := os.Getenv("POSTGRES_PASSWORD")
+	if pgPass == "" {
+		return nil, fmt.Errorf("POSTGRES_PASSWORD environment variable is required")
+	}
+
+	pgDB := os.Getenv("POSTGRES_DB")
+	if pgDB == "" {
+		pgDB = "dms"
+	}
+
+	meiliHost := os.Getenv("MEILI_HOST")
+	if meiliHost == "" {
+		meiliHost = "http://meilisearch:7700"
+	}
+
+	meiliSearchKey := os.Getenv("MEILI_SEARCH_KEY")
+	meiliMasterKey := os.Getenv("MEILI_MASTER_KEY")
+	meiliKey := meiliSearchKey
 	if meiliKey == "" {
-		meiliKey = getEnv("MEILI_MASTER_KEY", "meili-master-key-secure-12345")
+		meiliKey = meiliMasterKey
+	}
+
+	if meiliKey == "" {
+		return nil, fmt.Errorf("either MEILI_SEARCH_KEY or MEILI_MASTER_KEY environment variable is required")
+	}
+
+	redisHost := os.Getenv("REDIS_HOST")
+	if redisHost == "" {
+		redisHost = "localhost"
+	}
+
+	redisPort := os.Getenv("REDIS_PORT")
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+
+	djangoSecret := os.Getenv("DJANGO_SECRET_KEY")
+	if djangoSecret == "" {
+		return nil, fmt.Errorf("DJANGO_SECRET_KEY environment variable is required")
+	}
+
+	sessionIdle := os.Getenv("SESSION_IDLE_TIMEOUT_MINUTES")
+	if sessionIdle == "" {
+		sessionIdle = "30"
+	}
+
+	sessionAbs := os.Getenv("SESSION_ABSOLUTE_TIMEOUT_HOURS")
+	if sessionAbs == "" {
+		sessionAbs = "12"
 	}
 
 	return &Config{
-		Port:                        getEnv("PORT", "8080"),
-		PostgresHost:                getEnv("POSTGRES_HOST", "db"),
-		PostgresPort:                getEnv("POSTGRES_PORT", "5432"),
-		PostgresUser:                getEnv("POSTGRES_USER", "dms_user"),
-		PostgresPassword:            getEnv("POSTGRES_PASSWORD", "dms_pass_123"),
-		PostgresDB:                  getEnv("POSTGRES_DB", "dms"),
-		MeiliHost:                   getEnv("MEILI_HOST", "http://meilisearch:7700"),
+		Port:                        port,
+		PostgresHost:                pgHost,
+		PostgresPort:                pgPort,
+		PostgresUser:                pgUser,
+		PostgresPassword:            pgPass,
+		PostgresDB:                  pgDB,
+		MeiliHost:                   meiliHost,
 		MeiliSearchKey:              meiliKey,
-		RedisHost:                   getEnv("REDIS_HOST", "localhost"),
-		RedisPort:                   getEnv("REDIS_PORT", "6379"),
-		DjangoSecretKey:             getEnv("DJANGO_SECRET_KEY", "change_me"),
-		SessionIdleTimeoutMinutes:   getEnv("SESSION_IDLE_TIMEOUT_MINUTES", "30"),
-		SessionAbsoluteTimeoutHours: getEnv("SESSION_ABSOLUTE_TIMEOUT_HOURS", "12"),
-	}
+		RedisHost:                   redisHost,
+		RedisPort:                   redisPort,
+		DjangoSecretKey:             djangoSecret,
+		SessionIdleTimeoutMinutes:   sessionIdle,
+		SessionAbsoluteTimeoutHours: sessionAbs,
+	}, nil
 }
