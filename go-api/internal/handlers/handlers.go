@@ -248,15 +248,16 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func scoreDie(die database.DieRepresentation, q string) int {
-	q = strings.TrimSpace(q)
-	if q == "" {
+	// Clean query: trim quotes and whitespace
+	qClean := strings.TrimSpace(strings.Trim(q, `"'`))
+	if qClean == "" {
 		return 0
 	}
-	qLower := strings.ToLower(q)
+	qLower := strings.ToLower(qClean)
 	dieIDLower := strings.ToLower(die.DieID)
 
 	// 1. Exact size/dimension match
-	qFloat, err := strconv.ParseFloat(q, 64)
+	qFloat, err := strconv.ParseFloat(qClean, 64)
 	if err == nil {
 		if die.DieType == "ROUND" && die.CurrentSize != nil {
 			szFloat, err := strconv.ParseFloat(*die.CurrentSize, 64)
@@ -289,8 +290,11 @@ func scoreDie(die database.DieRepresentation, q string) int {
 		return 80
 	}
 
-	// 4. Partial matches (substring in die_id or other fields)
+	// 4. Partial matches (substring in die_id, dimensions, or other fields)
 	if strings.Contains(dieIDLower, qLower) ||
+		(die.CurrentSize != nil && strings.Contains(strings.ToLower(*die.CurrentSize), qLower)) ||
+		(die.CurrentWidth != nil && strings.Contains(strings.ToLower(*die.CurrentWidth), qLower)) ||
+		(die.CurrentThickness != nil && strings.Contains(strings.ToLower(*die.CurrentThickness), qLower)) ||
 		strings.Contains(strings.ToLower(die.Casing), qLower) ||
 		strings.Contains(strings.ToLower(die.Location), qLower) ||
 		strings.Contains(strings.ToLower(die.SetName), qLower) ||
@@ -415,26 +419,46 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 
 	slog.Info("Search results count before relevance sorting", "count", len(combined))
 
+	// Detect if query contains digits to suppress irrelevant fuzzy token separations
+	qClean := strings.TrimSpace(strings.Trim(q, `"'`))
+	hasDigits := false
+	for _, char := range qClean {
+		if char >= '0' && char <= '9' {
+			hasDigits = true
+			break
+		}
+	}
+
+	var filtered []database.DieRepresentation
+	for _, die := range combined {
+		score := scoreDie(die, q)
+		// If query contains digits, filter out fuzzy matches (Score = 50) that do not match fields literally
+		if hasDigits && score <= 50 {
+			continue
+		}
+		filtered = append(filtered, die)
+	}
+
 	// Score and sort results based on the priority rules
-	sort.SliceStable(combined, func(i, j int) bool {
-		scoreI := scoreDie(combined[i], q)
-		scoreJ := scoreDie(combined[j], q)
+	sort.SliceStable(filtered, func(i, j int) bool {
+		scoreI := scoreDie(filtered[i], q)
+		scoreJ := scoreDie(filtered[j], q)
 		return scoreI > scoreJ // Higher score first
 	})
 
 	// Truncate to limit
-	if len(combined) > limit {
-		combined = combined[:limit]
+	if len(filtered) > limit {
+		filtered = filtered[:limit]
 	}
 
-	slog.Info("Search results count after sorting and limit truncation", "count", len(combined))
+	slog.Info("Search results count after sorting and limit truncation", "count", len(filtered))
 
 	// Log scores of the first 5 results
-	for i := 0; i < len(combined) && i < 5; i++ {
-		slog.Info("Search result score", "index", i, "die_id", combined[i].DieID, "score", scoreDie(combined[i], q))
+	for i := 0; i < len(filtered) && i < 5; i++ {
+		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scoreDie(filtered[i], q))
 	}
 
-	return combined, nil
+	return filtered, nil
 }
 
 func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
