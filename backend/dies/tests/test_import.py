@@ -5,9 +5,8 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from decimal import Decimal
 from dies.models import Die, RoundDie, FlatDie
-import importlib
-import_module_dies = importlib.import_module("dies.import")
-import_dies = import_module_dies.import_dies
+from dies.services.import_service import ImportService
+import_dies = ImportService.import_dies
 from search.meili import client as meili_client, INDEX_NAME
 
 User = get_user_model()

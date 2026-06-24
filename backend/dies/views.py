@@ -107,9 +107,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework import serializers
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
-import importlib
-import_module_dies = importlib.import_module("dies.import")
-import_dies = import_module_dies.import_dies
+from dies.services.import_service import ImportService
 
 class ImportDiesView(APIView):
     """
@@ -175,7 +173,7 @@ class ImportDiesView(APIView):
             temp_path = temp_file.name
 
         try:
-            result = import_dies(temp_path, ext, request.user)
+            result = ImportService.import_dies(temp_path, ext, request.user)
             return Response(result, status=status.HTTP_200_OK)
         finally:
             if os.path.exists(temp_path):
