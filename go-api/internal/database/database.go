@@ -40,13 +40,7 @@ type UserSession struct {
 }
 
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.PostgresHost,
-		cfg.PostgresPort,
-		cfg.PostgresUser,
-		cfg.PostgresPassword,
-		cfg.PostgresDB,
-	)
+	connStr := cfg.PostgresConnStr()
 
 	var db *sql.DB
 	var err error

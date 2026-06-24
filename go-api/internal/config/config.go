@@ -110,3 +110,13 @@ func Load() (*Config, error) {
 		SessionAbsoluteTimeoutHours: sessionAbs,
 	}, nil
 }
+
+func (c *Config) PostgresConnStr() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		c.PostgresHost,
+		c.PostgresPort,
+		c.PostgresUser,
+		c.PostgresPassword,
+		c.PostgresDB,
+	)
+}

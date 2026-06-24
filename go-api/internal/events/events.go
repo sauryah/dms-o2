@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -79,13 +78,7 @@ func (m *EventManager) Broadcast(msg string) {
 }
 
 func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func()) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.PostgresHost,
-		cfg.PostgresPort,
-		cfg.PostgresUser,
-		cfg.PostgresPassword,
-		cfg.PostgresDB,
-	)
+	connStr := cfg.PostgresConnStr()
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
