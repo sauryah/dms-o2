@@ -6,6 +6,8 @@ from dms.events import broadcast_event
 class SearchService:
     @staticmethod
     def queue_die_sync(die_id):
+        if getattr(_thread_locals, 'skip_single_sync', False):
+            return
         if not hasattr(_thread_locals, 'pending_sync_die_ids'):
             _thread_locals.pending_sync_die_ids = set()
         
@@ -21,6 +23,8 @@ class SearchService:
 
     @staticmethod
     def queue_die_broadcast(die_id, action):
+        if getattr(_thread_locals, 'skip_single_sync', False):
+            return
         if not hasattr(_thread_locals, 'pending_broadcast_keys'):
             _thread_locals.pending_broadcast_keys = set()
             

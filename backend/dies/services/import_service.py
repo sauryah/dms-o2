@@ -18,6 +18,7 @@ class ImportService:
 
         # Associate user with current thread for DieHistory tracking
         _thread_locals.user = user
+        _thread_locals.skip_single_sync = True
 
         rows = []
         try:
@@ -55,6 +56,8 @@ class ImportService:
         except Exception as e:
             if hasattr(_thread_locals, 'user'):
                 del _thread_locals.user
+            if hasattr(_thread_locals, 'skip_single_sync'):
+                del _thread_locals.skip_single_sync
             return {
                 'created': 0,
                 'updated': 0,
@@ -202,6 +205,8 @@ class ImportService:
 
         if hasattr(_thread_locals, 'user'):
             del _thread_locals.user
+        if hasattr(_thread_locals, 'skip_single_sync'):
+            del _thread_locals.skip_single_sync
 
         if successful_die_ids:
             SearchService.sync_dies_batch(successful_die_ids)
