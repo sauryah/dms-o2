@@ -544,6 +544,14 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	thickMin := r.URL.Query().Get("thick_min")
 	thickMax := r.URL.Query().Get("thick_max")
 
+	limitStr := r.URL.Query().Get("limit")
+	limit := 150
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
 	// Validate numeric query parameters to prevent Meilisearch filter injection or database cast crashes
 	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
 		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
@@ -553,9 +561,9 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s",
+	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d",
 		q, dieType, statusVal, location, casing,
-		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax,
+		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit,
 	)
 
 	// Try to fetch from Redis
@@ -573,10 +581,10 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	if q == "" {
 		// 1. Direct database query
-		dies, err = queryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		dies, err = queryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
 	} else {
 		// 2. Query Meilisearch first, then database
-		dies, err = queryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		dies, err = queryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
 	}
 
 	if err != nil {
@@ -605,7 +613,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
-func queryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func queryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]DieRepresentation, error) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -700,7 +708,7 @@ func queryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location,
 		argCounter++
 	}
 
-	sqlParts = append(sqlParts, "ORDER BY d.die_id ASC LIMIT 150")
+	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d", limit))
 
 	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -719,7 +727,7 @@ func escapeMeiliString(s string) string {
 	return strings.ReplaceAll(s, "'", "\\'")
 }
 
-func queryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func queryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]DieRepresentation, error) {
 	// Build Meilisearch filters
 	var filters []string
 	if dieType != "" {
@@ -756,7 +764,7 @@ func queryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, loc
 	}
 
 	searchParams := meilisearch.SearchRequest{
-		Limit: 150,
+		Limit: int64(limit),
 	}
 	if len(filters) > 0 {
 		searchParams.Filter = strings.Join(filters, " AND ")
@@ -767,7 +775,7 @@ func queryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, loc
 	res, err := meiliClient.Index(indexName).Search(q, &searchParams)
 	if err != nil {
 		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
-		return queryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		return queryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
 	}
 	log.Printf("queryMeilisearchAndPostgres: Meilisearch returned %d hits for query %q", len(res.Hits), q)
 

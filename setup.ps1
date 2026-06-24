@@ -31,7 +31,7 @@ if (-not (Test-Path .env)) {
     $content = $content.Replace('DJANGO_SECRET_KEY=md7db91F0^W3*t)skUXp$vzfHU<]Nx@+]DcS5Kz?hm<fPg&&gd=5EvWu&zuevm](', "DJANGO_SECRET_KEY=$djangoKey")
     $content = $content.Replace('MEILI_MASTER_KEY=Kk?UEj]Uk1dDSFNfK.fXHj0jP<DB*yJ9>4Dsh:6&Wwh96waja>2.1@R+8%t4%K4(', "MEILI_MASTER_KEY=$meiliMaster")
     $content = $content.Replace('MEILI_SEARCH_KEY=B5wT65kBM$UG!tnWk@tkR59T]tuSTwnSG#%xUGQZC@q@$auPem&Sub1$02hDuGNb', "MEILI_SEARCH_KEY=$meiliSearch")
-    $content = $content.Replace('ROOT_PASSWORD=root_pass_1234567890', "ROOT_PASSWORD=$rootPass")
+    $content = $content.Replace('ROOT_PASSWORD=root123', "ROOT_PASSWORD=$rootPass")
 
     $envPath = Join-Path (Get-Location) ".env"
     [System.IO.File]::WriteAllText($envPath, $content)

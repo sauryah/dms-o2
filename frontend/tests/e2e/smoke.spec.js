@@ -10,7 +10,7 @@ test.describe('DMS E2E Smoke Tests', () => {
     const loginRes = await request.post(`${API_URL}/api/auth/login/`, {
       data: {
         username: 'root',
-        password: 'root_pass_1234567890',
+        password: 'root123',
       }
     });
     
@@ -58,7 +58,7 @@ test.describe('DMS E2E Smoke Tests', () => {
 
     // 3. Login with root credentials -> redirected to /
     await page.fill('input[type="text"]', 'root');
-    await page.fill('input[type="password"]', 'root_pass_1234567890');
+    await page.fill('input[type="password"]', 'root123');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/#/');
 
@@ -67,7 +67,7 @@ test.describe('DMS E2E Smoke Tests', () => {
 
     // 4. Type a die_id on dashboard -> result card appears
     await page.fill('input[placeholder*="Search Die ID"]', 'R-E2E-1');
-    const card = page.locator('h3').filter({ hasText: /^R-E2E-1$/ });
+    const card = page.locator('span').filter({ hasText: /^R-E2E-1$/ });
     await expect(card).toBeVisible();
 
     // Verify range search on dashboard

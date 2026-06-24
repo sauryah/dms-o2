@@ -22,11 +22,10 @@ if [ ! -f .env ]; then
 import secrets
 with open('.env.example', 'r') as f:
     content = f.read()
-content = content.replace('POSTGRES_PASSWORD=change_me', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
-content = content.replace('DJANGO_SECRET_KEY=md7db91F0^W3*t)skUXp$vzfHU<]Nx@+]DcS5Kz?hm<fPg&&gd=5EvWu&zuevm](', f'DJANGO_SECRET_KEY={secrets.token_urlsafe(48)}')
-content = content.replace('MEILI_MASTER_KEY=Kk?UEj]Uk1dDSFNfK.fXHj0jP<DB*yJ9>4Dsh:6&Wwh96waja>2.1@R+8%t4%K4(', f'MEILI_MASTER_KEY={secrets.token_urlsafe(32)}')
-content = content.replace('MEILI_SEARCH_KEY=B5wT65kBM$UG!tnWk@tkR59T]tuSTwnSG#%xUGQZC@q@$auPem&Sub1$02hDuGNb', f'MEILI_SEARCH_KEY={secrets.token_urlsafe(32)}')
-content = content.replace('ROOT_PASSWORD=root_pass_1234567890', f'ROOT_PASSWORD={secrets.token_urlsafe(16)}')
+content = content.replace('POSTGRES_PASSWORD=dms_pass_123', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
+content = content.replace('DJANGO_SECRET_KEY=1i-Z36mjYZYX9lwdlTcUGlLflUlt8M6oykwbMa0pmLx3FSWXjwkYQ_i37LCSfhV3', f'DJANGO_SECRET_KEY={secrets.token_urlsafe(48)}')
+content = content.replace('MEILI_MASTER_KEY=ghq8ynFj6vPGb29wfZaWpvuCmmQZ4FBPGoZ4xCvxElo', f'MEILI_MASTER_KEY={secrets.token_urlsafe(32)}')
+content = content.replace('ROOT_PASSWORD=root123', f'ROOT_PASSWORD={secrets.token_urlsafe(16)}')
 with open('.env', 'w') as f:
     f.write(content)
 "

@@ -173,7 +173,7 @@ MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
 AUTH_USER_MODEL = 'users.User'
 
 ROOT_USERNAME = config('ROOT_USERNAME', default='root')
-ROOT_PASSWORD = config('ROOT_PASSWORD', default='root_pass_1234567890')
+ROOT_PASSWORD = config('ROOT_PASSWORD', default='root123')
 
 # Caching with Redis (Django 4.0+)
 CACHES = {

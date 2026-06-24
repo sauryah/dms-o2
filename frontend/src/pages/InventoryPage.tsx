@@ -91,7 +91,7 @@ export function InventoryPage() {
 
   // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
-    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax],
+    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, '10000'],
     queryFn: ({ signal }) => {
       let url = '/api/go/search'
       const params = new URLSearchParams()
@@ -107,6 +107,7 @@ export function InventoryPage() {
       if (widthMax) params.append('width_max', widthMax)
       if (thickMin) params.append('thick_min', thickMin)
       if (thickMax) params.append('thick_max', thickMax)
+      params.append('limit', '10000')
       
       if (params.toString()) {
         url += `?${params.toString()}`

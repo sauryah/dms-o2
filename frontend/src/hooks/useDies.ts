@@ -13,6 +13,7 @@ export interface SearchQueryParams {
   width_max?: string;
   thick_min?: string;
   thick_max?: string;
+  limit?: string;
 }
 
 export function useStatsQuery() {
@@ -41,6 +42,7 @@ export function useSearchQuery(params: SearchQueryParams, enabled = true) {
       if (params.width_max) searchParams.append('width_max', params.width_max)
       if (params.thick_min) searchParams.append('thick_min', params.thick_min)
       if (params.thick_max) searchParams.append('thick_max', params.thick_max)
+      if (params.limit) searchParams.append('limit', params.limit)
       
       const queryString = searchParams.toString()
       if (queryString) {

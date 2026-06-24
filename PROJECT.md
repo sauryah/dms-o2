@@ -120,6 +120,12 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-24 · fix: allow custom limit in Go search API to display all inventory dies in tree view
+- Added a `limit` query parameter to the `/api/go/search` endpoint (defaulting to 150) in Go API.
+- Configured React Query fetcher and prefetch logic on the Inventory page to use `limit=10000` to fetch and display all matching dies.
+- Fixed E2E Playwright tests login timeout issue and search result card locator.
+- Aligned default fallback root credentials and E2E test password setup configuration to use `root123` across settings, tests, scripts, and containers.
+
 ### 2026-06-24 · feat: implement P0 and P1 audit improvements for security, performance, and caching
 - Optimized CustomJWTAuthentication to perform cache-first lookups and throttled last_seen database writes.
 - Enforced password strength validation in UserSerializer using Django's validator framework.
