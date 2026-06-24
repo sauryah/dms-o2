@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,16 +19,21 @@ import (
 )
 
 func main() {
+	// Configure slog JSON logger
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Configuration error: %v", err)
+		slog.Error("Configuration error", "error", err)
+		os.Exit(1)
 	}
 
 	// Connect to PostgreSQL
 	db, err := database.NewPostgresDB(cfg)
 	if err != nil {
-		log.Fatalf("Could not connect to PostgreSQL database: %v", err)
+		slog.Error("Could not connect to PostgreSQL database", "error", err)
+		os.Exit(1)
 	}
 
 	// Connect to Meilisearch
@@ -68,7 +73,7 @@ func main() {
 	loggingMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		mux.ServeHTTP(w, r)
-		log.Printf("%s %s %s %s", r.RemoteAddr, r.Method, r.URL.String(), time.Since(start))
+		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "duration", time.Since(start))
 	})
 
 	server := &http.Server{
@@ -80,23 +85,24 @@ func main() {
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("Go Search Service listening on port %s...", port)
+		slog.Info("Go Search Service listening", "port", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("ListenAndServe error: %v", err)
+			slog.Error("ListenAndServe error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
 	sig := <-stopChan
-	log.Printf("Received signal %v. Initiating graceful shutdown...", sig)
+	slog.Info("Received signal. Initiating graceful shutdown...", "signal", sig)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("HTTP server Shutdown error: %v", err)
+		slog.Error("HTTP server Shutdown error", "error", err)
 	}
 
-	log.Println("Closing PostgreSQL database connections...")
+	slog.Info("Closing PostgreSQL database connections...")
 	db.Close()
-	log.Println("Go Search Service stopped cleanly.")
+	slog.Info("Go Search Service stopped cleanly.")
 }

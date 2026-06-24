@@ -1,4 +1,5 @@
 import csv
+import logging
 import openpyxl
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
@@ -6,6 +7,8 @@ from machines.models import Set
 from users.middleware import _thread_locals
 from dies.services.validation_service import ValidationService
 from dies.services.search_service import SearchService
+
+logger = logging.getLogger(__name__)
 
 class ImportService:
     @staticmethod
@@ -54,6 +57,7 @@ class ImportService:
                                 row_dict[headers[idx]] = cell.strip()
                         rows.append((row_idx + 2, row_dict))
         except Exception as e:
+            logger.exception("Failed to parse uploaded spreadsheet file for import")
             if hasattr(_thread_locals, 'user'):
                 del _thread_locals.user
             if hasattr(_thread_locals, 'skip_single_sync'):
@@ -198,6 +202,11 @@ class ImportService:
                             updated += 1
 
                 except Exception as e:
+                    logger.error(
+                        f"Failed to import row {line_num} due to error: {str(e)}",
+                        exc_info=True,
+                        extra={'row': line_num, 'die_id': row_data.get('die_id')}
+                    )
                     errors.append({
                         'row': line_num,
                         'error': str(e)

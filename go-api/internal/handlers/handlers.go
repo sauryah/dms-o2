@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,6 +19,26 @@ import (
 	"dms-go-api/internal/events"
 	"dms-go-api/internal/search"
 )
+
+type ProblemDetails struct {
+	Type     string `json:"type,omitempty"`
+	Title    string `json:"title"`
+	Status   int    `json:"status"`
+	Detail   string `json:"detail"`
+	Instance string `json:"instance"`
+}
+
+func writeProblemDetails(w http.ResponseWriter, r *http.Request, title string, status int, detail string) {
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(status)
+	prob := ProblemDetails{
+		Title:    title,
+		Status:   status,
+		Detail:   detail,
+		Instance: r.URL.Path,
+	}
+	json.NewEncoder(w).Encode(prob)
+}
 
 type Handler struct {
 	cfg          *config.Config
@@ -92,9 +112,8 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, total, err := h.db.GetStats(queryCtx)
 	if err != nil {
-		log.Printf("Failed to query statistics: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		slog.Error("Failed to query statistics", "error", err)
+		writeProblemDetails(w, r, "Internal Server Error", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -105,8 +124,8 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 
 	respBytes, err := json.Marshal(response)
 	if err != nil {
-		log.Printf("Failed to marshal stats response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		slog.Error("Failed to marshal stats response", "error", err)
+		writeProblemDetails(w, r, "Internal Server Error", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -114,20 +133,12 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	if h.cache.Enabled() {
 		err = h.cache.Set(r.Context(), "stats", respBytes, 15*time.Second)
 		if err != nil {
-			log.Printf("Warning: Failed to save stats to Redis: %v", err)
+			slog.Warn("Failed to save stats to Redis", "error", err)
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(respBytes)
-}
-
-func validateFloatParam(s string) bool {
-	if s == "" {
-		return true
-	}
-	_, err := strconv.ParseFloat(s, 64)
-	return err == nil
 }
 
 func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
@@ -159,8 +170,7 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
 		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
 		!validateFloatParam(thickMin) || !validateFloatParam(thickMax) {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid decimal parameter format"})
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid decimal parameter format")
 		return
 	}
 
@@ -191,9 +201,8 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Printf("Search query failed: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		slog.Error("Search query failed", "error", err)
+		writeProblemDetails(w, r, "Internal Server Error", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -203,8 +212,8 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	respBytes, err := json.Marshal(dies)
 	if err != nil {
-		log.Printf("Failed to marshal search response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		slog.Error("Failed to marshal search response", "error", err)
+		writeProblemDetails(w, r, "Internal Server Error", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -212,16 +221,12 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	if h.cache.Enabled() {
 		err = h.cache.Set(r.Context(), cacheKey, respBytes, 10*time.Second)
 		if err != nil {
-			log.Printf("Warning: Failed to save search results to Redis: %v", err)
+			slog.Warn("Failed to save search results to Redis", "error", err)
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(respBytes)
-}
-
-func escapeMeiliString(s string) string {
-	return strings.ReplaceAll(s, "'", "\\'")
 }
 
 func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
@@ -267,14 +272,14 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		searchParams.Filter = strings.Join(filters, " AND ")
 	}
 
-	log.Printf("QueryMeilisearchAndPostgres: executing search for %q with filters: %q", q, searchParams.Filter)
+	slog.Info("Executing search", "query", q, "filters", searchParams.Filter)
 	// Search Meilisearch index
 	res, err := h.search.Search(q, &searchParams)
 	if err != nil {
-		log.Printf("Meilisearch search error: %v. Falling back to DB search.", err)
+		slog.Error("Meilisearch search error, falling back to DB", "error", err)
 		return h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
 	}
-	log.Printf("QueryMeilisearchAndPostgres: Meilisearch returned %d hits for query %q", len(res.Hits), q)
+	slog.Info("Meilisearch search success", "hits", len(res.Hits), "query", q)
 
 	if len(res.Hits) == 0 {
 		return []database.DieRepresentation{}, nil
@@ -322,9 +327,7 @@ func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
 	// Require authentication: check if user_id is set in request context
 	userID := r.Context().Value(auth.UserContextKey)
 	if userID == nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Authentication token is required or session expired"})
+		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Authentication token is required or session expired")
 		return
 	}
 
@@ -343,7 +346,7 @@ func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		log.Println("Streaming unsupported by web server")
+		slog.Error("Streaming unsupported by web server")
 		return
 	}
 
@@ -373,7 +376,7 @@ func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RunReconciliation() {
-	log.Println("Starting Search Index Reconciliation...")
+	slog.Info("Starting Search Index Reconciliation")
 
 	queryCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -381,7 +384,7 @@ func (h *Handler) RunReconciliation() {
 	// 1. Get Postgres count
 	pgCount, err := h.db.GetCount(queryCtx)
 	if err != nil {
-		log.Printf("Reconciliation error: Failed to count Postgres records: %v", err)
+		slog.Error("Reconciliation error: Failed to count Postgres records", "error", err)
 		h.reconMu.Lock()
 		h.reconStatus = "error_postgres"
 		h.lastRecon = time.Now()
@@ -392,7 +395,7 @@ func (h *Handler) RunReconciliation() {
 	// 2. Get Meilisearch count
 	mCountVal, err := h.search.GetStats()
 	if err != nil {
-		log.Printf("Reconciliation error: Failed to get Meilisearch stats: %v", err)
+		slog.Error("Reconciliation error: Failed to get Meilisearch stats", "error", err)
 		h.reconMu.Lock()
 		h.reconStatus = "error_meilisearch"
 		h.lastRecon = time.Now()
@@ -409,10 +412,10 @@ func (h *Handler) RunReconciliation() {
 
 	if pgCount == mCount {
 		h.reconStatus = "in_sync"
-		log.Printf("Reconciliation Success: Index is in sync. Total dies: %d.", pgCount)
+		slog.Info("Reconciliation Success: Index is in sync", "total_dies", pgCount)
 	} else {
 		h.reconStatus = "out_of_sync"
-		log.Printf("WARNING: Search Index Mismatch! PostgreSQL has %d records, but Meilisearch has %d documents.", pgCount, mCount)
+		slog.Warn("Search Index Mismatch", "postgres_count", pgCount, "meilisearch_count", mCount)
 	}
 	h.reconMu.Unlock()
 }
@@ -430,4 +433,16 @@ func (h *Handler) StartReconciliationScheduler() {
 			h.RunReconciliation()
 		}
 	}()
+}
+
+func validateFloatParam(s string) bool {
+	if s == "" {
+		return true
+	}
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
+}
+
+func escapeMeiliString(s string) string {
+	return strings.ReplaceAll(s, "'", "\\'")
 }
