@@ -447,13 +447,7 @@ function AppContent() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
           <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
-          <Route path="/machines" element={
-            <ErrorBoundary>
-              <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
-                <MachineSetsPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
+          <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
           <Route path="/import" element={
             <ErrorBoundary>
               <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>

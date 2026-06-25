@@ -40,3 +40,6 @@ graphify-out/
 
 # User
 plan.md
+
+# Go binaries
+go-api/server

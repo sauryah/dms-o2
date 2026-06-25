@@ -51,9 +51,8 @@ func AuthMiddleware(cfg *config.Config, db *database.PostgresDB) func(http.Handl
 			}
 
 			if tokenStr == "" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Authentication token is required"})
+				// No token provided; allow guest access (AllowAny equivalent)
+				next.ServeHTTP(w, r)
 				return
 			}
 

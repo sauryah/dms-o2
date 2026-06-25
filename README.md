@@ -156,7 +156,7 @@ For developers who prefer executing individual bootstrap steps:
     ```bash
     docker compose exec django python manage.py migrate
     docker compose exec django python manage.py create_root_user
-    docker compose exec django python manage.py sync_search
+    agy
     ```
 4.  **Application Access Interfaces**:
     *   **Frontend Portal**: [http://localhost](http://localhost)
