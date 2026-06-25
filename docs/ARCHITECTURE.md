@@ -230,7 +230,8 @@ sequenceDiagram
 *   **Cache Lifetime**: 10 seconds.
 *   **Key Composition**: A combined hash of all active search query parameters:
     `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}`
-*   **Eviction Strategy**: Immediate validation invalidates cache values when data changes. When database insertions, deletions, or modifications occur, a Django PostgreSQL `LISTEN` / `NOTIFY` hook broadcasts an invalidation signal to the Go service, clearing the Redis keys.
+*   **Eviction Strategy**: Immediate validation invalidates cache values when data changes. When database insertions, deletions, or modifications occur, a Django PostgreSQL `LISTEN` / `NOTIFY` hook broadcasts an invalidation signal to the Go service.
+*   **Cache Set-Tracker**: To avoid blocking Redis cursor-scanning operations, all cached search keys are registered under a Redis Set called `cached_searches` upon writing. During cache invalidation, the Go service pulls the keys from this Set, deletes them in a single batch operation, and clears the tracker Set.
 
 ---
 
@@ -289,7 +290,7 @@ ORDER BY query_start ASC;
 
 ## 4. See Also
 
-*   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
-*   [PROJECT.md](file:///home/sahil/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
-*   [MASTER.md](file:///home/sahil/Projects/dms-o2/design-system/die-management-system/MASTER.md) - Styling rules, dark mode palettes, and typography specifications.
+*   [README.md](file:///home/tr/Desktop/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
+*   [PROJECT.md](file:///home/tr/Desktop/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
+*   [MASTER.md](file:///home/tr/Desktop/Projects/dms-o2/design-system/die-management-system/MASTER.md) - Styling rules, dark mode palettes, and typography specifications.
 

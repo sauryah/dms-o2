@@ -424,7 +424,7 @@ Regular/unauthenticated users can search and view items. Updating status or loca
 
 **Proprietary / Internal Business Use Only**
 
-This software and source code are proprietary. See the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for terms and conditions.
+This software and source code are proprietary. See the [LICENSE](file:///home/tr/Desktop/Projects/dms-o2/LICENSE) file for terms and conditions.
 
 
 
