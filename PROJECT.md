@@ -120,6 +120,12 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-25 · refactor: optimize caching, secure thread-local imports, and modularize monolithic page components
+- Optimized Go API caching by replacing cursor-based `SCAN` keys iteration with a Redis Set (`cached_searches`) tracking list, reducing invalidation complexity.
+- Secured Django `ImportService` thread-local variables (`user`, `skip_single_sync`) lifecycle management by wrapping the execution loop in a `try...finally` block.
+- Modularized React frontend `UsersPage` into separate `UserManager` and `BackupManager` components.
+- Modularized React frontend `MachineSetsPage` into separate `CategoriesTab`, `MachinesTab`, and `SetsTab` components.
+
 ### 2026-06-24 · fix: allow custom limit in Go search API to display all inventory dies in tree view
 - Added a `limit` query parameter to the `/api/go/search` endpoint (defaulting to 150) in Go API.
 - Configured React Query fetcher and prefetch logic on the Inventory page to use `limit=10000` to fetch and display all matching dies.
