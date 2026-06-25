@@ -50,7 +50,17 @@ func (c *Cache) Set(ctx context.Context, key string, val []byte, expiration time
 	if c.client == nil {
 		return fmt.Errorf("redis cache is disabled")
 	}
-	return c.client.Set(ctx, key, val, expiration).Err()
+	err := c.client.Set(ctx, key, val, expiration).Err()
+	if err != nil {
+		return err
+	}
+	if len(key) >= 7 && key[:7] == "search:" {
+		errSAdd := c.client.SAdd(ctx, "cached_searches", key).Err()
+		if errSAdd != nil {
+			log.Printf("Warning: Failed to add key %s to cached_searches tracker: %v", key, errSAdd)
+		}
+	}
+	return nil
 }
 
 func (c *Cache) Invalidate(ctx context.Context) {
@@ -66,29 +76,25 @@ func (c *Cache) Invalidate(ctx context.Context) {
 		log.Println("Successfully invalidated 'stats' cache.")
 	}
 
-	// Find and delete search keys using non-blocking SCAN
-	var cursor uint64
-	totalDeleted := 0
-	for {
-		keys, nextCursor, err := c.client.Scan(ctx, cursor, "search:*", 100).Result()
+	// Retrieve all tracked search keys from the Set
+	keys, err := c.client.SMembers(ctx, "cached_searches").Result()
+	if err != nil {
+		log.Printf("Failed to retrieve cached search keys from Set: %v", err)
+		return
+	}
+
+	if len(keys) > 0 {
+		err = c.client.Del(ctx, keys...).Err()
 		if err != nil {
-			log.Printf("Failed to scan cached search keys: %v", err)
-			break
-		}
-		if len(keys) > 0 {
-			err = c.client.Del(ctx, keys...).Err()
-			if err != nil {
-				log.Printf("Failed to delete scanned search cache keys: %v", err)
-			} else {
-				totalDeleted += len(keys)
-			}
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
+			log.Printf("Failed to delete tracked search cache keys: %v", err)
+		} else {
+			log.Printf("Successfully invalidated %d search cache keys.", len(keys))
 		}
 	}
-	if totalDeleted > 0 {
-		log.Printf("Successfully invalidated %d search cache keys.", totalDeleted)
+
+	// Clear the tracker Set itself
+	err = c.client.Del(ctx, "cached_searches").Err()
+	if err != nil {
+		log.Printf("Failed to delete cached_searches tracker Set: %v", err)
 	}
 }
