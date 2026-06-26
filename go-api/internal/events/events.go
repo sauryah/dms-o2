@@ -22,8 +22,8 @@ type EventManager struct {
 func NewEventManager() *EventManager {
 	return &EventManager{
 		clients:    make(map[Client]bool),
-		register:   make(chan Client),
-		unregister: make(chan Client),
+		register:   make(chan Client, 64),
+		unregister: make(chan Client, 64),
 		broadcast:  make(chan string, 256),
 	}
 }
