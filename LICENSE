@@ -1,98 +1,27 @@
-# Proprietary License
+# MIT License
 
-Copyright (c) 2026. All rights reserved.
-
----
-
-## 🛡️ License Summary
-
-This repository is governed by a **Proprietary and Confidential** license. Below is a quick overview of the permissions, limitations, and conditions of use:
-
-<table>
-  <thead>
-    <tr>
-      <th width="33%">✅ Permissions</th>
-      <th width="33%">❌ Limitations & Prohibitions</th>
-      <th width="33%">ℹ️ Conditions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr valign="top">
-      <td>
-        <ul>
-          <li>
-            <strong>Private Use</strong>
-            <br>
-            <small>You are allowed to deploy, configure, and run this software for internal business operations.</small>
-          </li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>
-            <strong>Distribution</strong>
-            <br>
-            <small>You cannot share, copy, or distribute the source code or binaries via any medium.</small>
-          </li>
-          <li>
-            <strong>Commercialization</strong>
-            <br>
-            <small>You cannot sell, resell, rent, lease, lend, or sublicense this software.</small>
-          </li>
-          <li>
-            <strong>Modification</strong>
-            <br>
-            <small>You cannot modify, adapt, merge, or translate the source code.</small>
-          </li>
-          <li>
-            <strong>Reverse Engineering</strong>
-            <br>
-            <small>You cannot decompile, disassemble, or reverse-engineer the codebase.</small>
-          </li>
-          <li>
-            <strong>Warranty & Liability</strong>
-            <br>
-            <small>The software is provided "AS IS" with no liability or warranties of any kind.</small>
-          </li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>
-            <strong>Notice Retention</strong>
-            <br>
-            <small>All existing copyright, trademark, and ownership notices must remain intact.</small>
-          </li>
-          <li>
-            <strong>Confidentiality</strong>
-            <br>
-            <small>The source code and design architectures must be kept strictly confidential.</small>
-          </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
+**Project:** Die Management System (DMS)  
+**Author:** Sahil Pradhan  
+**Year:** 2026  
 
 ---
 
-## 📄 Full License Agreement
+Copyright (c) 2026 Sahil Pradhan
 
-<details open>
-<summary><b>Expand / Collapse Legal Terms and Conditions</b></summary>
-<br>
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-### 1. Grant of License
-Subject to compliance with these terms, you are granted a non-exclusive, non-transferable, revocable license to deploy, configure, and run this software for internal business operations only.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-### 2. Ownership
-The software, its source code, design, and vector CAD blue-printing architectures remain the sole property of the copyright holders.
-
-### 3. Restrictions
-*   **No Commercialization:** You may not sell, resell, rent, lease, lend, redistribute, sublicense, or otherwise commercially exploit this software or any part of its source code.
-*   **No Reverse Engineering:** You may not modify, adapt, merge, translate, decompile, disassemble, or reverse-engineer the source code or binary outputs of the software, except as explicitly permitted for internal configurations.
-
-### 4. Disclaimer of Warranty
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-</details>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
