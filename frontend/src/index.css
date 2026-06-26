@@ -261,3 +261,44 @@ textarea:focus {
   animation: slideDown 0.3s ease-out forwards;
   overflow: hidden;
 }
+
+/* Premium Motion Curves */
+.transition-premium {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-skeleton {
+  animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Accessible outline states */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+/* WCAG Contrast helper utilities */
+.text-wcag-medium {
+  color: #94a3b8; /* Slate-400 */
+}
+.text-wcag-muted {
+  color: #cbd5e1; /* Slate-300 */
+}
+.border-wcag-premium {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+

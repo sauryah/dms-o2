@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Folder, Plus } from 'lucide-react'
 import { useApi } from '../../App'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 interface CategoriesTabProps {
   categories: any[] | undefined
@@ -16,6 +17,7 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
   const [searchQuery, setSearchQuery] = useState('')
   const [catName, setCatName] = useState('')
   const [editingCat, setEditingCat] = useState<any>(null)
+  const [categoryToDelete, setCategoryToDelete] = useState<any>(null)
 
   const createCategory = useMutation({
     mutationFn: (data: any) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
@@ -96,8 +98,9 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
                       <Edit className="h-4 w-4" />
                     </button>
                     <button 
-                      onClick={() => { if (window.confirm('Delete this category?')) deleteCategory.mutate(cat.id); }}
+                      onClick={() => { setCategoryToDelete(cat) }}
                       className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900/50 rounded-lg transition"
+                      aria-label={`Delete category ${cat.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -132,7 +135,7 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
                 <button 
                   type="button"
                   onClick={() => { setEditingCat(null); setCatName(''); }}
-                  className="bg-slate-950/50 hover:bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
+                  className="bg-slate-955 hover:bg-slate-800 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
                 >
                   Cancel
                 </button>
@@ -148,6 +151,21 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!categoryToDelete}
+        title="Delete Category"
+        message={`Are you sure you want to permanently delete category "${categoryToDelete?.name}"? All associated machines under this category will be updated.`}
+        confirmText="Delete Category"
+        isDestructive={true}
+        onConfirm={() => {
+          if (categoryToDelete) {
+            deleteCategory.mutate(categoryToDelete.id)
+            setCategoryToDelete(null)
+          }
+        }}
+        onCancel={() => setCategoryToDelete(null)}
+      />
     </>
   )
 }

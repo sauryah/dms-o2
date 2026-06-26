@@ -5,6 +5,8 @@ import { Search, SlidersHorizontal } from 'lucide-react'
 import { useAuth, useDebounce } from '../../../App'
 import { RoundDieCard } from './RoundDieCard'
 import { FlatDieCard } from './FlatDieCard'
+import { Skeleton, CardSkeleton } from '../../../components/Skeleton'
+import { EmptyState } from '../../../components/EmptyState'
 
 interface StatusDistributionChartProps {
   stats: Record<string, number>;
@@ -249,7 +251,7 @@ export function DashboardPage() {
       {isStatsLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-slate-900 border border-slate-800 rounded-xl h-24"></div>
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : (
@@ -557,15 +559,16 @@ export function DashboardPage() {
           </div>
 
           {isSearchLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-slate-900/60 border border-slate-850 rounded-2xl h-40"></div>
+                <CardSkeleton key={i} />
               ))}
             </div>
           ) : searchDies?.length === 0 ? (
-            <div className="text-center py-12 bg-slate-900 border border-slate-850 rounded-2xl">
-              <p className="text-slate-500">No dies found matching your search criteria.</p>
-            </div>
+            <EmptyState
+              title="No Dies Found"
+              description="No dies in inventory match your active search term or filter criteria. Try clearing search filters."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {searchDies?.map((die: any) => 

@@ -342,13 +342,13 @@ function SessionTimeoutManager() {
 }
 
 const PageLoader = () => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center py-12">
+  <div className="min-h-[60vh] flex flex-col items-center justify-center py-12 animate-fadeIn">
     <div className="relative w-16 h-16">
-      <div className="absolute inset-0 rounded-full border-4 border-slate-800/80 animate-pulse" />
+      <div className="absolute inset-0 rounded-full border-4 border-slate-800/40 animate-pulse" />
       <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
     </div>
-    <span className="mt-4 text-xs font-mono font-bold tracking-widest text-slate-500 uppercase animate-pulse">
-      Loading interface...
+    <span className="mt-6 text-xs font-heading font-bold tracking-widest text-slate-400 uppercase animate-pulse">
+      Loading Interface...
     </span>
   </div>
 )

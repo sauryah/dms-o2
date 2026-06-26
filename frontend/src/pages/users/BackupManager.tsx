@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, RefreshCw, Database, Trash2, Upload, Download, AlertTriangle, X } from 'lucide-react'
 import { useApi, useAuth, useToast } from '../../App'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 export function BackupManager() {
   const { request } = useApi()
@@ -13,6 +14,7 @@ export function BackupManager() {
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false)
   const [restoreConfirmInput, setRestoreConfirmInput] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const [backupToDelete, setBackupToDelete] = useState<string | null>(null)
 
   // Fetch Backups
   const { data: backups, isLoading: isBackupsLoading, error: backupsError } = useQuery({
@@ -254,7 +256,6 @@ export function BackupManager() {
                               <button
                                 onClick={() => {
                                   setSelectedBackup(backup)
-                                  setRestoreConfirmInput('')
                                   setShowRestoreConfirmModal(true)
                                 }}
                                 className="bg-rose-600/15 hover:bg-rose-600/30 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
@@ -263,9 +264,7 @@ export function BackupManager() {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`Are you sure you want to permanently delete backup "${backup.filename}"?`)) {
-                                    deleteBackupMutation.mutate(backup.filename)
-                                  }
+                                  setBackupToDelete(backup.filename)
                                 }}
                                 disabled={deleteBackupMutation.isPending}
                                 className="bg-rose-500/5 hover:bg-rose-500/15 text-rose-500 hover:text-rose-400 border border-rose-500/10 p-2 rounded-xl text-xs transition disabled:opacity-40"
@@ -285,81 +284,38 @@ export function BackupManager() {
         </div>
       )}
 
-      {/* Database Restore Double Confirmation Modal */}
-      {showRestoreConfirmModal && selectedBackup && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <div className="flex items-center space-x-2 text-rose-400">
-                <AlertTriangle className="h-5 w-5" />
-                <h2 className="text-xl font-bold text-white">Confirm Database Restore</h2>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowRestoreConfirmModal(false)
-                  setSelectedBackup(null)
-                }} 
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+      <ConfirmDialog
+        isOpen={!!backupToDelete}
+        title="Delete Backup"
+        message={`Are you sure you want to permanently delete backup "${backupToDelete}"? This action is irreversible.`}
+        confirmText="Delete Backup"
+        isDestructive={true}
+        onConfirm={() => {
+          if (backupToDelete) {
+            deleteBackupMutation.mutate(backupToDelete)
+            setBackupToDelete(null)
+          }
+        }}
+        onCancel={() => setBackupToDelete(null)}
+      />
 
-            <div className="p-6 space-y-4">
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl p-4 text-sm font-medium leading-relaxed font-sans">
-                <strong>Warning:</strong> Restoring the database will overwrite all current data in the system (dies, machines, sets, users, history). Any modifications made since the backup was taken will be permanently lost.
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-300 mb-2">You are about to restore from:</p>
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-white break-all flex items-center space-x-2">
-                  <Database className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                  <span>{selectedBackup.filename}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Type <span className="text-rose-400 font-bold">RESTORE</span> to confirm:
-                </label>
-                <input 
-                  type="text"
-                  value={restoreConfirmInput}
-                  onChange={(e) => setRestoreConfirmInput(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 focus:border-rose-500 rounded-xl py-2.5 px-3.5 text-white focus:outline-none placeholder-slate-700"
-                  placeholder="Type RESTORE"
-                />
-              </div>
-
-              <div className="border-t border-slate-800 pt-4 flex justify-end space-x-2">
-                <button 
-                  onClick={() => {
-                    setShowRestoreConfirmModal(false)
-                    setSelectedBackup(null)
-                  }}
-                  className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => {
-                    if (restoreConfirmInput === 'RESTORE') {
-                      restoreBackupMutation.mutate(selectedBackup.filename)
-                    }
-                  }}
-                  disabled={restoreConfirmInput !== 'RESTORE' || restoreBackupMutation.isPending}
-                  className="bg-rose-600 hover:bg-rose-500 disabled:bg-rose-800/40 disabled:text-rose-400/50 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition shadow-md shadow-rose-500/10 hover:shadow-rose-500/20 disabled:shadow-none inline-flex items-center space-x-2"
-                >
-                  {restoreBackupMutation.isPending && (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  )}
-                  <span>{restoreBackupMutation.isPending ? 'Restoring...' : 'Execute Restore'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showRestoreConfirmModal && !!selectedBackup}
+        title="Confirm Database Restore"
+        message="Warning: Restoring the database will overwrite all current data in the system (dies, machines, sets, users, history). Any modifications made since the backup was taken will be permanently lost."
+        confirmText="Execute Restore"
+        isDestructive={true}
+        requireMatchText="RESTORE"
+        onConfirm={() => {
+          if (selectedBackup) {
+            restoreBackupMutation.mutate(selectedBackup.filename)
+          }
+        }}
+        onCancel={() => {
+          setShowRestoreConfirmModal(false)
+          setSelectedBackup(null)
+        }}
+      />
     </div>
   )
 }

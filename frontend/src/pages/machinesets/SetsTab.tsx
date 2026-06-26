@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Layers, Plus } from 'lucide-react'
 import { useApi } from '../../App'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 interface SetsTabProps {
   sets: any[] | undefined
@@ -19,6 +20,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
   const [nameSet, setNameSet] = useState('')
   const [machineSet, setMachineSet] = useState<any>('')
   const [editingSet, setEditingSet] = useState<any>(null)
+  const [setToDelete, setSetToDelete] = useState<any>(null)
 
   const createSet = useMutation({
     mutationFn: (data: any) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
@@ -138,8 +140,9 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
                       <Edit className="h-4 w-4" />
                     </button>
                     <button 
-                      onClick={() => { if (window.confirm('Delete this set?')) deleteSet.mutate(s.id); }}
+                      onClick={() => { setSetToDelete(s) }}
                       className="p-1.5 text-slate-400 hover:text-rose-455 hover:bg-slate-900/50 rounded-lg transition"
+                      aria-label={`Delete set ${s.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -217,6 +220,21 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!setToDelete}
+        title="Delete Toolset Profile"
+        message={`Are you sure you want to permanently delete toolset "${setToDelete?.name}"? All associated dies under this set will be unassigned.`}
+        confirmText="Delete Toolset"
+        isDestructive={true}
+        onConfirm={() => {
+          if (setToDelete) {
+            deleteSet.mutate(setToDelete.id)
+            setSetToDelete(null)
+          }
+        }}
+        onCancel={() => setSetToDelete(null)}
+      />
     </>
   )
 }

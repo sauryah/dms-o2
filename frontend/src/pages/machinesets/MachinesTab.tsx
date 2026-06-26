@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Cpu, Plus } from 'lucide-react'
 import { useApi } from '../../App'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 interface MachinesTabProps {
   machines: any[] | undefined
@@ -19,6 +20,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
   const [machName, setMachName] = useState('')
   const [machCat, setMachCat] = useState<any>('')
   const [editingMach, setEditingMach] = useState<any>(null)
+  const [machineToDelete, setMachineToDelete] = useState<any>(null)
 
   const createMachine = useMutation({
     mutationFn: (data: any) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
@@ -129,8 +131,9 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
                       <Edit className="h-4 w-4" />
                     </button>
                     <button 
-                      onClick={() => { if (window.confirm('Delete this machine?')) deleteMachine.mutate(mach.id); }}
+                      onClick={() => { setMachineToDelete(mach) }}
                       className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900/50 rounded-lg transition"
+                      aria-label={`Delete machine ${mach.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -208,6 +211,21 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!machineToDelete}
+        title="Delete Machine Profile"
+        message={`Are you sure you want to permanently delete machine "${machineToDelete?.name}"? All associated sets under this machine will be unassigned.`}
+        confirmText="Delete Machine"
+        isDestructive={true}
+        onConfirm={() => {
+          if (machineToDelete) {
+            deleteMachine.mutate(machineToDelete.id)
+            setMachineToDelete(null)
+          }
+        }}
+        onCancel={() => setMachineToDelete(null)}
+      />
     </>
   )
 }

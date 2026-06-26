@@ -23,6 +23,8 @@ import { CreateDieModal } from './CreateDieModal'
 import { FilterPanel } from './FilterPanel'
 import { DieStats } from '../../dashboard/components/DieStats'
 import { RackLayoutGrid } from './RackLayoutGrid'
+import { Skeleton, TableSkeleton } from '../../../components/Skeleton'
+import { EmptyState } from '../../../components/EmptyState'
 
 export function InventoryPage() {
   const { request } = useApi()
@@ -79,11 +81,11 @@ export function InventoryPage() {
   const [expandedUnassigned, setExpandedUnassigned] = useState(true)
 
   const toggleMachine = useCallback((id: any) => {
-    setExpandedMachines(prev => ({ ...prev, [id]: !prev[id] }))
+    setExpandedMachines((prev: Record<string | number, boolean>) => ({ ...prev, [id]: !prev[id] }))
   }, [])
 
   const toggleSet = useCallback((id: any) => {
-    setExpandedSets(prev => ({ ...prev, [id]: !prev[id] }))
+    setExpandedSets((prev: Record<string | number, boolean>) => ({ ...prev, [id]: !prev[id] }))
   }, [])
 
   const [createError, setCreateError] = useState<string | null>(null)
@@ -92,7 +94,7 @@ export function InventoryPage() {
   // React Query Fetcher
   const { data: dies, isLoading, error } = useQuery({
     queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, '10000'],
-    queryFn: ({ signal }) => {
+    queryFn: ({ signal }: { signal: AbortSignal }) => {
       let url = '/api/go/search'
       const params = new URLSearchParams()
       
@@ -127,7 +129,7 @@ export function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       setIsCreateOpen(false)
     },
-    onError: (err) => {
+    onError: (err: any) => {
       setCreateError(err.message)
     }
   })
@@ -138,7 +140,7 @@ export function InventoryPage() {
       method: 'PATCH',
       body: JSON.stringify({ location })
     }),
-    onMutate: async ({ dieId, location }) => {
+    onMutate: async ({ dieId, location }: { dieId: string, location: string }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
@@ -153,7 +155,7 @@ export function InventoryPage() {
 
       return { previousDies, previousSearch }
     },
-    onError: (err, variables, context: any) => {
+    onError: (err: any, variables: any, context: any) => {
       if (context) {
         if (context.previousDies) {
           context.previousDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
@@ -164,7 +166,7 @@ export function InventoryPage() {
       }
       showToast(`Failed to move die: ${err.message}`, 'error')
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data: any, variables: any) => {
       showToast(`Successfully moved die ${variables.dieId} to ${variables.location}.`, 'success')
     },
     onSettled: () => {
@@ -183,7 +185,7 @@ export function InventoryPage() {
       method: 'PATCH',
       body: JSON.stringify({ current_set: setId })
     }),
-    onMutate: async ({ dieId, setId }) => {
+    onMutate: async ({ dieId, setId }: { dieId: any, setId: any }) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
@@ -358,7 +360,7 @@ export function InventoryPage() {
 
       return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets, previousDie: p1, previousDieDetail: p2 }
     },
-    onError: (err, variables, context: any) => {
+    onError: (err: any, variables: any, context: any) => {
       if (context) {
         if (context.previousDiesQueries) {
           context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
@@ -381,7 +383,7 @@ export function InventoryPage() {
       }
       showToast(`Failed to allocate die: ${err.message}`, 'error')
     },
-    onSettled: (data, err, variables) => {
+    onSettled: (data: any, err: any, variables: any) => {
       queryClient.invalidateQueries({ queryKey: ['dies'] })
       queryClient.invalidateQueries({ queryKey: ['searchDies'] })
       queryClient.invalidateQueries({ queryKey: ['machinesList'] })
@@ -397,7 +399,7 @@ export function InventoryPage() {
       method: 'PATCH',
       body: JSON.stringify({ machine: machineId })
     }),
-    onMutate: async ({ setId, machineId }) => {
+    onMutate: async ({ setId, machineId }: { setId: any, machineId: any }) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
@@ -496,7 +498,7 @@ export function InventoryPage() {
 
       return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets }
     },
-    onError: (err, variables, context: any) => {
+    onError: (err: any, variables: any, context: any) => {
       if (context) {
         if (context.previousDiesQueries) {
           context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
@@ -786,7 +788,7 @@ export function InventoryPage() {
             type="text"
             placeholder="Search machines or sets..."
             value={treeSearch}
-            onChange={(e) => setTreeSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTreeSearch(e.target.value)}
             className="w-full glass-input rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
           />
         </div>
@@ -852,13 +854,13 @@ export function InventoryPage() {
                             : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
                       }`}
                       onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
-                      onDragOver={canCreate ? (e) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
-                      onDragEnter={canCreate ? (e) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
-                      onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                      onDrop={canCreate ? (e) => handleDropOnMachine(e, machine.id) : undefined}
+                      onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
+                      onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
+                      onDragLeave={canCreate ? (e: React.DragEvent<HTMLDivElement>) => setDragOverNode(null) : undefined}
+                      onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnMachine(e, machine.id) : undefined}
                     >
                       <button
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.stopPropagation()
                           toggleMachine(machine.id)
                         }}
@@ -891,7 +893,7 @@ export function InventoryPage() {
                               <div
                                 onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
                                 draggable={canCreate}
-                                onDragStart={(e) => {
+                                onDragStart={(e: React.DragEvent<HTMLDivElement>) => {
                                   if (canCreate) {
                                     e.dataTransfer.effectAllowed = 'move';
                                     e.dataTransfer.setData('application/json', JSON.stringify({ type: 'set', id: set.id, currentMachineId: machine.id }));
@@ -902,10 +904,10 @@ export function InventoryPage() {
                                   setActiveDragType(null);
                                   setDragOverNode(null);
                                 }}
-                                onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                                onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
+                                onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                                onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
                                 onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                                onDrop={canCreate ? (e) => handleDropOnSet(e, set.id) : undefined}
+                                onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id) : undefined}
                                 className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
                                   canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                                 } ${
@@ -944,10 +946,10 @@ export function InventoryPage() {
                  return (
                    <div
                      onClick={() => setSelectedNode({ type: 'unassigned' })}
-                     onDragOver={canCreate ? (e) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                     onDragEnter={canCreate ? (e) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
+                     onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
+                     onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
                      onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                     onDrop={canCreate ? (e: React.DragEvent) => handleDropOnUnassigned(e) : undefined}
+                     onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnUnassigned(e) : undefined}
                      className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
                        isUnassignedDragOver
                          ? 'bg-amber-655 text-white border-amber-500 ring-2 ring-amber-500/20'
@@ -1155,16 +1157,13 @@ export function InventoryPage() {
 
           {/* Master Detail View Wrapper */}
           {isLoading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="h-10 bg-slate-900/60 border border-slate-800/40 rounded-xl w-1/4"></div>
+            <div className="space-y-6">
+              <Skeleton className="h-10 w-1/4" />
               <div className="flex gap-6">
-                <div className="flex-1 space-y-3">
-                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
-                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
-                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
-                  <div className="h-12 bg-slate-900/60 border border-slate-800/40 rounded-xl"></div>
+                <div className="flex-1">
+                  <TableSkeleton rows={4} cols={5} />
                 </div>
-                <div className="w-80 h-96 bg-slate-900/60 border border-slate-800/40 rounded-xl hidden lg:block"></div>
+                <Skeleton className="w-80 h-[400px] hidden lg:block" />
               </div>
             </div>
           ) : error ? (
@@ -1244,13 +1243,10 @@ export function InventoryPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="glass-panel rounded-2xl p-12 text-center shadow-lg border border-slate-800/40 blueprint-grid relative">
-                      <Search className="h-12 w-12 text-slate-650 mx-auto mb-4 animate-pulse" />
-                      <p className="text-slate-400 font-medium">No dies in the registry match the current search or filters.</p>
-                      <span className="text-sm font-semibold text-slate-500 block mt-2">
-                        Showing 0 results
-                      </span>
-                    </div>
+                    <EmptyState
+                      title="No Matching Dies Found"
+                      description="No dies in the facility match your active search terms or filters. Try clearing your filters or entering a different query."
+                    />
                   )}
                 </div>
               )}

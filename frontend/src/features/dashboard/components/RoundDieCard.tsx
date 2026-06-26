@@ -1,5 +1,5 @@
 import React from 'react'
-import { Die, DieStatus } from '../../../types'
+import { Die, getStatusColorClass } from '../../../types'
 
 interface RoundDieCardProps {
   die: Die;
@@ -7,34 +7,33 @@ interface RoundDieCardProps {
 }
 
 export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
-  const statusColors: Record<DieStatus, string> = {
-    AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    CLEANING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    POLISHING: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    DAMAGED: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    MISSING: 'bg-red-500/10 text-red-400 border-red-500/20',
-    MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onClick()
+    }
   }
 
   return (
     <div 
       onClick={onClick}
-      className="bg-slate-900/60 backdrop-blur-md border border-slate-850 hover:border-blue-500/30 hover:bg-slate-900/90 transition-all duration-300 cursor-pointer shadow-xl rounded-xl p-6 flex flex-col justify-between group h-full"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Round Die ${die.die_id}, Status: ${die.status}, Casing: ${die.casing || 'None'}, Location: ${die.location || 'None'}`}
+      className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 hover:border-blue-500/40 hover:bg-slate-900/90 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-lg rounded-xl p-6 flex flex-col justify-between group h-full focus-ring"
     >
       <div>
         <div className="flex justify-between items-start mb-4 gap-4">
           <div className="flex-1 min-w-0">
-            <span className="text-xxs font-mono font-bold text-blue-400/80 uppercase tracking-widest block mb-1">Round Die</span>
+            <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest block mb-1">Round Die</span>
             <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate font-mono" title={`${die.current_size || 'N/A'} mm`}>{die.current_size || 'N/A'} mm</h3>
           </div>
           <div className="flex flex-col items-end gap-2.5 shrink-0">
-            <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
+            <span className={`px-2.5 py-0.5 text-[10px] font-mono font-semibold rounded-md border ${getStatusColorClass(die.status)}`}>
               {die.status}
             </span>
-            <svg className="w-10 h-10 text-blue-500/20 opacity-70 group-hover:text-blue-500/35 transition-colors" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="w-10 h-10 text-blue-500/20 opacity-70 group-hover:text-blue-500/35 transition-colors" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <circle cx="50" cy="50" r="32" strokeDasharray="3 3" />
               <circle cx="50" cy="50" r="22" strokeWidth="2.5" className="text-blue-500/40 group-hover:text-blue-500/65 transition-colors" />
               <line x1="50" y1="10" x2="50" y2="90" strokeDasharray="2 2" />
@@ -46,19 +45,19 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
       
       <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs border-t border-slate-800/80 pt-4 mt-2">
         <div>
-          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Die ID</span>
+          <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Die ID</span>
           <span className="font-semibold text-slate-200 font-mono truncate block" title={die.die_id}>{die.die_id}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Casing</span>
+          <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Casing</span>
           <span className="font-semibold text-slate-200 font-mono truncate block" title={die.casing}>{die.casing || '—'}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Location</span>
+          <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Location</span>
           <span className="font-semibold text-slate-200 truncate block" title={die.location || undefined}>{die.location || '—'}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-xxs uppercase tracking-wider mb-0.5">Set / Machine</span>
+          <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Set / Machine</span>
           <span className="font-semibold text-slate-200 truncate block" title={die.set_name ? `${die.set_name} (${die.machine_name})` : undefined}>
             {die.set_name ? `${die.set_name} (${die.machine_name})` : '—'}
           </span>
@@ -67,3 +66,4 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
     </div>
   )
 }
+

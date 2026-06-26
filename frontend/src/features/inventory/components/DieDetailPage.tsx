@@ -5,6 +5,7 @@ import { ChevronRight, Trash2 } from 'lucide-react'
 import { useApi, useAuth, useToast } from '../../../App'
 import { DieBlueprint } from './CadRenderer'
 import { Timeline } from './Timeline'
+import { ConfirmDialog } from '../../../components/ConfirmDialog'
 
 export function DieDetailPage() {
   const { id } = useParams()
@@ -25,6 +26,7 @@ export function DieDetailPage() {
   const [currentWidth, setCurrentWidth] = useState('')
   const [currentThickness, setCurrentThickness] = useState('')
   const [highlightedDim, setHighlightedDim] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Query details
   const { data: die, isLoading, error } = useQuery({
@@ -139,9 +141,7 @@ export function DieDetailPage() {
   }
 
   const handleDelete = () => {
-    if (window.confirm('Are you absolutely sure you want to delete this die? This action is irreversible.')) {
-      deleteMutation.mutate()
-    }
+    setShowDeleteConfirm(true)
   }
 
   if (isLoading) return (
@@ -444,6 +444,19 @@ export function DieDetailPage() {
 
       {/* History timeline */}
       <Timeline history={die.history} />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Die Asset"
+        message={`Are you absolutely sure you want to permanently delete die "${die?.die_id}"? This action is irreversible and all transaction history will be purged.`}
+        confirmText="Delete Die"
+        isDestructive={true}
+        onConfirm={() => {
+          deleteMutation.mutate()
+          setShowDeleteConfirm(false)
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   )
 }

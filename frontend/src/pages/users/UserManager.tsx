@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, X } from 'lucide-react'
 import { useApi, useAuth, useToast } from '../../App'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 export function UserManager() {
   const { request } = useApi()
@@ -22,6 +23,7 @@ export function UserManager() {
   const [isActiveInput, setIsActiveInput] = useState(true)
   
   const [formError, setFormError] = useState<string | null>(null)
+  const [userToDelete, setUserToDelete] = useState<any>(null)
 
   // Fetch Users
   const { data: users, isLoading, error } = useQuery({
@@ -168,9 +170,7 @@ export function UserManager() {
       showToast('You cannot delete your own account.', 'error')
       return
     }
-    if (window.confirm(`Are you sure you want to permanently delete user "${user.username}"?`)) {
-      deleteUserMutation.mutate(user.id)
-    }
+    setUserToDelete(user)
   }
 
   return (
@@ -422,6 +422,21 @@ export function UserManager() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!userToDelete}
+        title="Delete User Account"
+        message={`Are you sure you want to permanently delete user "${userToDelete?.username}"? All associated settings for this account will be removed.`}
+        confirmText="Delete User"
+        isDestructive={true}
+        onConfirm={() => {
+          if (userToDelete) {
+            deleteUserMutation.mutate(userToDelete.id)
+            setUserToDelete(null)
+          }
+        }}
+        onCancel={() => setUserToDelete(null)}
+      />
     </div>
   )
 }

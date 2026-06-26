@@ -51,3 +51,19 @@ export interface Machine {
   sets: Set[];
   totalDies: number;
 }
+
+export function getStatusColorClass(status: DieStatus): string {
+  const statusColors: Record<DieStatus, string> = {
+    AVAILABLE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 shadow-[0_0_8px_rgba(16,185,129,0.08)]',
+    RUNNING: 'bg-blue-500/10 text-blue-400 border-blue-500/25 shadow-[0_0_8px_rgba(59,130,246,0.08)]',
+    CLEANING: 'bg-amber-500/10 text-amber-400 border-amber-500/25 shadow-[0_0_8px_rgba(245,158,11,0.08)]',
+    POLISHING: 'bg-purple-500/10 text-purple-400 border-purple-500/25 shadow-[0_0_8px_rgba(139,92,246,0.08)]',
+    DAMAGED: 'bg-rose-500/10 text-rose-400 border-rose-500/25 shadow-[0_0_8px_rgba(244,63,94,0.08)]',
+    SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
+    MISSING: 'bg-red-500/10 text-red-400 border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.08)]',
+    MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/25 shadow-[0_0_8px_rgba(249,115,22,0.08)]',
+    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
+  }
+  return statusColors[status] || 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+}
+
