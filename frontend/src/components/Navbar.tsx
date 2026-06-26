@@ -187,7 +187,7 @@ export function Navbar() {
 
       {/* Mobile Menu Panel */}
       {isOpen && (
-        <div className="sm:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-lg px-4 pt-2 pb-4 space-y-2.5">
+        <div className="sm:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-lg px-4 pt-2 pb-4 space-y-2.5 animate-menuSlideDown">
           <Link 
             to="/" 
             className="block text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl text-base font-semibold hover:bg-slate-900 transition-colors"

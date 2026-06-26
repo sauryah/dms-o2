@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { validateDieCreate } from '../../../types/validation'
 
@@ -40,6 +40,10 @@ export function CreateDieModal({
   const [radius, setRadius] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
+  // Refs for accessibility and focus trap
+  const modalRef = useRef<HTMLDivElement>(null)
+  const firstInputRef = useRef<HTMLInputElement>(null)
+
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -57,22 +61,79 @@ export function CreateDieModal({
       setOriginalThickness('')
       setCurrentThickness('')
       setRadius('')
+      setValidationErrors({})
+      
+      // Autofocus first field
+      const timer = setTimeout(() => {
+        firstInputRef.current?.focus()
+      }, 80)
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
 
+  // Focus trap and Escape key listener
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose()
+        return
+      }
+
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]'
+        )
+        if (focusableElements.length === 0) return
+        
+        const firstElement = focusableElements[0]
+        const lastElement = focusableElements[focusableElements.length - 1]
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus()
+            e.preventDefault()
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus()
+            e.preventDefault()
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose, isSubmitting])
+
   if (!isOpen) return null
+
+  const handleFieldChange = (field: string, value: string, setter: (val: string) => void) => {
+    setter(value)
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     setValidationErrors({})
     
     const payload: any = {
-      die_id: dieId,
+      die_id: dieId.trim(),
       die_type: dieType,
-      casing,
+      casing: casing.trim(),
       status,
-      location,
-      remarks,
+      location: location.trim(),
+      remarks: remarks.trim(),
       current_set: currentSet ? Number(currentSet) : null
     }
 
@@ -100,55 +161,96 @@ export function CreateDieModal({
   const getFieldError = (fieldName: string) => validationErrors[fieldName]
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="glass-panel rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-800/50 blueprint-grid relative">
+    <div 
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-die-modal-title"
+      aria-describedby="create-die-modal-description"
+      onClick={() => {
+        if (!isSubmitting) onClose()
+      }}
+    >
+      <p id="create-die-modal-description" className="sr-only">
+        Form to register a new production die with dimensional specifications.
+      </p>
+      
+      <div 
+        ref={modalRef}
+        className="glass-panel rounded-2xl max-w-2xl w-full my-8 shadow-2xl border border-slate-800/50 blueprint-grid relative animate-fadeIn"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
         <div className="p-6 border-b border-slate-800/40 flex justify-between items-center relative z-10">
-          <h2 className="text-xl font-bold text-white">Create Production Die</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
-            <X className="h-6 w-6" />
+          <h2 id="create-die-modal-title" className="text-xl font-bold text-white tracking-tight">
+            Create Production Die
+          </h2>
+          <button 
+            onClick={onClose} 
+            disabled={isSubmitting}
+            aria-label="Close modal"
+            className="text-slate-400 hover:text-white hover:bg-slate-800/50 p-2 rounded-xl transition duration-150 focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
         
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6 relative z-10">
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-sm">
+            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-xs font-medium animate-fadeIn">
               {error}
             </div>
           )}
           
           {Object.keys(validationErrors).length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-4 text-sm">
-              <p className="font-semibold mb-2">Please fix validation errors:</p>
-              <ul className="list-disc list-inside space-y-1">
-                {Object.entries(validationErrors).map(([field, error]) => (
-                  <li key={field}>{error}</li>
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-4 text-xs animate-fadeIn">
+              <p className="font-bold mb-2">Please fix validation errors:</p>
+              <ul className="list-disc list-inside space-y-1 text-slate-300">
+                {Object.entries(validationErrors).map(([field, errorMsg]) => (
+                  <li key={field}>
+                    <span className="font-semibold text-amber-400 capitalize">{field.replace('_', ' ')}</span>: {errorMsg}
+                  </li>
                 ))}
               </ul>
             </div>
           )}
 
+          {/* Primary Form Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID (Unique)</label>
+              <label htmlFor="form-die-id" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Die ID (Unique) <span className="text-rose-500">*</span>
+              </label>
               <input 
+                id="form-die-id"
+                ref={firstInputRef}
                 type="text" 
                 required
+                disabled={isSubmitting}
                 value={dieId}
-                onChange={(e) => setDieId(e.target.value)}
-                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('die_id') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                onChange={(e) => handleFieldChange('die_id', e.target.value, setDieId)}
+                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                  getFieldError('die_id') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                }`}
                 placeholder="e.g. R-105"
+                aria-invalid={!!getFieldError('die_id')}
               />
               {getFieldError('die_id') && (
-                <p className="text-xs text-rose-400 mt-1">{getFieldError('die_id')}</p>
+                <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('die_id')}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die Type</label>
+              <label htmlFor="form-die-type" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Die Type
+              </label>
               <select 
+                id="form-die-type"
                 value={dieType}
-                onChange={(e) => setDieType(e.target.value)}
-                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
+                disabled={isSubmitting}
+                onChange={(e) => handleFieldChange('die_type', e.target.value, setDieType)}
+                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring cursor-pointer"
               >
                 <option value="ROUND">Round</option>
                 <option value="FLAT">Flat</option>
@@ -156,26 +258,37 @@ export function CreateDieModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+              <label htmlFor="form-casing" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Casing Size <span className="text-rose-500">*</span>
+              </label>
               <input 
+                id="form-casing"
                 type="text" 
                 required
+                disabled={isSubmitting}
                 placeholder="e.g. 25x10"
                 value={casing}
-                onChange={(e) => setCasing(e.target.value)}
-                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('casing') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                onChange={(e) => handleFieldChange('casing', e.target.value, setCasing)}
+                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                  getFieldError('casing') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                }`}
+                aria-invalid={!!getFieldError('casing')}
               />
               {getFieldError('casing') && (
-                <p className="text-xs text-rose-400 mt-1">{getFieldError('casing')}</p>
+                <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('casing')}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+              <label htmlFor="form-status" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Status
+              </label>
               <select 
+                id="form-status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
+                disabled={isSubmitting}
+                onChange={(e) => handleFieldChange('status', e.target.value, setStatus)}
+                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring cursor-pointer"
               >
                 <option value="AVAILABLE">Available</option>
                 <option value="RUNNING">Running</option>
@@ -190,26 +303,41 @@ export function CreateDieModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
+              <label htmlFor="form-location" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Warehouse Location <span className="text-rose-500">*</span>
+              </label>
               <input 
+                id="form-location"
                 type="text" 
+                required
+                disabled={isSubmitting}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
+                onChange={(e) => handleFieldChange('location', e.target.value, setLocation)}
+                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                  getFieldError('location') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                }`}
                 placeholder="e.g. Rack A-1"
+                aria-invalid={!!getFieldError('location')}
               />
+              {getFieldError('location') && (
+                <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('location')}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
+              <label htmlFor="form-set" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Assign to Production Set
+              </label>
               <select 
+                id="form-set"
                 value={currentSet}
-                onChange={(e) => setCurrentSet(e.target.value)}
-                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-350 focus:outline-none"
+                disabled={isSubmitting}
+                onChange={(e) => handleFieldChange('current_set', e.target.value, setCurrentSet)}
+                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring cursor-pointer"
               >
-                <option value="">— Unassigned —</option>
+                <option value="">— Unassigned / Standalone —</option>
                 {setsList?.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.machine_name})</option>
+                  <option key={s.id} value={s.id}>{s.name} ({s.machine_name || 'No Machine'})</option>
                 ))}
               </select>
             </div>
@@ -217,111 +345,172 @@ export function CreateDieModal({
 
           {/* Dynamic Sizing Subfields */}
           <div className="border-t border-slate-800/40 pt-6">
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Dimensions Specifications</h3>
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Dimensions Specifications (mm)
+            </h3>
             
             {dieType === 'ROUND' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Size (mm)</label>
+                  <label htmlFor="form-round-original" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Original Diameter <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-round-original"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={originalSize}
-                    onChange={(e) => setOriginalSize(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('original_size') ? 'border-rose-500 bg-rose-950/10' : ''}`}
-                    placeholder="e.g. 2.5"
+                    onChange={(e) => handleFieldChange('original_size', e.target.value, setOriginalSize)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('original_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 2.500"
+                    aria-invalid={!!getFieldError('original_size')}
                   />
                   {getFieldError('original_size') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('original_size')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_size')}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
+                  <label htmlFor="form-round-current" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Current Diameter <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-round-current"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={currentSize}
-                    onChange={(e) => setCurrentSize(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('current_size') ? 'border-rose-500 bg-rose-950/10' : ''}`}
-                    placeholder="e.g. 2.5"
+                    onChange={(e) => handleFieldChange('current_size', e.target.value, setCurrentSize)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('current_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 2.500"
+                    aria-invalid={!!getFieldError('current_size')}
                   />
                   {getFieldError('current_size') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('current_size')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_size')}</p>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Width (mm)</label>
+                  <label htmlFor="form-flat-orig-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Original Width <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-flat-orig-width"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={originalWidth}
-                    onChange={(e) => setOriginalWidth(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('original_width') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                    onChange={(e) => handleFieldChange('original_width', e.target.value, setOriginalWidth)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('original_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 10.000"
+                    aria-invalid={!!getFieldError('original_width')}
                   />
                   {getFieldError('original_width') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('original_width')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_width')}</p>
                   )}
                 </div>
+                
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
+                  <label htmlFor="form-flat-curr-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Current Width <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-flat-curr-width"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={currentWidth}
-                    onChange={(e) => setCurrentWidth(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('current_width') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                    onChange={(e) => handleFieldChange('current_width', e.target.value, setCurrentWidth)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('current_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 10.000"
+                    aria-invalid={!!getFieldError('current_width')}
                   />
                   {getFieldError('current_width') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('current_width')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_width')}</p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Original Thickness (mm)</label>
+                  <label htmlFor="form-flat-orig-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Original Thickness <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-flat-orig-thick"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={originalThickness}
-                    onChange={(e) => setOriginalThickness(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('original_thickness') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                    onChange={(e) => handleFieldChange('original_thickness', e.target.value, setOriginalThickness)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('original_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 3.000"
+                    aria-invalid={!!getFieldError('original_thickness')}
                   />
                   {getFieldError('original_thickness') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('original_thickness')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_thickness')}</p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
+                  <label htmlFor="form-flat-curr-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Current Thickness <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-flat-curr-thick"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={currentThickness}
-                    onChange={(e) => setCurrentThickness(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('current_thickness') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                    onChange={(e) => handleFieldChange('current_thickness', e.target.value, setCurrentThickness)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('current_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 3.000"
+                    aria-invalid={!!getFieldError('current_thickness')}
                   />
                   {getFieldError('current_thickness') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('current_thickness')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_thickness')}</p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Radius (mm)</label>
+                  <label htmlFor="form-flat-radius" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Corner Radius <span className="text-rose-500">*</span>
+                  </label>
                   <input 
+                    id="form-flat-radius"
                     type="number" 
                     step="0.001"
                     required
+                    disabled={isSubmitting}
                     value={radius}
-                    onChange={(e) => setRadius(e.target.value)}
-                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none ${getFieldError('radius') ? 'border-rose-500 bg-rose-950/10' : ''}`}
+                    onChange={(e) => handleFieldChange('radius', e.target.value, setRadius)}
+                    className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                      getFieldError('radius') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                    }`}
+                    placeholder="e.g. 0.500"
+                    aria-invalid={!!getFieldError('radius')}
                   />
                   {getFieldError('radius') && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError('radius')}</p>
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('radius')}</p>
                   )}
                 </div>
               </div>
@@ -329,30 +518,46 @@ export function CreateDieModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
+            <label htmlFor="form-remarks" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              Remarks & Maintenance Notes
+            </label>
             <textarea 
+              id="form-remarks"
               rows={3}
+              disabled={isSubmitting}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
-              placeholder="Additional notes..."
+              className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring resize-y min-h-[80px]"
+              placeholder="Enter additional remarks or quality check logs..."
             />
           </div>
 
+          {/* Action Footer */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800/40">
             <button 
               type="button" 
               onClick={onClose}
-              className="bg-slate-950/40 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold text-xs transition"
+              disabled={isSubmitting}
+              className="bg-slate-950/40 border border-slate-800 hover:border-slate-700 hover:text-white text-slate-300 px-5 py-2.5 rounded-xl font-bold text-xs transition duration-150 focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold text-xs btn-glow glow-blue flex items-center space-x-1"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs btn-glow glow-blue flex items-center justify-center min-w-[120px] transition duration-150 focus-ring disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span>{isSubmitting ? 'Creating...' : 'Create Die'}</span>
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Creating...</span>
+                </>
+              ) : (
+                <span>Create Die</span>
+              )}
             </button>
           </div>
         </form>
