@@ -1,29 +1,85 @@
-# Proprietary License & Terms of Use
+# Proprietary License
 
 Copyright (c) 2026. All rights reserved.
 
-> [!IMPORTANT]
-> **Proprietary & Confidential**
-> This software and its source code are proprietary. Unauthorized copying, modification, distribution, transmission, or display of this software via any medium is strictly prohibited.
-
 ---
 
-## 📊 Quick Summary (TL;DR)
+## 🛡️ License Summary
 
-Below is a user-friendly overview of your permissions and restrictions. This summary is for convenience only; the full legally binding terms are set forth in the sections below.
+This repository is governed by a **Proprietary and Confidential** license. Below is a quick overview of the permissions, limitations, and conditions of use:
 
-| Allowed | Restricted | Required |
-| :--- | :--- | :--- |
-| **✅ Internal Deployment**<br>*(Deploy and configure for internal business operations)* | **❌ Commercial Exploitation**<br>*(Sell, resell, rent, lease, lend, or sublicense)* | **⚠️ Compliance**<br>*(Adhere to all terms of use)* |
-| **✅ Configure & Run**<br>*(Run instances of the application internally)* | **❌ Public Redistribution**<br>*(Share or publish the source code or binaries)* | **⚠️ Ownership Retention**<br>*(Keep copyright & ownership notices intact)* |
-| | **❌ Reverse Engineering**<br>*(Decompile, disassemble, or reverse-engineer the source code)* | |
+<table>
+  <thead>
+    <tr>
+      <th width="33%">✅ Permissions</th>
+      <th width="33%">❌ Limitations & Prohibitions</th>
+      <th width="33%">ℹ️ Conditions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr valign="top">
+      <td>
+        <ul>
+          <li>
+            <strong>Private Use</strong>
+            <br>
+            <small>You are allowed to deploy, configure, and run this software for internal business operations.</small>
+          </li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>
+            <strong>Distribution</strong>
+            <br>
+            <small>You cannot share, copy, or distribute the source code or binaries via any medium.</small>
+          </li>
+          <li>
+            <strong>Commercialization</strong>
+            <br>
+            <small>You cannot sell, resell, rent, lease, lend, or sublicense this software.</small>
+          </li>
+          <li>
+            <strong>Modification</strong>
+            <br>
+            <small>You cannot modify, adapt, merge, or translate the source code.</small>
+          </li>
+          <li>
+            <strong>Reverse Engineering</strong>
+            <br>
+            <small>You cannot decompile, disassemble, or reverse-engineer the codebase.</small>
+          </li>
+          <li>
+            <strong>Warranty & Liability</strong>
+            <br>
+            <small>The software is provided "AS IS" with no liability or warranties of any kind.</small>
+          </li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>
+            <strong>Notice Retention</strong>
+            <br>
+            <small>All existing copyright, trademark, and ownership notices must remain intact.</small>
+          </li>
+          <li>
+            <strong>Confidentiality</strong>
+            <br>
+            <small>The source code and design architectures must be kept strictly confidential.</small>
+          </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
 ## 📄 Full License Agreement
 
 <details open>
-<summary><b>Expand / Collapse Terms and Conditions</b></summary>
+<summary><b>Expand / Collapse Legal Terms and Conditions</b></summary>
 <br>
 
 ### 1. Grant of License
