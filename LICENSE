@@ -1,14 +1,42 @@
-PROPRIETARY LICENSE
+# Proprietary License & Terms of Use
 
 Copyright (c) 2026. All rights reserved.
 
-This software and its source code are proprietary and confidential. Unauthorized copying, modification, distribution, transmission, or display of this software via any medium is strictly prohibited.
+> [!IMPORTANT]
+> **Proprietary & Confidential**
+> This software and its source code are proprietary. Unauthorized copying, modification, distribution, transmission, or display of this software via any medium is strictly prohibited.
 
-TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION:
+---
 
-1. Grant of License: Subject to compliance with these terms, you are granted a non-exclusive, non-transferable, revocable license to deploy, configure, and run this software for internal business operations only.
-2. Ownership: The software, its source code, design, and vector CAD blue-printing architectures remain the sole property of the copyright holders.
-3. Restrictions: 
-   - You may not sell, resell, rent, lease, lend, redistribute, sublicense, or otherwise commercially exploit this software or any part of its source code.
-   - You may not modify, adapt, merge, translate, decompile, disassemble, or reverse-engineer the source code or binary outputs of the software, except as explicitly permitted for internal configurations.
-4. Disclaimer of Warranty: THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+## 📊 Quick Summary (TL;DR)
+
+Below is a user-friendly overview of your permissions and restrictions. This summary is for convenience only; the full legally binding terms are set forth in the sections below.
+
+| Allowed | Restricted | Required |
+| :--- | :--- | :--- |
+| **✅ Internal Deployment**<br>*(Deploy and configure for internal business operations)* | **❌ Commercial Exploitation**<br>*(Sell, resell, rent, lease, lend, or sublicense)* | **⚠️ Compliance**<br>*(Adhere to all terms of use)* |
+| **✅ Configure & Run**<br>*(Run instances of the application internally)* | **❌ Public Redistribution**<br>*(Share or publish the source code or binaries)* | **⚠️ Ownership Retention**<br>*(Keep copyright & ownership notices intact)* |
+| | **❌ Reverse Engineering**<br>*(Decompile, disassemble, or reverse-engineer the source code)* | |
+
+---
+
+## 📄 Full License Agreement
+
+<details open>
+<summary><b>Expand / Collapse Terms and Conditions</b></summary>
+<br>
+
+### 1. Grant of License
+Subject to compliance with these terms, you are granted a non-exclusive, non-transferable, revocable license to deploy, configure, and run this software for internal business operations only.
+
+### 2. Ownership
+The software, its source code, design, and vector CAD blue-printing architectures remain the sole property of the copyright holders.
+
+### 3. Restrictions
+*   **No Commercialization:** You may not sell, resell, rent, lease, lend, redistribute, sublicense, or otherwise commercially exploit this software or any part of its source code.
+*   **No Reverse Engineering:** You may not modify, adapt, merge, translate, decompile, disassemble, or reverse-engineer the source code or binary outputs of the software, except as explicitly permitted for internal configurations.
+
+### 4. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+</details>
