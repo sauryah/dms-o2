@@ -226,7 +226,7 @@ class BackupViewSet(viewsets.ViewSet):
         import os
         import subprocess
         from django.conf import settings
-        from django.core.management import call_command
+        from search.tasks import rebuild_search_index_task
         
         filename = request.data.get('filename')
         if not filename:
@@ -251,12 +251,16 @@ class BackupViewSet(viewsets.ViewSet):
         env = os.environ.copy()
         env['PGPASSWORD'] = db_password
 
+        # Determine optimal number of parallel jobs for restore
+        jobs = max(1, (os.cpu_count() or 2) - 1)
+
         cmd = [
             'pg_restore',
             '-h', db_host,
             '-p', str(db_port),
             '-U', db_user,
             '-d', db_name,
+            '-j', str(jobs),
             '--clean',
             '--no-owner',
             filepath
@@ -303,8 +307,9 @@ class BackupViewSet(viewsets.ViewSet):
                 except Exception:
                     pass
 
-            call_command('sync_search')
-            broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
+            # Offload the slow Meilisearch index synchronization to Celery
+            rebuild_search_index_task.delay(filename)
+            
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except subprocess.CalledProcessError as e:
             return Response({'error': f"pg_restore failed: {e.stderr or e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

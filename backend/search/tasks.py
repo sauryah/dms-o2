@@ -137,3 +137,33 @@ def sync_dies_batch_task(self, die_ids):
         logger.error(f"Failed to batch-sync dies to Meilisearch (attempt {self.request.retries}): {exc}")
         retry_delay = 60 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=retry_delay)
+
+
+@shared_task(bind=True, max_retries=3)
+def rebuild_search_index_task(self, filename=None):
+    """
+    Rebuild and synchronize the Meilisearch index with all dies in the database.
+    Optionally broadcasts the restore complete event when finished.
+    """
+    try:
+        from django.core.management import call_command
+        logger.info("Starting search index rebuild task via management command...")
+        call_command('sync_search')
+        logger.info("Search index rebuild task completed successfully.")
+        
+        if filename:
+            try:
+                from dms.events import broadcast_event
+                broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
+            except Exception as e:
+                logger.error(f"Failed to broadcast restore update event: {e}")
+                
+        return {'status': 'success'}
+    except Exception as exc:
+        logger.error(
+            f"Failed to rebuild search index (attempt {self.request.retries}): {exc}",
+            extra={'exception': str(exc)}
+        )
+        retry_delay = 30 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=retry_delay)
+
