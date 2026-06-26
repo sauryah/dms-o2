@@ -1,6 +1,6 @@
 # DMS — Architecture, APIs, and Database Specifications
 
-This document outlines the detailed system architecture, API specifications, and database performance configurations of the Die Management System (DMS) application.
+This document outlines the detailed system architecture, API specifications, and database performance configurations of the DMS application.
 
 ---
 

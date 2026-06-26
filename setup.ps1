@@ -1,7 +1,7 @@
 # DMS Windows Setup Automation Script
 # Run this script in PowerShell to configure and start the DMS application
 
-Write-Host "=== DMS (Die Management System) Windows Setup Automation ===" -ForegroundColor Green
+Write-Host "=== DMS Windows Setup Automation ===" -ForegroundColor Green
 
 # 1. Check if Docker is installed
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {

@@ -1,4 +1,4 @@
-# DMS — Die Management System
+# DMS
 
 <div align="center">
   <p><strong>Industrial Local Area Network (LAN) Die Tracking & Inventory Platform</strong></p>
@@ -8,7 +8,7 @@
 ---
 
 ## 📖 Table of Contents
-- [DMS — Die Management System](#dms--die-management-system)
+- [DMS](#dms)
   - [📖 Table of Contents](#-table-of-contents)
   - [💡 System Architecture](#-system-architecture)
   - [🚀 Features](#-features)

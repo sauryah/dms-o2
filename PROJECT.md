@@ -1,6 +1,6 @@
-# Die Management System — Development Roadmap & Spec Ledger
+# DMS — Development Roadmap & Spec Ledger
 
-This document serves as the main engineering ledger, data schema reference, deployment specifications, and chronological changelog for the Die Management System (DMS).
+This document serves as the main engineering ledger, data schema reference, deployment specifications, and chronological changelog for DMS.
 
 ---
 

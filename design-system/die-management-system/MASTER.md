@@ -1,6 +1,6 @@
-# Die Management System — Design System Specification
+# DMS — Design System Specification
 
-This specification governs the UI components, color systems, typography tokens, layouts, and accessibility standards for the Die Management System (DMS).
+This specification governs the UI components, color systems, typography tokens, layouts, and accessibility standards for DMS.
 
 ---
 
