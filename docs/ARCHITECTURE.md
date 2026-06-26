@@ -1,4 +1,4 @@
-# DMS — Architecture, APIs, and Database Specifications
+# Architecture, APIs, and Database Specifications
 
 This document outlines the detailed system architecture, API specifications, and database performance configurations of the DMS application.
 
@@ -6,7 +6,7 @@ This document outlines the detailed system architecture, API specifications, and
 
 ## 📖 Table of Contents
 1. [Django REST API Schema](#1-django-rest-api-schema)
-   - [Overview & Spec Formats](#overview--spec-formats)
+   - [Overview & Schema Formats](#overview--schema-formats)
    - [Authentication & JWT Handshake](#authentication--jwt-handshake)
    - [Django API Endpoints Matrix](#django-api-endpoints-matrix)
    - [API Request/Response Examples](#api-requestresponse-examples)
@@ -24,7 +24,7 @@ This document outlines the detailed system architecture, API specifications, and
 
 ## 1. Django REST API Schema
 
-### Overview & Spec Formats
+### Overview & Schema Formats
 
 The DMS Django application automatically compiles and generates an OpenAPI 3.0.3 spec using **drf-spectacular**. 
 
@@ -88,7 +88,7 @@ Authorization: Bearer <your_jwt_access_token>
 | | `DELETE`| `/api/users/{id}/` | Root Only | Deactivates/removes user account |
 | **Backups**| `GET` | `/api/backups/` | Root Only | Lists night backup files |
 | | `POST` | `/api/backups/` | Root Only | Triggers an instant DB dump |
-| **Import**| `POST` | `/api/import/` | Admin / Root | spreadsheet CSV/XLSX bulk imports |
+| **Import**| `POST` | `/api/import/` | Admin / Root | Spreadsheet CSV/XLSX bulk imports |
 
 ---
 
@@ -239,7 +239,7 @@ sequenceDiagram
 
 ### Django PostgreSQL Pool Configuration
 
-To prevent socket exhaust and reduce overhead on high-frequency connection cycles, DMS implements connection reuse with statement timeouts:
+To prevent socket exhaustion and reduce overhead on high-frequency connection cycles, DMS implements connection reuse with statement timeouts:
 
 ```python
 DATABASES = {
@@ -290,7 +290,6 @@ ORDER BY query_start ASC;
 
 ## 4. See Also
 
-*   [README.md](file:///home/tr/Desktop/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
-*   [PROJECT.md](file:///home/tr/Desktop/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
-*   [MASTER.md](file:///home/tr/Desktop/Projects/dms-o2/design-system/die-management-system/MASTER.md) - Styling rules, dark mode palettes, and typography specifications.
-
+*   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
+*   [PROJECT.md](file:///home/sahil/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
+*   [MASTER.md](file:///home/sahil/Projects/dms-o2/design-system/die-management-system/MASTER.md) - Styling rules, dark mode palettes, and typography specifications.

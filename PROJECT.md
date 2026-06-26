@@ -19,8 +19,8 @@ This document serves as the main engineering ledger, data schema reference, depl
 ## 1. Developer Onboarding & Usage Instructions
 
 > [!IMPORTANT]
-> **Rules for AI Coding Agents and New Developers**:
-> 1. Read this entire ledger before modifying any backend files, schemas, or frontend views.
+> **Guidelines for Developers and AI Coding Agents**:
+> 1. Read this entire ledger before modifying any backend files, database schemas, or frontend views.
 > 2. Build or refactor in strict phase order as defined in the roadmap timeline.
 > 3. Execute quality assurance tests after completing each phase. All unit and E2E specs must pass before moving forward.
 > 4. If a check or test fails, debug and resolve it immediately. Do not bypass errors.
@@ -32,7 +32,7 @@ This document serves as the main engineering ledger, data schema reference, depl
 
 | Layer | Component | Description / Details |
 | :--- | :--- | :--- |
-| **Backend API** | Django 4.2 / REST Framework | Standard relational CRUD operations, permissions, admin, JWT authentication |
+| **Backend API** | Django 4.2 / REST Framework | Relational CRUD operations, custom permissions, admin integration, and JWT authentication |
 | **Search API** | Go (Golang) Microservice | Direct PostgreSQL indexing + Redis caching for high-speed read queries |
 | **Databases** | PostgreSQL 18 | Primary relational storage, transactions, auditing |
 | **Search Engine**| Meilisearch v1.7 | Fuzzy text search matching (ids, locations, casings) |
@@ -73,7 +73,7 @@ Dies are modeled under a unified base model (`Die`) with type-specific attribute
 ### Common Fields (All Dies)
 *   `die_id` (String, unique, alphanumeric)
 *   `casing` (String, dimensions envelope, e.g. `25x10`)
-*   `status` (Enum, e.g. `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`)
+*   `status` (Enum: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`)
 *   `location` (String, free-text physical rack placement, e.g., `Rack A - Shelf 3`, nullable)
 *   `current_set` (Foreign Key → Set, nullable)
 *   `remarks` (Text, notes or maintenance reports)
@@ -141,12 +141,9 @@ graph TD
 - Optimized database pre_save signals to query only target auditing fields via values() instead of model instantiation.
 - Implemented zero-downtime search reindexing in sync_search command via atomic index swapping.
 - Accelerated bulk CSV imports through set pre-caching and database transaction savepoints.
-
-- Fixed an issue where the global 100-item page size limit caused sets, machines, categories, and users to not render in the frontend beyond 100 entries.
-- Set `pagination_class = None` on `SetViewSet`, `MachineViewSet`, `MachineCategoryViewSet`, and `UserViewSet`.
+- Fixed an issue where the global 100-item page size limit caused sets, machines, categories, and users to not render in the frontend beyond 100 entries. Set `pagination_class = None` on `SetViewSet`, `MachineViewSet`, `MachineCategoryViewSet`, and `UserViewSet`.
 
 ### 2026-06-22 · feat: implement bidirectional CAD-to-specification highlights, keyboard search dropdown navigation, and visual interactive rack layout grids
-
 - Added bidirectional hover interactions between specifications tables and SVG blueprints.
 - Implemented keyboard-only navigation for the search dropdown, supporting Tab/Shift+Tab and Arrow keys.
 - Developed an interactive HTML5 drag-and-drop Rack Grid Layout component to visually relocate dies and manage storage slots.
@@ -156,74 +153,37 @@ graph TD
 - Equipped the CAD vector renderer with hover and click tooltips explaining safety wear tolerances.
 
 ### 2026-06-15 · feat: implement high-performance Go search API microservice with custom Postgres ANY array parsing and Vite dev server routing
-### 2026-06-15 · perf: implement search request cancellation in frontend using AbortSignal to abort redundant concurrent database queries
-### 2026-06-15 · feat: wrap Meilisearch syncing and SSE broadcasts in transaction.on_commit database hooks to ensure transaction safety
-### 2026-06-15 · perf: enable dynamic Gzip/Brotli compression in Traefik middleware for both API and frontend static assets
-### 2026-06-15 · perf: implement fast dict-based collection serialization in backend to bypass DRF overhead (10-15x speedup)
-### 2026-06-15 · perf: memoize hierarchical tree grouping in App.jsx to optimize sidebar rendering and input response
-### 2026-06-15 · sec: implement automated session eviction on user password change or account deactivation
-### 2026-06-14 · feat: implement drag-and-drop allocations to drag dies into sets or sets onto machines directly in the sidebar tree view
-### 2026-06-14 · fix: allow dms.local and LAN hostnames in vite.config.js server.allowedHosts
-### 2026-06-14 · feat: configure HTTP-only routing in Traefik to allow seamless local network access without SSL warning popups
-### 2026-06-14 · feat: implement live real-time status synchronization using PostgreSQL LISTEN/NOTIFY and Server-Sent Events (SSE)
-### 2026-06-14 · feat: implement local HTTPS encryption using mkcert and Traefik on port 443 with automated HTTP-to-HTTPS redirect
-### 2026-06-14 · feat: implement dynamic chevrons for desktop sidebar toggle and style tree connecting lines with indigo color and hover highlights
-### 2026-06-14 · feat: create unified setup.sh environment bootstrap script and add size/header integrity checks in backup_db.sh
-### 2026-06-14 · feat: add search input, parent category/machine filters, and scroll wrappers for Categories, Machines, and Tool Sets views
-### 2026-06-14 · feat: implement backup file local download, dump file upload, and active session eviction before system restores
-### 2026-06-14 · feat: implement root-only Backup & Restore UI tab in User Administration page with double-confirmation restore modal
-### 2026-06-14 · feat: implement automated nightly backups container and dms-backup.sh host utility script
-### 2026-06-14 · security: require current password to change password or email for self-profile updates
-### 2026-06-14 · feat: implement client-side session idle warning modal and keep-alive backend endpoint
-### 2026-06-14 · feat: implement search optimizations (query debouncing, test environment index isolation, backend direct db query fallback, and auto-sync on deploy)
-### 2026-06-14 · fix: create sync_search management command to sync database with Meilisearch and fix frontend search filter parameter initialization from URL query parameters
-### 2026-06-14 · fix: shift deployment conditional checks to step-level env checks and add Meilisearch container healthcheck in workflow
-### 2026-06-14 · fix: skip deployment step when server secrets are unconfigured, map ports, and fix migration checks in workflow
-### 2026-06-14 · feat: support bulk status update via multi-select checkbox table controls
-### 2026-06-14 · feat: complete UI/UX facelift with status distribution donut chart, dynamic SVG CAD blueprints, connecting tree lines, and custom fonts
-### 2026-06-14 · fix: resolve flat die radius serialization in backend list serializer and render in frontend tables/cards
-### 2026-06-14 · feat: redesign inventory page with Tree View + Master Detail, enable batch machine/set creation, and implement production upgrade/deployment workflow
-### 2026-06-14 · feat: allow ROOT users to edit their own profile (password and email) in User Administration page
-### 2026-06-14 · feat: implement range query filtering for Meilisearch search results, add Dashboard search filters UI with strict range trigger logic, and add unit and E2E smoke tests
+- Implemented Go microservice backend handling fuzzy searches and caching.
+- Created direct connection to Postgres DB in Go backend.
+- Added AbortSignal to cancel outdated concurrent request promises on the frontend.
+- Wrapped Meilisearch sync operations and SSE broadcasts in transaction.on_commit hooks.
+- Configured dynamic Gzip/Brotli compression middleware in Traefik configuration.
+- Implemented fast dict-based custom serializers in backend, increasing performance by 10-15x.
+- Memoized hierarchical tree groupings on the frontend to optimize React sidebars response.
+- Implemented security mechanism for automated session eviction on password updates.
+
+### 2026-06-14 · feat: support drag-and-drop allocations, local HTTPS routing, and real-time SSE syncing
+- Added drag-and-drop triggers in the sidebar tree.
+- Fixed Vite server configuration to accept LAN hostnames under Vite allowedHosts.
+- Configured HTTP-to-HTTPS redirect middleware inside Traefik router configuration.
+- Implemented live real-time status updates using PostgreSQL LISTEN/NOTIFY and SSE events.
+- Created `setup.sh` environment bootstrapper.
+- Implemented manual backup/restore commands in `dms-backup.sh` and root UI Backup restore management console.
+- Required current password verification on profile changes for non-ROOT users.
+- Implemented frontend session timeouts warnings.
+- Added multi-select checkbox controls to support bulk status updates.
+
 ### 2026-06-13 · feat: secure ROOT user session, prevent self-demotion, update create_root_user command
-### 2026-06-13 · docs: update PROJECT.md changelog with user admin commit
-### 2026-06-13 · feat: implement User Administration page for ROOT users and add E2E tests
-### 2026-06-12 · docs: update PROJECT.md changelog with serializer fix commit
-### 2026-06-12 · fix: include current_set field in DieListSerializer to enable correct tree grouping in frontend
-### 2026-06-12 · docs: update PROJECT.md changelog with bulk import set name resolution commit
-### 2026-06-12 · feat: support resolving and assigning sets by name with machine_name conflict resolution during bulk import, and update CSV template
-### 2026-06-12 · docs: update PROJECT.md changelog with consistency signals commit
-### 2026-06-12 · feat: add Django signals in machines app to resync Meilisearch and maintain history log consistency upon Set/Machine changes and Set deletion
-### 2026-06-12 · docs: update PROJECT.md changelog with tree layout commit
-### 2026-06-12 · feat: redesign Die Inventory page to display expandable drill-down tree (Machine -> Sets -> Dies)
-### 2026-06-12 · docs: update PROJECT.md changelog with docker-compose port commit
-### 2026-06-12 · infra: expose PostgreSQL port 5432 to host in docker-compose.yml
-### 2026-06-12 · docs: update PROJECT.md changelog with bulk import template commit
-### 2026-06-12 · feat: add client-side CSV template download on Bulk Import page
-### 2026-06-12 · docs: update PROJECT.md changelog after readme update
-### 2026-06-12 · docs: update API documentation in README.md with Machine Sets CRUD endpoints
-### 2026-06-12 · docs: update PROJECT.md changelog
-### 2026-06-12 · feat: implement machine category, machine, and set CRUD views with frontend pages, separate dashboard and inventory pages, and fix E2E smoke tests
-### 2026-06-12 · docs: add default login credentials to README.md
-### 2026-06-12 · docs: finalize project md changelog with the docker setup documentation commit
-### 2026-06-12 · docs: update README.md and PROJECT.md to document unified docker setup
-### 2026-06-12 · infra: containerize React frontend service in docker-compose with Traefik ingress
-### 2026-06-12 · docs: finalize PROJECT.md changelog with readme commit
-### 2026-06-12 · docs: generate complete README.md based on codebase analysis
-### 2026-06-12 · docs: finalize changelog in PROJECT.md
-### 2026-06-12 · docs: update changelog for Phase 6-8 complete
-### 2026-06-12 · Phase 6-8: React frontend pages, bulk import, and JWT auth and session prune logic and tests implemented
-### 2026-06-12 · Phase 5: Deploy workflow implemented
-### 2026-06-12 · Phase 4: REST API + Search implemented and passing all tests
-### 2026-06-12 · Phase 3: Django admin configured and all models registered, all tests pass
-### 2026-06-12 · Phase 2: DieHistory pre_save signals implemented, all tests pass
-### 2026-06-12 · Phase 1: Core models and migrations implemented, all tests pass
-### 2026-06-12 · Phase 0: Project scaffold complete and all tests pass
-### 2026-06-12 · docs: update changelog for phase 0 scaffold
-### 2026-06-12 · Phase 0: Project Scaffold
-egistered, all tests pass
-### 2026-06-12 · Phase 2: DieHistory pre_save signals implemented, all tests pass
-### 2026-06-12 · Phase 1: Core models and migrations implemented, all tests pass
-### 2026-06-12 · Phase 0: Project scaffold complete and all tests pass
-### 2026-06-12 · docs: update changelog for phase 0 scaffold
-### 2026-06-12 · Phase 0: Project Scaffold
+- Secured ROOT user updates to prevent accidentally removing own ROOT status.
+- Added User Administration management console views.
+
+### 2026-06-12 · Phase 0 - 8 Complete
+- Phase 8: JWT session pruning logic and tests implemented.
+- Phase 7: Bulk spreadsheet import validation logic created.
+- Phase 6: React frontend single page application layout structure finalized.
+- Phase 5: Production deployment scripts and Nginx multi-stage workflows configured.
+- Phase 4: REST API + Search implemented and verified.
+- Phase 3: Django admin configured and all models registered.
+- Phase 2: DieHistory triggers and pre_save auditing signals configured.
+- Phase 1: Relational models and SQL database schema migration setup completed.
+- Phase 0: Project scaffold complete.
