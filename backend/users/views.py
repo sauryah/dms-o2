@@ -441,3 +441,63 @@ class EventStreamView(APIView):
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'
         return response
+
+
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='HealthCheckResponse',
+                fields={
+                    'status': serializers.CharField(),
+                    'database': serializers.CharField(),
+                    'redis': serializers.CharField(),
+                },
+            ),
+            503: inline_serializer(
+                name='HealthCheckErrorResponse',
+                fields={
+                    'status': serializers.CharField(),
+                    'database': serializers.CharField(),
+                    'redis': serializers.CharField(),
+                },
+            ),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        from django.db import connection
+        from django.conf import settings
+        import redis
+
+        status_data = {
+            "status": "healthy",
+            "database": "up",
+            "redis": "up",
+        }
+        status_code = status.HTTP_200_OK
+
+        # Check PostgreSQL
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except Exception as e:
+            status_data["status"] = "unhealthy"
+            status_data["database"] = f"down: {str(e)}"
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        # Check Redis
+        try:
+            broker_url = getattr(settings, 'CELERY_BROKER_URL', 'redis://redis:6379/1')
+            r = redis.Redis.from_url(broker_url)
+            r.ping()
+        except Exception as e:
+            status_data["status"] = "unhealthy"
+            status_data["redis"] = f"down: {str(e)}"
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        return Response(status_data, status=status_code)
+
