@@ -29,10 +29,24 @@ jobs:
       DJANGO_DEBUG: 'True'
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - run: pip install -r backend/requirements.txt
       - run: python backend/manage.py makemigrations --check --dry-run  # fail if migrations are missing in codebase
       - run: python backend/manage.py migrate  # verify migrations apply cleanly to a database
       - run: python backend/manage.py test --verbosity=2  # run all tests
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Run Go API tests
+        run: |
+          cd go-api
+          go test -v ./...
+
 
   deploy:
     needs: test
