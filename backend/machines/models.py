@@ -22,3 +22,11 @@ class Set(models.Model):
 
     def __str__(self):
         return f"{self.machine.name} - {self.name}"
+
+class Rack(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    row_count = models.IntegerField()
+    column_count = models.IntegerField()
+
+    def __str__(self):
+        return self.name
