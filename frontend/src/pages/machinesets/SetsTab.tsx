@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Layers, Plus } from 'lucide-react'
-import { useApi } from '../../App'
+import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 interface SetsTabProps {

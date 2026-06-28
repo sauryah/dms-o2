@@ -17,7 +17,12 @@ import {
   Activity,
   FolderOpen
 } from 'lucide-react'
-import { useApi, useAuth, useDebounce, isDieActive, useToast, useAnnouncer } from '../../../App'
+import { useAuth } from '../../../contexts/AuthContext'
+import { useToast } from '../../../contexts/ToastContext'
+import { useAnnouncer } from '../../../contexts/AccessibilityContext'
+import { useApi } from '../../../hooks/useApi'
+import { useDebounce } from '../../../hooks/useDebounce'
+import { isDieActive } from '../../../utils/dieHelpers'
 import { DiesTable } from './DiesTable'
 import { CreateDieModal } from './CreateDieModal'
 import { FilterPanel } from './FilterPanel'
@@ -1068,88 +1073,88 @@ export function InventoryPage() {
         </div>
 
         {/* Inner Content Area */}
-        <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 overflow-y-auto">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6 lg:space-y-8 overflow-y-auto">
           
           {/* Action Bar (Search & Filter Section) */}
-          <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/40 blueprint-grid relative">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between relative z-10">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800/40 blueprint-grid relative">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between relative z-10">
               <div className="relative flex-1 w-full">
-                <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                <Search className="absolute left-3 sm:left-4 top-3 sm:top-3.5 h-4 sm:h-5 w-4 sm:w-5 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
+                  placeholder="Search dies..."
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  className="w-full glass-input rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
+                  className="w-full glass-input rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-3 sm:pr-4 text-sm sm:text-base text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
                 />
-                <p className="text-slate-400 text-xs mt-1.5 ml-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1</p>
+                <p className="hidden sm:block text-slate-400 text-xs mt-1.5 ml-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1</p>
               </div>
               
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-bold transition-all duration-350 w-full md:w-auto btn-glow glow-blue ${
+                className={`flex items-center justify-center space-x-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl border font-bold transition-all duration-350 w-full sm:w-auto btn-glow glow-blue ${
                   showFilters 
                     ? 'bg-blue-600/15 text-blue-400 border-blue-500/30' 
                     : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:border-slate-700'
                 }`}
               >
-                <SlidersHorizontal className="h-5 w-5" />
-                <span>Filters</span>
+                <SlidersHorizontal className="h-4 sm:h-5 w-4 sm:w-5" />
+                <span className="text-sm sm:text-base">Filters</span>
               </button>
             </div>
 
             {/* Secondary Actions Row */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800/40 relative z-10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-800/40 relative z-10">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleExpandAll}
-                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
                 >
-                  Expand All
+                  Expand
                 </button>
                 <button
                   type="button"
                   onClick={handleCollapseAll}
-                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
+                  className="bg-slate-955/45 hover:bg-slate-850 text-slate-305 hover:text-white border border-slate-800 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm"
                 >
-                  Collapse All
+                  Collapse
                 </button>
               </div>
 
               {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-1 rounded-xl shadow-inner">
+              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-1 rounded-xl shadow-inner self-center sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
                     viewMode === 'list' 
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'text-slate-450 hover:text-white'
                   }`}
                 >
-                  List View
+                  List
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
                     viewMode === 'grid' 
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'text-slate-450 hover:text-white'
                   }`}
                 >
-                  Rack Grid View
+                  Rack Grid
                 </button>
               </div>
 
               {canCreate && (
                 <button 
                   onClick={() => setIsCreateOpen(true)}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs md:text-sm btn-glow glow-blue"
+                  className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 text-xs sm:text-sm btn-glow glow-blue"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Add New Die</span>
+                  <span>Add Die</span>
                 </button>
               )}
             </div>

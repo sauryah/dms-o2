@@ -5,7 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView
-from users.views import LoginView, UserViewSet, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
+from users.views import LoginView, UserViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
 from history.views import DieHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
@@ -28,6 +28,8 @@ urlpatterns = [
     
     # Authentication and Utility Endpoints
     path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/me/', MeView.as_view(), name='auth-me'),
+    path('api/auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('api/auth/keep-alive/', KeepAliveView.as_view(), name='keep-alive'),
     path('api/auth/sse-ticket/', SSETicketView.as_view(), name='sse-ticket'),
     path('api/import/', ImportDiesView.as_view(), name='import-dies'),

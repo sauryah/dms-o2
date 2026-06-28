@@ -1,7 +1,9 @@
 import React, { memo, useState, useMemo } from 'react'
 import { List, RowComponentProps } from 'react-window'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth, useApi, useToast } from '../../../App'
+import { useAuth } from '../../../contexts/AuthContext'
+import { useToast } from '../../../contexts/ToastContext'
+import { useApi } from '../../../hooks/useApi'
 
 const VirtualizedList = List as any
 
@@ -101,14 +103,14 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   const listRef = React.useRef<any>(null)
 
   const statusLabels: Record<string, string> = {
-    AVAILABLE: '🟢 Available',
-    RUNNING: '⚡ Running',
-    CLEANING: '🧼 Cleaning',
-    POLISHING: '✨ Polishing',
-    MAINTENANCE: '🔧 Maintenance',
-    DAMAGED: '⚠️ Damaged',
-    SCRAPPED: '❌ Scrapped',
-    MISSING: '❓ Missing',
+    AVAILABLE: 'Available',
+    RUNNING: 'Running',
+    CLEANING: 'Cleaning',
+    POLISHING: 'Polishing',
+    MAINTENANCE: 'Maintenance',
+    DAMAGED: 'Damaged',
+    SCRAPPED: 'Scrapped',
+    MISSING: 'Missing',
   }
 
   React.useEffect(() => {
@@ -395,7 +397,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
         className={`grid ${canEdit ? 'grid-cols-[48px_1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]' : 'grid-cols-[1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]'} items-center hover:bg-slate-850/30 border-b border-slate-800/40 transition-colors duration-200 ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${isSelected ? 'bg-blue-600/5' : ''} ${isActiveRow ? 'bg-blue-600/10 border-l-4 border-blue-500' : ''}`}
       >
         {canEdit && (
-          <div className="text-center px-6">
+          <div className="text-center px-3 sm:px-6">
             <input
               type="checkbox"
               checked={isSelected}
@@ -404,9 +406,9 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             />
           </div>
         )}
-        <div className="px-6 text-white font-bold truncate font-mono text-sm">{die.die_id}</div>
-        <div className="px-6 text-slate-300 truncate font-mono text-sm">{die.casing}</div>
-        <div className="px-6 text-slate-300 font-semibold truncate font-mono text-sm">
+        <div className="px-3 sm:px-6 text-white font-bold truncate font-mono text-sm">{die.die_id}</div>
+        <div className="px-3 sm:px-6 text-slate-300 truncate font-mono text-sm">{die.casing}</div>
+        <div className="px-3 sm:px-6 text-slate-300 font-semibold truncate font-mono text-sm">
           {die.die_type === 'ROUND' ? (
             <span>Ø {die.current_size || '—'} mm</span>
           ) : (
@@ -416,13 +418,13 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             </span>
           )}
         </div>
-        <div className="px-6 text-slate-300 truncate text-sm">{die.location || '—'}</div>
-        <div className="px-6 text-slate-300">
+        <div className="px-3 sm:px-6 text-slate-300 truncate text-sm">{die.location || '—'}</div>
+        <div className="px-3 sm:px-6 text-slate-300">
           <span className="px-2 py-0.5 text-xxs font-mono font-semibold bg-slate-800 rounded border border-slate-700/50">
             {die.die_type}
           </span>
         </div>
-        <div className="px-6">
+        <div className="px-3 sm:px-6">
           {canChangeStatus ? (
             <select
               value={die.status}
@@ -445,10 +447,10 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             </span>
           )}
         </div>
-        <div className="px-6 text-slate-400 text-xs font-mono">
+        <div className="px-3 sm:px-6 text-slate-400 text-xs font-mono">
           {new Date(die.updated_at).toLocaleDateString()}
         </div>
-        <div className="px-6 text-right">
+        <div className="px-3 sm:px-6 text-right">
           <button
             onClick={() => navigate(`/dies/${die.die_id}`)}
             className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -464,75 +466,79 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
       {/* Floating Bulk Action Bar */}
       {selectedDieIds.size > 0 && (
-        <div className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 animate-fadeIn">
+        <div className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
           <div className="flex items-center space-x-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 dot-glow animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 dot-glow animate-pulse shrink-0" />
             <span className="text-sm font-semibold text-slate-200">
-              <span className="font-extrabold text-blue-400">{selectedDieIds.size}</span> dies selected for batch edit
+              <span className="font-extrabold text-blue-400">{selectedDieIds.size}</span> dies selected
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
             {/* Status Update Group */}
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set status:</span>
-              <select
-                value={bulkStatus}
-                disabled={isUpdating}
-                onChange={(e) => setBulkStatus(e.target.value)}
-                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-1.5 text-xs text-slate-300 focus:outline-none"
-              >
-                <option value="">— Select Status —</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="RUNNING">Running</option>
-                <option value="CLEANING">Cleaning</option>
-                <option value="POLISHING">Polishing</option>
-                <option value="DAMAGED">Damaged</option>
-                <option value="SCRAPPED">Scrapped</option>
-                <option value="MISSING">Missing</option>
-                <option value="MAINTENANCE">Maintenance</option>
-              </select>
+            <div className="flex flex-col xs:flex-row xs:items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status:</span>
+              <div className="flex gap-2 w-full xs:w-auto">
+                <select
+                  value={bulkStatus}
+                  disabled={isUpdating}
+                  onChange={(e) => setBulkStatus(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none flex-1 xs:flex-none"
+                >
+                  <option value="">— Select —</option>
+                  <option value="AVAILABLE">Available</option>
+                  <option value="RUNNING">Running</option>
+                  <option value="CLEANING">Cleaning</option>
+                  <option value="POLISHING">Polishing</option>
+                  <option value="DAMAGED">Damaged</option>
+                  <option value="SCRAPPED">Scrapped</option>
+                  <option value="MISSING">Missing</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                </select>
 
-              <button
-                onClick={handleBulkStatusUpdate}
-                disabled={!bulkStatus || isUpdating}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUpdating ? 'Updating...' : 'Apply Status'}
-              </button>
+                <button
+                  onClick={handleBulkStatusUpdate}
+                  disabled={!bulkStatus || isUpdating}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  {isUpdating ? '...' : 'Apply'}
+                </button>
+              </div>
             </div>
 
             {/* Divider */}
-            <div className="hidden md:block w-[1px] h-6 bg-slate-800" />
+            <div className="hidden sm:block w-[1px] h-6 bg-slate-800" />
 
             {/* Location Update Group */}
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Set Location:</span>
-              <input
-                type="text"
-                value={bulkLocation}
-                disabled={isUpdating}
-                onChange={(e) => setBulkLocation(e.target.value)}
-                placeholder="e.g. Rack A - Shelf 3"
-                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none w-44"
-              />
+            <div className="flex flex-col xs:flex-row xs:items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location:</span>
+              <div className="flex gap-2 w-full xs:w-auto">
+                <input
+                  type="text"
+                  value={bulkLocation}
+                  disabled={isUpdating}
+                  onChange={(e) => setBulkLocation(e.target.value)}
+                  placeholder="e.g. Rack A - Shelf 3"
+                  className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none flex-1 xs:flex-none xs:w-36"
+                />
 
-              <button
-                onClick={handleBulkLocationUpdate}
-                disabled={!bulkLocation.trim() || isUpdating}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUpdating ? 'Updating...' : 'Apply Location'}
-              </button>
+                <button
+                  onClick={handleBulkLocationUpdate}
+                  disabled={!bulkLocation.trim() || isUpdating}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  {isUpdating ? '...' : 'Apply'}
+                </button>
+              </div>
             </div>
 
             {/* Divider */}
-            <div className="hidden md:block w-[1px] h-6 bg-slate-800" />
+            <div className="hidden sm:block w-[1px] h-6 bg-slate-800" />
 
             <button
               onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
               disabled={isUpdating}
-              className="text-xs text-slate-400 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-slate-700 transition"
+              className="text-xs text-slate-400 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-slate-700 transition self-end sm:self-auto"
             >
               Cancel
             </button>
@@ -540,67 +546,67 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
         </div>
       )}
 
-      <div className="w-full overflow-hidden bg-slate-900">
-        {/* Header */}
-        <div className={`grid ${canEdit ? 'grid-cols-[48px_1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]' : 'grid-cols-[1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]'} border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider py-4 select-none`}>
-          {canEdit && (
-            <div className="text-center px-6">
-              <input 
-                type="checkbox" 
-                checked={isAllSelected}
-                onChange={toggleSelectAll}
-                className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer w-4 h-4" 
-              />
+      <div className="w-full overflow-x-auto md:overflow-hidden bg-slate-900">
+        <div className="min-w-[700px] md:min-w-0">
+          {/* Header */}
+          <div className={`grid ${canEdit ? 'grid-cols-[48px_1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]' : 'grid-cols-[1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]'} border-b border-slate-800 bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider py-4 select-none`}>
+            {canEdit && (
+              <div className="text-center px-3 sm:px-6">
+                <input 
+                  type="checkbox" 
+                  checked={isAllSelected}
+                  onChange={toggleSelectAll}
+                  className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer w-4 h-4" 
+                />
+              </div>
+            )}
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('die_id')}>
+              Die ID {sortField === 'die_id' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
             </div>
-          )}
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('die_id')}>
-            Die ID {sortField === 'die_id' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('casing')}>
+              Casing {sortField === 'casing' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('current_size')}>
+              Size / Dimensions {sortField === 'current_size' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('location')}>
+              Location {sortField === 'location' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('category')}>
+              Category {sortField === 'category' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>
+              Status {sortField === 'status' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('updated_at')}>
+              Last Updated {sortField === 'updated_at' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            </div>
+            <div className="px-3 sm:px-6 text-right">Actions</div>
           </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('casing')}>
-            Casing {sortField === 'casing' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('current_size')}>
-            Size / Dimensions {sortField === 'current_size' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('location')}>
-            Location {sortField === 'location' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('category')}>
-            Category {sortField === 'category' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>
-            Status {sortField === 'status' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('updated_at')}>
-            Last Updated {sortField === 'updated_at' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
-          </div>
-          <div className="px-6 text-right">Actions</div>
-        </div>
 
-        {/* List Body */}
-        <div
-          tabIndex={0}
-          onKeyDown={handleTableKeyDown}
-          className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-b-2xl"
-          aria-label="Dies Inventory Table. Use up and down arrow keys to navigate rows, Enter to view, slash to search."
-        >
-          <VirtualizedList
-            ref={listRef}
-            rowCount={sortedDies.length}
-            rowHeight={60}
-            rowComponent={Row}
-            rowProps={{}}
-            style={{ height: 500, width: '100%' }}
-          />
+          {/* List Body */}
+          <div
+            tabIndex={0}
+            onKeyDown={handleTableKeyDown}
+            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-b-2xl"
+            aria-label="Dies Inventory Table. Use up and down arrow keys to navigate rows, Enter to view, slash to search."
+          >
+            <VirtualizedList
+              ref={listRef}
+              rowCount={sortedDies.length}
+              rowHeight={60}
+              rowComponent={Row}
+              rowProps={{}}
+              style={{ height: Math.min(window.innerHeight * 0.45, 500), width: '100%' }}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="bg-slate-950/20 border-t border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center space-x-6">
-          <span className="text-xs text-slate-500 font-medium">
-            Showing all {diesList.length} dies
-          </span>
-        </div>
+      <div className="bg-slate-950/20 border-t border-slate-800 px-4 sm:px-6 py-3 sm:py-4">
+        <span className="text-xs text-slate-500 font-medium">
+          Showing all {diesList.length} dies
+        </span>
       </div>
     </div>
   )

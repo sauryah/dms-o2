@@ -6,24 +6,36 @@ import { InventoryPage } from './InventoryPage'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the API and auth context
-vi.mock('../../../App', () => ({
+vi.mock('../../../hooks/useApi', () => ({
   useApi: () => ({
     request: vi.fn().mockResolvedValue([])
   }),
+}))
+vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({
     role: 'ADMIN'
   }),
+}))
+vi.mock('../../../contexts/ToastContext', () => ({
   useToast: () => ({
     showToast: vi.fn()
   }),
+}))
+vi.mock('../../../contexts/AccessibilityContext', () => ({
   useAnnouncer: () => vi.fn(),
+}))
+vi.mock('../../../contexts/NotificationContext', () => ({
   useNotifications: () => ({
     notifications: [],
     unreadCount: 0,
     addNotification: vi.fn(),
     markAllAsRead: vi.fn()
   }),
+}))
+vi.mock('../../../hooks/useDebounce', () => ({
   useDebounce: <T,>(value: T) => value,
+}))
+vi.mock('../../../utils/dieHelpers', () => ({
   isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
 }))
 

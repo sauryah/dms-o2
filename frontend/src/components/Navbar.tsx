@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Layers, LogOut, LogIn, X, Menu, Bell } from 'lucide-react'
+import { Layers, LogOut, LogIn, X, Menu, Bell, Settings } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth, useApi, useNotifications } from '../App'
+import { useAuth } from '../contexts/AuthContext'
+import { useNotifications } from '../contexts/NotificationContext'
+import { useApi } from '../hooks/useApi'
 
 export function Navbar() {
   const { username, role, logout } = useAuth()
@@ -164,6 +166,12 @@ export function Navbar() {
                   <span className="block text-sm font-semibold text-slate-200">{username}</span>
                   <span className="block text-xxs text-slate-500 font-mono tracking-wider uppercase">{role}</span>
                 </div>
+                <Link
+                  to="/settings"
+                  className="flex items-center space-x-1 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-sm transition-all duration-300"
+                >
+                  <Settings className="h-4 w-4" />
+                </Link>
                 <button 
                   onClick={() => { logout(); navigate('/login'); setIsOpen(false); }}
                   className="flex items-center space-x-1 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-lg text-sm transition-all duration-300"
@@ -337,6 +345,14 @@ export function Navbar() {
                 <span className="text-sm font-semibold text-slate-200">{username}</span>
                 <span className="text-xxs text-slate-500 font-mono tracking-wider uppercase">{role}</span>
               </div>
+              <Link
+                to="/settings"
+                className="flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 py-2.5 rounded-xl text-sm font-semibold transition"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                <span>Settings</span>
+              </Link>
               <button 
                 onClick={() => { logout(); navigate('/login'); setIsOpen(false); }}
                 className="w-full flex items-center justify-center space-x-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 py-2.5 rounded-xl text-sm font-semibold transition"

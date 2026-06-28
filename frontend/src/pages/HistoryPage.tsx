@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useApi, useDebounce } from '../App'
+import { useApi } from '../hooks/useApi'
+import { useDebounce } from '../hooks/useDebounce'
 import { Search, User, Filter, ArrowLeft, ArrowRight, Download } from 'lucide-react'
 
 export function HistoryPage() {

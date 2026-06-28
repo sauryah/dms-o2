@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useApi } from '../../../App'
+import { useApi } from '../../../hooks/useApi'
 import { Die } from '../../../types'
 
 export function useDieQuery(dieId: string | undefined) {

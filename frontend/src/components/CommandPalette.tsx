@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth, useApi, useToast } from '../App'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
+import { useApi } from '../hooks/useApi'
 import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle } from 'lucide-react'
 
 interface CommandPaletteProps {

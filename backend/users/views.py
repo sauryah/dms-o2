@@ -1,4 +1,6 @@
 import hashlib
+from django.db import transaction
+from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -7,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User, UserSession
-from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer
+from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer, ChangePasswordSerializer
 from users.permissions import IsRootOnly
 from dms.events import broadcast_event
 from users.services.backup_service import BackupService
@@ -135,6 +137,54 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsRootOnly]
     pagination_class = None
 
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={
+            200: inline_serializer(
+                name='ChangePasswordResponse',
+                fields={'detail': serializers.CharField(), 'token': serializers.CharField()},
+            ),
+        },
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        if not user.check_password(serializer.validated_data['current_password']):
+            return Response({"current_password": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        return Response({
+            "detail": "Password changed successfully.",
+            "token": access_token,
+        }, status=status.HTTP_200_OK)
 
 
 class KeepAliveView(APIView):
@@ -338,6 +388,7 @@ class BackupViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class EventStreamView(APIView):
     permission_classes = [AllowAny]
 
@@ -370,6 +421,7 @@ class EventStreamView(APIView):
         return response
 
 
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -429,6 +481,7 @@ class HealthCheckView(APIView):
         return Response(status_data, status=status_code)
 
 
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class VerifyTokenView(APIView):
     permission_classes = [IsAuthenticated]
 

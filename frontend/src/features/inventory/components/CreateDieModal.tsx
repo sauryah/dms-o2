@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useApi } from '../../../App'
+import { useApi } from '../../../hooks/useApi'
 import { validateDieCreate } from '../../../types/validation'
 
 interface CreateDieModalProps {

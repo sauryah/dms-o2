@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { FileSpreadsheet } from 'lucide-react'
-import { useApi, useAuth } from '../App'
+import { useAuth } from '../contexts/AuthContext'
+import { useApi } from '../hooks/useApi'
 
 export function ImportPage() {
   const { request } = useApi()

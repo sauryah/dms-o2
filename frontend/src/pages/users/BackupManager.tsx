@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, RefreshCw, Database, Trash2, Upload, Download, AlertTriangle, X } from 'lucide-react'
-import { useApi, useAuth, useToast } from '../../App'
+import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../contexts/ToastContext'
+import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 
 export function BackupManager() {

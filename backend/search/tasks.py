@@ -1,21 +1,24 @@
 import logging
 from celery import shared_task
+from celery.signals import task_failure, task_success
 from celery.utils.log import get_task_logger
 from search.meili import client as meili_client, INDEX_NAME
 from dies.models import Die
 
 logger = get_task_logger(__name__)
 
-def task_failure_handler(task_id, exc, traceback):
-    """Callback for task failures - logs comprehensive error information"""
+@task_failure.connect
+def handle_task_failure(sender=None, task_id=None, exception=None, traceback=None, **kwargs):
+    """Signal handler for task failures - logs comprehensive error information"""
     logger.error(
-        f"Task {task_id} failed with exception: {exc}",
+        f"Task {task_id} failed with exception: {exception}",
         exc_info=traceback,
-        extra={'task_id': task_id, 'exception': str(exc)}
+        extra={'task_id': task_id, 'exception': str(exception)}
     )
 
-def task_success_handler(result, task_id, args, kwargs):
-    """Callback for successful task completion"""
+@task_success.connect
+def handle_task_success(sender=None, result=None, task_id=None, args=None, kwargs=None, **kwargs2):
+    """Signal handler for successful task completion"""
     logger.info(f"Task {task_id} completed successfully", extra={'task_id': task_id})
 
 @shared_task(bind=True, max_retries=3)

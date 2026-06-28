@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export function LoginPage() {

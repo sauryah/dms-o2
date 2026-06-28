@@ -1,6 +1,6 @@
 import React from 'react'
 import { Info } from 'lucide-react'
-import { isDieActive } from '../../../App'
+import { isDieActive } from '../../../utils/dieHelpers'
 
 interface DieStatsProps {
   totalSets: number

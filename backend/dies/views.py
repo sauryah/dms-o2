@@ -1,6 +1,8 @@
 import io
 import openpyxl
+from django.db import transaction
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -200,6 +202,7 @@ class ImportDiesView(APIView):
                 os.remove(temp_path)
 
 
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ImportTemplateView(APIView):
     """
     Download Excel import templates.
@@ -282,6 +285,7 @@ class ImportTemplateView(APIView):
         return response
 
 
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ImportLogsView(APIView):
     """
     Get paginated history of imports.

@@ -5,6 +5,10 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    screens: {
+      'xs': '480px',
+      ...require('tailwindcss/defaultTheme').screens,
+    },
     extend: {
       fontFamily: {
         sans: ['"Fira Sans"', 'sans-serif'],

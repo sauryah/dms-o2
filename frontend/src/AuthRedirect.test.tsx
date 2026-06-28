@@ -1,6 +1,8 @@
 import React from 'react'
 import { render, act } from '@testing-library/react'
-import { useApi, AuthProvider, useAuth } from './App'
+import { AuthProvider } from './contexts/AuthContext'
+import { useAuth } from './contexts/AuthContext'
+import { useApi } from './hooks/useApi'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 
 interface TestApiComponentProps {

@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,6 +13,7 @@ class DieHistoryPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class DieHistoryListView(APIView):
     permission_classes = [IsAuthenticated]
     

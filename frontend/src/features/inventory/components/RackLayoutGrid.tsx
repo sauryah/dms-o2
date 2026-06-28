@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Database, Move, ArrowRightLeft, ShieldAlert } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useApi } from '../../../App'
+import { useApi } from '../../../hooks/useApi'
 
 interface Die {
   die_id: string
