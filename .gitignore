@@ -45,5 +45,8 @@ docs/DMS_Engineering_review.md
 # Go binaries
 go-api/server
 
+# Backups
+backups/
+
 
 

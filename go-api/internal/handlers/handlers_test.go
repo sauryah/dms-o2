@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -484,3 +485,206 @@ func TestHandleSearch_PaginationParams(t *testing.T) {
 		t.Errorf("unexpected results payload: %+v", resp.Results)
 	}
 }
+
+func TestScoreDie(t *testing.T) {
+	size2_5 := "2.5"
+	tests := []struct {
+		name     string
+		die      database.DieRepresentation
+		query    string
+		expected int
+	}{
+		{
+			name: "Exact size match",
+			die: database.DieRepresentation{
+				DieID:   "R-101",
+				DieType: "ROUND",
+				CurrentSize: &size2_5,
+			},
+			query: "2.5",
+			expected: 100,
+		},
+		{
+			name: "Exact size match normalized mm",
+			die: database.DieRepresentation{
+				DieID:   "R-101",
+				DieType: "ROUND",
+				CurrentSize: &size2_5,
+			},
+			query: "2.5mm",
+			expected: 50,
+		},
+		{
+			name: "Exact die_id match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+			},
+			query: "R-101",
+			expected: 90,
+		},
+		{
+			name: "Exact die_id match mixed case",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+			},
+			query: "r-101",
+			expected: 90,
+		},
+		{
+			name: "die_id prefix match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+			},
+			query: "R-10",
+			expected: 80,
+		},
+		{
+			name: "Substring location match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+				Location: "Rack A - Shelf 3",
+			},
+			query: "Rack A",
+			expected: 70,
+		},
+		{
+			name: "Substring set match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+				SetName: "Alpha Set",
+			},
+			query: "Alpha",
+			expected: 70,
+		},
+		{
+			name: "Substring casing match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+				Casing: "Steel Casing",
+			},
+			query: "Steel",
+			expected: 70,
+		},
+		{
+			name: "Fuzzy match baseline",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+			},
+			query: "abc", // query has no digits, allowed fuzzy match
+			expected: 50,
+		},
+		{
+			name: "Digit-containing query fuzzy match",
+			die: database.DieRepresentation{
+				DieID: "R-101",
+			},
+			query: "abc1", // scoreDie itself scores 50, discarded later in QueryMeilisearchAndPostgres
+			expected: 50,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			score := scoreDie(tt.die, tt.query)
+			if score != tt.expected {
+				t.Errorf("expected score %d, got %d for query %q", tt.expected, score, tt.query)
+			}
+		})
+	}
+}
+
+func TestHandleIndexStatus(t *testing.T) {
+	cfg := &config.Config{}
+
+	// Test 1: Cache disabled (defaults to ready)
+	mockDb := &MockDatabase{}
+	mockCache := &MockCache{
+		EnabledFn: func() bool { return false },
+	}
+	h := NewHandler(cfg, mockDb, mockCache, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/index-status", nil)
+	w := httptest.NewRecorder()
+	h.HandleIndexStatus(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "ready") {
+		t.Errorf("expected ready response, got %s", w.Body.String())
+	}
+
+	// Test 2: Cache enabled and has value
+	mockCacheEnabled := &MockCache{
+		EnabledFn: func() bool { return true },
+		GetFn: func(ctx context.Context, key string) ([]byte, error) {
+			if key == "search_index_status" {
+				return []byte(`{"status":"rebuilding","progress":45}`), nil
+			}
+			return nil, errors.New("not found")
+		},
+	}
+	h2 := NewHandler(cfg, mockDb, mockCacheEnabled, &MockSearch{}, nil)
+
+	req2 := httptest.NewRequest("GET", "/api/go/index-status", nil)
+	w2 := httptest.NewRecorder()
+	h2.HandleIndexStatus(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %d", w2.Code)
+	}
+	if !strings.Contains(w2.Body.String(), "rebuilding") {
+		t.Errorf("expected rebuilding response, got %s", w2.Body.String())
+	}
+}
+
+func TestHandleStats(t *testing.T) {
+	cfg := &config.Config{}
+	mockDb := &MockDatabase{
+		GetStatsFn: func(ctx context.Context) (map[string]int, int, error) {
+			return map[string]int{"ROUND": 10, "FLAT": 5}, 15, nil
+		},
+	}
+
+	// Test 1: Cache enabled and has value
+	mockCache := &MockCache{
+		EnabledFn: func() bool { return true },
+		GetFn: func(ctx context.Context, key string) ([]byte, error) {
+			if key == "stats" {
+				return []byte(`{"cached":true}`), nil
+			}
+			return nil, errors.New("not found")
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, mockCache, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/stats", nil)
+	w := httptest.NewRecorder()
+	h.HandleStats(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "cached") {
+		t.Errorf("expected cached stats response, got %s", w.Body.String())
+	}
+
+	// Test 2: Cache disabled, falls back to DB query
+	mockCacheDisabled := &MockCache{
+		EnabledFn: func() bool { return false },
+	}
+	h2 := NewHandler(cfg, mockDb, mockCacheDisabled, &MockSearch{}, nil)
+
+	req2 := httptest.NewRequest("GET", "/api/go/stats", nil)
+	w2 := httptest.NewRecorder()
+	h2.HandleStats(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %d", w2.Code)
+	}
+	if !strings.Contains(w2.Body.String(), "ROUND") {
+		t.Errorf("expected db query stats response, got %s", w2.Body.String())
+	}
+}
+

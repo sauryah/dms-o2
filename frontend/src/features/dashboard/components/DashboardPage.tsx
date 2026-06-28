@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStatsQuery, useSearchQuery } from '../hooks/useDashboard'
+import { useQuery } from '@tanstack/react-query'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { useAuth, useDebounce } from '../../../App'
+import { useAuth, useDebounce, useApi } from '../../../App'
 import { RoundDieCard } from './RoundDieCard'
 import { FlatDieCard } from './FlatDieCard'
 import { Skeleton, CardSkeleton } from '../../../components/Skeleton'
@@ -197,8 +198,41 @@ export function DashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const { request } = useApi()
+  const [trendBaseline, setTrendBaseline] = useState<any>(null)
+
   // Fetch overall statistics
   const { data: statsData, isLoading: isStatsLoading } = useStatsQuery()
+
+  useEffect(() => {
+    if (!statsData || !statsData.stats) return
+    
+    const savedStr = localStorage.getItem('dms_stats_snapshot_24h')
+    const now = Date.now()
+    
+    if (savedStr) {
+      try {
+        const parsed = JSON.parse(savedStr)
+        setTrendBaseline(parsed.stats)
+        
+        // Update baseline if older than 24 hours
+        if (now - parsed.timestamp > 24 * 60 * 60 * 1000) {
+          localStorage.setItem('dms_stats_snapshot_24h', JSON.stringify({
+            timestamp: now,
+            stats: statsData.stats
+          }))
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    } else {
+      localStorage.setItem('dms_stats_snapshot_24h', JSON.stringify({
+        timestamp: now,
+        stats: statsData.stats
+      }))
+      setTrendBaseline(statsData.stats)
+    }
+  }, [statsData])
 
   // Fetch fuzzy search results if search query or filters exist
   const searchEnabled = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
@@ -260,16 +294,33 @@ export function DashboardPage() {
             <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
             <span className="text-3xl font-extrabold text-white block mt-1">{totalCount}</span>
           </div>
-          {Object.entries(stats).map(([statusKey, count]) => (
-            <div 
-              key={statusKey}
-              onClick={() => navigate(`/inventory?status=${statusKey}`)}
-              className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 ${statusColors[statusKey]}`}
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider opacity-80">{statusKey}</span>
-              <span className="text-3xl font-extrabold block mt-1">{String(count)}</span>
-            </div>
-          ))}
+          {Object.entries(stats).map(([statusKey, count]) => {
+            const countVal = count as number
+            const baselineCount = trendBaseline ? (trendBaseline[statusKey] as number || 0) : countVal
+            const diff = countVal - baselineCount
+            
+            return (
+              <div 
+                key={statusKey}
+                onClick={() => navigate(`/inventory?status=${statusKey}`)}
+                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 ${statusColors[statusKey]}`}
+              >
+                <div className="flex items-center justify-between opacity-80 gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{statusKey}</span>
+                  {diff > 0 ? (
+                    <span className="text-emerald-400 font-bold flex items-center text-[10px] bg-emerald-500/10 px-1 rounded" title="Up from 24h baseline">
+                      ▲ +{diff}
+                    </span>
+                  ) : diff < 0 ? (
+                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-550/10 px-1 rounded" title="Down from 24h baseline">
+                      ▼ {diff}
+                    </span>
+                  ) : null}
+                </div>
+                <span className="text-3xl font-extrabold block mt-2 text-left">{String(count)}</span>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -528,6 +579,16 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {/* Maintenance Queue & Recent Activity Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 items-stretch">
+        <div className="lg:col-span-2">
+          <MaintenanceQueue />
+        </div>
+        <div className="lg:col-span-1">
+          <RecentActivityFeed />
+        </div>
+      </div>
+
       {hasActiveFilter && (
         <div className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
           <div className="mb-6 flex justify-between items-center">
@@ -592,3 +653,201 @@ export function DashboardPage() {
     </div>
   )
 }
+
+function MaintenanceQueue() {
+  const { request } = useApi()
+  const navigate = useNavigate()
+
+  // Fetch all dies
+  const { data: diesList, isLoading: isDiesLoading } = useQuery<any>({
+    queryKey: ['dashboardDiesList'],
+    queryFn: () => request('/api/go/search?limit=10000')
+  })
+
+  // Fetch history of status changes
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery<any>({
+    queryKey: ['statusHistoryList'],
+    queryFn: () => request('/api/history/?field=status&page_size=100')
+  })
+
+  const maintenanceList = useMemo(() => {
+    if (!diesList) return []
+    const rawDies = Array.isArray(diesList) ? diesList : []
+    
+    // Filter dies in CLEANING, POLISHING, MAINTENANCE
+    const filtered = rawDies.filter((d: any) => 
+      ['CLEANING', 'POLISHING', 'MAINTENANCE'].includes(d.status)
+    )
+
+    const historyItems = Array.isArray(historyData) ? historyData : []
+
+    return filtered.map((d: any) => {
+      // Find latest status transition for this die in history
+      const match = historyItems.find((h: any) => 
+        h.die_id === d.die_id && 
+        h.new_value === d.status
+      )
+      
+      const transitionTime = match ? new Date(match.timestamp).getTime() : new Date().getTime()
+      const durationMs = Date.now() - transitionTime
+      
+      // Format duration
+      let durationStr = 'Just now'
+      if (durationMs > 0) {
+        const mins = Math.floor(durationMs / 60000)
+        const hours = Math.floor(mins / 60)
+        const days = Math.floor(hours / 24)
+        
+        if (days > 0) {
+          durationStr = `${days}d ${hours % 24}h ago`
+        } else if (hours > 0) {
+          durationStr = `${hours}h ${mins % 60}m ago`
+        } else if (mins > 0) {
+          durationStr = `${mins}m ago`
+        }
+      }
+
+      return {
+        ...d,
+        durationMs,
+        durationStr,
+      }
+    }).sort((a: any, b: any) => b.durationMs - a.durationMs) // Longest duration in state first
+  }, [diesList, historyData])
+
+  if (isDiesLoading || isHistoryLoading) {
+    return (
+      <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px]">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-4">Maintenance Due Queue</h3>
+        <CardSkeleton />
+      </div>
+    )
+  }
+
+  return (
+    <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px] flex flex-col justify-between">
+      <div>
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Maintenance Due Queue</h3>
+        <p className="text-slate-500 text-xs mb-4">Dies currently undergoing maintenance, sorted by duration in state.</p>
+        
+        {maintenanceList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <span className="text-slate-500 text-sm">No dies currently in maintenance.</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
+            <table className="w-full text-left text-xs font-sans text-slate-350">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Die ID</th>
+                  <th className="py-2.5 px-3">Type</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Duration</th>
+                  <th className="py-2.5 px-3">Location</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-850">
+                {maintenanceList.map((die: any) => (
+                  <tr 
+                    key={die.die_id}
+                    onClick={() => navigate(`/dies/${die.die_id}`)}
+                    className="hover:bg-slate-800/35 transition duration-150 cursor-pointer group"
+                  >
+                    <td className="py-3 px-3 font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
+                    <td className="py-3 px-3">{die.die_type}</td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${
+                        die.status === 'CLEANING'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          : die.status === 'POLISHING'
+                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      }`}>
+                        {die.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-400">{die.durationStr}</td>
+                    <td className="py-3 px-3 text-slate-450">{die.location || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function RecentActivityFeed() {
+  const { request } = useApi()
+  const navigate = useNavigate()
+
+  const { data: historyData, isLoading } = useQuery<any>({
+    queryKey: ['dashboardRecentHistoryList'],
+    queryFn: () => request('/api/history/?page_size=10')
+  })
+
+  const historyItems = Array.isArray(historyData) ? historyData : []
+
+  const getRelativeTime = (timestamp: string) => {
+    const ms = Date.now() - new Date(timestamp).getTime()
+    if (ms <= 0) return 'Just now'
+    const mins = Math.floor(ms / 60000)
+    const hours = Math.floor(mins / 60)
+    const days = Math.floor(hours / 24)
+    if (days > 0) return `${days}d ago`
+    if (hours > 0) return `${hours}h ago`
+    if (mins > 0) return `${mins}m ago`
+    return 'Just now'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px]">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-4">Recent Activity</h3>
+        <CardSkeleton />
+      </div>
+    )
+  }
+
+  return (
+    <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px] flex flex-col">
+      <div>
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Recent Activity</h3>
+        <p className="text-slate-500 text-xs mb-4">Last 10 updates performed across extrusion dies.</p>
+      </div>
+
+      <div className="flex-grow space-y-3.5 overflow-y-auto max-h-[330px] pr-2 scrollbar-thin">
+        {historyItems.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 text-sm">
+            No recent activity logged.
+          </div>
+        ) : (
+          historyItems.map((item: any) => (
+            <div 
+              key={item.id} 
+              onClick={() => navigate(`/dies/${item.die_id}`)}
+              className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-850/50 transition duration-150 cursor-pointer group"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+              <div className="min-w-0 flex-grow text-xs leading-normal">
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
+                  <span className="text-[9px] font-mono text-slate-500 shrink-0">{getRelativeTime(item.timestamp)}</span>
+                </div>
+                <p className="text-slate-350 mt-1">
+                  Updated <span className="font-semibold text-slate-200">{item.field_name}</span> from <span className="font-mono text-slate-400">"{item.old_value || '—'}"</span> to <span className="font-mono text-slate-300 font-bold">"{item.new_value || '—'}"</span>
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Changed by <span className="font-semibold text-slate-400">{item.changed_by_username || 'System'}</span>
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+

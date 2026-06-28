@@ -48,6 +48,20 @@ func TestAuthMiddleware(t *testing.T) {
 			return
 		}
 
+		if invalidJSON, ok := claims["invalid_json"].(bool); ok && invalidJSON {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("not-json"))
+			return
+		}
+
+		if invalidValid, ok := claims["invalid_valid"].(bool); ok && invalidValid {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"valid": false,
+			})
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"valid":   true,
@@ -128,5 +142,65 @@ func TestAuthMiddleware(t *testing.T) {
 	handlerToTest.ServeHTTP(rr4, req4)
 	if rr4.Code != http.StatusOK || rr4.Body.String() != "OK:123:ADMIN" {
 		t.Errorf("Expected OK:123:ADMIN, got status %d body %q", rr4.Code, rr4.Body.String())
+	}
+
+	// Test 5: Expired token
+	expiredToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": 123,
+		"exp":     time.Now().Add(-time.Hour).Unix(),
+	})
+	expiredTokenStr, _ := expiredToken.SignedString([]byte(secretKey))
+	req5 := httptest.NewRequest("GET", "/test", nil)
+	req5.Header.Set("Authorization", "Bearer "+expiredTokenStr)
+	rr5 := httptest.NewRecorder()
+	handlerToTest.ServeHTTP(rr5, req5)
+	if rr5.Code != http.StatusUnauthorized {
+		t.Errorf("Expected StatusUnauthorized for expired token, got %d", rr5.Code)
+	}
+
+	// Test 6: Backend API is down/offline
+	cfgDown := &config.Config{
+		DjangoSecretKey: secretKey,
+		DjangoAPIURL:    "http://127.0.0.1:9999", // dead port
+	}
+	middlewareDown := AuthMiddleware(cfgDown, dummyCache)
+	handlerToTestDown := middlewareDown(nextHandler)
+
+	req6 := httptest.NewRequest("GET", "/test", nil)
+	req6.Header.Set("Authorization", "Bearer "+validTokenStr)
+	rr6 := httptest.NewRecorder()
+	handlerToTestDown.ServeHTTP(rr6, req6)
+	if rr6.Code != http.StatusUnauthorized {
+		t.Errorf("Expected StatusUnauthorized when backend offline, got %d", rr6.Code)
+	}
+
+	// Test 7: Backend returns malformed JSON
+	invalidJsonToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":      123,
+		"invalid_json": true,
+		"exp":          time.Now().Add(time.Hour).Unix(),
+	})
+	invalidJsonTokenStr, _ := invalidJsonToken.SignedString([]byte(secretKey))
+	req7 := httptest.NewRequest("GET", "/test", nil)
+	req7.Header.Set("Authorization", "Bearer "+invalidJsonTokenStr)
+	rr7 := httptest.NewRecorder()
+	handlerToTest.ServeHTTP(rr7, req7)
+	if rr7.Code != http.StatusUnauthorized {
+		t.Errorf("Expected StatusUnauthorized when backend returns invalid JSON, got %d", rr7.Code)
+	}
+
+	// Test 8: Backend returns valid: false response
+	invalidValidToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":       123,
+		"invalid_valid": true,
+		"exp":           time.Now().Add(time.Hour).Unix(),
+	})
+	invalidValidTokenStr, _ := invalidValidToken.SignedString([]byte(secretKey))
+	req8 := httptest.NewRequest("GET", "/test", nil)
+	req8.Header.Set("Authorization", "Bearer "+invalidValidTokenStr)
+	rr8 := httptest.NewRecorder()
+	handlerToTest.ServeHTTP(rr8, req8)
+	if rr8.Code != http.StatusUnauthorized {
+		t.Errorf("Expected StatusUnauthorized when backend returns valid: false, got %d", rr8.Code)
 	}
 }

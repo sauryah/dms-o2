@@ -3,6 +3,8 @@ import { List, RowComponentProps } from 'react-window'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth, useApi, useToast } from '../../../App'
 
+const VirtualizedList = List as any
+
 const isDieActive = (die: any) => {
   return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
 }
@@ -94,6 +96,55 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   const [bulkStatus, setBulkStatus] = useState('')
   const [bulkLocation, setBulkLocation] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const [activeRowIndex, setActiveRowIndex] = useState(-1)
+  const listRef = React.useRef<any>(null)
+
+  const statusLabels: Record<string, string> = {
+    AVAILABLE: '🟢 Available',
+    RUNNING: '⚡ Running',
+    CLEANING: '🧼 Cleaning',
+    POLISHING: '✨ Polishing',
+    MAINTENANCE: '🔧 Maintenance',
+    DAMAGED: '⚠️ Damaged',
+    SCRAPPED: '❌ Scrapped',
+    MISSING: '❓ Missing',
+  }
+
+  React.useEffect(() => {
+    if (listRef.current && activeRowIndex >= 0) {
+      listRef.current.scrollToItem(activeRowIndex, 'smart')
+    }
+  }, [activeRowIndex])
+
+  const handleTableKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveRowIndex(prev => {
+        const next = prev + 1
+        return next < sortedDies.length ? next : prev
+      })
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveRowIndex(prev => {
+        const next = prev - 1
+        return next >= 0 ? next : prev
+      })
+    } else if (e.key === 'Enter') {
+      if (activeRowIndex >= 0 && activeRowIndex < sortedDies.length) {
+        e.preventDefault()
+        const selectedDie = sortedDies[activeRowIndex]
+        navigate(`/dies/${selectedDie.die_id}`)
+      }
+    } else if (e.key === '/') {
+      e.preventDefault()
+      const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+      if (searchInput) {
+        searchInput.focus()
+        searchInput.select()
+      }
+    }
+  }
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -326,6 +377,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     const die = sortedDies[index];
     if (!die) return null;
     const isSelected = selectedDieIds.has(die.die_id);
+    const isActiveRow = index === activeRowIndex;
     return (
       <div
         style={style}
@@ -340,7 +392,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
         onDragEnd={() => {
           if (onDragEndDie) onDragEndDie();
         }}
-        className={`grid ${canEdit ? 'grid-cols-[48px_1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]' : 'grid-cols-[1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]'} items-center hover:bg-slate-850/30 border-b border-slate-800/40 transition-colors duration-200 ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${isSelected ? 'bg-blue-600/5' : ''}`}
+        className={`grid ${canEdit ? 'grid-cols-[48px_1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]' : 'grid-cols-[1.5fr_1fr_1.5fr_1.5fr_1fr_1fr_1fr_1.2fr]'} items-center hover:bg-slate-850/30 border-b border-slate-800/40 transition-colors duration-200 ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${isSelected ? 'bg-blue-600/5' : ''} ${isActiveRow ? 'bg-blue-600/10 border-l-4 border-blue-500' : ''}`}
       >
         {canEdit && (
           <div className="text-center px-6">
@@ -348,7 +400,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
               type="checkbox"
               checked={isSelected}
               onChange={() => toggleSelectOne(die.die_id)}
-              className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer w-4 h-4"
+              className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer w-4 h-4"
             />
           </div>
         )}
@@ -375,13 +427,13 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             <select
               value={die.status}
               onChange={(e) => handleStatusChange(die.die_id, e.target.value)}
-              className={`px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded-md border bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
+              className={`px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded-md border bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
                 statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
               }`}
             >
               {Object.keys(statusColors).map(statusOpt => (
                 <option key={statusOpt} value={statusOpt} className="bg-slate-950 text-slate-350 text-xs">
-                  {statusOpt}
+                  {statusLabels[statusOpt] || statusOpt}
                 </option>
               ))}
             </select>
@@ -389,7 +441,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
             <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${
               statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
             }`}>
-              {die.status}
+              {statusLabels[die.status] || die.status}
             </span>
           )}
         </div>
@@ -399,7 +451,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
         <div className="px-6 text-right">
           <button
             onClick={() => navigate(`/dies/${die.die_id}`)}
-            className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm"
+            className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             View Details
           </button>
@@ -497,7 +549,7 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
                 type="checkbox" 
                 checked={isAllSelected}
                 onChange={toggleSelectAll}
-                className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer w-4 h-4" 
+                className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer w-4 h-4" 
               />
             </div>
           )}
@@ -526,8 +578,14 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
         </div>
 
         {/* List Body */}
-        <div>
-          <List
+        <div
+          tabIndex={0}
+          onKeyDown={handleTableKeyDown}
+          className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-b-2xl"
+          aria-label="Dies Inventory Table. Use up and down arrow keys to navigate rows, Enter to view, slash to search."
+        >
+          <VirtualizedList
+            ref={listRef}
             rowCount={sortedDies.length}
             rowHeight={60}
             rowComponent={Row}

@@ -17,7 +17,7 @@ import {
   Activity,
   FolderOpen
 } from 'lucide-react'
-import { useApi, useAuth, useDebounce, isDieActive, useToast } from '../../../App'
+import { useApi, useAuth, useDebounce, isDieActive, useToast, useAnnouncer } from '../../../App'
 import { DiesTable } from './DiesTable'
 import { CreateDieModal } from './CreateDieModal'
 import { FilterPanel } from './FilterPanel'
@@ -131,6 +131,15 @@ export function InventoryPage() {
       return request(url, { signal, keepMetadata: true })
     }
   })
+
+  const announce = useAnnouncer()
+
+  useEffect(() => {
+    if (searchData) {
+      const count = searchData.results?.length ?? 0
+      announce(`Search results updated. Showing ${count} matching dies.`)
+    }
+  }, [searchData])
 
   const dies = searchData?.results || []
   const totalCount = searchData?.total ?? dies.length

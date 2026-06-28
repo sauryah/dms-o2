@@ -72,10 +72,11 @@ Authorization: Bearer <your_jwt_access_token>
 | :--- | :--- | :--- | :--- | :--- |
 | **Auth** | `POST` | `/api/auth/login/` | Public | Obtains JWT tokens |
 | | `POST` | `/api/auth/keep-alive/` | Authenticated | Extends current login session |
+| | `POST` | `/api/auth/sse-ticket/` | Authenticated | Exchanges a JWT for a short-lived SSE connection ticket |
 | **Dies** | `GET` | `/api/dies/` | Public | Lists all dies with range filters |
 | | `POST` | `/api/dies/` | Admin / Root | Registers a new die |
 | | `GET` | `/api/dies/{id}/` | Public | Details a single die + change log |
-| | `PATCH`| `/api/dies/{id}/` | Admin / Root | Partial updates (casing, status, location, remarks) |
+| | `PATCH`| `/api/dies/{id}/` | Operator / Admin / Root | Partial updates (Operator: location/rack/shelf only; Admin/Root: full) |
 | | `DELETE`| `/api/dies/{id}/` | Admin / Root | Deletes die from inventory |
 | **Assets**| `GET` | `/api/categories/` | Public | Lists machine categories |
 | | `POST` | `/api/categories/` | Admin / Root | Creates a new machine category |
@@ -83,12 +84,21 @@ Authorization: Bearer <your_jwt_access_token>
 | | `POST` | `/api/machines/` | Admin / Root | Creates a new machine |
 | | `GET` | `/api/sets/` | Public | Lists tool sets |
 | | `POST` | `/api/sets/` | Admin / Root | Creates a new tool set |
-| **Users** | `GET` | `/api/users/` | Root Only | Paginated list of administrators |
-| | `POST` | `/api/users/` | Root Only | Creates a new administrator |
+| **Racks** | `GET` | `/api/racks/` | Authenticated | Lists all physical racks |
+| | `POST` | `/api/racks/` | Admin / Root | Creates a new physical rack storage |
+| | `PATCH`| `/api/racks/{id}/` | Admin / Root | Updates rack name, row_count, column_count |
+| | `DELETE`| `/api/racks/{id}/` | Admin / Root | Removes physical rack configuration |
+| **Users** | `GET` | `/api/users/` | Root Only | Paginated list of administrators and operators |
+| | `POST` | `/api/users/` | Root Only | Creates a new user account with specified role |
 | | `DELETE`| `/api/users/{id}/` | Root Only | Deactivates/removes user account |
 | **Backups**| `GET` | `/api/backups/` | Root Only | Lists night backup files |
 | | `POST` | `/api/backups/` | Root Only | Triggers an instant DB dump |
-| **Import**| `POST` | `/api/import/` | Admin / Root | Spreadsheet CSV/XLSX bulk imports |
+| | `GET` | `/api/backups/download_backup/` | Root Only | Streams static backup dump file securely |
+| **Import**| `POST` | `/api/import/` | Admin / Root | Spreadsheet CSV/XLSX bulk imports (dry-run supported via `?dry_run=true`) |
+| | `GET` | `/api/import/template/` | Admin / Root | Downloads standard Excel import template spreadsheet |
+| | `GET` | `/api/import/logs/` | Admin / Root | Retrieves paginated history logs of bulk spreadsheet imports |
+| **History**| `GET` | `/api/history/` | Authenticated | Audit Trail log history records (Regular users see own, Admin/Root see all) |
+| **Internal**| `POST` | `/internal/verify-token/` | Go Service Only | Internal-only token validation route mapping active user role and id |
 
 ---
 
@@ -230,11 +240,48 @@ sequenceDiagram
     }
     ```
 
+#### 3. Search Index Rebuild Status
+*   **Route**: `GET /api/go/index-status`
+*   **Auth**: Authenticated (JWT Access Token)
+*   **Response (200 OK - Rebuilding)**:
+    ```json
+    {
+      "status": "rebuilding",
+      "progress": 45,
+      "total": 100
+    }
+    ```
+
+#### 4. Real-Time Server-Sent Events (SSE)
+*   **Route**: `GET /api/events/`
+*   **Auth**: Authenticated (Via `?ticket=<ticket>` parameter)
+*   **Description**: Establishes a real-time event stream. To avoid sending sensitive JWT keys in URL parameters, the client must first perform an HTTP `POST /api/auth/sse-ticket/` to receive a single-use random ticket token, which is then passed as `?ticket=<ticket>`.
+*   **Stream Responses**:
+    ```http
+    event: connected
+    data: {}
+
+    data: {"type": "die_update", "data": {"id": "R-101", "action": "save"}}
+    ```
+
+#### 5. Go-to-Django Token Verification (Internal)
+*   **Route**: `POST /internal/verify-token/`
+*   **Auth**: Internal Network Only (accessible only within Docker network context by the Go service)
+*   **Payload**:
+    ```json
+    { "token": "eyJhbG..." }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    { "valid": true, "user_id": 4, "role": "ADMIN" }
+    ```
+*   **Rationale**: Isolates verification logic on the Django REST Auth app, preventing the Go search service from needing to duplicate user DB session tracking and eviction hooks directly.
+
 ---
 
 ### Redis Caching Architecture
 
-*   **Cache Lifetime**: 10 seconds.
+*   **Cache Lifetime**: Configurable via `SEARCH_CACHE_TTL_SECONDS` (default: 10 seconds).
 *   **Key Composition**: A combined hash of all active search query parameters:
     `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}:{limit}:{offset}`
 *   **Eviction Strategy**: Immediate validation invalidates cache values when data changes. When database insertions, deletions, or modifications occur, a Django PostgreSQL `LISTEN` / `NOTIFY` hook broadcasts an invalidation signal to the Go service.
@@ -295,7 +342,16 @@ ORDER BY query_start ASC;
 
 ---
 
-## 4. See Also
+## 4. Scheduled History Pruning
+
+To prevent query degradation and database bloating as operational logs grow over time:
+*   **Pruning Job**: A cron job scheduled nightly at **3:00 AM** in the `backup` container executes `scripts/prune_history.sh`.
+*   **Logic**: Connects directly to the PostgreSQL database via `psql` and deletes all `history_diehistory` entries older than `HISTORY_RETENTION_DAYS` (configured via environment variable, default: 365 days).
+*   **Logs**: Outputs the count of deleted records to the container's stdout logs for administrative audit.
+
+---
+
+## 5. See Also
 
 *   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
 *   [PROJECT.md](file:///home/sahil/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.

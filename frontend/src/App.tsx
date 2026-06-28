@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, Suspense } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, Suspense, useCallback } from 'react'
 import { 
   HashRouter as Router, 
   Routes, 
@@ -15,6 +15,7 @@ import {
 // Component & Page Imports
 import { Navbar } from './components/Navbar'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { CommandPalette } from './components/CommandPalette'
 
 // Lazy loaded page components for code splitting
 const DashboardPage = React.lazy(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -148,6 +149,85 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useToast = () => useContext(ToastContext)
+
+// Premium Custom Notification Center Context & Provider
+interface NotificationItem {
+  id: string
+  title: string
+  message: string
+  timestamp: string
+  type: 'info' | 'success' | 'error'
+  unread: boolean
+}
+
+const NotificationContext = createContext<any>(null)
+
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const saved = localStorage.getItem('dms_notifications')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    return []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('dms_notifications', JSON.stringify(notifications))
+  }, [notifications])
+  
+  const addNotification = (title: string, message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    const item: NotificationItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      title,
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      type,
+      unread: true
+    }
+    setNotifications(prev => [item, ...prev].slice(0, 20))
+  }
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })))
+  }
+
+  const unreadCount = notifications.filter(n => n.unread).length
+
+  return (
+    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, markAllAsRead }}>
+      {children}
+    </NotificationContext.Provider>
+  )
+}
+
+export const useNotifications = () => useContext(NotificationContext)
+
+// Custom Accessibility Announcer Context & Provider
+const AccessibilityContext = createContext<(msg: string) => void>(() => {})
+
+export function AnnouncementProvider({ children }: { children: React.ReactNode }) {
+  const [msg, setMsg] = useState('')
+  const announce = (text: string) => {
+    setMsg(text)
+    // Clear after a delay so screen reader is forced to announce even identical messages
+    setTimeout(() => setMsg(''), 1000)
+  }
+  return (
+    <AccessibilityContext.Provider value={announce}>
+      {children}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {msg}
+      </div>
+    </AccessibilityContext.Provider>
+  )
+}
+
+export const useAnnouncer = () => useContext(AccessibilityContext)
 
 // API Fetch Helper with Retry Logic
 export const useApi = () => {
@@ -359,8 +439,83 @@ function AppContent() {
   const { token } = useAuth()
   const { request } = useApi()
   const { showToast } = useToast()
+  const { addNotification } = useNotifications()
+  const announce = useAnnouncer()
   const queryClient = useQueryClient()
   const recentEvents = useRef(new Set<string>())
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+
+  const [rebuildStatus, setRebuildStatus] = useState<{
+    status: 'rebuilding' | 'ready' | 'error'
+    progress: number
+    total: number
+    message?: string
+  } | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
+
+  const checkIndexStatus = useCallback(async () => {
+    try {
+      const data = await request('/api/go/index-status')
+      if (data.status === 'rebuilding') {
+        setRebuildStatus(data)
+        setIsPolling(true)
+      } else if (data.status === 'ready') {
+        if (rebuildStatus && rebuildStatus.status === 'rebuilding') {
+          showToast('Search index ready', 'success')
+          addNotification('Index Rebuilt', 'Search index has been successfully rebuilt.', 'success')
+          announce('Search index ready')
+        }
+        setRebuildStatus(null)
+        setIsPolling(false)
+      } else if (data.status === 'error') {
+        showToast(`Search index rebuild failed: ${data.message || 'Unknown error'}`, 'error')
+        setRebuildStatus(null)
+        setIsPolling(false)
+      }
+    } catch (e) {
+      console.error('Failed to fetch search index status:', e)
+    }
+  }, [request, rebuildStatus, showToast, addNotification, announce])
+
+  // Poll search index status
+  useEffect(() => {
+    if (!token) {
+      setIsPolling(false)
+      setRebuildStatus(null)
+      return
+    }
+    checkIndexStatus()
+  }, [token])
+
+  useEffect(() => {
+    if (!isPolling || !token) return
+
+    const interval = setInterval(() => {
+      checkIndexStatus()
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [isPolling, token, checkIndexStatus])
+
+  useEffect(() => {
+    const handleTriggerPolling = () => {
+      setIsPolling(true)
+    }
+    window.addEventListener('trigger-index-polling', handleTriggerPolling)
+    return () => window.removeEventListener('trigger-index-polling', handleTriggerPolling)
+  }, [])
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsPaletteOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKey)
+    return () => window.removeEventListener('keydown', handleGlobalKey)
+  }, [])
 
   useEffect(() => {
     if (!token) return
@@ -402,9 +557,15 @@ function AppContent() {
             // Construct dynamic notifications
             if (payload.type === 'die_update') {
               if (payload.data?.action === 'delete') {
-                showToast(`Die ${payload.data.id} has been deleted.`, 'info')
+                const msg = `Die ${payload.data.id} has been deleted.`
+                showToast(msg, 'info')
+                addNotification('Die Deleted', msg, 'info')
+                announce(msg)
               } else if (payload.data?.action === 'bulk_import') {
-                showToast('Bulk import of dies completed.', 'success')
+                const msg = 'Bulk import of dies completed.'
+                showToast(msg, 'success')
+                addNotification('Bulk Import Completed', msg, 'success')
+                announce(msg)
               } else if (payload.data?.action === 'save') {
                 // Asynchronously fetch current state to present formatted message
                 request(`/api/dies/${payload.data.id}/`)
@@ -415,27 +576,52 @@ function AppContent() {
                     } else if (die.location) {
                       locationMsg = ` in ${die.location}`
                     }
-                    showToast(`Die ${die.die_id} is now ${die.status}${locationMsg}.`, 'info')
+                    const msg = `Die ${die.die_id} is now ${die.status}${locationMsg}.`
+                    showToast(msg, 'info')
+                    addNotification('Die Updated', msg, 'info')
+                    announce(msg)
                   })
                   .catch(() => {
-                    showToast(`Die ${payload.data.id} was updated.`, 'info')
+                    const msg = `Die ${payload.data.id} was updated.`
+                    showToast(msg, 'info')
+                    addNotification('Die Updated', msg, 'info')
+                    announce(msg)
                   })
               }
             } else if (payload.type === 'set_update') {
-              showToast('Die sets have been updated.', 'info')
+              const msg = 'Die sets have been updated.'
+              showToast(msg, 'info')
+              addNotification('Die Sets Updated', msg, 'info')
+              announce(msg)
             } else if (payload.type === 'machine_update') {
-              showToast('Machine configurations have been updated.', 'info')
+              const msg = 'Machine configurations have been updated.'
+              showToast(msg, 'info')
+              addNotification('Machines Updated', msg, 'info')
+              announce(msg)
             } else if (payload.type === 'backup_update') {
               const action = payload.data?.action
               const filename = payload.data?.filename || ''
               if (action === 'backup') {
-                showToast(`Database backup "${filename}" created successfully.`, 'success')
+                const msg = `Database backup "${filename}" created successfully.`
+                showToast(msg, 'success')
+                addNotification('Backup Created', msg, 'success')
+                announce(msg)
               } else if (action === 'restore') {
-                showToast(`Database restore from "${filename}" executed successfully.`, 'success')
+                const msg = `Database restore from "${filename}" executed successfully.`
+                showToast(msg, 'success')
+                addNotification('System Restored', msg, 'success')
+                announce(msg)
+                setIsPolling(true)
               } else if (action === 'delete') {
-                showToast(`Backup "${filename}" deleted.`, 'info')
+                const msg = `Backup "${filename}" deleted.`
+                showToast(msg, 'info')
+                addNotification('Backup Deleted', msg, 'info')
+                announce(msg)
               } else if (action === 'upload') {
-                showToast(`Backup "${filename}" uploaded successfully.`, 'success')
+                const msg = `Backup "${filename}" uploaded successfully.`
+                showToast(msg, 'success')
+                addNotification('Backup Uploaded', msg, 'success')
+                announce(msg)
               }
             }
           } catch (e) {
@@ -464,13 +650,58 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
       <Navbar />
+      {rebuildStatus && rebuildStatus.status === 'rebuilding' && (
+        <div className="bg-blue-950/80 border-b border-blue-500/20 px-6 py-3 flex items-center justify-between shadow-md animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-400 dot-glow glow-blue animate-pulse shrink-0" />
+            <div className="text-xs">
+              <span className="font-bold text-white">🔄 Search index rebuilding...</span>
+              <span className="text-slate-400 ml-2 font-medium">System is synchronizing data after database restore. Search results may be incomplete.</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-32 bg-slate-805 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-blue-500 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${rebuildStatus.progress}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-blue-405 font-mono">{rebuildStatus.progress}%</span>
+          </div>
+        </div>
+      )}
       <SessionTimeoutManager />
+      <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
-          <Route path="/dies/:id" element={<ErrorBoundary><DieDetailPage /></ErrorBoundary>} />
-          <Route path="/machines" element={<ErrorBoundary><MachineSetsPage /></ErrorBoundary>} />
+          <Route path="/" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/inventory" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <InventoryPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/dies/:id" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <DieDetailPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/machines" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <MachineSetsPage />
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
           <Route path="/import" element={
             <ErrorBoundary>
               <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
@@ -487,7 +718,9 @@ function AppContent() {
           } />
           <Route path="/history" element={
             <ErrorBoundary>
-              <HistoryPage />
+              <ProtectedRoute>
+                <HistoryPage />
+              </ProtectedRoute>
             </ErrorBoundary>
           } />
           <Route path="/login" element={<LoginPage />} />
@@ -523,9 +756,13 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ToastProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <NotificationProvider>
+              <AnnouncementProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </AnnouncementProvider>
+            </NotificationProvider>
           </ToastProvider>
         </AuthProvider>
       </QueryClientProvider>

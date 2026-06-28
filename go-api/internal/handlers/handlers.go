@@ -115,6 +115,22 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) HandleIndexStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if h.cache.Enabled() {
+		statusJSON, err := h.cache.Get(r.Context(), "search_index_status")
+		if err == nil {
+			w.WriteHeader(http.StatusOK)
+			w.Write(statusJSON)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ready"}`))
+}
+
 func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -267,9 +283,9 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Cache in Redis for 10 seconds
+	// Cache in Redis using configurable TTL
 	if h.cache.Enabled() {
-		err = h.cache.Set(r.Context(), cacheKey, respBytes, 10*time.Second)
+		err = h.cache.Set(r.Context(), cacheKey, respBytes, time.Duration(h.cfg.SearchCacheTTLSeconds)*time.Second)
 		if err != nil {
 			slog.Warn("Failed to save search results to Redis", "error", err)
 		}

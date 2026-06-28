@@ -97,7 +97,7 @@ func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error
 	return isActive, nil
 }
 
-func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]DieRepresentation, error) {
+func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -122,7 +122,6 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 	if q != "" {
 		cleanQ := strings.Trim(q, `"'`)
 		likeVal := "%" + cleanQ + "%"
-		log.Printf("queryPostgresDirectly: searching across all fields for %q", cleanQ)
 		sqlParts = append(sqlParts, fmt.Sprintf(`
 			AND (
 				d.die_id ILIKE $%d 
@@ -196,7 +195,11 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 
 	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d OFFSET %d", limit, offset))
 
-	query := strings.Join(sqlParts, "\n")
+	return strings.Join(sqlParts, "\n"), args
+}
+
+func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]DieRepresentation, error) {
+	query, args := BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -206,7 +209,7 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 	return scanDies(rows)
 }
 
-func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -296,7 +299,11 @@ func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType
 		argCounter++
 	}
 
-	query := strings.Join(sqlParts, "\n")
+	return strings.Join(sqlParts, "\n"), args
+}
+
+func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+	query, args := BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 	var count int
 	err := db.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {

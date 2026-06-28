@@ -33,6 +33,9 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
   const [selectedRackId, setSelectedRackId] = useState<number | null>(null)
   const [selectedShelf, setSelectedShelf] = useState<number>(1)
 
+  const [pickedUpDie, setPickedUpDie] = useState<Die | null>(null)
+  const [targetCell, setTargetCell] = useState<{ rack: string; shelf: string } | null>(null)
+
   const { request } = useApi()
   const { data: racksList } = useQuery({
     queryKey: ['racksList'],
@@ -159,73 +162,163 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
     setDraggedDieId(null)
   }
 
+  const handleDieKeyDown = (e: React.KeyboardEvent, die: Die, currentRack: string | null, currentShelf: string | null) => {
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault()
+      if (!canMove) return
+
+      if (pickedUpDie && pickedUpDie.die_id === die.die_id) {
+        setPickedUpDie(null)
+        setTargetCell(null)
+      } else {
+        setPickedUpDie(die)
+        setTargetCell({
+          rack: currentRack || allRacks[0],
+          shelf: currentShelf || allShelves[0]
+        })
+      }
+    }
+  }
+
+  React.useEffect(() => {
+    if (!pickedUpDie) return
+
+    const handleGlobalKeys = (e: KeyboardEvent) => {
+      if (!targetCell) return
+
+      const rackIdx = allRacks.indexOf(targetCell.rack)
+      const shelfIdx = allShelves.indexOf(targetCell.shelf)
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        const nextRackIdx = Math.min(allRacks.length - 1, rackIdx + 1)
+        setTargetCell({ rack: allRacks[nextRackIdx], shelf: targetCell.shelf })
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        const nextRackIdx = Math.max(0, rackIdx - 1)
+        setTargetCell({ rack: allRacks[nextRackIdx], shelf: targetCell.shelf })
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const nextShelfIdx = Math.min(allShelves.length - 1, shelfIdx + 1)
+        setTargetCell({ rack: targetCell.rack, shelf: allShelves[nextShelfIdx] })
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const nextShelfIdx = Math.max(0, shelfIdx - 1)
+        setTargetCell({ rack: targetCell.rack, shelf: allShelves[nextShelfIdx] })
+      } else if (e.key === ' ') {
+        e.preventDefault()
+        const shelfNum = Number(targetCell.shelf.replace(/Shelf\s+/i, ''))
+        const pureRackName = targetCell.rack.replace(/Rack\s+/i, '').trim()
+        const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
+        
+        if (matchedRack) {
+          onMoveDie(pickedUpDie.die_id, matchedRack.id, shelfNum, `${targetCell.rack} - ${targetCell.shelf}`)
+        } else {
+          onMoveDie(pickedUpDie.die_id, null, null, `${targetCell.rack} - ${targetCell.shelf}`)
+        }
+        setPickedUpDie(null)
+        setTargetCell(null)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setPickedUpDie(null)
+        setTargetCell(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeys)
+    return () => window.removeEventListener('keydown', handleGlobalKeys)
+  }, [pickedUpDie, targetCell, allRacks, allShelves, racks])
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn">
-      {/* LEFT: Grid Layout Map */}
-      <div className="flex-1 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-6 shadow-xl overflow-x-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-2">
-            <Database className="h-5 w-5 text-blue-500" />
-            <h3 className="text-base font-extrabold text-white">Visual Rack Location Map</h3>
-          </div>
-          <span className="text-slate-500 text-xs font-mono">Drag and drop nodes to reassign locations</span>
-        </div>
-
-        <div className="min-w-[640px]">
-          {/* Grid Layout Table */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: `80px repeat(${allRacks.length}, minmax(120px, 1fr))` }}>
-            {/* Header Row */}
-            <div className="flex items-center justify-end pr-3 text-slate-500 font-bold text-xxs tracking-wider uppercase">
-              Shelf
+    <div className="flex flex-col gap-6 animate-fadeIn w-full">
+      {pickedUpDie && (
+        <div className="p-4 bg-orange-950/80 border border-orange-500/20 rounded-2xl flex items-center justify-between shadow-lg shadow-orange-950/15">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-400 dot-glow glow-orange animate-pulse shrink-0" />
+            <div className="text-xs">
+              <p className="font-bold text-white">Relocating Die <span className="font-mono text-orange-350">{pickedUpDie.die_id}</span></p>
+              <p className="text-slate-400 mt-0.5 font-medium">Use arrow keys to traverse cells. Press <kbd className="bg-slate-900 border border-slate-805 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Space</kbd> to drop, <kbd className="bg-slate-900 border border-slate-805 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Esc</kbd> to cancel.</p>
             </div>
-            {allRacks.map(rack => (
-              <div key={rack} className="text-center font-bold text-xs text-slate-300 py-2 bg-slate-950/40 border border-slate-800/40 rounded-lg">
-                {rack}
+          </div>
+          <span className="text-[10px] font-bold text-orange-450 font-mono bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-md">
+            Targeting: {targetCell?.rack} - {targetCell?.shelf}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* LEFT: Grid Layout Map */}
+        <div className="flex-1 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-6 shadow-xl overflow-x-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center space-x-2">
+              <Database className="h-5 w-5 text-blue-500" />
+              <h3 className="text-base font-extrabold text-white">Visual Rack Location Map</h3>
+            </div>
+            <span className="text-slate-500 text-xs font-mono">Drag and drop nodes to reassign locations</span>
+          </div>
+
+          <div className="min-w-[640px]">
+            {/* Grid Layout Table */}
+            <div className="grid gap-4" style={{ gridTemplateColumns: `80px repeat(${allRacks.length}, minmax(120px, 1fr))` }}>
+              {/* Header Row */}
+              <div className="flex items-center justify-end pr-3 text-slate-500 font-bold text-xxs tracking-wider uppercase">
+                Shelf
               </div>
-            ))}
-
-            {/* Shelf Rows */}
-            {allShelves.map(shelf => (
-              <React.Fragment key={shelf}>
-                {/* Row Label */}
-                <div className="flex items-center justify-end pr-3 font-bold text-xs text-slate-400">
-                  {shelf}
+              {allRacks.map(rack => (
+                <div key={rack} className="text-center font-bold text-xs text-slate-300 py-2 bg-slate-950/40 border border-slate-800/40 rounded-lg">
+                  {rack}
                 </div>
+              ))}
 
-                {/* Grid Cells */}
-                {allRacks.map(rack => {
-                  const key = `${rack}-${shelf}`
-                  const cellDies = cells[key] || []
-                  const isOver = dragOverCell === key
+              {/* Shelf Rows */}
+              {allShelves.map(shelf => (
+                <React.Fragment key={shelf}>
+                  {/* Row Label */}
+                  <div className="flex items-center justify-end pr-3 font-bold text-xs text-slate-400">
+                    {shelf}
+                  </div>
 
-                  return (
-                    <div
-                      key={key}
-                      onDragOver={(e) => handleDragOver(e, rack, shelf)}
-                      onDragLeave={() => setDragOverCell(null)}
-                      onDrop={(e) => handleDrop(e, rack, shelf)}
-                      className={`min-h-[90px] p-2 rounded-xl border transition-all duration-300 flex flex-col justify-start gap-1.5 ${
-                        isOver
-                          ? 'bg-blue-600/10 border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.25)] ring-2 ring-blue-500/25'
-                          : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700/80'
-                      }`}
-                    >
-                      {cellDies.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-slate-650 text-[10px] italic select-none">
-                          Empty Slot
-                        </div>
-                      ) : (
-                        cellDies.map(die => (
-                          <div
-                            key={die.die_id}
-                            draggable={canMove}
-                            onDragStart={(e) => handleDragStart(e, die.die_id)}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => navigate(`/dies/${die.die_id}`)}
-                            className={`group relative flex items-center justify-between p-1.5 rounded-lg border bg-slate-900 border-slate-800 cursor-pointer transition-all duration-200 select-none ${
-                              draggedDieId === die.die_id ? 'opacity-40' : 'hover:border-blue-500/50 hover:bg-slate-850'
-                            }`}
-                          >
+                  {/* Grid Cells */}
+                  {allRacks.map(rack => {
+                    const key = `${rack}-${shelf}`
+                    const cellDies = cells[key] || []
+                    const isOver = dragOverCell === key
+                    const isTarget = targetCell && targetCell.rack === rack && targetCell.shelf === shelf
+
+                    return (
+                      <div
+                        key={key}
+                        onDragOver={(e) => handleDragOver(e, rack, shelf)}
+                        onDragLeave={() => setDragOverCell(null)}
+                        onDrop={(e) => handleDrop(e, rack, shelf)}
+                        className={`min-h-[90px] p-2 rounded-xl border transition-all duration-300 flex flex-col justify-start gap-1.5 ${
+                          isOver
+                            ? 'bg-blue-600/10 border-blue-500/80 shadow-[0_0_12px_rgba(59,130,246,0.25)] ring-2 ring-blue-500/25'
+                            : isTarget
+                            ? 'border-orange-500 bg-orange-600/10 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.35)] animate-pulse'
+                            : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700/80'
+                        }`}
+                      >
+                        {cellDies.length === 0 ? (
+                          <div className="flex-1 flex items-center justify-center text-slate-650 text-[10px] italic select-none">
+                            Empty Slot
+                          </div>
+                        ) : (
+                          cellDies.map(die => (
+                            <div
+                              key={die.die_id}
+                              draggable={canMove}
+                              onDragStart={(e) => handleDragStart(e, die.die_id)}
+                              onDragEnd={handleDragEnd}
+                              onClick={() => navigate(`/dies/${die.die_id}`)}
+                              tabIndex={0}
+                              onKeyDown={(e) => handleDieKeyDown(e, die, rack, shelf)}
+                              className={`group relative flex items-center justify-between p-1.5 rounded-lg border bg-slate-900 border-slate-800 cursor-pointer transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                draggedDieId === die.die_id ? 'opacity-40' : 'hover:border-blue-500/50 hover:bg-slate-850'
+                              } ${
+                                pickedUpDie?.die_id === die.die_id ? 'ring-2 ring-orange-500 bg-orange-950/40 border-orange-500 opacity-80' : ''
+                              }`}
+                            >
                             <div className="flex items-center space-x-1.5 min-w-0">
                               <span className={`h-2 w-2 rounded-full shrink-0 ${getStatusDotColor(die.status)}`} />
                               <span className="text-[10px] font-bold font-mono text-slate-205 truncate">
@@ -337,12 +430,16 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                           navigate(`/dies/${die.die_id}`)
                         }
                       }}
-                      className={`flex items-center justify-between p-3 rounded-xl border bg-slate-950 transition select-none ${
+                      tabIndex={0}
+                      onKeyDown={(e) => handleDieKeyDown(e, die, null, null)}
+                      className={`flex items-center justify-between p-3 rounded-xl border bg-slate-950 transition select-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         isAssigning 
                           ? 'border-blue-500 bg-slate-900/20' 
                           : draggedDieId === die.die_id 
                           ? 'opacity-40 border-slate-800' 
                           : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/40 cursor-pointer'
+                      } ${
+                        pickedUpDie?.die_id === die.die_id ? 'ring-2 ring-orange-500 bg-orange-950/40 border-orange-500 opacity-80' : ''
                       }`}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
@@ -432,6 +529,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

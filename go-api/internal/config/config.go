@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type Config struct {
@@ -21,6 +22,7 @@ type Config struct {
 	SessionIdleTimeoutMinutes   string
 	SessionAbsoluteTimeoutHours string
 	DjangoAPIURL                string
+	SearchCacheTTLSeconds       int
 }
 
 func Load() (*Config, error) {
@@ -100,6 +102,14 @@ func Load() (*Config, error) {
 		djangoAPIURL = "http://django:8000"
 	}
 
+	searchCacheTTLStr := os.Getenv("SEARCH_CACHE_TTL_SECONDS")
+	searchCacheTTL := 10
+	if searchCacheTTLStr != "" {
+		if val, err := strconv.Atoi(searchCacheTTLStr); err == nil {
+			searchCacheTTL = val
+		}
+	}
+
 	return &Config{
 		Port:                        port,
 		PostgresHost:                pgHost,
@@ -115,6 +125,7 @@ func Load() (*Config, error) {
 		SessionIdleTimeoutMinutes:   sessionIdle,
 		SessionAbsoluteTimeoutHours: sessionAbs,
 		DjangoAPIURL:                djangoAPIURL,
+		SearchCacheTTLSeconds:       searchCacheTTL,
 	}, nil
 }
 

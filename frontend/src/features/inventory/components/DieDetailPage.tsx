@@ -1,11 +1,233 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2 } from 'lucide-react'
+import { ChevronRight, Trash2, Printer, Download } from 'lucide-react'
 import { useApi, useAuth, useToast } from '../../../App'
 import { DieBlueprint } from './CadRenderer'
 import { Timeline } from './Timeline'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
+
+interface ChartPoint {
+  date: string;
+  Size?: number;
+  Width?: number;
+  Thickness?: number;
+}
+
+function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: string }) {
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-slate-500 italic text-sm">
+        No dimension history recorded yet.
+      </div>
+    );
+  }
+
+  const isRound = dieType === 'ROUND';
+
+  let allVals: number[] = [];
+  data.forEach(p => {
+    if (isRound) {
+      if (p.Size !== undefined) allVals.push(p.Size);
+    } else {
+      if (p.Width !== undefined) allVals.push(p.Width);
+      if (p.Thickness !== undefined) allVals.push(p.Thickness);
+    }
+  });
+
+  const minVal = allVals.length > 0 ? Math.min(...allVals) : 0;
+  const maxVal = allVals.length > 0 ? Math.max(...allVals) : 10;
+
+  const valRange = maxVal - minVal;
+  const yMin = valRange === 0 ? minVal - 1 : minVal - valRange * 0.15;
+  const yMax = valRange === 0 ? maxVal + 1 : maxVal + valRange * 0.15;
+  const yRange = yMax - yMin;
+
+  const width = 600;
+  const height = 250;
+  const paddingLeft = 50;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 40;
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+
+  const getX = (index: number) => {
+    if (data.length <= 1) return paddingLeft + chartWidth / 2;
+    return paddingLeft + (index / (data.length - 1)) * chartWidth;
+  };
+
+  const getY = (val: number) => {
+    if (yRange === 0) return paddingTop + chartHeight / 2;
+    return paddingTop + chartHeight - ((val - yMin) / yRange) * chartHeight;
+  };
+
+  const getPathD = (key: 'Size' | 'Width' | 'Thickness') => {
+    const points = data
+      .map((p, idx) => {
+        const val = p[key];
+        if (val === undefined) return null;
+        return `${getX(idx)},${getY(val)}`;
+      })
+      .filter(p => p !== null);
+
+    if (points.length === 0) return '';
+    return `M ${points.join(' L ')}`;
+  };
+
+  const roundPath = isRound ? getPathD('Size') : '';
+  const widthPath = !isRound ? getPathD('Width') : '';
+  const thicknessPath = !isRound ? getPathD('Thickness') : '';
+
+  const yTicks = 4;
+  const yTicksVals = Array.from({ length: yTicks }, (_, i) => yMin + (i / (yTicks - 1)) * yRange);
+
+  return (
+    <div className="relative w-full bg-slate-950/40 rounded-xl p-5 border border-slate-850">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
+        {/* Grid lines & Y-axis labels */}
+        {yTicksVals.map((val, idx) => {
+          const y = getY(val);
+          return (
+            <g key={idx} className="opacity-45">
+              <line 
+                x1={paddingLeft} 
+                y1={y} 
+                x2={width - paddingRight} 
+                y2={y} 
+                stroke="#1e293b" 
+                strokeDasharray="4 4" 
+              />
+              <text 
+                x={paddingLeft - 8} 
+                y={y + 4} 
+                fill="#94a3b8" 
+                fontSize="10" 
+                textAnchor="end"
+                className="font-mono font-bold"
+              >
+                {val.toFixed(2)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* X-axis labels */}
+        {data.map((p, idx) => {
+          const x = getX(idx);
+          const showLabel = data.length <= 5 || idx % Math.ceil(data.length / 5) === 0 || idx === data.length - 1;
+          if (!showLabel) return null;
+          return (
+            <text
+              key={idx}
+              x={x}
+              y={height - paddingBottom + 18}
+              fill="#64748b"
+              fontSize="9"
+              textAnchor="middle"
+              className="font-semibold"
+            >
+              {p.date}
+            </text>
+          );
+        })}
+
+        {/* Lines */}
+        {isRound && roundPath && (
+          <path 
+            d={roundPath} 
+            fill="none" 
+            stroke="#3b82f6" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        )}
+        {!isRound && widthPath && (
+          <path 
+            d={widthPath} 
+            fill="none" 
+            stroke="#3b82f6" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        )}
+        {!isRound && thicknessPath && (
+          <path 
+            d={thicknessPath} 
+            fill="none" 
+            stroke="#a855f7" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        )}
+
+        {/* Data points */}
+        {data.map((p, idx) => {
+          const x = getX(idx);
+          return (
+            <g key={idx}>
+              {isRound && p.Size !== undefined && (
+                <circle 
+                  cx={x} 
+                  cy={getY(p.Size)} 
+                  r="5" 
+                  fill="#0f172a" 
+                  stroke="#3b82f6" 
+                  strokeWidth="2.5" 
+                />
+              )}
+              {!isRound && p.Width !== undefined && (
+                <circle 
+                  cx={x} 
+                  cy={getY(p.Width)} 
+                  r="5" 
+                  fill="#0f172a" 
+                  stroke="#3b82f6" 
+                  strokeWidth="2.5" 
+                />
+              )}
+              {!isRound && p.Thickness !== undefined && (
+                <circle 
+                  cx={x} 
+                  cy={getY(p.Thickness)} 
+                  r="5" 
+                  fill="#0f172a" 
+                  stroke="#a855f7" 
+                  strokeWidth="2.5" 
+                />
+              )}
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex justify-center space-x-6 mt-3 text-xs">
+        {isRound ? (
+          <div className="flex items-center space-x-2">
+            <span className="h-3 w-3 rounded-full bg-blue-500" />
+            <span className="text-slate-350 font-bold">Size (mm)</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center space-x-2">
+              <span className="h-3 w-3 rounded-full bg-blue-500" />
+              <span className="text-slate-350 font-bold">Width (mm)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="h-3 w-3 rounded-full bg-purple-500" />
+              <span className="text-slate-350 font-bold">Thickness (mm)</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function DieDetailPage() {
   const { id } = useParams()
@@ -159,6 +381,123 @@ export function DieDetailPage() {
     setShowDeleteConfirm(true)
   }
 
+  const getChartData = () => {
+    if (!die || !die.history) return [];
+
+    const isRound = die.die_type === 'ROUND';
+    const sortedHistory = [...die.history].sort(
+      (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const points: any[] = [];
+
+    if (isRound) {
+      let currentVal = parseFloat(die.original_size || '0');
+      const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
+      points.push({
+        timestamp: new Date(creationDate).getTime(),
+        date: new Date(creationDate).toLocaleDateString(),
+        Size: currentVal,
+      });
+
+      sortedHistory.forEach((h: any) => {
+        if (h.field_name === 'current_size') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) {
+            currentVal = val;
+            points.push({
+              timestamp: new Date(h.timestamp).getTime(),
+              date: new Date(h.timestamp).toLocaleDateString(),
+              Size: currentVal,
+            });
+          }
+        }
+      });
+
+      const finalVal = parseFloat(die.current_size || '0');
+      const lastPoint = points[points.length - 1];
+      if (lastPoint && lastPoint.Size !== finalVal) {
+        points.push({
+          timestamp: new Date(die.updated_at || new Date().toISOString()).getTime(),
+          date: new Date(die.updated_at || new Date().toISOString()).toLocaleDateString(),
+          Size: finalVal,
+        });
+      }
+    } else {
+      let currentW = parseFloat(die.original_width || '0');
+      let currentT = parseFloat(die.original_thickness || '0');
+      const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
+      points.push({
+        timestamp: new Date(creationDate).getTime(),
+        date: new Date(creationDate).toLocaleDateString(),
+        Width: currentW,
+        Thickness: currentT,
+      });
+
+      sortedHistory.forEach((h: any) => {
+        if (h.field_name === 'current_width') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) {
+            currentW = val;
+            points.push({
+              timestamp: new Date(h.timestamp).getTime(),
+              date: new Date(h.timestamp).toLocaleDateString(),
+              Width: currentW,
+              Thickness: currentT,
+            });
+          }
+        } else if (h.field_name === 'current_thickness') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) {
+            currentT = val;
+            points.push({
+              timestamp: new Date(h.timestamp).getTime(),
+              date: new Date(h.timestamp).toLocaleDateString(),
+              Width: currentW,
+              Thickness: currentT,
+            });
+          }
+        }
+      });
+
+      const finalW = parseFloat(die.current_width || '0');
+      const finalT = parseFloat(die.current_thickness || '0');
+      const lastPoint = points[points.length - 1];
+      if (lastPoint && (lastPoint.Width !== finalW || lastPoint.Thickness !== finalT)) {
+        points.push({
+          timestamp: new Date(die.updated_at || new Date().toISOString()).getTime(),
+          date: new Date(die.updated_at || new Date().toISOString()).toLocaleDateString(),
+          Width: finalW,
+          Thickness: finalT,
+        });
+      }
+    }
+
+    return points.sort((a, b) => a.timestamp - b.timestamp);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const downloadSvg = () => {
+    const svgEl = document.querySelector('.cad-svg-container svg') || document.querySelector('svg');
+    if (!svgEl) {
+      showToast('SVG blueprint not found', 'error');
+      return;
+    }
+    const svgString = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = svgUrl;
+    downloadLink.download = `dms_blueprint_${die?.die_id || 'die'}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    showToast('SVG blueprint downloaded successfully', 'success');
+  };
+
   if (isLoading) return (
     <div className="flex justify-center items-center py-24">
       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -177,42 +516,102 @@ export function DieDetailPage() {
   const canEdit = role === 'ROOT' || role === 'ADMIN'
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body, html {
+            background-color: white !important;
+            color: black !important;
+            font-family: sans-serif !important;
+          }
+          nav, footer, .print\\:hidden {
+            display: none !important;
+          }
+          .print-container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .print\\:text-black {
+            color: black !important;
+          }
+          .print\\:border-black {
+            border-color: black !important;
+          }
+          .print\\:bg-transparent {
+            background-color: transparent !important;
+          }
+          .print\\:shadow-none {
+            box-shadow: none !important;
+          }
+          .print\\:w-\\[350px\\] {
+            width: 350px !important;
+          }
+          .print\\:h-\\[350px\\] {
+            height: 350px !important;
+          }
+        }
+      `}} />
+
+      {/* Print-only Header */}
+      <div className="hidden print:block mb-8 text-black">
+        <div className="text-3xl font-extrabold tracking-tight">DMS DIE BLUEPRINT REPORT</div>
+        <p className="text-sm mt-1">Generated: {new Date().toLocaleString()} | Die ID: {die.die_id}</p>
+        <div className="h-px bg-black my-4" />
+      </div>
+
       {/* Breadcrumbs */}
-      <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6">
+      <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6 print:hidden">
         <Link to="/inventory" className="hover:text-slate-300">Inventory</Link>
         <ChevronRight className="h-4 w-4" />
         <span className="text-slate-300">{die.die_id}</span>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-slate-950 p-8 border-b border-slate-800 flex justify-between items-start gap-4">
+      <div className="bg-slate-900 print:bg-transparent border border-slate-800 print:border-none rounded-2xl shadow-xl print:shadow-none overflow-hidden mb-8">
+        <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-slate-950 print:from-transparent print:to-transparent p-8 border-b border-slate-800 print:border-b-2 print:border-black flex justify-between items-start gap-4">
           <div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 print:hidden">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
                 {die.die_type} DIE
               </span>
             </div>
-            <h1 className="text-3xl font-extrabold text-white mt-3">{die.die_id}</h1>
-            <p className="text-slate-400 text-sm mt-1">Casing: {die.casing}</p>
+            <h1 className="text-3xl font-extrabold text-white print:text-black mt-3 print:mt-0">{die.die_id}</h1>
+            <p className="text-slate-400 print:text-slate-700 text-sm mt-1">Casing: {die.casing}</p>
           </div>
           
-          {canEdit && (
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-slate-950 hover:bg-slate-800 text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
-              >
-                {isEditing ? 'Cancel' : 'Edit'}
-              </button>
-              <button 
-                onClick={handleDelete}
-                className="bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-400 p-2.5 rounded-xl transition-all duration-300"
-              >
-                <Trash2 className="h-4.5 w-4.5" />
-              </button>
-            </div>
-          )}
+          <div className="flex space-x-2 print:hidden">
+            <button 
+              onClick={handlePrint}
+              className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
+            >
+              <Printer className="h-4 w-4 text-blue-500" />
+              <span className="hidden sm:inline">Print Blueprint</span>
+            </button>
+            <button 
+              onClick={downloadSvg}
+              className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4 text-emerald-500" />
+              <span className="hidden sm:inline">Download SVG</span>
+            </button>
+            {canEdit && (
+              <>
+                <button 
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="bg-slate-950 hover:bg-slate-800 text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                >
+                  {isEditing ? 'Cancel' : 'Edit'}
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-400 p-2.5 rounded-xl transition-all duration-300"
+                >
+                  <Trash2 className="h-4.5 w-4.5" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="p-8">
@@ -341,8 +740,8 @@ export function DieDetailPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Specifications</h3>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 space-y-2">
+                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4">Specifications</h3>
+                <div className="bg-slate-950/50 print:bg-transparent rounded-xl p-5 border border-slate-850 print:border-black space-y-2">
                   <div 
                     className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
                       highlightedDim === 'status' 
@@ -352,20 +751,20 @@ export function DieDetailPage() {
                     onMouseEnter={() => setHighlightedDim('status')}
                     onMouseLeave={() => setHighlightedDim(null)}
                   >
-                    <span className={highlightedDim === 'status' ? 'text-blue-400' : 'text-slate-500'}>Status</span>
-                    <span className={`font-semibold ${highlightedDim === 'status' ? 'text-blue-300' : 'text-slate-200'}`}>{die.status}</span>
+                    <span className={highlightedDim === 'status' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Status</span>
+                    <span className={`font-semibold ${highlightedDim === 'status' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.status}</span>
                   </div>
                   <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500">Location</span>
-                    <span className="font-semibold text-slate-200">{die.location || '—'}</span>
+                    <span className="text-slate-500 print:text-slate-800">Location</span>
+                    <span className="font-semibold text-slate-200 print:text-black">{die.location || '—'}</span>
                   </div>
                   <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500">Set Assignment</span>
-                    <span className="font-semibold text-slate-200">{die.set_name || '—'}</span>
+                    <span className="text-slate-500 print:text-slate-800">Set Assignment</span>
+                    <span className="font-semibold text-slate-200 print:text-black">{die.set_name || '—'}</span>
                   </div>
                   <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500">Machine</span>
-                    <span className="font-semibold text-slate-200">{die.machine_name || '—'}</span>
+                    <span className="text-slate-500 print:text-slate-800">Machine</span>
+                    <span className="font-semibold text-slate-200 print:text-black">{die.machine_name || '—'}</span>
                   </div>
                   <div 
                     className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -376,14 +775,14 @@ export function DieDetailPage() {
                     onMouseEnter={() => setHighlightedDim('casing')}
                     onMouseLeave={() => setHighlightedDim(null)}
                   >
-                    <span className={highlightedDim === 'casing' ? 'text-blue-400' : 'text-slate-500'}>Casing</span>
-                    <span className={`font-semibold ${highlightedDim === 'casing' ? 'text-blue-300' : 'text-slate-200'}`}>{die.casing || '—'}</span>
+                    <span className={highlightedDim === 'casing' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Casing</span>
+                    <span className={`font-semibold ${highlightedDim === 'casing' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.casing || '—'}</span>
                   </div>
 
                   {die.die_type === 'ROUND' ? (
                     <>
                       <div 
-                        className={`flex justify-between border-t border-slate-800/80 mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                        className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
                           highlightedDim === 'original_size' 
                             ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
                             : 'border-transparent'
@@ -391,8 +790,8 @@ export function DieDetailPage() {
                         onMouseEnter={() => setHighlightedDim('original_size')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'original_size' ? 'text-indigo-400' : 'text-slate-500'}>Original Size</span>
-                        <span className={`font-semibold ${highlightedDim === 'original_size' ? 'text-indigo-300' : 'text-slate-200'}`}>{die.original_size} mm</span>
+                        <span className={highlightedDim === 'original_size' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Original Size</span>
+                        <span className={`font-semibold ${highlightedDim === 'original_size' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.original_size} mm</span>
                       </div>
                       <div 
                         className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -403,14 +802,14 @@ export function DieDetailPage() {
                         onMouseEnter={() => setHighlightedDim('current_size')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'current_size' ? 'text-blue-400' : 'text-slate-500'}>Current Size</span>
-                        <span className={`font-semibold ${highlightedDim === 'current_size' ? 'text-blue-300' : 'text-slate-200'}`}>{die.current_size} mm</span>
+                        <span className={highlightedDim === 'current_size' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Current Size</span>
+                        <span className={`font-semibold ${highlightedDim === 'current_size' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.current_size} mm</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <div 
-                        className={`flex justify-between border-t border-slate-800/80 mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
+                        className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
                           highlightedDim === 'original_width_thickness' 
                             ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
                             : 'border-transparent'
@@ -418,8 +817,8 @@ export function DieDetailPage() {
                         onMouseEnter={() => setHighlightedDim('original_width_thickness')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'original_width_thickness' ? 'text-indigo-400' : 'text-slate-500'}>Original Size (W×T)</span>
-                        <span className={`font-semibold ${highlightedDim === 'original_width_thickness' ? 'text-indigo-300' : 'text-slate-200'}`}>{die.original_width} × {die.original_thickness} mm</span>
+                        <span className={highlightedDim === 'original_width_thickness' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Original Size (W×T)</span>
+                        <span className={`font-semibold ${highlightedDim === 'original_width_thickness' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.original_width} × {die.original_thickness} mm</span>
                       </div>
                       <div 
                         className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -430,8 +829,8 @@ export function DieDetailPage() {
                         onMouseEnter={() => setHighlightedDim('width_thickness')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'width_thickness' ? 'text-blue-400' : 'text-slate-500'}>Current Size (W×T)</span>
-                        <span className={`font-semibold ${highlightedDim === 'width_thickness' ? 'text-blue-300' : 'text-slate-200'}`}>{die.current_width} × {die.current_thickness} mm</span>
+                        <span className={highlightedDim === 'width_thickness' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Current Size (W×T)</span>
+                        <span className={`font-semibold ${highlightedDim === 'width_thickness' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.current_width} × {die.current_thickness} mm</span>
                       </div>
                       <div 
                         className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -442,16 +841,16 @@ export function DieDetailPage() {
                         onMouseEnter={() => setHighlightedDim('radius')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'radius' ? 'text-blue-400' : 'text-slate-500'}>Radius</span>
-                        <span className={`font-semibold ${highlightedDim === 'radius' ? 'text-blue-300' : 'text-slate-200'}`}>{die.radius} mm</span>
+                        <span className={highlightedDim === 'radius' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Radius</span>
+                        <span className={`font-semibold ${highlightedDim === 'radius' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.radius} mm</span>
                       </div>
                     </>
                   )}
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">CAD Blueprint</h3>
+              <div className="cad-svg-container print:w-[350px] print:h-[350px] flex flex-col items-center">
+                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4 w-full text-left">CAD Blueprint</h3>
                 <DieBlueprint 
                   die={die} 
                   activeHighlight={highlightedDim}
@@ -460,9 +859,9 @@ export function DieDetailPage() {
               </div>
 
               <div className="md:col-span-2 lg:col-span-1">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Remarks</h3>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-850 h-[calc(100%-2rem)]">
-                  <p className="text-slate-300 whitespace-pre-line text-sm leading-relaxed">
+                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4">Remarks</h3>
+                <div className="bg-slate-950/50 print:bg-transparent rounded-xl p-5 border border-slate-850 print:border-black h-[calc(100%-2rem)]">
+                  <p className="text-slate-300 print:text-black whitespace-pre-line text-sm leading-relaxed">
                     {die.remarks || 'No remarks recorded.'}
                   </p>
                 </div>
@@ -472,8 +871,16 @@ export function DieDetailPage() {
         </div>
       </div>
 
+      {/* Wear Trend Chart */}
+      <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
+        <h3 className="text-lg font-bold text-white mb-6">Dimension Wear Trend</h3>
+        <DimensionWearChart data={getChartData()} dieType={die.die_type} />
+      </div>
+
       {/* History timeline */}
-      <Timeline history={die.history} />
+      <div className="print:hidden">
+        <Timeline history={die.history} />
+      </div>
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}

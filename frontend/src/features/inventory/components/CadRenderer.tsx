@@ -123,7 +123,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                 "Specifies the active extrusion diameter of the round die (mm).",
                 "Tolerance limit: ±0.05 mm. Standard operating limit is based on wear and expansion thresholds. Regular calibration is mandatory."
               )}
-              aria-label="Diameter information"
+              aria-label={`Current diameter: ${die.current_size || '—'}mm`}
             >
               <line x1="25" y1="100" x2="175" y2="100" className="blueprint-dim-line" strokeDasharray="3 3" />
               <path d="M 25 100 L 32 97 L 32 103 Z" fill="#10b981" />
@@ -160,7 +160,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                   "The brand-new factory dimension of the die before any operational wear (mm).",
                   "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
                 )}
-                aria-label="Original size information"
+                aria-label={`Original diameter: ${die.original_size || '—'}mm`}
               >
                 <line x1="100" y1="25" x2="145" y2="25" className="blueprint-dim-line" />
                 <circle cx="100" cy="25" r="2" fill="#10b981" />
@@ -246,7 +246,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                     "Active width dimension of the flat die extrusion path (mm).",
                     "Tolerance limit: ±0.1 mm. Critical for maintaining uniform edge thickness and avoiding flow bottlenecks during flat extrusion runs."
                   )}
-                  aria-label="Width information"
+                  aria-label={`Current width: ${die.current_width || '—'}mm`}
                 >
                   <line x1={x} y1={y + t + 15} x2={x + w} y2={y + t + 15} className="blueprint-dim-line" />
                   <line x1={x} y1={y + t + 5} x2={x} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
@@ -284,7 +284,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                     "Thickness dimension of the flat extrusion channel (mm).",
                     "Wear threshold: Max +0.08 mm deviation. Exceeding this causes thickness defects; die must be sent for polishing or scrapped."
                   )}
-                  aria-label="Thickness information"
+                  aria-label={`Current thickness: ${die.current_thickness || '—'}mm`}
                 >
                   <line x1={x - 15} y1={y} x2={x - 15} y2={y + t} className="blueprint-dim-line" />
                   <line x1={x - 20} y1={y} x2={x - 5} y2={y} className="blueprint-dim-line" strokeWidth="0.5" />
@@ -322,7 +322,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                       "Fillet radius of the flat die corners (mm).",
                       "Reduces stress concentration on corners and helps achieve smooth material distribution during flat extrusion."
                     )}
-                    aria-label="Corner radius information"
+                    aria-label={`Corner radius: ${die.radius || '—'}mm`}
                   >
                     <path d={`M ${x + w - r + r * Math.cos(Math.PI/4)} ${y + r - r * Math.sin(Math.PI/4)} L ${x + w + 12} ${y - 12}`} className="blueprint-dim-line" fill="none" strokeWidth="0.75" />
                     <circle cx={x + w - r + r * Math.cos(Math.PI/4)} cy={y + r - r * Math.sin(Math.PI/4)} r="2" fill="#10b981" />

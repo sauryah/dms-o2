@@ -61,7 +61,8 @@ export function BackupManager() {
       setShowRestoreConfirmModal(false)
       setSelectedBackup(null)
       setRestoreConfirmInput('')
-      showToast('Database restore completed successfully! Search index has been rebuilt.', 'success')
+      showToast('Database restore completed successfully! Search index rebuild in progress...', 'success')
+      window.dispatchEvent(new CustomEvent('trigger-index-polling'))
       setTimeout(() => {
         window.location.reload()
       }, 1500)

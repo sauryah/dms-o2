@@ -16,6 +16,13 @@ vi.mock('../../../App', () => ({
   useToast: () => ({
     showToast: vi.fn()
   }),
+  useAnnouncer: () => vi.fn(),
+  useNotifications: () => ({
+    notifications: [],
+    unreadCount: 0,
+    addNotification: vi.fn(),
+    markAllAsRead: vi.fn()
+  }),
   useDebounce: <T,>(value: T) => value,
   isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
 }))
