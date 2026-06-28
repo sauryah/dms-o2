@@ -8,8 +8,7 @@ export type DieStatus =
   | 'DAMAGED' 
   | 'SCRAPPED' 
   | 'MISSING'
-  | 'MAINTENANCE'
-  | 'SCRAP';
+  | 'MAINTENANCE';
 
 export interface Die {
   die_id: string;
@@ -62,7 +61,6 @@ export function getStatusColorClass(status: DieStatus): string {
     SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
     MISSING: 'bg-red-500/10 text-red-400 border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.08)]',
     MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/25 shadow-[0_0_8px_rgba(249,115,22,0.08)]',
-    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
   }
   return statusColors[status] || 'bg-slate-500/10 text-slate-400 border-slate-500/25'
 }

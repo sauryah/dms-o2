@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useApi } from '../../../App'
 import { validateDieCreate } from '../../../types/validation'
 
 interface CreateDieModalProps {
@@ -25,8 +27,18 @@ export function CreateDieModal({
   const [casing, setCasing] = useState('')
   const [status, setStatus] = useState('AVAILABLE')
   const [location, setLocation] = useState('')
+  const [rack, setRack] = useState('')
+  const [shelf, setShelf] = useState('')
   const [remarks, setRemarks] = useState('')
   const [currentSet, setCurrentSet] = useState('')
+
+  const { request } = useApi()
+  const { data: racksList } = useQuery({
+    queryKey: ['racksList'],
+    queryFn: () => request('/api/racks/'),
+    enabled: isOpen
+  })
+  const racks = racksList || []
   
   // Round subfields
   const [originalSize, setOriginalSize] = useState('')
@@ -52,6 +64,8 @@ export function CreateDieModal({
       setCasing('')
       setStatus('AVAILABLE')
       setLocation('')
+      setRack('')
+      setShelf('')
       setRemarks('')
       setCurrentSet('')
       setOriginalSize('')
@@ -127,12 +141,17 @@ export function CreateDieModal({
     if (isSubmitting) return
     setValidationErrors({})
     
+    const selectedRack = racks.find((r: any) => String(r.id) === String(rack))
+    const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
+
     const payload: any = {
       die_id: dieId.trim(),
       die_type: dieType,
       casing: casing.trim(),
       status,
-      location: location.trim(),
+      location: finalLocation,
+      rack: rack ? Number(rack) : null,
+      shelf: shelf ? Number(shelf) : null,
       remarks: remarks.trim(),
       current_set: currentSet ? Number(currentSet) : null
     }
@@ -298,31 +317,53 @@ export function CreateDieModal({
                 <option value="SCRAPPED">Scrapped</option>
                 <option value="MISSING">Missing</option>
                 <option value="MAINTENANCE">Maintenance</option>
-                <option value="SCRAP">Scrap</option>
               </select>
             </div>
 
-            <div>
-              <label htmlFor="form-location" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Warehouse Location <span className="text-rose-500">*</span>
-              </label>
-              <input 
-                id="form-location"
-                type="text" 
-                required
-                disabled={isSubmitting}
-                value={location}
-                onChange={(e) => handleFieldChange('location', e.target.value, setLocation)}
-                className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
-                  getFieldError('location') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
-                }`}
-                placeholder="e.g. Rack A-1"
-                aria-invalid={!!getFieldError('location')}
-              />
-              {getFieldError('location') && (
-                <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('location')}</p>
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="form-rack" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Storage Rack <span className="text-rose-500">*</span>
+                </label>
+                <select 
+                  id="form-rack"
+                  required
+                  value={rack}
+                  disabled={isSubmitting}
+                  onChange={(e) => handleFieldChange('rack', e.target.value, setRack)}
+                  className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring cursor-pointer ${
+                    getFieldError('location') ? 'border-rose-500 bg-rose-950/10' : ''
+                  }`}
+                >
+                  <option value="">Select Rack...</option>
+                  {racks.map((r: any) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="form-shelf" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Shelf Number <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                  id="form-shelf"
+                  type="number" 
+                  min="1"
+                  required
+                  disabled={isSubmitting}
+                  value={shelf}
+                  onChange={(e) => handleFieldChange('shelf', e.target.value, setShelf)}
+                  className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+                    getFieldError('location') ? 'border-rose-500 bg-rose-950/10' : ''
+                  }`}
+                  placeholder="e.g. 3"
+                />
+              </div>
             </div>
+            {getFieldError('location') && (
+              <p className="text-xxs text-rose-400 mt-1.5 font-medium">Please select a valid Rack and Shelf number</p>
+            )}
 
             <div>
               <label htmlFor="form-set" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">

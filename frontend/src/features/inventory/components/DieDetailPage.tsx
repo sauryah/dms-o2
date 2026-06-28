@@ -18,6 +18,8 @@ export function DieDetailPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [statusVal, setStatusVal] = useState('')
   const [location, setLocation] = useState('')
+  const [rack, setRack] = useState('')
+  const [shelf, setShelf] = useState('')
   const [remarks, setRemarks] = useState('')
   const [currentSetId, setCurrentSetId] = useState('')
   
@@ -34,11 +36,19 @@ export function DieDetailPage() {
     queryFn: () => request(`/api/dies/${id}/`),
   })
 
+  const { data: racksList } = useQuery({
+    queryKey: ['racksList'],
+    queryFn: () => request('/api/racks/')
+  })
+  const racks = racksList || []
+
   // Populate form states once data loads or changes
   useEffect(() => {
     if (die) {
       setStatusVal(die.status || 'AVAILABLE')
       setLocation(die.location || '')
+      setRack(die.rack ? String(die.rack) : '')
+      setShelf(die.shelf ? String(die.shelf) : '')
       setRemarks(die.remarks || '')
       setCurrentSetId(die.current_set || '')
       setCurrentSize(die.current_size || '')
@@ -125,9 +135,14 @@ export function DieDetailPage() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
+    const selectedRack = racks.find((r: any) => String(r.id) === String(rack))
+    const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
+
     const payload: any = {
       status: statusVal,
-      location,
+      location: finalLocation,
+      rack: rack ? Number(rack) : null,
+      shelf: shelf ? Number(shelf) : null,
       remarks,
       current_set: currentSetId || null
     }
@@ -219,17 +234,32 @@ export function DieDetailPage() {
                     <option value="SCRAPPED">Scrapped</option>
                     <option value="MISSING">Missing</option>
                     <option value="MAINTENANCE">Maintenance</option>
-                    <option value="SCRAP">Scrap</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
-                  <input 
-                    type="text" 
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <select 
+                      value={rack}
+                      required
+                      onChange={(e) => setRack(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="">Select Rack...</option>
+                      {racks.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                    <input 
+                      type="number" 
+                      min="1"
+                      required
+                      placeholder="Shelf"
+                      value={shelf}
+                      onChange={(e) => setShelf(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>

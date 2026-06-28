@@ -85,7 +85,6 @@ export function FilterPanel({
           <option value="SCRAPPED">Scrapped</option>
           <option value="MISSING">Missing</option>
           <option value="MAINTENANCE">Maintenance</option>
-          <option value="SCRAP">Scrap</option>
         </select>
       </div>
 

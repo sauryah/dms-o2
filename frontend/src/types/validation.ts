@@ -6,9 +6,11 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
     die_type: z.literal('ROUND'),
     casing: z.string().min(1, 'Casing is required'),
-    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE', 'SCRAP']),
+    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE']),
     location: z.string().min(1, 'Location is required'),
     current_set: z.number().nullable().optional(),
+    rack: z.number().nullable().optional(),
+    shelf: z.number().nullable().optional(),
     remarks: z.string().optional().default(''),
     
     // ROUND die specific fields
@@ -19,9 +21,11 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
     die_type: z.literal('FLAT'),
     casing: z.string().min(1, 'Casing is required'),
-    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE', 'SCRAP']),
+    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE']),
     location: z.string().min(1, 'Location is required'),
     current_set: z.number().nullable().optional(),
+    rack: z.number().nullable().optional(),
+    shelf: z.number().nullable().optional(),
     remarks: z.string().optional().default(''),
     
     // FLAT die specific fields

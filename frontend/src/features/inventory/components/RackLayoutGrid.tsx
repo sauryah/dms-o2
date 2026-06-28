@@ -1,11 +1,17 @@
 import React, { useState } from 'react'
 import { Database, Move, ArrowRightLeft, ShieldAlert } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useApi } from '../../../App'
 
 interface Die {
   die_id: string
   die_type: string
   status: string
   location?: string
+  rack?: number | null
+  rack_id?: number | null
+  rack_name?: string
+  shelf?: number | null
   current_size?: string
   current_width?: string
   current_thickness?: string
@@ -14,7 +20,7 @@ interface Die {
 
 interface RackLayoutGridProps {
   dies: Die[]
-  onMoveDie: (dieId: string, newLocation: string) => void
+  onMoveDie: (dieId: string, rackId: number | null, shelf: number | null, location: string) => void
   canMove: boolean
   navigate: (path: string) => void
 }
@@ -22,11 +28,32 @@ interface RackLayoutGridProps {
 export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayoutGridProps) {
   const [draggedDieId, setDraggedDieId] = useState<string | null>(null)
   const [dragOverCell, setDragOverCell] = useState<string | null>(null) // "rack-shelf"
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [assigningDieId, setAssigningDieId] = useState<string | null>(null)
+  const [selectedRackId, setSelectedRackId] = useState<number | null>(null)
+  const [selectedShelf, setSelectedShelf] = useState<number>(1)
 
-  // Parse location strings
+  const { request } = useApi()
+  const { data: racksList } = useQuery({
+    queryKey: ['racksList'],
+    queryFn: () => request('/api/racks/')
+  })
+  const racks = racksList || []
+
+  // Parse location strings using structured fields first, then falling back to regex
   const parsedDies = dies.map(die => {
+    const rId = die.rack_id || die.rack
+    if (rId && die.rack_name && die.shelf !== null && die.shelf !== undefined) {
+      return {
+        die,
+        rack: `Rack ${die.rack_name.toUpperCase()}`,
+        shelf: `Shelf ${die.shelf}`
+      }
+    }
+    
+    // Fall back to regex parsing location string
     const loc = die.location || ''
-    const match = loc.match(/Rack\s+([A-Za-z0-9]+)\s*-\s*Shelf\s*([A-Za-z0-9]+)/i)
+    const match = loc.match(/Rack\s+([A-Za-z0-9]+)\s*-\s*Shelf\s*([0-9]+)/i)
     if (match) {
       return {
         die,
@@ -34,6 +61,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
         shelf: `Shelf ${match[2]}`
       }
     }
+    
     return {
       die,
       rack: null,
@@ -79,8 +107,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
       case 'CLEANING': return 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]'
       case 'POLISHING': return 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]'
       case 'DAMAGED': return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-      case 'SCRAPPED':
-      case 'SCRAP': return 'bg-slate-605'
+      case 'SCRAPPED': return 'bg-slate-650'
       default: return 'bg-slate-400'
     }
   }
@@ -102,12 +129,20 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
     setDragOverCell(`${rack}-${shelf}`)
   }
 
-  const handleDrop = (e: React.DragEvent, rack: string, shelf: string) => {
+  const handleDrop = (e: React.DragEvent, rackName: string, shelfName: string) => {
     if (!canMove) return
     e.preventDefault()
     const dieId = e.dataTransfer.getData('text/plain') || draggedDieId
     if (dieId) {
-      onMoveDie(dieId, `${rack} - ${shelf}`)
+      const shelfNum = Number(shelfName.replace(/Shelf\s+/i, ''))
+      const pureRackName = rackName.replace(/Rack\s+/i, '').trim()
+      const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
+      
+      if (matchedRack) {
+        onMoveDie(dieId, matchedRack.id, shelfNum, `${rackName} - ${shelfName}`)
+      } else {
+        onMoveDie(dieId, null, null, `${rackName} - ${shelfName}`)
+      }
     }
     setDragOverCell(null)
     setDraggedDieId(null)
@@ -118,7 +153,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
     e.preventDefault()
     const dieId = e.dataTransfer.getData('text/plain') || draggedDieId
     if (dieId) {
-      onMoveDie(dieId, 'General')
+      onMoveDie(dieId, null, null, 'General')
     }
     setDragOverCell(null)
     setDraggedDieId(null)
@@ -226,65 +261,177 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
       </div>
 
       {/* RIGHT: Unallocated Sidebar List */}
-      <div className="w-full lg:w-80 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-5 shadow-xl flex flex-col max-h-[500px]">
-        <div className="mb-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <Move className="h-4.5 w-4.5 text-amber-500" />
-            <span>Other Locations / Unassigned</span>
-          </h3>
-          <p className="text-slate-550 text-xxs mt-1">Dies not in standard Rack A-D format. Drag from here onto grid.</p>
-        </div>
-
-        {/* Drop back zone */}
-        {draggedDieId && (
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDropUnallocated}
-            className="mb-4 p-3 bg-amber-500/10 border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 rounded-xl text-center text-xxs font-bold text-amber-400 animate-pulse transition cursor-pointer flex items-center justify-center space-x-1"
+      {isSidebarCollapsed ? (
+        <div className="w-full lg:w-16 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-3 shadow-xl flex flex-col items-center max-h-[500px]">
+          <button 
+            type="button"
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="p-2 hover:bg-slate-800 rounded-xl transition text-amber-500 relative"
+            title="Expand Unassigned Sidebar"
           >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
-            <span>Drop here to allocate to General</span>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          {unallocatedDies.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-xs italic border border-slate-850 rounded-xl">
-              All dies are mapped to standard racks.
-            </div>
-          ) : (
-            unallocatedDies.map(die => (
-              <div
-                key={die.die_id}
-                draggable={canMove}
-                onDragStart={(e) => handleDragStart(e, die.die_id)}
-                onDragEnd={handleDragEnd}
-                onClick={() => navigate(`/dies/${die.die_id}`)}
-                className={`flex items-center justify-between p-3 rounded-xl border bg-slate-950 border-slate-800 hover:border-slate-700 cursor-pointer transition select-none ${
-                  draggedDieId === die.die_id ? 'opacity-40' : 'hover:bg-slate-900/40'
-                }`}
-              >
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStatusDotColor(die.status)}`} />
-                  <div className="text-left min-w-0">
-                    <div className="text-xs font-extrabold font-mono text-white truncate">
-                      {die.die_id}
-                    </div>
-                    <div className="text-[10px] text-slate-400 truncate">
-                      Loc: {die.location || 'None'}
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] text-slate-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                  {die.die_type === 'ROUND' 
-                    ? `${die.current_size || '—'}mm` 
-                    : `${die.current_width || '—'}×${die.current_thickness || '—'}`}
-                </span>
-              </div>
-            ))
-          )}
+            <Move className="h-6 w-6" />
+            {unallocatedDies.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 font-extrabold rounded-full h-5 w-5 flex items-center justify-center text-[10px] shadow-md border border-slate-900 animate-pulse">
+                {unallocatedDies.length}
+              </span>
+            )}
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="w-full lg:w-80 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-5 shadow-xl flex flex-col max-h-[500px] transition-all duration-300">
+          <div className="flex justify-between items-center mb-4 border-b border-slate-800/60 pb-3">
+            <div className="flex items-center space-x-2 min-w-0">
+              <Move className="h-4.5 w-4.5 text-amber-500 shrink-0" />
+              <span className="text-sm font-extrabold text-white truncate">Unassigned Dies</span>
+              <span className="bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full text-[10px] border border-amber-500/20">
+                {unallocatedDies.length}
+              </span>
+            </div>
+            <button 
+              type="button"
+              onClick={() => { setIsSidebarCollapsed(true); setAssigningDieId(null); }}
+              className="text-slate-400 hover:text-slate-200 text-xs font-semibold px-2 py-1 hover:bg-slate-800 rounded-lg transition"
+            >
+              Collapse
+            </button>
+          </div>
+          
+          <p className="text-slate-500 text-xxs mb-4 leading-relaxed font-sans">
+            Dies not mapped to standard rack locations. Click a die to assign to a cell, or drag-and-drop onto map.
+          </p>
+
+          {/* Drop back zone */}
+          {draggedDieId && (
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDropUnallocated}
+              className="mb-4 p-3 bg-amber-500/10 border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 rounded-xl text-center text-xxs font-bold text-amber-400 animate-pulse transition cursor-pointer flex items-center justify-center space-x-1"
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5" />
+              <span>Drop here to deallocate</span>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+            {unallocatedDies.length === 0 ? (
+              <div className="text-center py-12 text-slate-550 text-xs italic border border-slate-850 rounded-xl">
+                All dies are mapped to standard racks.
+              </div>
+            ) : (
+              unallocatedDies.map(die => {
+                const isAssigning = assigningDieId === die.die_id
+                return (
+                  <div key={die.die_id} className="space-y-2">
+                    <div
+                      draggable={canMove}
+                      onDragStart={(e) => handleDragStart(e, die.die_id)}
+                      onDragEnd={handleDragEnd}
+                      onClick={() => {
+                        if (canMove) {
+                          setAssigningDieId(isAssigning ? null : die.die_id)
+                          if (racks.length > 0) {
+                            setSelectedRackId(racks[0].id)
+                          }
+                          setSelectedShelf(1)
+                        } else {
+                          navigate(`/dies/${die.die_id}`)
+                        }
+                      }}
+                      className={`flex items-center justify-between p-3 rounded-xl border bg-slate-950 transition select-none ${
+                        isAssigning 
+                          ? 'border-blue-500 bg-slate-900/20' 
+                          : draggedDieId === die.die_id 
+                          ? 'opacity-40 border-slate-800' 
+                          : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/40 cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStatusDotColor(die.status)}`} />
+                        <div className="text-left min-w-0">
+                          <div className="text-xs font-extrabold font-mono text-white truncate">
+                            {die.die_id}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            Loc: {die.location || 'None'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                        {die.die_type === 'ROUND' 
+                          ? `${die.current_size || '—'}mm` 
+                          : `${die.current_width || '—'}×${die.current_thickness || '—'}`}
+                      </span>
+                    </div>
+
+                    {/* Inline Set Location selector */}
+                    {isAssigning && (
+                      <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3 animate-fadeIn">
+                        <div className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Assign to Cell:</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-500 block mb-1">RACK</label>
+                            <select
+                              value={selectedRackId || ''}
+                              onChange={(e) => setSelectedRackId(Number(e.target.value))}
+                              className="w-full bg-slate-900 border border-slate-800 text-xs text-white rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              {racks.map((r: any) => (
+                                <option key={r.id} value={r.id}>
+                                  Rack {r.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-500 block mb-1">SHELF</label>
+                            <select
+                              value={selectedShelf}
+                              onChange={(e) => setSelectedShelf(Number(e.target.value))}
+                              className="w-full bg-slate-900 border border-slate-800 text-xs text-white rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value={1}>Shelf 1</option>
+                              <option value={2}>Shelf 2</option>
+                              <option value={3}>Shelf 3</option>
+                              <option value={4}>Shelf 4</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setAssigningDieId(null)}
+                            className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-md border border-slate-800 transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const rObj = racks.find((r: any) => r.id === selectedRackId)
+                              if (rObj) {
+                                onMoveDie(
+                                  die.die_id,
+                                  rObj.id,
+                                  selectedShelf,
+                                  `Rack ${rObj.name.toUpperCase()} - Shelf ${selectedShelf}`
+                                )
+                              }
+                              setAssigningDieId(null)
+                            }}
+                            className="px-3 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-md transition"
+                          >
+                            Assign
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -48,12 +48,15 @@ test.describe('DMS E2E Smoke Tests', () => {
   });
 
   test('unauthenticated search page and login flow', async ({ page }) => {
-    // 1. Visit / -> redirected to /login because authentication is required
+    // 1. Visit / -> dashboard page renders
     await page.goto('/#/');
-    await page.waitForURL('**/#/login');
+    await expect(page.locator('h1')).toContainText('Die Tracking Dashboard');
+
+    // 2. Visit /login -> login form renders
+    await page.goto('/#/login');
     await expect(page.locator('h2')).toContainText('Sign In');
 
-    // 2. Login with root credentials -> redirected to /
+    // 3. Login with root credentials -> redirected to /
     await page.fill('input[type="text"]', 'root');
     await page.fill('input[type="password"]', 'root123');
     await page.click('button[type="submit"]');

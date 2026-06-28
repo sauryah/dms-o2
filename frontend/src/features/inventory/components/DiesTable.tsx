@@ -21,6 +21,71 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   const queryClient = useQueryClient()
 
   const canEdit = role === 'ROOT' || role === 'ADMIN'
+  const canChangeStatus = role === 'ROOT' || role === 'ADMIN' || role === 'OPERATOR'
+
+  const handleStatusChange = async (dieId: string, newStatus: string) => {
+    await queryClient.cancelQueries({ queryKey: ['dies'] })
+    await queryClient.cancelQueries({ queryKey: ['searchDies'] })
+
+    const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
+    const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+    const previousIndividualDie = queryClient.getQueryData(['die', dieId])
+    const previousIndividualDieDetail = queryClient.getQueryData(['dieDetail', dieId])
+
+    const updateStatus = (old: any) => {
+      if (!old) return old
+      if (Array.isArray(old)) {
+        return old.map((die: any) => die.die_id === dieId ? { ...die, status: newStatus } : die)
+      }
+      if (Array.isArray(old.results)) {
+        return {
+          ...old,
+          results: old.results.map((die: any) => die.die_id === dieId ? { ...die, status: newStatus } : die)
+        }
+      }
+      return old
+    }
+
+    queryClient.setQueriesData({ queryKey: ['dies'] }, updateStatus)
+    queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateStatus)
+
+    if (previousIndividualDie !== undefined) {
+      queryClient.setQueryData(['die', dieId], (old: any) => old ? { ...old, status: newStatus } : old)
+    }
+    if (previousIndividualDieDetail !== undefined) {
+      queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? { ...old, status: newStatus } : old)
+    }
+
+    try {
+      await request(`/api/dies/${dieId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      })
+      showToast(`Successfully updated status of die ${dieId} to ${newStatus}.`, 'success')
+    } catch (err: any) {
+      console.error(err)
+      if (previousDiesQueries) {
+        previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      if (previousSearchDiesQueries) {
+        previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+      }
+      if (previousIndividualDie !== undefined) {
+        queryClient.setQueryData(['die', dieId], previousIndividualDie)
+      }
+      if (previousIndividualDieDetail !== undefined) {
+        queryClient.setQueryData(['dieDetail', dieId], previousIndividualDieDetail)
+      }
+      showToast(`Error updating die status: ${err.message}`, 'error')
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDiesDashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['die', dieId] })
+      queryClient.invalidateQueries({ queryKey: ['dieDetail', dieId] })
+    }
+  }
 
   const [sortField, setSortField] = useState('die_id')
   const [sortOrder, setSortOrder] = useState('asc')
@@ -255,7 +320,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     SCRAPPED: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
     MISSING: 'bg-red-500/10 text-red-400 border-red-500/20',
     MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    SCRAP: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   }
 
   const Row = ({ index, style }: RowComponentProps) => {
@@ -307,11 +371,27 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
           </span>
         </div>
         <div className="px-6">
-          <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${
-            statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-          }`}>
-            {die.status}
-          </span>
+          {canChangeStatus ? (
+            <select
+              value={die.status}
+              onChange={(e) => handleStatusChange(die.die_id, e.target.value)}
+              className={`px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded-md border bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
+                statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+              }`}
+            >
+              {Object.keys(statusColors).map(statusOpt => (
+                <option key={statusOpt} value={statusOpt} className="bg-slate-950 text-slate-350 text-xs">
+                  {statusOpt}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className={`px-2 py-0.5 text-xxs font-mono font-semibold rounded-md border ${
+              statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+            }`}>
+              {die.status}
+            </span>
+          )}
         </div>
         <div className="px-6 text-slate-400 text-xs font-mono">
           {new Date(die.updated_at).toLocaleDateString()}
@@ -359,7 +439,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
                 <option value="SCRAPPED">Scrapped</option>
                 <option value="MISSING">Missing</option>
                 <option value="MAINTENANCE">Maintenance</option>
-                <option value="SCRAP">Scrap</option>
               </select>
 
               <button

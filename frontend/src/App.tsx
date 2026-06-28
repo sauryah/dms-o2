@@ -23,6 +23,7 @@ const DieDetailPage = React.lazy(() => import('./features/inventory/components/D
 const MachineSetsPage = React.lazy(() => import('./pages/MachineSetsPage').then(m => ({ default: m.MachineSetsPage })))
 const ImportPage = React.lazy(() => import('./pages/ImportPage').then(m => ({ default: m.ImportPage })))
 const UsersPage = React.lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })))
+const HistoryPage = React.lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 
 // React Query Client
@@ -208,7 +209,7 @@ export const useApi = () => {
         
         if (res.status === 204) return null
         const data = await res.json()
-        if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+        if (!options.keepMetadata && data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
           return data.results
         }
         return data
@@ -364,77 +365,99 @@ function AppContent() {
   useEffect(() => {
     if (!token) return
 
-    // Establish EventSource connection
-    const eventSource = new EventSource(`/api/events/?token=${encodeURIComponent(token)}`)
+    let eventSource: EventSource | null = null
+    let isCancelled = false
 
-    eventSource.onmessage = (event) => {
+    const connectSSE = async () => {
       try {
-        const payload = JSON.parse(event.data)
-        console.log('Real-time sync event received:', payload)
-        
-        // Deduplicate events to prevent double alerts
-        const signature = `${payload.type}-${payload.data?.id || payload.data?.filename || ''}-${payload.data?.action || ''}`
-        if (recentEvents.current.has(signature)) {
+        const res = await request('/api/auth/sse-ticket/', { method: 'POST' })
+        if (isCancelled) return
+
+        const ticket = res.ticket
+        if (!ticket) {
+          console.error('Failed to get SSE ticket from response:', res)
           return
         }
-        recentEvents.current.add(signature)
-        setTimeout(() => {
-          recentEvents.current.delete(signature)
-        }, 3000)
 
-        // Invalidate cache
-        queryClient.invalidateQueries()
+        eventSource = new EventSource(`/api/events/?ticket=${encodeURIComponent(ticket)}`)
 
-        // Construct dynamic notifications
-        if (payload.type === 'die_update') {
-          if (payload.data?.action === 'delete') {
-            showToast(`Die ${payload.data.id} has been deleted.`, 'info')
-          } else if (payload.data?.action === 'bulk_import') {
-            showToast('Bulk import of dies completed.', 'success')
-          } else if (payload.data?.action === 'save') {
-            // Asynchronously fetch current state to present formatted message
-            request(`/api/dies/${payload.data.id}/`)
-              .then(die => {
-                let locationMsg = ''
-                if (die.set_name) {
-                  locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
-                } else if (die.location) {
-                  locationMsg = ` in ${die.location}`
-                }
-                showToast(`Die ${die.die_id} is now ${die.status}${locationMsg}.`, 'info')
-              })
-              .catch(() => {
-                showToast(`Die ${payload.data.id} was updated.`, 'info')
-              })
-          }
-        } else if (payload.type === 'set_update') {
-          showToast('Die sets have been updated.', 'info')
-        } else if (payload.type === 'machine_update') {
-          showToast('Machine configurations have been updated.', 'info')
-        } else if (payload.type === 'backup_update') {
-          const action = payload.data?.action
-          const filename = payload.data?.filename || ''
-          if (action === 'backup') {
-            showToast(`Database backup "${filename}" created successfully.`, 'success')
-          } else if (action === 'restore') {
-            showToast(`Database restore from "${filename}" executed successfully.`, 'success')
-          } else if (action === 'delete') {
-            showToast(`Backup "${filename}" deleted.`, 'info')
-          } else if (action === 'upload') {
-            showToast(`Backup "${filename}" uploaded successfully.`, 'success')
+        eventSource.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data)
+            console.log('Real-time sync event received:', payload)
+            
+            // Deduplicate events to prevent double alerts
+            const signature = `${payload.type}-${payload.data?.id || payload.data?.filename || ''}-${payload.data?.action || ''}`
+            if (recentEvents.current.has(signature)) {
+              return
+            }
+            recentEvents.current.add(signature)
+            setTimeout(() => {
+              recentEvents.current.delete(signature)
+            }, 3000)
+
+            // Invalidate cache
+            queryClient.invalidateQueries()
+
+            // Construct dynamic notifications
+            if (payload.type === 'die_update') {
+              if (payload.data?.action === 'delete') {
+                showToast(`Die ${payload.data.id} has been deleted.`, 'info')
+              } else if (payload.data?.action === 'bulk_import') {
+                showToast('Bulk import of dies completed.', 'success')
+              } else if (payload.data?.action === 'save') {
+                // Asynchronously fetch current state to present formatted message
+                request(`/api/dies/${payload.data.id}/`)
+                  .then(die => {
+                    let locationMsg = ''
+                    if (die.set_name) {
+                      locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
+                    } else if (die.location) {
+                      locationMsg = ` in ${die.location}`
+                    }
+                    showToast(`Die ${die.die_id} is now ${die.status}${locationMsg}.`, 'info')
+                  })
+                  .catch(() => {
+                    showToast(`Die ${payload.data.id} was updated.`, 'info')
+                  })
+              }
+            } else if (payload.type === 'set_update') {
+              showToast('Die sets have been updated.', 'info')
+            } else if (payload.type === 'machine_update') {
+              showToast('Machine configurations have been updated.', 'info')
+            } else if (payload.type === 'backup_update') {
+              const action = payload.data?.action
+              const filename = payload.data?.filename || ''
+              if (action === 'backup') {
+                showToast(`Database backup "${filename}" created successfully.`, 'success')
+              } else if (action === 'restore') {
+                showToast(`Database restore from "${filename}" executed successfully.`, 'success')
+              } else if (action === 'delete') {
+                showToast(`Backup "${filename}" deleted.`, 'info')
+              } else if (action === 'upload') {
+                showToast(`Backup "${filename}" uploaded successfully.`, 'success')
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse event data:', e)
           }
         }
+
+        eventSource.onerror = (err) => {
+          console.error('EventSource connection error:', err)
+        }
       } catch (e) {
-        console.error('Failed to parse event data:', e)
+        console.error('Failed to establish SSE ticket connection:', e)
       }
     }
 
-    eventSource.onerror = (err) => {
-      console.error('EventSource connection error:', err)
-    }
+    connectSSE()
 
     return () => {
-      eventSource.close()
+      isCancelled = true
+      if (eventSource) {
+        eventSource.close()
+      }
     }
   }, [token, queryClient, request, showToast])
 
@@ -460,6 +483,11 @@ function AppContent() {
               <ProtectedRoute allowedRoles={['ROOT']}>
                 <UsersPage />
               </ProtectedRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/history" element={
+            <ErrorBoundary>
+              <HistoryPage />
             </ErrorBoundary>
           } />
           <Route path="/login" element={<LoginPage />} />

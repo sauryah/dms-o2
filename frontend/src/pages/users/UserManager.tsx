@@ -384,6 +384,7 @@ export function UserManager() {
                     <option value="ROOT">Root (Superuser)</option>
                   )}
                   <option value="REGULAR">Regular (Read-Only)</option>
+                  <option value="OPERATOR">Operator (Relocation)</option>
                   <option value="ADMIN">Admin (Read-Write)</option>
                 </select>
               </div>

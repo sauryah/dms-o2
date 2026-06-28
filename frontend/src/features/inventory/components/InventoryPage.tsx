@@ -26,6 +26,20 @@ import { RackLayoutGrid } from './RackLayoutGrid'
 import { Skeleton, TableSkeleton } from '../../../components/Skeleton'
 import { EmptyState } from '../../../components/EmptyState'
 
+const mapQueryDataList = (old: any, mapFn: (d: any) => any) => {
+  if (!old) return old
+  if (Array.isArray(old)) {
+    return old.map(mapFn)
+  }
+  if (old && typeof old === 'object' && Array.isArray(old.results)) {
+    return {
+      ...old,
+      results: old.results.map(mapFn)
+    }
+  }
+  return old
+}
+
 export function InventoryPage() {
   const { request } = useApi()
   const { role } = useAuth()
@@ -92,7 +106,7 @@ export function InventoryPage() {
   const [showEmptyNodes, setShowEmptyNodes] = useState(true)
 
   // React Query Fetcher
-  const { data: dies, isLoading, error } = useQuery({
+  const { data: searchData, isLoading, error } = useQuery({
     queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, '10000'],
     queryFn: ({ signal }: { signal: AbortSignal }) => {
       let url = '/api/go/search'
@@ -114,9 +128,12 @@ export function InventoryPage() {
       if (params.toString()) {
         url += `?${params.toString()}`
       }
-      return request(url, { signal })
+      return request(url, { signal, keepMetadata: true })
     }
   })
+
+  const dies = searchData?.results || []
+  const totalCount = searchData?.total ?? dies.length
 
   // Create die mutation
   const createDieMutation = useMutation({
@@ -136,19 +153,18 @@ export function InventoryPage() {
 
   // Mutation for updating die location (visual grid)
   const moveDieLocationMutation = useMutation({
-    mutationFn: ({ dieId, location }: { dieId: string, location: string }) => request(`/api/dies/${dieId}/`, {
+    mutationFn: ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => request(`/api/dies/${dieId}/`, {
       method: 'PATCH',
-      body: JSON.stringify({ location })
+      body: JSON.stringify({ location, rack, shelf })
     }),
-    onMutate: async ({ dieId, location }: { dieId: string, location: string }) => {
+    onMutate: async ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
       const previousSearch = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
       const updateLoc = (old: any) => {
-        if (!Array.isArray(old)) return old
-        return old.map((d: any) => String(d.die_id) === String(dieId) ? { ...d, location } : d)
+        return mapQueryDataList(old, (d: any) => String(d.die_id) === String(dieId) ? { ...d, location: location !== undefined ? location : d.location, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
       }
       queryClient.setQueriesData({ queryKey: ['dies'] }, updateLoc)
       queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLoc)
@@ -218,8 +234,7 @@ export function InventoryPage() {
 
       // Optimistically update list queries
       const updateCurrentSet = (old: any) => {
-        if (!Array.isArray(old)) return old
-        return old.map((die: any) => {
+        return mapQueryDataList(old, (die: any) => {
           if (String(die.die_id) === String(dieId)) {
             return {
               ...die,
@@ -482,8 +497,7 @@ export function InventoryPage() {
 
       // Optimistically update dies lists (dies in that set get machine_name updated)
       const updateSetMachine = (old: any) => {
-        if (!Array.isArray(old)) return old
-        return old.map((die: any) => {
+        return mapQueryDataList(old, (die: any) => {
           if (Number(die.current_set) === Number(setId)) {
             return {
               ...die,
@@ -1196,7 +1210,7 @@ export function InventoryPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
                         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-blue">
                           <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Total Matches</span>
-                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2 relative z-10 font-heading">{dies.length}</span>
+                          <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2 relative z-10 font-heading">{totalCount}</span>
                         </div>
                         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald">
                           <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Active</span>
@@ -1207,7 +1221,7 @@ export function InventoryPage() {
                         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
                           <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
                           <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 relative z-10 font-heading">
-                            {dies.length - dies.filter(isDieActive).length}
+                            {totalCount - dies.filter(isDieActive).length}
                           </span>
                         </div>
                       </div>
@@ -1220,13 +1234,13 @@ export function InventoryPage() {
                             <span>{viewMode === 'grid' ? 'Location Rack Grid' : 'Filtered Catalog'}</span>
                           </h3>
                           <span className="text-sm font-semibold text-slate-400">
-                            Showing {dies.length} {dies.length === 1 ? 'result' : 'results'}
+                            Showing {dies.length} of {totalCount} {totalCount === 1 ? 'result' : 'results'}
                           </span>
                         </div>
                         {viewMode === 'grid' ? (
                           <RackLayoutGrid 
                             dies={activeDiesList} 
-                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
                             canMove={canCreate} 
                             navigate={navigate}
                           />
@@ -1284,7 +1298,7 @@ export function InventoryPage() {
                         {viewMode === 'grid' ? (
                           <RackLayoutGrid 
                             dies={activeDiesList} 
-                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
                             canMove={canCreate} 
                             navigate={navigate}
                           />
@@ -1419,7 +1433,7 @@ export function InventoryPage() {
                         {viewMode === 'grid' ? (
                           <RackLayoutGrid 
                             dies={activeDiesList} 
-                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
                             canMove={canCreate} 
                             navigate={navigate}
                           />
@@ -1499,7 +1513,7 @@ export function InventoryPage() {
                         {viewMode === 'grid' ? (
                           <RackLayoutGrid 
                             dies={activeDiesList} 
-                            onMoveDie={(dieId, newLoc) => moveDieLocationMutation.mutate({ dieId, location: newLoc })} 
+                            onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
                             canMove={canCreate} 
                             navigate={navigate}
                           />

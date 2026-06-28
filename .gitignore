@@ -40,6 +40,10 @@ graphify-out/
 
 # User
 plan.md
+docs/DMS_Engineering_review.md
 
 # Go binaries
 go-api/server
+
+
+
