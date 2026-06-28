@@ -94,6 +94,14 @@ services:
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
       - "traefik.http.routers.django.middlewares=api-ratelimit,api-compress"
       - "traefik.http.middlewares.api-compress.compress=true"
+      # Dedicated login route rate limiting
+      - "traefik.http.routers.django-login.rule=Path(`/api/auth/login/`)"
+      - "traefik.http.routers.django-login.entrypoints=web"
+      - "traefik.http.routers.django-login.priority=60"
+      - "traefik.http.routers.django-login.middlewares=login-ratelimit,api-compress"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.average=5"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.burst=10"
 
   worker:
     build:
@@ -200,17 +208,8 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     restart: unless-stopped
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - API_TARGET=http://django:8000
-      - GO_API_TARGET=http://go-api:8080
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       django:
         condition: service_healthy
@@ -218,7 +217,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
       - "traefik.http.middlewares.frontend-compress.compress=true"
       - "traefik.http.routers.frontend.middlewares=frontend-compress"
 

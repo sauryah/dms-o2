@@ -205,22 +205,29 @@ sequenceDiagram
     | `size_max` | decimal | Upper bound ROUND diameter | `10.5` |
     | `width_min` | decimal | Lower bound FLAT width | `25.0` |
     | `thick_min` | decimal | Lower bound FLAT thickness | `1.5` |
+    | `limit` | integer | Page size limit | `50` |
+    | `offset` | integer | Offset/starting item index for pagination | `20` |
 
 *   **Response (200 OK)**:
     ```json
-    [
-      {
-        "die_id": "R-101",
-        "die_type": "ROUND",
-        "casing": "Steel-25",
-        "status": "RUNNING",
-        "location": "Rack A - Row 1",
-        "set_name": "Set Alpha",
-        "machine_name": "Machine 1",
-        "current_set": 1,
-        "current_size": "12.480"
-      }
-    ]
+    {
+      "total": 450,
+      "limit": 50,
+      "offset": 0,
+      "results": [
+        {
+          "die_id": "R-101",
+          "die_type": "ROUND",
+          "casing": "Steel-25",
+          "status": "RUNNING",
+          "location": "Rack A - Row 1",
+          "set_name": "Set Alpha",
+          "machine_name": "Machine 1",
+          "current_set": 1,
+          "current_size": "12.480"
+        }
+      ]
+    }
     ```
 
 ---
@@ -229,7 +236,7 @@ sequenceDiagram
 
 *   **Cache Lifetime**: 10 seconds.
 *   **Key Composition**: A combined hash of all active search query parameters:
-    `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}`
+    `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}:{limit}:{offset}`
 *   **Eviction Strategy**: Immediate validation invalidates cache values when data changes. When database insertions, deletions, or modifications occur, a Django PostgreSQL `LISTEN` / `NOTIFY` hook broadcasts an invalidation signal to the Go service.
 *   **Cache Set-Tracker**: To avoid blocking Redis cursor-scanning operations, all cached search keys are registered under a Redis Set called `cached_searches` upon writing. During cache invalidation, the Go service pulls the keys from this Set, deletes them in a single batch operation, and clears the tracker Set.
 

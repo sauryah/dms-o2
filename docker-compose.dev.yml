@@ -1,0 +1,20 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules:ro
+    environment:
+      - API_TARGET=http://django:8000
+      - GO_API_TARGET=http://go-api:8080
+      - CHOKIDAR_USEPOLLING=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=20"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"

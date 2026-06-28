@@ -21,9 +21,11 @@ import (
 
 type Database interface {
 	GetStats(ctx context.Context) (map[string]int, int, error)
-	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error)
+	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error)
+	QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error)
 	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
 	GetCount(ctx context.Context) (int, error)
+	IsUserActive(ctx context.Context, userID int) (bool, error)
 }
 
 type Cache interface {
@@ -31,6 +33,7 @@ type Cache interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Set(ctx context.Context, key string, val []byte, expiration time.Duration) error
 	Invalidate(ctx context.Context)
+	Delete(ctx context.Context, key string) error
 }
 
 type Search interface {
@@ -159,6 +162,13 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBytes)
 }
 
+type SearchResponse struct {
+	Total   int                          `json:"total"`
+	Limit   int                          `json:"limit"`
+	Offset  int                          `json:"offset"`
+	Results []database.DieRepresentation `json:"results"`
+}
+
 func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -184,6 +194,17 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	offsetStr := r.URL.Query().Get("offset")
+	offset := 0
+	if offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		} else {
+			writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid offset parameter format")
+			return
+		}
+	}
+
 	// Validate numeric query parameters
 	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
 		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
@@ -192,9 +213,9 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d",
+	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d:%d",
 		q, dieType, statusVal, location, casing,
-		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit,
+		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset,
 	)
 
 	// Try to fetch from Redis
@@ -208,14 +229,18 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var dies []database.DieRepresentation
+	var total int
 	var err error
 
 	if q == "" {
 		// 1. Direct database query
-		dies, err = h.db.QueryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
+		dies, err = h.db.QueryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		if err == nil {
+			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		}
 	} else {
 		// 2. Query Meilisearch first, then database
-		dies, err = h.QueryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
+		dies, total, err = h.QueryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 	}
 
 	if err != nil {
@@ -228,7 +253,14 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		dies = []database.DieRepresentation{}
 	}
 
-	respBytes, err := json.Marshal(dies)
+	searchResponse := SearchResponse{
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		Results: dies,
+	}
+
+	respBytes, err := json.Marshal(searchResponse)
 	if err != nil {
 		slog.Error("Failed to marshal search response", "error", err)
 		writeProblemDetails(w, r, "Internal Server Error", http.StatusInternalServerError, err.Error())
@@ -307,7 +339,7 @@ func scoreDie(die database.DieRepresentation, q string) int {
 	return 50
 }
 
-func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, int, error) {
 	slog.Info("Received search query", "q", q)
 
 	// Build Meilisearch filters
@@ -346,7 +378,8 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 	}
 
 	searchParams := meilisearch.SearchRequest{
-		Limit: int64(limit),
+		Limit:  int64(limit),
+		Offset: int64(offset),
 	}
 	if len(filters) > 0 {
 		searchParams.Filter = strings.Join(filters, " AND ")
@@ -355,13 +388,22 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 	slog.Info("Generated Meilisearch request", "filter", searchParams.Filter)
 
 	var meiliDies []database.DieRepresentation
+	totalHits := 0
 
 	// Search Meilisearch index
 	res, err := h.search.Search(q, &searchParams)
 	if err != nil {
 		slog.Error("Meilisearch search error", "error", err)
 	} else {
-		slog.Info("Meilisearch search success", "hits", len(res.Hits), "query", q)
+		if res.TotalHits > 0 {
+			totalHits = int(res.TotalHits)
+		} else if res.EstimatedTotalHits > 0 {
+			totalHits = int(res.EstimatedTotalHits)
+		} else {
+			totalHits = len(res.Hits)
+		}
+
+		slog.Info("Meilisearch search success", "hits", len(res.Hits), "totalHits", totalHits, "query", q)
 		if len(res.Hits) > 0 {
 			var hitIDs []int64
 			for _, hit := range res.Hits {
@@ -394,7 +436,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 	}
 
 	// Query Postgres directly to find any additional matches (e.g. numeric exact matches or wildcard matches)
-	postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
+	postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 	if err != nil {
 		slog.Error("Postgres direct query error", "error", err)
 	}
@@ -458,16 +500,57 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scoreDie(filtered[i], q))
 	}
 
-	return filtered, nil
+	if totalHits == 0 && len(combined) > 0 {
+		totalHits = len(combined)
+	}
+
+	return filtered, totalHits, nil
 }
 
 func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
-	// Require authentication: check if user_id is set in request context
+	var finalUserID int
 	userID := r.Context().Value(auth.UserContextKey)
-	if userID == nil {
-		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Authentication token is required or session expired")
-		return
+	if userID != nil {
+		// Existing token-based auth
+		// TODO: token parameter is deprecated, use ticket exchange instead
+		var ok bool
+		finalUserID, ok = userID.(int)
+		if !ok {
+			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid user ID format in session context")
+			return
+		}
+	} else {
+		// Try ticket-based auth
+		ticket := r.URL.Query().Get("ticket")
+		if ticket == "" {
+			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Authentication token or ticket is required")
+			return
+		}
+
+		ticketKey := fmt.Sprintf("sse_ticket:%s", ticket)
+		userIdBytes, err := h.cache.Get(r.Context(), ticketKey)
+		if err != nil {
+			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid or expired ticket")
+			return
+		}
+
+		idVal, err := strconv.Atoi(string(userIdBytes))
+		if err != nil {
+			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid user ID in ticket data")
+			return
+		}
+
+		isActive, err := h.db.IsUserActive(r.Context(), idVal)
+		if err != nil || !isActive {
+			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "User account is inactive or not found")
+			return
+		}
+
+		_ = h.cache.Delete(r.Context(), ticketKey)
+		finalUserID = idVal
 	}
+
+	slog.Info("SSE connection authenticated", "user_id", finalUserID)
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")

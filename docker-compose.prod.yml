@@ -84,6 +84,14 @@ services:
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
       - "traefik.http.routers.django.middlewares=api-ratelimit,api-compress"
       - "traefik.http.middlewares.api-compress.compress=true"
+      # Dedicated login route rate limiting
+      - "traefik.http.routers.django-login.rule=Path(`/api/auth/login/`)"
+      - "traefik.http.routers.django-login.entrypoints=web"
+      - "traefik.http.routers.django-login.priority=60"
+      - "traefik.http.routers.django-login.middlewares=login-ratelimit,api-compress"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.average=5"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.burst=10"
 
   worker:
     build:

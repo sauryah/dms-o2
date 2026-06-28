@@ -98,3 +98,10 @@ func (c *Cache) Invalidate(ctx context.Context) {
 		log.Printf("Failed to delete cached_searches tracker Set: %v", err)
 	}
 }
+
+func (c *Cache) Delete(ctx context.Context, key string) error {
+	if c.client == nil {
+		return fmt.Errorf("redis cache is disabled")
+	}
+	return c.client.Del(ctx, key).Err()
+}

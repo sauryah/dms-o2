@@ -22,6 +22,9 @@ type DieRepresentation struct {
 	SetName          string  `json:"set_name"`
 	MachineName      string  `json:"machine_name"`
 	CurrentSet       *int    `json:"current_set"`
+	RackID           *int    `json:"rack_id"`
+	RackName         string  `json:"rack_name"`
+	Shelf            *int    `json:"shelf"`
 	CurrentSize      *string `json:"current_size,omitempty"`
 	CurrentWidth     *string `json:"current_width,omitempty"`
 	CurrentThickness *string `json:"current_thickness,omitempty"`
@@ -85,7 +88,16 @@ func (db *PostgresDB) UpdateSessionLastSeen(ctx context.Context, tokenHash strin
 	return err
 }
 
-func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]DieRepresentation, error) {
+func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error) {
+	var isActive bool
+	err := db.QueryRowContext(ctx, "SELECT is_active FROM users_user WHERE id = $1", userID).Scan(&isActive)
+	if err != nil {
+		return false, err
+	}
+	return isActive, nil
+}
+
+func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]DieRepresentation, error) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -95,11 +107,13 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
+			d.rack_id, rk.name as rack_name, d.shelf,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
 		LEFT JOIN machines_set s ON d.current_set_id = s.id
 		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN machines_rack rk ON d.rack_id = rk.id
 		LEFT JOIN dies_rounddie r ON d.id = r.die_id
 		LEFT JOIN dies_flatdie f ON d.id = f.die_id
 		WHERE 1=1
@@ -180,7 +194,7 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 		argCounter++
 	}
 
-	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d", limit))
+	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d OFFSET %d", limit, offset))
 
 	query := strings.Join(sqlParts, "\n")
 	rows, err := db.QueryContext(ctx, query, args...)
@@ -190,6 +204,105 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 	defer rows.Close()
 
 	return scanDies(rows)
+}
+
+func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+	var sqlParts []string
+	var args []interface{}
+	argCounter := 1
+
+	sqlParts = append(sqlParts, `
+		SELECT COUNT(*)
+		FROM dies_die d
+		LEFT JOIN machines_set s ON d.current_set_id = s.id
+		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN machines_rack rk ON d.rack_id = rk.id
+		LEFT JOIN dies_rounddie r ON d.id = r.die_id
+		LEFT JOIN dies_flatdie f ON d.id = f.die_id
+		WHERE 1=1
+	`)
+
+	if q != "" {
+		cleanQ := strings.Trim(q, `"'`)
+		likeVal := "%" + cleanQ + "%"
+		sqlParts = append(sqlParts, fmt.Sprintf(`
+			AND (
+				d.die_id ILIKE $%d 
+				OR d.casing ILIKE $%d 
+				OR d.location ILIKE $%d 
+				OR d.status ILIKE $%d 
+				OR s.name ILIKE $%d 
+				OR m.name ILIKE $%d
+				OR CAST(r.current_size AS TEXT) ILIKE $%d
+				OR CAST(f.current_width AS TEXT) ILIKE $%d
+				OR CAST(f.current_thickness AS TEXT) ILIKE $%d
+			)
+		`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter))
+		args = append(args, likeVal)
+		argCounter++
+	}
+
+	if dieType != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_type = $%d", argCounter))
+		args = append(args, dieType)
+		argCounter++
+	}
+	if statusVal != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.status = $%d", argCounter))
+		args = append(args, statusVal)
+		argCounter++
+	}
+	if location != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.location ILIKE $%d", argCounter))
+		args = append(args, "%"+location+"%")
+		argCounter++
+	}
+	if casing != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND d.casing = $%d", argCounter))
+		args = append(args, casing)
+		argCounter++
+	}
+
+	if sizeMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
+		args = append(args, sizeMin)
+		argCounter++
+	}
+	if sizeMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
+		args = append(args, sizeMax)
+		argCounter++
+	}
+
+	if widthMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
+		args = append(args, widthMin)
+		argCounter++
+	}
+	if widthMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
+		args = append(args, widthMax)
+		argCounter++
+	}
+
+	if thickMin != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
+		args = append(args, thickMin)
+		argCounter++
+	}
+	if thickMax != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
+		args = append(args, thickMax)
+		argCounter++
+	}
+
+	query := strings.Join(sqlParts, "\n")
+	var count int
+	err := db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
@@ -202,11 +315,13 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
+			d.rack_id, rk.name as rack_name, d.shelf,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
 		LEFT JOIN machines_set s ON d.current_set_id = s.id
 		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN machines_rack rk ON d.rack_id = rk.id
 		LEFT JOIN dies_rounddie r ON d.id = r.die_id
 		LEFT JOIN dies_flatdie f ON d.id = f.die_id
 		WHERE d.id = ANY($1)
@@ -273,7 +388,6 @@ func (db *PostgresDB) GetStats(ctx context.Context) (map[string]int, int, error)
 		"SCRAPPED":    0,
 		"MISSING":     0,
 		"MAINTENANCE": 0,
-		"SCRAP":       0,
 	}
 	total := 0
 
@@ -299,13 +413,13 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 	var dies []DieRepresentation
 	for rows.Next() {
 		var d DieRepresentation
-		var setID sql.NullInt64
-		var setName, machineName sql.NullString
+		var setID, rackID, shelf sql.NullInt64
+		var setName, machineName, rackName sql.NullString
 		var size, width, thickness, radius sql.NullString
 
 		err := rows.Scan(
 			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
-			&setName, &machineName, &size, &width, &thickness, &radius,
+			&setName, &machineName, &rackID, &rackName, &shelf, &size, &width, &thickness, &radius,
 		)
 		if err != nil {
 			return nil, err
@@ -320,6 +434,17 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		}
 		if machineName.Valid {
 			d.MachineName = machineName.String
+		}
+		if rackID.Valid {
+			val := int(rackID.Int64)
+			d.RackID = &val
+		}
+		if rackName.Valid {
+			d.RackName = rackName.String
+		}
+		if shelf.Valid {
+			val := int(shelf.Int64)
+			d.Shelf = &val
 		}
 
 		if d.DieType == "ROUND" && size.Valid {

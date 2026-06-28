@@ -20,6 +20,7 @@ type Config struct {
 	DjangoSecretKey             string
 	SessionIdleTimeoutMinutes   string
 	SessionAbsoluteTimeoutHours string
+	DjangoAPIURL                string
 }
 
 func Load() (*Config, error) {
@@ -94,6 +95,11 @@ func Load() (*Config, error) {
 		sessionAbs = "12"
 	}
 
+	djangoAPIURL := os.Getenv("DJANGO_API_URL")
+	if djangoAPIURL == "" {
+		djangoAPIURL = "http://django:8000"
+	}
+
 	return &Config{
 		Port:                        port,
 		PostgresHost:                pgHost,
@@ -108,6 +114,7 @@ func Load() (*Config, error) {
 		DjangoSecretKey:             djangoSecret,
 		SessionIdleTimeoutMinutes:   sessionIdle,
 		SessionAbsoluteTimeoutHours: sessionAbs,
+		DjangoAPIURL:                djangoAPIURL,
 	}, nil
 }
 

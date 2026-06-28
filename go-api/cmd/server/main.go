@@ -62,7 +62,7 @@ func main() {
 	mux.HandleFunc("GET /api/go/health", handler.HandleHealth)
 
 	// Create middleware
-	jwtAuth := auth.AuthMiddleware(cfg, db)
+	jwtAuth := auth.AuthMiddleware(cfg, redisClient)
 
 	mux.Handle("GET /api/go/search", jwtAuth(http.HandlerFunc(handler.HandleSearch)))
 	mux.Handle("GET /api/go/stats", jwtAuth(http.HandlerFunc(handler.HandleStats)))

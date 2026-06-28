@@ -16,10 +16,12 @@ import (
 
 // Mock definitions
 type MockDatabase struct {
-	GetStatsFn              func(ctx context.Context) (map[string]int, int, error)
-	QueryPostgresDirectlyFn func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error)
-	QueryPostgresByIDsFn    func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
-	GetCountFn              func(ctx context.Context) (int, error)
+	GetStatsFn                   func(ctx context.Context) (map[string]int, int, error)
+	QueryPostgresDirectlyFn      func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error)
+	QueryPostgresDirectlyCountFn func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error)
+	QueryPostgresByIDsFn         func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
+	GetCountFn                   func(ctx context.Context) (int, error)
+	IsUserActiveFn               func(ctx context.Context, userID int) (bool, error)
 }
 
 func (m *MockDatabase) GetStats(ctx context.Context) (map[string]int, int, error) {
@@ -29,11 +31,18 @@ func (m *MockDatabase) GetStats(ctx context.Context) (map[string]int, int, error
 	return nil, 0, nil
 }
 
-func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error) {
 	if m.QueryPostgresDirectlyFn != nil {
-		return m.QueryPostgresDirectlyFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit)
+		return m.QueryPostgresDirectlyFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 	}
 	return nil, nil
+}
+
+func (m *MockDatabase) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+	if m.QueryPostgresDirectlyCountFn != nil {
+		return m.QueryPostgresDirectlyCountFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	}
+	return 0, nil
 }
 
 func (m *MockDatabase) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
@@ -50,11 +59,19 @@ func (m *MockDatabase) GetCount(ctx context.Context) (int, error) {
 	return 0, nil
 }
 
+func (m *MockDatabase) IsUserActive(ctx context.Context, userID int) (bool, error) {
+	if m.IsUserActiveFn != nil {
+		return m.IsUserActiveFn(ctx, userID)
+	}
+	return true, nil
+}
+
 type MockCache struct {
 	EnabledFn    func() bool
 	GetFn        func(ctx context.Context, key string) ([]byte, error)
 	SetFn        func(ctx context.Context, key string, val []byte, expiration time.Duration) error
 	InvalidateFn func(ctx context.Context)
+	DeleteFn     func(ctx context.Context, key string) error
 }
 
 func (m *MockCache) Enabled() bool {
@@ -82,6 +99,13 @@ func (m *MockCache) Invalidate(ctx context.Context) {
 	if m.InvalidateFn != nil {
 		m.InvalidateFn(ctx)
 	}
+}
+
+func (m *MockCache) Delete(ctx context.Context, key string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, key)
+	}
+	return nil
 }
 
 type MockSearch struct {
@@ -233,11 +257,14 @@ func TestHandleSearch_DirectPostgres(t *testing.T) {
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error) {
 			if q == "" && dieType == "ROUND" {
 				return expectedDies, nil
 			}
 			return nil, nil
+		},
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+			return 1, nil
 		},
 	}
 
@@ -252,12 +279,17 @@ func TestHandleSearch_DirectPostgres(t *testing.T) {
 		t.Errorf("expected status OK, got %v", w.Code)
 	}
 
-	var resp []database.DieRepresentation
+	var resp struct {
+		Total   int                          `json:"total"`
+		Limit   int                          `json:"limit"`
+		Offset  int                          `json:"offset"`
+		Results []database.DieRepresentation `json:"results"`
+	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if len(resp) != 1 || resp[0].DieID != "ROUND-1" {
+	if len(resp.Results) != 1 || resp.Results[0].DieID != "ROUND-1" {
 		t.Errorf("unexpected response content: %+v", resp)
 	}
 }
@@ -271,6 +303,7 @@ func TestHandleSearch_MeilisearchAndPostgres(t *testing.T) {
 					Hits: []interface{}{
 						map[string]interface{}{"id": "101"},
 					},
+					TotalHits: 1,
 				}, nil
 			}
 			return &meilisearch.SearchResponse{Hits: []interface{}{}}, nil
@@ -299,12 +332,17 @@ func TestHandleSearch_MeilisearchAndPostgres(t *testing.T) {
 		t.Errorf("expected status OK, got %v", w.Code)
 	}
 
-	var resp []database.DieRepresentation
+	var resp struct {
+		Total   int                          `json:"total"`
+		Limit   int                          `json:"limit"`
+		Offset  int                          `json:"offset"`
+		Results []database.DieRepresentation `json:"results"`
+	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if len(resp) != 1 || resp[0].DieID != "ROUND-101" {
+	if len(resp.Results) != 1 || resp.Results[0].DieID != "ROUND-101" {
 		t.Errorf("unexpected search response: %+v", resp)
 	}
 }
@@ -325,7 +363,7 @@ func TestRelevanceSorting(t *testing.T) {
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error) {
 			return candidates, nil
 		},
 		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
@@ -351,7 +389,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 1: Exact size match prioritization
 	// When searching for "1.600", candidate 3 (DIE-SIZE-16, size: "1.600") should be first
-	results, err := h.QueryMeilisearchAndPostgres(context.Background(), "1.600", "", "", "", "", "", "", "", "", "", "", 10)
+	results, _, err := h.QueryMeilisearchAndPostgres(context.Background(), "1.600", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -361,7 +399,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 2: Exact size match normalized
 	// Searching "1.6" should also rank DIE-SIZE-16 first
-	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "1.6", "", "", "", "", "", "", "", "", "", "", 10)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "1.6", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -371,7 +409,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 3: Exact die_id match prioritization
 	// When searching for "DIE-EXACT-ID", candidate 2 should be first
-	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-EXACT-ID", "", "", "", "", "", "", "", "", "", "", 10)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-EXACT-ID", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -381,7 +419,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 4: Starts-with match prioritization
 	// When searching for "DIE-START", candidate 4 (DIE-START-WITH-EXACT) should be ranked first because "DIE-START-WITH-EXACT" prefix matches.
-	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-START", "", "", "", "", "", "", "", "", "", "", 10)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-START", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -391,11 +429,58 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 5: Casing / attribute match
 	// When searching for "casing-target", candidate 5 (DIE-CASING-MATCH) should be ranked higher than other unrelated candidates
-	results, err = h.QueryMeilisearchAndPostgres(context.Background(), "casing-target", "", "", "", "", "", "", "", "", "", "", 10)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "casing-target", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(results) == 0 || results[0].DieID != "DIE-CASING-MATCH" {
 		t.Errorf("expected DIE-CASING-MATCH to be ranked first for casing query, got: %+v", results)
+	}
+}
+
+func TestHandleSearch_PaginationParams(t *testing.T) {
+	cfg := &config.Config{}
+	
+	mockDb := &MockDatabase{
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error) {
+			if limit == 10 && offset == 20 {
+				return []database.DieRepresentation{
+					{DieID: "PAGINATED-DIE"},
+				}, nil
+			}
+			return nil, nil
+		},
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+			return 100, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/search?limit=10&offset=20", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp struct {
+		Total   int                          `json:"total"`
+		Limit   int                          `json:"limit"`
+		Offset  int                          `json:"offset"`
+		Results []database.DieRepresentation `json:"results"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp.Total != 100 || resp.Limit != 10 || resp.Offset != 20 {
+		t.Errorf("unexpected pagination response metadata: %+v", resp)
+	}
+
+	if len(resp.Results) != 1 || resp.Results[0].DieID != "PAGINATED-DIE" {
+		t.Errorf("unexpected results payload: %+v", resp.Results)
 	}
 }
