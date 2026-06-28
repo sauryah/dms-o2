@@ -1,9 +1,10 @@
-from django.db.models.signals import post_save, pre_delete, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete, pre_delete
 from django.dispatch import receiver
 from django.db import transaction
-from machines.models import Set, Machine
+from machines.models import Set, Machine, MachineCategory
 from dies.models import Die
-from search.meili import sync_die
+from history.models import MachineHistory
+from users.middleware import get_current_user, get_current_ip
 from dms.events import broadcast_event
 
 @receiver(post_save, sender=Set)
@@ -44,3 +45,198 @@ def delete_set_post_delete(sender, instance, **kwargs):
 def delete_machine_post_delete(sender, instance, **kwargs):
     transaction.on_commit(lambda: broadcast_event('machine_update', {'id': instance.id, 'action': 'delete'}))
 
+
+# --- MachineHistory Logging Signals ---
+
+@receiver(post_save, sender=MachineCategory)
+def log_category_created(sender, instance, created, **kwargs):
+    if created:
+        user = get_current_user()
+        changed_by = user if (user and user.is_authenticated) else None
+        ip = get_current_ip()
+        MachineHistory.objects.create(
+            entity_type='CATEGORY',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='CREATED',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(pre_save, sender=MachineCategory)
+def log_category_updated(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old_obj = MachineCategory.objects.get(pk=instance.pk)
+    except MachineCategory.DoesNotExist:
+        return
+        
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+
+    if old_obj.name != instance.name:
+        MachineHistory.objects.create(
+            entity_type='CATEGORY',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='UPDATED',
+            field_name='name',
+            old_value=old_obj.name,
+            new_value=instance.name,
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(post_delete, sender=MachineCategory)
+def log_category_deleted(sender, instance, **kwargs):
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+    MachineHistory.objects.create(
+        entity_type='CATEGORY',
+        entity_id=instance.id,
+        entity_name=instance.name,
+        action='DELETED',
+        changed_by=changed_by,
+        ip_address=ip,
+    )
+
+
+@receiver(post_save, sender=Machine)
+def log_machine_created(sender, instance, created, **kwargs):
+    if created:
+        user = get_current_user()
+        changed_by = user if (user and user.is_authenticated) else None
+        ip = get_current_ip()
+        MachineHistory.objects.create(
+            entity_type='MACHINE',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='CREATED',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(pre_save, sender=Machine)
+def log_machine_updated(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old_obj = Machine.objects.select_related('category').get(pk=instance.pk)
+    except Machine.DoesNotExist:
+        return
+        
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+
+    if old_obj.name != instance.name:
+        MachineHistory.objects.create(
+            entity_type='MACHINE',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='UPDATED',
+            field_name='name',
+            old_value=old_obj.name,
+            new_value=instance.name,
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+    if old_obj.category_id != instance.category_id:
+        MachineHistory.objects.create(
+            entity_type='MACHINE',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='UPDATED',
+            field_name='category',
+            old_value=old_obj.category.name if old_obj.category else '',
+            new_value=instance.category.name if instance.category else '',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(post_delete, sender=Machine)
+def log_machine_deleted(sender, instance, **kwargs):
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+    MachineHistory.objects.create(
+        entity_type='MACHINE',
+        entity_id=instance.id,
+        entity_name=instance.name,
+        action='DELETED',
+        changed_by=changed_by,
+        ip_address=ip,
+    )
+
+
+@receiver(post_save, sender=Set)
+def log_set_created(sender, instance, created, **kwargs):
+    if created:
+        user = get_current_user()
+        changed_by = user if (user and user.is_authenticated) else None
+        ip = get_current_ip()
+        MachineHistory.objects.create(
+            entity_type='SET',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='CREATED',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(pre_save, sender=Set)
+def log_set_updated(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old_obj = Set.objects.select_related('machine').get(pk=instance.pk)
+    except Set.DoesNotExist:
+        return
+        
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+
+    if old_obj.name != instance.name:
+        MachineHistory.objects.create(
+            entity_type='SET',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='UPDATED',
+            field_name='name',
+            old_value=old_obj.name,
+            new_value=instance.name,
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+    if old_obj.machine_id != instance.machine_id:
+        MachineHistory.objects.create(
+            entity_type='SET',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='UPDATED',
+            field_name='machine',
+            old_value=old_obj.machine.name if old_obj.machine else '',
+            new_value=instance.machine.name if instance.machine else '',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+@receiver(post_delete, sender=Set)
+def log_set_deleted(sender, instance, **kwargs):
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+    MachineHistory.objects.create(
+        entity_type='SET',
+        entity_id=instance.id,
+        entity_name=instance.name,
+        action='DELETED',
+        changed_by=changed_by,
+        ip_address=ip,
+    )

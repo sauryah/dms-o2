@@ -36,3 +36,16 @@ class MachineViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrRoot]
     pagination_class = None
 
+    def destroy(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from rest_framework.response import Response
+        from rest_framework import status
+        
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError as e:
+            instance = self.get_object()
+            count = len(e.protected_objects)
+            detail_msg = f"Cannot delete Machine '{instance.name}' because it has {count} active die sets assigned to it. Reassign or delete the sets first."
+            return Response({"detail": detail_msg}, status=status.HTTP_400_BAD_REQUEST)
+

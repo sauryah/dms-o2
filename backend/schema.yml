@@ -1,0 +1,2503 @@
+openapi: 3.0.3
+info:
+  title: DMS API
+  version: 1.0.0
+  description: DMS Django REST API for dies, machines, users, backups, and real-time
+    events.
+paths:
+  /api/auth/keep-alive/:
+    post:
+      operationId: api_auth_keep_alive_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeepAliveResponse'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: api_auth_login_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '401':
+          description: Invalid credentials or inactive account
+  /api/auth/sse-ticket/:
+    post:
+      operationId: api_auth_sse_ticket_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSETicketResponse'
+          description: ''
+  /api/backups/:
+    get:
+      operationId: api_backups_list
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BackupListItem'
+          description: ''
+    post:
+      operationId: api_backups_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupCreateResponse'
+          description: ''
+  /api/backups/delete_backup/:
+    post:
+      operationId: api_backups_delete_backup_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Backup'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/backups/download_backup/:
+    get:
+      operationId: api_backups_download_backup_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/backups/restore/:
+    post:
+      operationId: api_backups_restore_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Backup'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/backups/upload_backup/:
+    post:
+      operationId: api_backups_upload_backup_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Backup'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Backup'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/categories/:
+    get:
+      operationId: api_categories_list
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MachineCategory'
+          description: ''
+    post:
+      operationId: api_categories_create
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineCategory'
+          description: ''
+  /api/categories/{id}/:
+    get:
+      operationId: api_categories_retrieve
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine category.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineCategory'
+          description: ''
+    put:
+      operationId: api_categories_update
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine category.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MachineCategory'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineCategory'
+          description: ''
+    patch:
+      operationId: api_categories_partial_update
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine category.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMachineCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMachineCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMachineCategory'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineCategory'
+          description: ''
+    delete:
+      operationId: api_categories_destroy
+      description: |-
+        API endpoint for managing machine categories/types.
+
+        Categories group machines by type (e.g., Stamping, Punching, Bending).
+
+        **Operations:**
+        - List all categories: GET `/api/categories/`
+        - Create category: POST `/api/categories/`
+        - Retrieve category: GET `/api/categories/{id}/`
+        - Update category: PUT/PATCH `/api/categories/{id}/`
+        - Delete category: DELETE `/api/categories/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine category.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/dies/:
+    get:
+      operationId: api_dies_list
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDieListList'
+          description: ''
+    post:
+      operationId: api_dies_create
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DieCreate'
+          description: ''
+  /api/dies/{die_id}/:
+    get:
+      operationId: api_dies_retrieve
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: die_id
+        schema:
+          type: string
+          pattern: ^[^?#]+$
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DieDetail'
+          description: ''
+    put:
+      operationId: api_dies_update
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: die_id
+        schema:
+          type: string
+          pattern: ^[^?#]+$
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DieCreate'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DieCreate'
+          description: ''
+    patch:
+      operationId: api_dies_partial_update
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: die_id
+        schema:
+          type: string
+          pattern: ^[^?#]+$
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDieCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDieCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDieCreate'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DieCreate'
+          description: ''
+    delete:
+      operationId: api_dies_destroy
+      description: |-
+        API endpoint for managing die inventory.
+
+        Supports full CRUD operations for dies with filtering and pagination.
+
+        - **Create** (POST): Add new die (ROUND or FLAT type)
+        - **Read** (GET): List all dies with optional filters, or retrieve single die
+        - **Update** (PUT/PATCH): Modify die properties
+        - **Delete** (DELETE): Remove die from inventory
+
+        **Filtering Parameters (GET only):**
+        - `die_type`: Filter by die type (ROUND or FLAT)
+        - `status`: Filter by status (ACTIVE, INACTIVE, AVAILABLE, etc.)
+        - `casing`: Filter by casing material (STEEL, CARBIDE, etc.)
+        - `location`: Filter by storage location (partial match, case-insensitive)
+        - `size_min`, `size_max`: Range filter for ROUND die current_size
+        - `width_min`, `width_max`: Range filter for FLAT die current_width
+        - `thick_min`, `thick_max`: Range filter for FLAT die current_thickness
+        - `page`: Pagination (100 items per page)
+
+        **Examples:**
+        - List ROUND dies with size 5.0-5.5: `/api/dies/?die_type=ROUND&size_min=5.0&size_max=5.5`
+        - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
+        - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
+
+        **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
+
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: die_id
+        schema:
+          type: string
+          pattern: ^[^?#]+$
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/events/:
+    get:
+      operationId: api_events_retrieve
+      description: Establish a Server-Sent Events (SSE) stream for real-time die/machine/set
+        updates.
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Server-Sent Events connection stream
+  /api/health/:
+    get:
+      operationId: api_health_retrieve
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckErrorResponse'
+          description: ''
+  /api/history/:
+    get:
+      operationId: api_history_list
+      description: Retrieve paginated history list of changes for extrusion dies.
+      parameters:
+      - in: query
+        name: die_id
+        schema:
+          type: string
+        description: Filter by Die ID
+      - in: query
+        name: field
+        schema:
+          type: string
+        description: Filter by field name
+      - in: query
+        name: from
+        schema:
+          type: string
+        description: Start date (YYYY-MM-DD)
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Items per page
+      - in: query
+        name: to
+        schema:
+          type: string
+        description: End date (YYYY-MM-DD)
+      - in: query
+        name: user
+        schema:
+          type: string
+        description: Filter by Username
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditDieHistory'
+          description: ''
+  /api/import/:
+    post:
+      operationId: api_import_create
+      description: |-
+        Bulk import dies from CSV or XLSX file.
+
+        **Description:**
+        Upload a spreadsheet file to create multiple dies at once.
+        Supports CSV and XLSX formats with columns:
+        - die_id, die_type (ROUND|FLAT), casing, status, location, current_set
+        - For ROUND: original_size, current_size
+        - For FLAT: original_width, current_width, original_thickness, current_thickness, radius
+
+        **Request:**
+        - Method: POST
+        - Content-Type: multipart/form-data
+        - Field: `file` (CSV or XLSX file)
+
+        **Response:**
+        - `201 Created`: Import completed with summary
+        - `400 Bad Request`: Invalid file format or missing file
+
+        **Example Response:**
+        ```json
+        {
+          "imported": 42,
+          "skipped": 3,
+          "errors": [
+            {"row": 5, "error": "Invalid die_type: INVALID"}
+          ]
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportDiesRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Import completed with summary
+        '400':
+          description: Invalid file upload
+  /api/import/logs/:
+    get:
+      operationId: api_import_logs_list
+      description: Retrieve history of bulk imports.
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImportLog'
+          description: ''
+  /api/import/template/:
+    get:
+      operationId: api_import_template_retrieve
+      description: Download an Excel template containing tabs for Round Die and Flat
+        Die structure, and validation rules.
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Excel spreadsheet binary template file
+  /api/machines/:
+    get:
+      operationId: api_machines_list
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Machine'
+          description: ''
+    post:
+      operationId: api_machines_create
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Machine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Machine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Machine'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+          description: ''
+  /api/machines/{id}/:
+    get:
+      operationId: api_machines_retrieve
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+          description: ''
+    put:
+      operationId: api_machines_update
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Machine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Machine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Machine'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+          description: ''
+    patch:
+      operationId: api_machines_partial_update
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMachine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMachine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMachine'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+          description: ''
+    delete:
+      operationId: api_machines_destroy
+      description: |-
+        API endpoint for managing machines/equipment.
+
+        Machines are physical equipment that hold die sets during production.
+        Each machine belongs to a category and can hold multiple die sets.
+
+        **Operations:**
+        - List all machines: GET `/api/machines/`
+        - Create machine: POST `/api/machines/`
+        - Retrieve machine: GET `/api/machines/{id}/`
+        - Update machine: PUT/PATCH `/api/machines/{id}/`
+        - Delete machine: DELETE `/api/machines/{id}/`
+
+        **Example Machine:**
+        ```json
+        {
+          "id": 1,
+          "name": "Stamping Press #1",
+          "category": 5,
+          "location": "Factory Floor A",
+          "status": "ACTIVE"
+        }
+        ```
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this machine.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/racks/:
+    get:
+      operationId: api_racks_list
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rack'
+          description: ''
+    post:
+      operationId: api_racks_create
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rack'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rack'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Rack'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rack'
+          description: ''
+  /api/racks/{id}/:
+    get:
+      operationId: api_racks_retrieve
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rack.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rack'
+          description: ''
+    put:
+      operationId: api_racks_update
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rack.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rack'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rack'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Rack'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rack'
+          description: ''
+    patch:
+      operationId: api_racks_partial_update
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rack.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRack'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRack'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRack'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rack'
+          description: ''
+    delete:
+      operationId: api_racks_destroy
+      description: |-
+        API endpoint for managing physical storage racks.
+
+        **Operations:**
+        - List all racks: GET `/api/racks/`
+        - Retrieve a rack: GET `/api/racks/{id}/`
+        - Create a rack: POST `/api/racks/` (Admin/Root only)
+        - Update a rack: PUT/PATCH `/api/racks/{id}/` (Admin/Root only)
+        - Delete a rack: DELETE `/api/racks/{id}/` (Admin/Root only, blocked if dies are stored on it)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rack.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/sets/:
+    get:
+      operationId: api_sets_list
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Set'
+          description: ''
+    post:
+      operationId: api_sets_create
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Set'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Set'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Set'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Set'
+          description: ''
+  /api/sets/{id}/:
+    get:
+      operationId: api_sets_retrieve
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this set.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Set'
+          description: ''
+    put:
+      operationId: api_sets_update
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this set.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Set'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Set'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Set'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Set'
+          description: ''
+    patch:
+      operationId: api_sets_partial_update
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this set.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSet'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSet'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSet'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Set'
+          description: ''
+    delete:
+      operationId: api_sets_destroy
+      description: |-
+        API endpoint for managing machine die sets.
+
+        Sets belong to machines and can contain assigned dies.
+
+        **Operations:**
+        - List all sets: GET `/api/sets/`
+        - Create set: POST `/api/sets/`
+        - Retrieve set: GET `/api/sets/{id}/`
+        - Update set: PUT/PATCH `/api/sets/{id}/`
+        - Delete set: DELETE `/api/sets/{id}/`
+
+        **Permissions:** ADMIN or ROOT user only
+        **Authentication:** Required (JWT Bearer token)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this set.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: api_users_list
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: api_users_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{id}/:
+    get:
+      operationId: api_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: api_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: api_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: api_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /internal/verify-token/:
+    post:
+      operationId: internal_verify_token_create
+      tags:
+      - internal
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyTokenResponse'
+          description: ''
+components:
+  schemas:
+    AuditDieHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        die:
+          type: integer
+        die_id:
+          type: string
+          readOnly: true
+        changed_by:
+          type: integer
+          nullable: true
+        changed_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        field_name:
+          type: string
+          maxLength: 50
+        old_value:
+          type: string
+        new_value:
+          type: string
+        ip_address:
+          type: string
+          nullable: true
+        note:
+          type: string
+      required:
+      - changed_by_username
+      - die
+      - die_id
+      - field_name
+      - id
+      - new_value
+      - old_value
+      - timestamp
+    Backup:
+      type: object
+      properties:
+        filename:
+          type: string
+        size_kb:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - filename
+    BackupCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        filename:
+          type: string
+        size_kb:
+          type: number
+          format: double
+      required:
+      - filename
+      - size_kb
+      - status
+    BackupListItem:
+      type: object
+      properties:
+        filename:
+          type: string
+        size_kb:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - filename
+      - size_kb
+    DieCreate:
+      type: object
+      properties:
+        die_id:
+          type: string
+          maxLength: 50
+        die_type:
+          $ref: '#/components/schemas/DieTypeEnum'
+        casing:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        location:
+          type: string
+          maxLength: 200
+        current_set:
+          type: integer
+          nullable: true
+        remarks:
+          type: string
+        rack:
+          type: integer
+          nullable: true
+        shelf:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        original_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        original_width:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_width:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        original_thickness:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_thickness:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        radius:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+      required:
+      - casing
+      - die_id
+      - die_type
+    DieDetail:
+      type: object
+      properties:
+        die_id:
+          type: string
+          maxLength: 50
+        die_type:
+          $ref: '#/components/schemas/DieTypeEnum'
+        casing:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        location:
+          type: string
+          maxLength: 200
+        set_name:
+          type: string
+          readOnly: true
+        machine_name:
+          type: string
+          readOnly: true
+        remarks:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/DieHistory'
+          readOnly: true
+        current_set:
+          type: integer
+          nullable: true
+        rack:
+          type: integer
+          nullable: true
+        shelf:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+      required:
+      - casing
+      - created_at
+      - die_id
+      - die_type
+      - history
+      - machine_name
+      - set_name
+      - updated_at
+    DieHistory:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        field_name:
+          type: string
+          maxLength: 50
+        old_value:
+          type: string
+        new_value:
+          type: string
+        changed_by_username:
+          type: string
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+        note:
+          type: string
+      required:
+      - changed_by_username
+      - field_name
+      - new_value
+      - old_value
+      - timestamp
+    DieList:
+      type: object
+      properties:
+        die_id:
+          type: string
+          maxLength: 50
+        die_type:
+          $ref: '#/components/schemas/DieTypeEnum'
+        casing:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        location:
+          type: string
+          maxLength: 200
+        set_name:
+          type: string
+          readOnly: true
+        machine_name:
+          type: string
+          readOnly: true
+        current_set:
+          type: integer
+          nullable: true
+        rack:
+          type: integer
+          nullable: true
+        shelf:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+      required:
+      - casing
+      - die_id
+      - die_type
+      - machine_name
+      - set_name
+    DieTypeEnum:
+      enum:
+      - ROUND
+      - FLAT
+      type: string
+      description: |-
+        * `ROUND` - Round
+        * `FLAT` - Flat
+    HealthCheckErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+        redis:
+          type: string
+      required:
+      - database
+      - redis
+      - status
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+        redis:
+          type: string
+      required:
+      - database
+      - redis
+      - status
+    ImportDiesRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: uri
+      required:
+      - file
+    ImportLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        imported_by:
+          type: integer
+          nullable: true
+        imported_by_username:
+          type: string
+          readOnly: true
+        imported_at:
+          type: string
+          format: date-time
+          readOnly: true
+        filename:
+          type: string
+          maxLength: 255
+        created_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        updated_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        skipped_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        error_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        errors_json:
+          nullable: true
+      required:
+      - created_count
+      - error_count
+      - filename
+      - id
+      - imported_at
+      - imported_by_username
+      - skipped_count
+      - updated_count
+    KeepAliveResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+      required:
+      - role
+      - token
+    Machine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - category
+      - category_name
+      - id
+      - name
+    MachineCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - id
+      - name
+    PaginatedDieListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DieList'
+    PatchedDieCreate:
+      type: object
+      properties:
+        die_id:
+          type: string
+          maxLength: 50
+        die_type:
+          $ref: '#/components/schemas/DieTypeEnum'
+        casing:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        location:
+          type: string
+          maxLength: 200
+        current_set:
+          type: integer
+          nullable: true
+        remarks:
+          type: string
+        rack:
+          type: integer
+          nullable: true
+        shelf:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        original_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        original_width:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_width:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        original_thickness:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        current_thickness:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+        radius:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
+    PatchedMachine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+    PatchedMachineCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+    PatchedRack:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        row_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        column_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+    PatchedSet:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        machine:
+          type: integer
+        machine_name:
+          type: string
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        current_password:
+          type: string
+          writeOnly: true
+    Rack:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        row_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        column_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - column_count
+      - id
+      - name
+      - row_count
+    RoleEnum:
+      enum:
+      - ROOT
+      - ADMIN
+      - OPERATOR
+      - REGULAR
+      type: string
+      description: |-
+        * `ROOT` - Root
+        * `ADMIN` - Admin
+        * `OPERATOR` - Operator
+        * `REGULAR` - Regular
+    SSETicketResponse:
+      type: object
+      properties:
+        ticket:
+          type: string
+          format: uuid
+      required:
+      - ticket
+    Set:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        machine:
+          type: integer
+        machine_name:
+          type: string
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - category_name
+      - id
+      - machine
+      - machine_name
+      - name
+    StatusEnum:
+      enum:
+      - AVAILABLE
+      - RUNNING
+      - CLEANING
+      - POLISHING
+      - DAMAGED
+      - SCRAPPED
+      - MISSING
+      - MAINTENANCE
+      type: string
+      description: |-
+        * `AVAILABLE` - Available
+        * `RUNNING` - Running
+        * `CLEANING` - Cleaning
+        * `POLISHING` - Polishing
+        * `DAMAGED` - Damaged
+        * `SCRAPPED` - Scrapped
+        * `MISSING` - Missing
+        * `MAINTENANCE` - Maintenance
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        current_password:
+          type: string
+          writeOnly: true
+      required:
+      - id
+      - username
+    VerifyTokenResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        user_id:
+          type: integer
+        role:
+          type: string
+      required:
+      - role
+      - user_id
+      - valid
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
