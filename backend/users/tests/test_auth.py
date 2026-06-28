@@ -264,3 +264,168 @@ class AuthTests(APITestCase):
         # Session should be deleted
         self.assertFalse(UserSession.objects.filter(user=self.admin_user).exists())
 
+    def test_brute_force_login_lockout(self):
+        import redis
+        from django.conf import settings
+        redis_url = settings.CACHES['default']['LOCATION']
+        r = redis.Redis.from_url(redis_url)
+        
+        username = 'admin_test'
+        attempts_key = f"login_attempts:{username}"
+        r.delete(attempts_key)
+        
+        try:
+            # First 4 attempts return 401
+            for i in range(4):
+                response = self.client.post(self.login_url, {
+                    'username': username,
+                    'password': 'wrong_password_attempt'
+                })
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+                
+            # 5th attempt returns 429
+            response = self.client.post(self.login_url, {
+                'username': username,
+                'password': 'wrong_password_attempt'
+            })
+            self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+            self.assertIn("Too many failed login attempts", response.data['detail'])
+            
+            # Login with correct credentials returns 429 during lockout
+            response = self.client.post(self.login_url, {
+                'username': username,
+                'password': 'admin_password_123'
+            })
+            self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+            
+            # Reset/clear lockout counter simulating 5 mins pass
+            r.delete(attempts_key)
+            
+            # Login works
+            response = self.client.post(self.login_url, {
+                'username': username,
+                'password': 'admin_password_123'
+            })
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIsNone(r.get(attempts_key))
+        finally:
+            r.delete(attempts_key)
+
+    def test_sse_ticket_exchange(self):
+        import uuid
+        import redis
+        from django.conf import settings
+        
+        # 1. Unauthenticated request returns 401
+        ticket_url = reverse('sse-ticket')
+        res_unauth = self.client.post(ticket_url)
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # 2. Authenticated request returns ticket UUID
+        login_res = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        response = self.client.post(ticket_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('ticket', response.data)
+        ticket_uuid = response.data['ticket']
+        
+        # Verify valid UUID format
+        try:
+            uuid.UUID(ticket_uuid)
+        except ValueError:
+            self.fail("Returned ticket is not a valid UUID")
+            
+        # 3. Check Redis key, user_id mapping, and TTL
+        redis_url = settings.CACHES['default']['LOCATION']
+        r = redis.Redis.from_url(redis_url)
+        ticket_key = f"sse_ticket:{ticket_uuid}"
+        
+        try:
+            user_id_val = r.get(ticket_key)
+            self.assertIsNotNone(user_id_val)
+            self.assertEqual(int(user_id_val), self.admin_user.id)
+            
+            ttl = r.ttl(ticket_key)
+            self.assertTrue(25 <= ttl <= 30)
+            
+            # 4. Simulating one-time use (delete after use)
+            r.delete(ticket_key)
+            self.assertIsNone(r.get(ticket_key))
+        finally:
+            r.delete(ticket_key)
+
+    def test_verify_token_endpoint(self):
+        verify_url = reverse('verify-token')
+        
+        # 1. Test without token
+        response = self.client.post(verify_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # 2. Login to get token
+        login_res = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        token = login_res.data['token']
+        
+        # 3. Test with valid token
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        response = self.client.post(verify_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['valid'])
+        self.assertEqual(response.data['user_id'], self.admin_user.id)
+        self.assertEqual(response.data['role'], 'ADMIN')
+
+    def test_multi_device_concurrent_sessions(self):
+        from django.test import override_settings
+        
+        with override_settings(SESSION_MAX_CONCURRENT=2):
+            # 1. Login on device A
+            res_a = self.client.post(self.login_url, {
+                'username': 'admin_test',
+                'password': 'admin_password_123'
+            })
+            token_a = res_a.data['token']
+
+            # 2. Login on device B
+            res_b = self.client.post(self.login_url, {
+                'username': 'admin_test',
+                'password': 'admin_password_123'
+            })
+            token_b = res_b.data['token']
+
+            # 3. Verify BOTH token A and token B work concurrently
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
+            response_a = self.client.get(self.dies_list_url)
+            self.assertEqual(response_a.status_code, status.HTTP_200_OK)
+
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_b}')
+            response_b = self.client.get(self.dies_list_url)
+            self.assertEqual(response_b.status_code, status.HTTP_200_OK)
+
+            # 4. Login on device C (should evict token A because it is the oldest)
+            res_c = self.client.post(self.login_url, {
+                'username': 'admin_test',
+                'password': 'admin_password_123'
+            })
+            token_c = res_c.data['token']
+
+            # 5. Verify token A is now invalid
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
+            response_a_evicted = self.client.get(self.dies_list_url)
+            self.assertEqual(response_a_evicted.status_code, status.HTTP_401_UNAUTHORIZED)
+
+            # 6. Verify token B and C are still valid
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_b}')
+            response_b_still_works = self.client.get(self.dies_list_url)
+            self.assertEqual(response_b_still_works.status_code, status.HTTP_200_OK)
+
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_c}')
+            response_c_works = self.client.get(self.dies_list_url)
+            self.assertEqual(response_c_works.status_code, status.HTTP_200_OK)
+

@@ -42,31 +42,78 @@ class LoginView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        import redis
+        from django.conf import settings
+
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
         password = serializer.validated_data['password']
 
+        redis_url = settings.CACHES['default']['LOCATION']
+        r = redis.Redis.from_url(redis_url)
+        attempts_key = f"login_attempts:{username}"
+
+        attempts = r.get(attempts_key)
+        if attempts and int(attempts) >= 5:
+            return Response(
+                {"detail": "Too many failed login attempts. Please wait 5 minutes."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
         user = authenticate(username=username, password=password)
         if not user:
+            pipe = r.pipeline()
+            pipe.incr(attempts_key)
+            pipe.expire(attempts_key, 300)
+            pipe.execute()
+
+            attempts = r.get(attempts_key)
+            if attempts and int(attempts) >= 5:
+                return Response(
+                    {"detail": "Too many failed login attempts. Please wait 5 minutes."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+
             return Response(
                 {"detail": "Invalid username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
         if not user.is_active:
+            pipe = r.pipeline()
+            pipe.incr(attempts_key)
+            pipe.expire(attempts_key, 300)
+            pipe.execute()
+
+            attempts = r.get(attempts_key)
+            if attempts and int(attempts) >= 5:
+                return Response(
+                    {"detail": "Too many failed login attempts. Please wait 5 minutes."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+
             return Response(
                 {"detail": "User account is inactive"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+        # Success - clear any failed attempts
+        r.delete(attempts_key)
 
         # Generate token
         access_token = AccessToken.for_user(user)
         token_str = str(access_token)
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
 
-        # Delete any existing sessions for this user (kills previous session)
-        UserSession.objects.filter(user=user).delete()
+        # Prune older sessions if count >= SESSION_MAX_CONCURRENT
+        session_max = settings.SESSION_MAX_CONCURRENT
+        existing_sessions = UserSession.objects.filter(user=user).order_by('last_seen')
+        existing_count = existing_sessions.count()
+        if existing_count >= session_max:
+            to_delete_count = existing_count - session_max + 1
+            oldest_ids = list(existing_sessions.values_list('id', flat=True)[:to_delete_count])
+            UserSession.objects.filter(id__in=oldest_ids).delete()
 
         # Create new user session
         UserSession.objects.create(
@@ -104,6 +151,33 @@ class KeepAliveView(APIView):
     )
     def post(self, request, *args, **kwargs):
         return Response({"status": "active"}, status=status.HTTP_200_OK)
+
+
+class SSETicketView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='SSETicketResponse',
+                fields={'ticket': serializers.UUIDField()},
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        import uuid
+        import redis
+        from django.conf import settings
+        
+        ticket = str(uuid.uuid4())
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            r.setex(f"sse_ticket:{ticket}", 30, str(request.user.id))
+            return Response({"ticket": ticket}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": f"Failed to generate SSE ticket: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class BackupViewSet(viewsets.ViewSet):
@@ -214,11 +288,14 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            filepath = BackupService.validate_filepath(filename)
-            if not os.path.exists(filepath):
-                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            return FileResponse(open(filepath, 'rb'), as_attachment=True, filename=filename)
+            response = FileResponse(
+                open(filepath, 'rb'),
+                as_attachment=True,
+                filename=filename,
+                content_type='application/octet-stream'
+            )
+            response.block_size = 8192
+            return response
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -268,6 +345,11 @@ class EventStreamView(APIView):
         from rest_framework.renderers import JSONRenderer
         return (JSONRenderer(), 'application/json')
 
+    @extend_schema(
+        parameters=[OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True)],
+        responses={200: OpenApiResponse(description="Server-Sent Events connection stream")},
+        description="Establish a Server-Sent Events (SSE) stream for real-time die/machine/set updates."
+    )
     def get(self, request):
         token = request.query_params.get('token')
         if not token:
@@ -345,4 +427,32 @@ class HealthCheckView(APIView):
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
         return Response(status_data, status=status_code)
+
+
+class VerifyTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='VerifyTokenResponse',
+                fields={
+                    'valid': serializers.BooleanField(),
+                    'user_id': serializers.IntegerField(),
+                    'role': serializers.CharField(),
+                },
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        return Response({
+            "valid": True,
+            "user_id": request.user.id,
+            "role": request.user.role
+        }, status=status.HTTP_200_OK)
+
+    @extend_schema(exclude=True)
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
 

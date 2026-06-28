@@ -34,3 +34,44 @@ class IsRootOnly(permissions.BasePermission):
             return True
         return request.user == obj
 
+
+class IsAdminOrRootOrOperatorRelocate(permissions.BasePermission):
+    """
+    Permission check:
+    - Safe methods (GET, HEAD, OPTIONS) are allowed for any authenticated user.
+    - ROOT and ADMIN can write any fields.
+    - OPERATOR can only PATCH (partial_update) location, rack, and shelf fields.
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        if not (request.user and request.user.is_authenticated):
+            return False
+            
+        if request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser:
+            return True
+            
+        # Allow OPERATOR to partial_update (PATCH) only
+        if request.user.role == 'OPERATOR' and request.method == 'PATCH':
+            return True
+            
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        if request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser:
+            return True
+            
+        if request.user.role == 'OPERATOR' and request.method == 'PATCH':
+            # Check what fields are being updated in request.data
+            allowed_fields = {'location', 'rack', 'shelf'}
+            for key in request.data.keys():
+                if key not in allowed_fields:
+                    return False
+            return True
+            
+        return False
+

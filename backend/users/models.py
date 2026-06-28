@@ -6,6 +6,7 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('ROOT', 'Root'),
         ('ADMIN', 'Admin'),
+        ('OPERATOR', 'Operator'),
         ('REGULAR', 'Regular'),
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='REGULAR')
@@ -14,7 +15,7 @@ class User(AbstractUser):
         return f"{self.username} ({self.role})"
 
 class UserSession(models.Model):
-    user       = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     token_hash = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen  = models.DateTimeField(auto_now=True)
