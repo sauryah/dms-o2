@@ -139,3 +139,73 @@ class DieAPITests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Die.objects.filter(die_id='R-101').exists())
+
+    def test_operator_rbac_boundaries(self):
+        # Create an operator user and get token
+        operator_user = User.objects.create_user(
+            username='operatoruser',
+            password='password123',
+            email='operator@dms.local',
+            role='OPERATOR'
+        )
+        operator_token = str(AccessToken.for_user(operator_user))
+        UserSession.objects.create(
+            user=operator_user,
+            token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
+        )
+        
+        # 1. Operator can view
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
+        url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
+        response = self.client.get(url_detail)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 2. Operator can relocate (PATCH location only)
+        data = {'location': 'Rack Z'}
+        response = self.client.patch(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.round_die.refresh_from_db()
+        self.assertEqual(self.round_die.location, 'Rack Z')
+        
+        # 3. Operator cannot PATCH other fields (e.g. status)
+        data = {'status': 'DAMAGED'}
+        response = self.client.patch(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+        # 4. Operator cannot POST (create) a die
+        url_list = reverse('die-list')
+        data = {
+            'die_id': 'R-302',
+            'die_type': 'ROUND',
+            'casing': '30x30',
+            'status': 'AVAILABLE',
+            'location': 'Rack C',
+            'original_size': 3.5,
+            'current_size': 3.5
+        }
+        response = self.client.post(url_list, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5. Operator cannot DELETE a die
+        response = self.client.delete(url_detail)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_regular_user_cannot_relocate(self):
+        # Create regular user and get token
+        regular_user = User.objects.create_user(
+            username='regularuser',
+            password='password123',
+            email='regular@dms.local',
+            role='REGULAR'
+        )
+        regular_token = str(AccessToken.for_user(regular_user))
+        UserSession.objects.create(
+            user=regular_user,
+            token_hash=hashlib.sha256(regular_token.encode('utf-8')).hexdigest()
+        )
+        
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {regular_token}')
+        url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
+        data = {'location': 'Rack Z'}
+        response = self.client.patch(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

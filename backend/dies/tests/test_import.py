@@ -195,3 +195,127 @@ R-IMP-102,ROUND,25x10,AVAILABLE,Rack A,,DupSet,Mach B,3.0,3.0
             self.assertEqual(d2.current_set, set_dup2)
         finally:
             os.remove(filepath)
+
+    def test_import_dry_run_mode(self):
+        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+R-IMP-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
+"""
+        filepath = self.write_temp_csv(content)
+        try:
+            # Run dry run
+            res = import_dies(filepath, '.csv', self.user, dry_run=True)
+            self.assertEqual(res['created'], 1)
+            self.assertEqual(res['updated'], 0)
+            self.assertTrue(res['dry_run'])
+            
+            # Verify record does NOT exist in DB
+            self.assertFalse(Die.objects.filter(die_id='R-IMP-DRY').exists())
+        finally:
+            os.remove(filepath)
+
+    def test_import_view_dry_run_endpoint(self):
+        from django.urls import reverse
+        from rest_framework import status
+        from rest_framework_simplejwt.tokens import AccessToken
+        from users.models import UserSession
+        from rest_framework.test import APIClient
+        import hashlib
+        
+        token = str(AccessToken.for_user(self.user))
+        UserSession.objects.create(
+            user=self.user,
+            token_hash=hashlib.sha256(token.encode('utf-8')).hexdigest()
+        )
+        
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        url = reverse('import-dies') + '?dry_run=true'
+        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+R-IMP-VIEW-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
+"""
+        filepath = self.write_temp_csv(content)
+        try:
+            with open(filepath, 'rb') as f:
+                response = client.post(url, {'file': f}, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data['created'], 1)
+            self.assertTrue(response.data['dry_run'])
+            
+            # Verify database was not changed
+            self.assertFalse(Die.objects.filter(die_id='R-IMP-VIEW-DRY').exists())
+        finally:
+            os.remove(filepath)
+
+    def test_import_template_download_endpoint(self):
+        from django.urls import reverse
+        from rest_framework import status
+        from rest_framework_simplejwt.tokens import AccessToken
+        from users.models import UserSession
+        from rest_framework.test import APIClient
+        import hashlib
+        import openpyxl
+        
+        token = str(AccessToken.for_user(self.user))
+        UserSession.objects.create(
+            user=self.user,
+            token_hash=hashlib.sha256(token.encode('utf-8')).hexdigest()
+        )
+        
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        url = reverse('import-template')
+        response = client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn('dms_import_template.xlsx', response['Content-Disposition'])
+        
+        # Verify it is a valid openpyxl workbook
+        import io
+        wb = openpyxl.load_workbook(io.BytesIO(response.content))
+        self.assertIn("Round Die", wb.sheetnames)
+        self.assertIn("Flat Die", wb.sheetnames)
+        self.assertIn("Field Reference", wb.sheetnames)
+
+    def test_import_log_persistence(self):
+        from dies.models import ImportLog
+        from django.urls import reverse
+        from rest_framework import status
+        from rest_framework_simplejwt.tokens import AccessToken
+        from users.models import UserSession
+        from rest_framework.test import APIClient
+        import hashlib
+        
+        token = str(AccessToken.for_user(self.user))
+        UserSession.objects.create(
+            user=self.user,
+            token_hash=hashlib.sha256(token.encode('utf-8')).hexdigest()
+        )
+        
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        url = reverse('import-dies')
+        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+R-LOG-1,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
+"""
+        filepath = self.write_temp_csv(content)
+        try:
+            with open(filepath, 'rb') as f:
+                response = client.post(url, {'file': f}, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            
+            # Check ImportLog was created
+            log_entry = ImportLog.objects.filter(filename=os.path.basename(filepath)).first()
+            self.assertIsNotNone(log_entry)
+            self.assertEqual(log_entry.created_count, 1)
+            self.assertEqual(log_entry.imported_by, self.user)
+            
+            # Verify list import logs endpoint
+            logs_url = reverse('import-logs')
+            logs_res = client.get(logs_url)
+            self.assertEqual(logs_res.status_code, status.HTTP_200_OK)
+            self.assertTrue(len(logs_res.data['results']) >= 1)
+        finally:
+            os.remove(filepath)

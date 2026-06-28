@@ -11,6 +11,9 @@ DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks']
 
 @receiver(pre_save, sender=Die)
 def log_die_changes(sender, instance, **kwargs):
+    if instance.rack and instance.shelf is not None:
+        instance.location = f"{instance.rack.name} - Shelf {instance.shelf}"
+
     if not instance.pk:
         return  # new die — no history yet
     old_values = Die.objects.filter(pk=instance.pk).values('status', 'current_set_id', 'location', 'remarks').first()

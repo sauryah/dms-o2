@@ -166,7 +166,7 @@ class ImportService:
             return die.id, is_created
 
     @staticmethod
-    def import_dies(file_path: str, file_ext: str, user) -> dict:
+    def import_dies(file_path: str, file_ext: str, user, dry_run: bool = False) -> dict:
         # Associate user with current thread for DieHistory tracking
         _thread_locals.user = user
         _thread_locals.skip_single_sync = True
@@ -216,21 +216,35 @@ class ImportService:
                             exc_info=True,
                             extra={'row': line_num, 'die_id': row_data.get('die_id')}
                         )
+                        err_msg = str(e)
+                        field_name = "General"
+                        for f_check in ['die_id', 'die_type', 'casing', 'status', 'location', 'remarks', 'original_size', 'current_size', 'original_width', 'current_width', 'original_thickness', 'current_thickness', 'radius']:
+                            if f_check in err_msg.lower():
+                                field_name = f_check
+                                break
                         errors.append({
                             'row': line_num,
-                            'error': str(e)
+                            'die_id': row_data.get('die_id') or 'N/A',
+                            'field': field_name,
+                            'error': err_msg
                         })
+                    
+                    if dry_run:
+                        transaction.set_rollback(True)
 
-            if successful_die_ids:
+            if successful_die_ids and not dry_run:
                 SearchService.sync_dies_batch(successful_die_ids)
                 SearchService.broadcast_bulk_import()
 
-            return {
+            result = {
                 'created': created,
                 'updated': updated,
                 'skipped': skipped,
                 'errors': errors
             }
+            if dry_run:
+                result['dry_run'] = True
+            return result
         finally:
             if hasattr(_thread_locals, 'user'):
                 del _thread_locals.user

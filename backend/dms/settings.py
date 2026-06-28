@@ -231,9 +231,15 @@ LOGGING = {
     },
 }
 
+HISTORY_RETENTION_DAYS = config('HISTORY_RETENTION_DAYS', default=365, cast=int)
+SESSION_MAX_CONCURRENT = config('SESSION_MAX_CONCURRENT', default=1, cast=int)
+
 from django.core.exceptions import ImproperlyConfigured
 if not DEBUG:
     if SECRET_KEY == 'django-insecure-development-secret-key-12345':
         raise ImproperlyConfigured("Insecure DJANGO_SECRET_KEY detected in production!")
-    if MEILI_MASTER_KEY == 'change_me':
+    if not MEILI_MASTER_KEY or len(MEILI_MASTER_KEY) < 16 or MEILI_MASTER_KEY in ('meili_secret_key', 'change_me'):
         raise ImproperlyConfigured("Insecure MEILI_MASTER_KEY detected in production!")
+    db_pass = DATABASES['default']['PASSWORD']
+    if not db_pass or len(db_pass) < 16 or db_pass in ('db_secret_password', 'password', 'postgres', 'dms_pass_password'):
+        raise ImproperlyConfigured("Insecure POSTGRES_PASSWORD detected in production!")

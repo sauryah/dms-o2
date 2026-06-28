@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from dies.models import Die, RoundDie, FlatDie
+from dies.models import Die, RoundDie, FlatDie, ImportLog
 from history.models import DieHistory
 
 class DieHistorySerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class DieListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -32,6 +32,8 @@ class DieListSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        rep['rack_id'] = instance.rack_id
+        rep['rack_name'] = instance.rack.name if instance.rack else ''
         if instance.die_type == 'ROUND' and hasattr(instance, 'rounddie') and instance.rounddie:
             rep['current_size'] = str(instance.rounddie.current_size)
         elif instance.die_type == 'FLAT' and hasattr(instance, 'flatdie') and instance.flatdie:
@@ -47,7 +49,7 @@ class DieDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -59,6 +61,8 @@ class DieDetailSerializer(serializers.ModelSerializer):
         
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        rep['rack_id'] = instance.rack_id
+        rep['rack_name'] = instance.rack.name if instance.rack else ''
         if instance.die_type == 'ROUND' and hasattr(instance, 'rounddie') and instance.rounddie:
             rep['original_size'] = str(instance.rounddie.original_size)
             rep['current_size'] = str(instance.rounddie.current_size)
@@ -82,7 +86,7 @@ class DieCreateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'current_set', 'remarks',
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'current_set', 'remarks', 'rack', 'shelf',
                   'original_size', 'current_size', 'original_width', 'current_width',
                   'original_thickness', 'current_thickness', 'radius']
                   
@@ -180,6 +184,10 @@ def serialize_die_list_fast(dies_queryset):
             'set_name': die.current_set.name if die.current_set else '',
             'machine_name': die.current_set.machine.name if (die.current_set and die.current_set.machine) else '',
             'current_set': die.current_set_id,
+            'rack': die.rack_id,
+            'rack_id': die.rack_id,
+            'rack_name': die.rack.name if die.rack else '',
+            'shelf': die.shelf,
         }
         if die.die_type == 'ROUND':
             rd = getattr(die, 'rounddie', None)
@@ -193,3 +201,16 @@ def serialize_die_list_fast(dies_queryset):
                 rep['radius'] = str(fd.radius)
         data.append(rep)
     return data
+
+
+class ImportLogSerializer(serializers.ModelSerializer):
+    imported_by_username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ImportLog
+        fields = ['id', 'imported_by', 'imported_by_username', 'imported_at', 'filename', 
+                  'created_count', 'updated_count', 'skipped_count', 'error_count', 'errors_json']
+
+    @extend_schema_field(serializers.CharField)
+    def get_imported_by_username(self, obj):
+        return obj.imported_by.username if obj.imported_by else ''

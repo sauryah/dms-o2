@@ -1,9 +1,15 @@
+import io
+import openpyxl
+from django.http import HttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from dies.models import Die
-from dies.serializers import DieListSerializer, DieDetailSerializer, DieCreateSerializer, serialize_die_list_fast
-from users.permissions import IsAdminOrRoot
+from dies.models import Die, ImportLog
+from dies.serializers import (
+    DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
+    serialize_die_list_fast, ImportLogSerializer
+)
+from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate
 from search.meili import client as meili_client, INDEX_NAME
 
 class DieViewSet(viewsets.ModelViewSet):
@@ -32,14 +38,14 @@ class DieViewSet(viewsets.ModelViewSet):
     - List ACTIVE dies in RACK-A: `/api/dies/?status=ACTIVE&location=RACK-A`
     - List FLAT dies by thickness: `/api/dies/?die_type=FLAT&thick_min=2.0&thick_max=2.5`
     
-    **Permissions:** ADMIN or ROOT user only
+    **Permissions:** ADMIN, ROOT or OPERATOR (for relocation only)
     
     **Authentication:** Required (JWT Bearer token)
     """
-    queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine')
+    queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine', 'rack')
     lookup_field = 'die_id'
     lookup_value_regex = '[^?#]+'
-    permission_classes = [IsAdminOrRoot]
+    permission_classes = [IsAdminOrRootOrOperatorRelocate]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -167,14 +173,130 @@ class ImportDiesView(APIView):
         if ext.lower() not in ['.csv', '.xlsx']:
             return Response({"error": "Unsupported file format. Only CSV and XLSX are supported."}, status=status.HTTP_400_BAD_REQUEST)
 
+        dry_run = request.query_params.get('dry_run', '').lower() == 'true'
+
         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
             for chunk in file_obj.chunks():
                 temp_file.write(chunk)
             temp_path = temp_file.name
 
         try:
-            result = ImportService.import_dies(temp_path, ext, request.user)
+            result = ImportService.import_dies(temp_path, ext, request.user, dry_run=dry_run)
+            
+            if not dry_run:
+                ImportLog.objects.create(
+                    imported_by=request.user,
+                    filename=file_obj.name,
+                    created_count=result.get('created', 0),
+                    updated_count=result.get('updated', 0),
+                    skipped_count=result.get('skipped', 0),
+                    error_count=len(result.get('errors', [])),
+                    errors_json=result.get('errors', [])
+                )
+                
             return Response(result, status=status.HTTP_200_OK)
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+
+
+class ImportTemplateView(APIView):
+    """
+    Download Excel import templates.
+    """
+    permission_classes = [IsAdminOrRoot]
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Excel spreadsheet binary template file")},
+        description="Download an Excel template containing tabs for Round Die and Flat Die structure, and validation rules."
+    )
+    def get(self, request, *args, **kwargs):
+        wb = openpyxl.Workbook()
+        # Sheet 1: Round Die
+        ws1 = wb.active
+        ws1.title = "Round Die"
+        headers_round = [
+            "die_id", "die_type", "casing", "status", "location", "remarks", 
+            "current_set", "machine_name", "original_size", "current_size"
+        ]
+        ws1.append(headers_round)
+        example_round = [
+            "R-999", "ROUND", "25x10", "AVAILABLE", "Rack A - Shelf 3", "Example round die",
+            "Set A", "Machine A", 12.345, 12.345
+        ]
+        ws1.append(example_round)
+
+        # Sheet 2: Flat Die
+        ws2 = wb.create_sheet(title="Flat Die")
+        headers_flat = [
+            "die_id", "die_type", "casing", "status", "location", "remarks",
+            "current_set", "machine_name", "original_width", "current_width",
+            "original_thickness", "current_thickness", "radius"
+        ]
+        ws2.append(headers_flat)
+        example_flat = [
+            "F-999", "FLAT", "30x15", "AVAILABLE", "Rack B - Shelf 1", "Example flat die",
+            "Set B", "Machine B", 50.123, 50.123, 15.456, 15.456, 1.500
+        ]
+        ws2.append(example_flat)
+
+        # Sheet 3: Field Reference
+        ws3 = wb.create_sheet(title="Field Reference")
+        ws3.append(["Column Name", "Required/Optional", "Die Type", "Description / Valid Values"])
+        reference_rows = [
+            ["die_id", "Required", "Both", "Unique identifier for the die (e.g., R-101, F-202)"],
+            ["die_type", "Required", "Both", "Must be 'ROUND' or 'FLAT'"],
+            ["casing", "Required", "Both", "Physical casing dimensions (e.g., 25x10, 30x15)"],
+            ["status", "Required", "Both", "Must be one of: AVAILABLE, RUNNING, CLEANING, DAMAGED, POLISHING, MEASURING, INACTIVE"],
+            ["location", "Optional", "Both", "Physical location of the die (e.g. Rack A - Shelf 2)"],
+            ["remarks", "Optional", "Both", "Free-form text comments"],
+            ["current_set", "Optional", "Both", "The Set name or Set ID the die belongs to"],
+            ["machine_name", "Optional", "Both", "Machine name to resolve duplicate set names"],
+            ["original_size", "Required", "ROUND", "Original extrusion size in mm (decimal)"],
+            ["current_size", "Required", "ROUND", "Current measured extrusion size in mm (decimal)"],
+            ["original_width", "Required", "FLAT", "Original flat die width in mm (decimal)"],
+            ["current_width", "Required", "FLAT", "Current flat die width in mm (decimal)"],
+            ["original_thickness", "Required", "FLAT", "Original flat die thickness in mm (decimal)"],
+            ["current_thickness", "Required", "FLAT", "Current flat die thickness in mm (decimal)"],
+            ["radius", "Required", "FLAT", "Corner/bearing radius in mm (decimal)"],
+        ]
+        for r in reference_rows:
+            ws3.append(r)
+
+        # Autofit column widths for readability
+        for sheet in [ws1, ws2, ws3]:
+            for col in sheet.columns:
+                max_len = max(len(str(cell.value or '')) for cell in col)
+                col_letter = openpyxl.utils.get_column_letter(col[0].column)
+                sheet.column_dimensions[col_letter].width = max(max_len + 3, 10)
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="dms_import_template.xlsx"'
+        return response
+
+
+class ImportLogsView(APIView):
+    """
+    Get paginated history of imports.
+    """
+    permission_classes = [IsAdminOrRoot]
+
+    @extend_schema(
+        responses={200: ImportLogSerializer(many=True)},
+        description="Retrieve history of bulk imports."
+    )
+    def get(self, request, *args, **kwargs):
+        from rest_framework.pagination import PageNumberPagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        logs = ImportLog.objects.select_related('imported_by').all()
+        result_page = paginator.paginate_queryset(logs, request, view=self)
+        serializer = ImportLogSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)

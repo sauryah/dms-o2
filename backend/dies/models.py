@@ -5,7 +5,7 @@ STATUS_CHOICES = [
     ('AVAILABLE','Available'), ('RUNNING','Running'),
     ('CLEANING','Cleaning'), ('POLISHING','Polishing'),
     ('DAMAGED','Damaged'), ('SCRAPPED','Scrapped'), ('MISSING','Missing'),
-    ('MAINTENANCE','Maintenance'), ('SCRAP','Scrap'),
+    ('MAINTENANCE','Maintenance'),
 ]
 
 class Die(models.Model):
@@ -14,6 +14,8 @@ class Die(models.Model):
     casing      = models.CharField(max_length=50)
     status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
     location    = models.CharField(max_length=200, blank=True)  # e.g. "Rack A - Shelf 3"
+    rack        = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
+    shelf       = models.PositiveSmallIntegerField(null=True, blank=True)
     current_set = models.ForeignKey('machines.Set', null=True, blank=True, on_delete=models.SET_NULL)
     remarks     = models.TextField(blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -54,3 +56,22 @@ class FlatDie(models.Model):
 
     def __str__(self):
         return f"FlatDie: {self.die.die_id} {self.current_width}x{self.current_thickness}"
+
+
+from django.conf import settings
+
+class ImportLog(models.Model):
+    imported_by   = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    imported_at   = models.DateTimeField(auto_now_add=True)
+    filename      = models.CharField(max_length=255)
+    created_count = models.IntegerField()
+    updated_count = models.IntegerField()
+    skipped_count = models.IntegerField()
+    error_count   = models.IntegerField()
+    errors_json   = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-imported_at']
+
+    def __str__(self):
+        return f"ImportLog: {self.filename} by {self.imported_by} at {self.imported_at}"
