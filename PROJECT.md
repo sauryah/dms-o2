@@ -120,6 +120,18 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-28 · feat: implement dimension wear trend chart, print-optimized blueprint report view, and strict frontend route guards (Phase 12)
+- Built a custom SVG-based `DimensionWearChart` on the Die Detail page to display wear trend lines over time (Size for Round dies, Width/Thickness for Flat dies).
+- Integrated a "Print Blueprint" view utilizing media print CSS rules to isolate the specifications table and CAD SVG, hiding sidebars and nav.
+- Added a "Download SVG" button to export the CAD vector graphic file.
+- Wrapped all private pages (Dashboard, Inventory, Details, Machines, History) in `<ProtectedRoute>` to eliminate split-second unauthenticated UI flashes.
+
+### 2026-06-28 · feat: update documentation, RBAC matrix, and onboarding deployment instructions (Phase 11)
+- Updated `docs/ARCHITECTURE.md` with the new endpoint matrices, including the SSE ticket exchange flow, verify-token internal validation, and Rack CRUD.
+- Documented role restrictions (Operator relocate limits) and new environment variables in the developer handbook.
+- Documented management commands (`sync_search`, `prune_history`) and production Nginx setups in the developer onboarding guide.
+- Outlined future work vectors, including LDAP/SSO authentication hooks, multi-tenant locks, and AI-driven wear prediction.
+
 ### 2026-06-25 · refactor: optimize caching, secure thread-local imports, and modularize monolithic page components
 - Optimized Go API caching by replacing cursor-based `SCAN` keys iteration with a Redis Set (`cached_searches`) tracking list, reducing invalidation complexity.
 - Secured Django `ImportService` thread-local variables (`user`, `skip_single_sync`) lifecycle management by wrapping the execution loop in a `try...finally` block.
