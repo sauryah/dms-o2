@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2, Printer, Download } from 'lucide-react'
+import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
@@ -518,13 +518,14 @@ export function DieDetailPage() {
   const canEdit = role === 'ROOT' || role === 'ADMIN'
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-container">
+    <>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:hidden">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body, html {
             background-color: white !important;
-            color: black !important;
-            font-family: sans-serif !important;
+            color: #0f172a !important; /* text-slate-900 */
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
           }
           nav, footer, .print\\:hidden {
             display: none !important;
@@ -535,33 +536,52 @@ export function DieDetailPage() {
             padding: 0 !important;
             margin: 0 !important;
           }
-          .print\\:text-black {
-            color: black !important;
+          .print-only-container {
+            display: block !important;
           }
-          .print\\:border-black {
-            border-color: black !important;
-          }
-          .print\\:bg-transparent {
-            background-color: transparent !important;
-          }
-          .print\\:shadow-none {
+          .print-only-container .glass-panel {
+            background: white !important;
+            border: 1px solid #e2e8f0 !important; /* border-slate-200 */
             box-shadow: none !important;
+            border-radius: 12px !important;
           }
-          .print\\:w-\\[350px\\] {
-            width: 350px !important;
+          .print-only-container .border-slate-800\\/80 {
+            border-color: #e2e8f0 !important;
           }
-          .print\\:h-\\[350px\\] {
-            height: 350px !important;
+          .print-only-container .blueprint-grid {
+            background-color: #f8fafc !important; /* light slate background for grid */
+            background-image: 
+              linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px) !important;
+            background-size: 20px 20px !important;
+          }
+          .print-only-container .blueprint-axis {
+            stroke: #cbd5e1 !important; /* light gray grid axis */
+            stroke-dasharray: 4 4 !important;
+          }
+          .print-only-container .blueprint-outline {
+            stroke: #2563eb !important; /* darker blue for high contrast print */
+            filter: none !important;
+          }
+          .print-only-container .blueprint-outline-secondary {
+            stroke: #6366f1 !important; /* indigo */
+          }
+          .print-only-container .blueprint-dim-line {
+            stroke: #059669 !important; /* darker green */
+          }
+          .print-only-container .blueprint-dim-text {
+            fill: #059669 !important; /* darker green text */
+          }
+          .print-only-container svg rect {
+            fill: #0f172a !important; /* dark capsule background */
+          }
+          .print-only-container svg text {
+            fill: #10b981 !important; /* green text inside capsule */
           }
         }
       `}} />
 
-      {/* Print-only Header */}
-      <div className="hidden print:block mb-8 text-black">
-        <div className="text-3xl font-extrabold tracking-tight">DMS DIE BLUEPRINT REPORT</div>
-        <p className="text-sm mt-1">Generated: {new Date().toLocaleString()} | Die ID: {die.die_id}</p>
-        <div className="h-px bg-black my-4" />
-      </div>
+
 
       {/* Breadcrumbs */}
       <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6 print:hidden">
@@ -897,5 +917,178 @@ export function DieDetailPage() {
         onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>
-  )
+
+    {/* Print-only View */}
+    <div className="hidden print:block w-full text-slate-900 bg-white min-h-screen p-4 print-only-container">
+      {/* Header Row */}
+      <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">DMS DIE BLUEPRINT REPORT</h1>
+          <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <span>Generated: {new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' })}</span>
+            <span className="text-slate-350">|</span>
+            <span>Die ID: {die.die_id}</span>
+          </p>
+        </div>
+        <span className={`px-4 py-1.5 rounded-full border text-xs font-bold ${
+          die.status === 'AVAILABLE' 
+            ? 'border-emerald-500 bg-emerald-50 text-emerald-700' 
+            : die.status === 'RUNNING'
+            ? 'border-blue-500 bg-blue-50 text-blue-700'
+            : 'border-amber-500 bg-amber-50 text-amber-700'
+        }`}>
+          {die.status}
+        </span>
+      </div>
+
+      {/* Title / Identity Row */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center shadow-sm">
+          <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <ellipse cx="12" cy="6" rx="6" ry="3" />
+            <path d="M6 6v12c0 1.66 2.69 3 6 3s6-1.34 6-3V6" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{die.die_id}</h2>
+          <p className="text-sm text-slate-500 mt-1">Casing: <span className="text-blue-600 font-semibold">{die.casing}</span></p>
+        </div>
+      </div>
+
+      {/* Section: Specifications */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Specifications</h3>
+        </div>
+        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+          {/* Status */}
+          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+            <span className="text-slate-500 flex items-center gap-2.5">
+              <Target className="h-4 w-4 text-slate-400" />
+              <span>Status</span>
+            </span>
+            <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${
+                die.status === 'AVAILABLE' ? 'bg-emerald-500' : 'bg-amber-500'
+              }`} />
+              <span className={die.status === 'AVAILABLE' ? 'text-emerald-600' : 'text-amber-600'}>{die.status}</span>
+            </span>
+          </div>
+          {/* Location */}
+          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+            <span className="text-slate-500 flex items-center gap-2.5">
+              <MapPin className="h-4 w-4 text-slate-400" />
+              <span>Location</span>
+            </span>
+            <span className="font-semibold text-slate-900">{die.location || '—'}</span>
+          </div>
+          {/* Set Assignment */}
+          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+            <span className="text-slate-500 flex items-center gap-2.5">
+              <Layers className="h-4 w-4 text-slate-400" />
+              <span>Set Assignment</span>
+            </span>
+            <span className="font-semibold text-slate-900">{die.set_name || '—'}</span>
+          </div>
+          {/* Machine */}
+          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+            <span className="text-slate-500 flex items-center gap-2.5">
+              <FileText className="h-4 w-4 text-slate-400" />
+              <span>Machine</span>
+            </span>
+            <span className="font-semibold text-slate-900">{die.machine_name || '—'}</span>
+          </div>
+          {/* Casing */}
+          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+            <span className="text-slate-500 flex items-center gap-2.5">
+              <Target className="h-4 w-4 text-slate-400" />
+              <span>Casing</span>
+            </span>
+            <span className="font-semibold text-slate-900">{die.casing || '—'}</span>
+          </div>
+          
+          {die.die_type === 'ROUND' ? (
+            <>
+              {/* Original Size */}
+              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+                <span className="text-slate-500 flex items-center gap-2.5">
+                  <Ruler className="h-4 w-4 text-slate-400" />
+                  <span>Original Size</span>
+                </span>
+                <span className="font-semibold text-slate-900">{die.original_size} mm</span>
+              </div>
+              {/* Current Size */}
+              <div className="flex justify-between items-center py-3 px-4 text-sm">
+                <span className="text-slate-500 flex items-center gap-2.5">
+                  <Ruler className="h-4 w-4 text-slate-400" />
+                  <span>Current Size</span>
+                </span>
+                <span className="font-semibold text-slate-900">{die.current_size} mm</span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Original Size WxT */}
+              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+                <span className="text-slate-500 flex items-center gap-2.5">
+                  <Ruler className="h-4 w-4 text-slate-400" />
+                  <span>Original Size (W×T)</span>
+                </span>
+                <span className="font-semibold text-slate-900">{die.original_width} × {die.original_thickness} mm</span>
+              </div>
+              {/* Current Size WxT */}
+              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
+                <span className="text-slate-500 flex items-center gap-2.5">
+                  <Ruler className="h-4 w-4 text-slate-400" />
+                  <span>Current Size (W×T)</span>
+                </span>
+                <span className="font-semibold text-slate-900">{die.current_width} × {die.current_thickness} mm</span>
+              </div>
+              {/* Radius */}
+              <div className="flex justify-between items-center py-3 px-4 text-sm">
+                <span className="text-slate-500 flex items-center gap-2.5">
+                  <Compass className="h-4 w-4 text-slate-400" />
+                  <span>Radius</span>
+                </span>
+                <span className="font-semibold text-slate-900">{die.radius} mm</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Section: CAD Blueprint */}
+      <div className="mb-8 break-inside-avoid">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">CAD Blueprint</h3>
+        </div>
+        <div className="flex justify-center items-center">
+          <div className="w-full max-w-lg">
+            <DieBlueprint 
+              die={die} 
+              activeHighlight={null}
+              onHoverDim={() => {}}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Section: Remarks */}
+      <div className="break-inside-avoid">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Remarks</h3>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-5 bg-white min-h-[80px]">
+          <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
+            {die.remarks || 'No remarks recorded.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  </>
+)
 }

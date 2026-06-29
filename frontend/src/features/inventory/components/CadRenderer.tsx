@@ -337,7 +337,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
         )}
       </div>
       
-      <div className="flex justify-between items-center text-slate-500 text-[9px] font-mono mt-3 pt-2 border-t border-slate-800/80">
+      <div className="flex justify-between items-center text-slate-500 text-[9px] font-mono mt-3 pt-2 border-t border-slate-800/80 w-full">
         <span 
           className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
             activeHighlight === 'casing' ? 'text-blue-400 font-bold scale-105' : ''
@@ -402,6 +402,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
         >
           Status: {die.status}
         </span>
+        <span>Units: mm</span>
       </div>
 
       {activeTooltip && (
