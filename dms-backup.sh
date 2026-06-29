@@ -59,11 +59,20 @@ case "$ACTION" in
         echo ">>> Stopping database client services (django, worker, go-api) to release active connections..."
         docker compose stop django worker go-api
         
+        echo ">>> Terminating any remaining active connections to database $POSTGRES_DB..."
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();" || true
+        
+        echo ">>> Dropping and recreating clean database $POSTGRES_DB..."
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "DROP DATABASE IF EXISTS $POSTGRES_DB;"
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "CREATE DATABASE $POSTGRES_DB;"
+        
         echo ">>> Restoring database from ./backups/$FILE..."
-        # Disable set -e temporarily since pg_restore with --clean returns non-zero when dropping non-existent tables/indexes (which is expected)
         set +e
-        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup pg_restore -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --no-owner "/backups/$FILE"
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" backup pg_restore -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner "/backups/$FILE"
         set -e
+        
+        echo ">>> Starting database client services to rebuild search index..."
+        docker compose start django worker go-api
         
         echo ">>> Rebuilding Meilisearch search index..."
         docker compose exec -T django python manage.py sync_search
