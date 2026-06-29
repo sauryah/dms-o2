@@ -22,15 +22,13 @@ if (-not (Test-Path .env)) {
     $dbPass = Generate-Secret 24
     $djangoKey = Generate-Secret 60
     $meiliMaster = Generate-Secret 32
-    $meiliSearch = Generate-Secret 32
     $rootPass = Generate-Secret 16
 
     $examplePath = Resolve-Path .env.example
     $content = [System.IO.File]::ReadAllText($examplePath)
-    $content = $content.Replace('POSTGRES_PASSWORD=change_me', "POSTGRES_PASSWORD=$dbPass")
-    $content = $content.Replace('DJANGO_SECRET_KEY=md7db91F0^W3*t)skUXp$vzfHU<]Nx@+]DcS5Kz?hm<fPg&&gd=5EvWu&zuevm](', "DJANGO_SECRET_KEY=$djangoKey")
-    $content = $content.Replace('MEILI_MASTER_KEY=Kk?UEj]Uk1dDSFNfK.fXHj0jP<DB*yJ9>4Dsh:6&Wwh96waja>2.1@R+8%t4%K4(', "MEILI_MASTER_KEY=$meiliMaster")
-    $content = $content.Replace('MEILI_SEARCH_KEY=B5wT65kBM$UG!tnWk@tkR59T]tuSTwnSG#%xUGQZC@q@$auPem&Sub1$02hDuGNb', "MEILI_SEARCH_KEY=$meiliSearch")
+    $content = $content.Replace('POSTGRES_PASSWORD=dms_pass_secure_development_placeholder_123', "POSTGRES_PASSWORD=$dbPass")
+    $content = $content.Replace('DJANGO_SECRET_KEY=1i-Z36mjYZYX9lwdlTcUGlLflUlt8M6oykwbMa0pmLx3FSWXjwkYQ_i37LCSfhV3', "DJANGO_SECRET_KEY=$djangoKey")
+    $content = $content.Replace('MEILI_MASTER_KEY=ghq8ynFj6vPGb29wfZaWpvuCmmQZ4FBPGoZ4xCvxElo', "MEILI_MASTER_KEY=$meiliMaster")
     $content = $content.Replace('ROOT_PASSWORD=root123', "ROOT_PASSWORD=$rootPass")
 
     $envPath = Join-Path (Get-Location) ".env"

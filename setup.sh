@@ -22,7 +22,7 @@ if [ ! -f .env ]; then
 import secrets
 with open('.env.example', 'r') as f:
     content = f.read()
-content = content.replace('POSTGRES_PASSWORD=dms_pass_123', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
+content = content.replace('POSTGRES_PASSWORD=dms_pass_secure_development_placeholder_123', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
 content = content.replace('DJANGO_SECRET_KEY=1i-Z36mjYZYX9lwdlTcUGlLflUlt8M6oykwbMa0pmLx3FSWXjwkYQ_i37LCSfhV3', f'DJANGO_SECRET_KEY={secrets.token_urlsafe(48)}')
 content = content.replace('MEILI_MASTER_KEY=ghq8ynFj6vPGb29wfZaWpvuCmmQZ4FBPGoZ4xCvxElo', f'MEILI_MASTER_KEY={secrets.token_urlsafe(32)}')
 content = content.replace('ROOT_PASSWORD=root123', f'ROOT_PASSWORD={secrets.token_urlsafe(16)}')
