@@ -120,6 +120,16 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-06-30 · fix: resolve critical security vulnerabilities, backup NameError crashes, test transaction issues, search performance bottlenecks, and connection lifetimes (Phase 13)
+- Fixed privilege escalation vulnerability in `UserSerializer`, blocking self-role updates for non-ROOT users.
+- Prevented ROOT users from self-demoting or self-deactivating.
+- Fixed NameError runtime crashes in `BackupViewSet` backup download and delete actions.
+- Extended database pruning script `prune_history.sh` to prune the `MachineHistory` table.
+- Optimized Go search microservice by avoiding parallel database direct query scans when Meilisearch is active (fallback-only).
+- Configured connection maximum lifetime and idle connection limits in Go DB connection pool.
+- Disabled Django global `ATOMIC_REQUESTS` to prevent test suite transaction contamination, and decorated serializer writes with explicit atomic transaction wrappers.
+- Added aria attributes accessibility support to the `DiesTable` virtualized list rows.
+
 ### 2026-06-28 · feat: implement dimension wear trend chart, print-optimized blueprint report view, and strict frontend route guards (Phase 12)
 - Built a custom SVG-based `DimensionWearChart` on the Die Detail page to display wear trend lines over time (Size for Round dies, Width/Thickness for Flat dies).
 - Integrated a "Print Blueprint" view utilizing media print CSS rules to isolate the specifications table and CAD SVG, hiding sidebars and nav.

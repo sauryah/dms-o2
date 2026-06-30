@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from django.db import transaction
 from dies.contracts import DIE_STATUSES
 from dies.models import Die, RoundDie, FlatDie, ImportLog
 from history.models import DieHistory
@@ -111,6 +112,7 @@ class DieCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("FLAT die requires original_width, current_width, original_thickness, current_thickness, and radius.")
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         die_type = validated_data.get('die_type')
         
@@ -141,6 +143,7 @@ class DieCreateSerializer(serializers.ModelSerializer):
             )
         return die
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         original_size = validated_data.pop('original_size', None)
         current_size = validated_data.pop('current_size', None)

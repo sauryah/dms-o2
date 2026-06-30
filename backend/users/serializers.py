@@ -24,9 +24,21 @@ class UserSerializer(serializers.ModelSerializer):
             except ValidationError as e:
                 raise serializers.ValidationError({"password": list(e.messages)})
 
+        # Only ROOT users can modify roles
+        if 'role' in attrs:
+            if not request or not request.user or (request.user.role != 'ROOT' and not request.user.is_superuser):
+                raise serializers.ValidationError({"role": "Only ROOT users can modify user roles."})
+
         if request and self.instance and request.user == self.instance:
             new_email = attrs.get('email')
             
+            # Prevent ROOT user from demoting or deactivating themselves
+            if self.instance.role == 'ROOT':
+                if 'role' in attrs and attrs['role'] != 'ROOT':
+                    raise serializers.ValidationError({"role": "A ROOT user cannot demote themselves."})
+                if 'is_active' in attrs and not attrs['is_active']:
+                    raise serializers.ValidationError({"is_active": "A ROOT user cannot deactivate themselves."})
+
             # Require current_password when updating sensitive details (password or email)
             if new_password or (new_email and new_email != self.instance.email):
                 current_password = attrs.get('current_password')

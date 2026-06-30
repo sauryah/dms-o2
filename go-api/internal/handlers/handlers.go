@@ -405,12 +405,14 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 
 	var meiliDies []database.DieRepresentation
 	totalHits := 0
+	meiliSuccess := false
 
 	// Search Meilisearch index
 	res, err := h.search.Search(q, &searchParams)
 	if err != nil {
 		slog.Error("Meilisearch search error", "error", err)
 	} else {
+		meiliSuccess = true
 		if res.TotalHits > 0 {
 			totalHits = int(res.TotalHits)
 		} else if res.EstimatedTotalHits > 0 {
@@ -451,27 +453,20 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		}
 	}
 
-	// Query Postgres directly to find any additional matches (e.g. numeric exact matches or wildcard matches)
-	postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
-	if err != nil {
-		slog.Error("Postgres direct query error", "error", err)
-	}
-
-	// Merge results (removing duplicates, preserving Meilisearch hit order first)
-	seen := make(map[int64]bool)
 	var combined []database.DieRepresentation
 
-	for _, die := range meiliDies {
-		if !seen[die.ID] {
-			combined = append(combined, die)
-			seen[die.ID] = true
-		}
-	}
-
-	for _, die := range postgresDies {
-		if !seen[die.ID] {
-			combined = append(combined, die)
-			seen[die.ID] = true
+	if meiliSuccess {
+		combined = meiliDies
+	} else {
+		// Fallback to Postgres direct query only if Meilisearch search failed
+		postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		if err != nil {
+			slog.Error("Postgres direct query fallback error", "error", err)
+		} else {
+			combined = postgresDies
+			if totalHits == 0 && len(combined) > 0 {
+				totalHits = len(combined)
+			}
 		}
 	}
 

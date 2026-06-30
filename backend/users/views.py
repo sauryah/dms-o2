@@ -316,6 +316,9 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
+            filepath = BackupService.validate_filepath(filename)
+            if not os.path.exists(filepath):
+                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
             os.remove(filepath)
             broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_DELETE_ACTION, 'filename': filename})
             return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
@@ -335,6 +338,9 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
+            filepath = BackupService.validate_filepath(filename)
+            if not os.path.exists(filepath):
+                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
             response = FileResponse(
                 open(filepath, 'rb'),
                 as_attachment=True,

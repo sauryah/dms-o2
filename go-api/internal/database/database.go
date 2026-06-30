@@ -55,6 +55,8 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 				log.Println("Successfully connected to PostgreSQL database.")
 				db.SetMaxIdleConns(10)
 				db.SetMaxOpenConns(50)
+				db.SetConnMaxLifetime(time.Hour)
+				db.SetConnMaxIdleTime(15 * time.Minute)
 				return &PostgresDB{db}, nil
 			}
 		}

@@ -20,6 +20,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.3.0] - 2026-06-30
+
+### Fixed
+- Fixed privilege escalation vulnerability in UserSerializer, blocking self-role updates for non-ROOT users.
+- Prevented ROOT users from self-demoting or self-deactivating.
+- Fixed NameError runtime crashes in BackupViewSet backup download and delete actions.
+- Extended database pruning script prune_history.sh to prune the MachineHistory table.
+- Optimized Go search microservice by avoiding parallel database direct query scans when Meilisearch is active (fallback-only).
+- Configured connection maximum lifetime and idle connection limits in Go DB connection pool.
+- Disabled Django global ATOMIC_REQUESTS to prevent test suite transaction contamination, and decorated serializer writes with explicit atomic transaction wrappers.
+- Added aria attributes accessibility support to the DiesTable virtualized list rows.
+
+---
+
 ## [1.2.0] - 2026-06-25
 
 ### Refactored

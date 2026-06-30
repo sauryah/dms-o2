@@ -375,13 +375,14 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     MAINTENANCE: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   }
 
-  const Row = ({ index, style }: RowComponentProps) => {
+  const Row = ({ index, style, ariaAttributes }: RowComponentProps) => {
     const die = sortedDies[index];
     if (!die) return null;
     const isSelected = selectedDieIds.has(die.die_id);
     const isActiveRow = index === activeRowIndex;
     return (
       <div
+        {...ariaAttributes}
         style={style}
         draggable={canEdit}
         onDragStart={(e) => {
