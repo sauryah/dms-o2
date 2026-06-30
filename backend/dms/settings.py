@@ -87,7 +87,7 @@ DATABASES = {
             'connect_timeout': 10,
             'options': '-c statement_timeout=30000',  # 30 second query timeout
         },
-        'ATOMIC_REQUESTS': True,  # Wrap request in transaction
+        'ATOMIC_REQUESTS': False,  # Wrap request in transaction
     }
 }
 

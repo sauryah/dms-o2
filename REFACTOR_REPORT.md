@@ -41,3 +41,12 @@
 
 ## 7. Estimated Maintenance Impact
 * **Impact:** High. By enforcing separation of concerns across the service boundaries, bug fixing and unit testing the import and backup layers are now far simpler.
+
+## 8. Stabilization Refactoring (June 30, 2026)
+* **Resolved Privilege Escalation Vulnerability:** Secured role updates in `UserSerializer` to block non-ROOT users from altering user roles. Added ROOT self-demotion and self-deactivation safeguards to avoid superuser lockout states.
+* **Resolved Backup Download/Delete NameErrors:** Corrected `delete_backup` and `download_backup` view methods in `users/views.py` to define the local variable `filepath` and return standard 404 responses for missing dump files.
+* **Pruned Machine History Table:** Added database maintenance commands in `prune_history.sh` targeting the `history_machinehistory` table to resolve long-term Postgres storage leakage.
+* **Optimized Fuzzy Search Database Load:** Refactored Go search endpoint to avoid executing parallel wildcard queries against Postgres if Meilisearch returns results successfully, setting up Postgres direct wildcard query as a fallback-only mechanism.
+* **Go Database Connection Hardening:** Configured `SetConnMaxLifetime` and `SetConnMaxIdleTime` connection limits in the Go database pool to eliminate stale DB connection resets.
+* **Resolved Test Suite Transaction Errors:** Turned off global `ATOMIC_REQUESTS` in Django `settings.py` to allow exception responses (400, 401, 403) to return without contaminating testing transactions, while adding selective transaction wrapping decorators (`@transaction.atomic`) on `DieCreateSerializer` creation and update flows.
+* **Improved Virtualized Accessibility:** Spread the `ariaAttributes` object from the list virtualizer down to the rows inside `DiesTable.tsx` for full screen reader compliance.
