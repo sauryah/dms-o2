@@ -8,6 +8,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { SessionTimeoutManager } from './components/SessionTimeoutManager'
 import { AuthProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
 import { useApi } from './hooks/useApi'
+import { DIE_UPDATE_EVENT, SET_UPDATE_EVENT, MACHINE_UPDATE_EVENT, BACKUP_UPDATE_EVENT } from './contracts/dieContracts'
 
 const DashboardPage = React.lazy(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const InventoryPage = React.lazy(() => import('./features/inventory/components/InventoryPage').then(m => ({ default: m.InventoryPage })))
@@ -148,7 +149,7 @@ function AppContent() {
 
             queryClient.invalidateQueries()
 
-            if (payload.type === 'die_update') {
+            if (payload.type === DIE_UPDATE_EVENT) {
               if (payload.data?.action === 'delete') {
                 const msg = `Die ${payload.data.id} has been deleted.`
                 showToast(msg, 'info')
@@ -180,17 +181,17 @@ function AppContent() {
                     announce(msg)
                   })
               }
-            } else if (payload.type === 'set_update') {
+            } else if (payload.type === SET_UPDATE_EVENT) {
               const msg = 'Die sets have been updated.'
               showToast(msg, 'info')
               addNotification('Die Sets Updated', msg, 'info')
               announce(msg)
-            } else if (payload.type === 'machine_update') {
+            } else if (payload.type === MACHINE_UPDATE_EVENT) {
               const msg = 'Machine configurations have been updated.'
               showToast(msg, 'info')
               addNotification('Machines Updated', msg, 'info')
               announce(msg)
-            } else if (payload.type === 'backup_update') {
+            } else if (payload.type === BACKUP_UPDATE_EVENT) {
               const action = payload.data?.action
               const filename = payload.data?.filename || ''
               if (action === 'backup') {

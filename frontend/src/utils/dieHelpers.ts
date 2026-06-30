@@ -1,3 +1,5 @@
+import { DIE_ACTIVE_STATUSES } from '../contracts/dieContracts'
+
 export const isDieActive = (die: any) => {
-  return ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING'].includes(die.status)
+  return DIE_ACTIVE_STATUSES.includes(die.status)
 }

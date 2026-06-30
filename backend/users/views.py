@@ -13,6 +13,7 @@ from users.serializers import BackupFilenameSerializer, BackupSerializer, Backup
 from users.permissions import IsRootOnly
 from dms.events import broadcast_event
 from users.services.backup_service import BackupService
+from dies.contracts import BACKUP_CREATE_ACTION, BACKUP_DELETE_ACTION, BACKUP_UPDATE_EVENT, BACKUP_UPLOAD_ACTION
 from django.utils import timezone
 import os
 from django.http import StreamingHttpResponse
@@ -274,7 +275,7 @@ class BackupViewSet(viewsets.ViewSet):
             filename = BackupService.create_backup()
             filepath = BackupService.validate_filepath(filename)
 
-            broadcast_event('backup_update', {'action': 'backup', 'filename': filename})
+            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_CREATE_ACTION, 'filename': filename})
             return Response({
                 'status': 'success',
                 'filename': filename,
@@ -315,12 +316,8 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            filepath = BackupService.validate_filepath(filename)
-            if not os.path.exists(filepath):
-                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            BackupService.delete_backup(filepath)
-            broadcast_event('backup_update', {'action': 'delete', 'filename': filename})
+            os.remove(filepath)
+            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_DELETE_ACTION, 'filename': filename})
             return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -380,7 +377,7 @@ class BackupViewSet(viewsets.ViewSet):
                 for chunk in file_obj.chunks():
                     destination.write(chunk)
             
-            broadcast_event('backup_update', {'action': 'upload', 'filename': filename})
+            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_UPLOAD_ACTION, 'filename': filename})
             return Response({
                 'status': 'uploaded',
                 'filename': filename,
@@ -508,4 +505,3 @@ class VerifyTokenView(APIView):
     @extend_schema(exclude=True)
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
-

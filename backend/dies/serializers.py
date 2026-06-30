@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from dies.contracts import DIE_STATUSES
 from dies.models import Die, RoundDie, FlatDie, ImportLog
 from history.models import DieHistory
 
@@ -95,6 +96,8 @@ class DieCreateSerializer(serializers.ModelSerializer):
             if hasattr(data, 'copy'):
                 data = data.copy()
             status_val = str(data['status']).strip().upper()
+            if status_val not in DIE_STATUSES:
+                raise serializers.ValidationError({"status": f"Invalid status '{status_val}'."})
             data['status'] = status_val
         return super().to_internal_value(data)
 

@@ -1,14 +1,4 @@
-export type DieType = 'ROUND' | 'FLAT';
-
-export type DieStatus = 
-  | 'AVAILABLE' 
-  | 'RUNNING' 
-  | 'CLEANING' 
-  | 'POLISHING' 
-  | 'DAMAGED' 
-  | 'SCRAPPED' 
-  | 'MISSING'
-  | 'MAINTENANCE';
+import { DIE_STATUSES, DIE_TYPES, type DieStatus, type DieType } from './contracts/dieContracts'
 
 export interface Die {
   die_id: string;
@@ -65,3 +55,4 @@ export function getStatusColorClass(status: DieStatus): string {
   return statusColors[status] || 'bg-slate-500/10 text-slate-400 border-slate-500/25'
 }
 
+export { DIE_TYPES, DIE_STATUSES }

@@ -2,6 +2,12 @@ from django.db import transaction
 from users.middleware import _thread_locals
 from search.meili import delete_die_document
 from dms.events import broadcast_event
+from dies.contracts import (
+    DIE_BULK_IMPORT_ACTION,
+    DIE_DELETE_ACTION,
+    DIE_UPDATE_EVENT,
+    DIE_WORKFLOW_ACTIONS,
+)
 
 class SearchService:
     @staticmethod
@@ -25,6 +31,8 @@ class SearchService:
     def queue_die_broadcast(die_id, action):
         if getattr(_thread_locals, 'skip_single_sync', False):
             return
+        if action not in DIE_WORKFLOW_ACTIONS:
+            raise ValueError(f"Unsupported die workflow action: {action}")
         if not hasattr(_thread_locals, 'pending_broadcast_keys'):
             _thread_locals.pending_broadcast_keys = set()
             
@@ -34,7 +42,7 @@ class SearchService:
             
             def run_broadcast():
                 _thread_locals.pending_broadcast_keys.discard(broadcast_key)
-                broadcast_event('die_update', {'id': die_id, 'action': action})
+                broadcast_event(DIE_UPDATE_EVENT, {'id': die_id, 'action': action})
                 
             transaction.on_commit(run_broadcast)
 
@@ -45,7 +53,7 @@ class SearchService:
 
     @staticmethod
     def broadcast_bulk_import():
-        broadcast_event('die_update', {'action': 'bulk_import'})
+        broadcast_event(DIE_UPDATE_EVENT, {'action': DIE_BULK_IMPORT_ACTION})
 
     @staticmethod
     def delete_die_document(die_id):
@@ -53,4 +61,4 @@ class SearchService:
 
     @staticmethod
     def broadcast_die_delete(die_id):
-        transaction.on_commit(lambda: broadcast_event('die_update', {'id': die_id, 'action': 'delete'}))
+        transaction.on_commit(lambda: broadcast_event(DIE_UPDATE_EVENT, {'id': die_id, 'action': DIE_DELETE_ACTION}))

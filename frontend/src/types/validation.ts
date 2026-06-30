@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DIE_STATUSES } from '../contracts/dieContracts'
 
 // Validation schema for die creation
 export const DieCreateSchema = z.discriminatedUnion('die_type', [
@@ -6,7 +7,7 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
     die_type: z.literal('ROUND'),
     casing: z.string().min(1, 'Casing is required'),
-    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE']),
+    status: z.enum(DIE_STATUSES),
     location: z.string().min(1, 'Location is required'),
     current_set: z.number().nullable().optional(),
     rack: z.number().nullable().optional(),
@@ -21,7 +22,7 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
     die_type: z.literal('FLAT'),
     casing: z.string().min(1, 'Casing is required'),
-    status: z.enum(['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'DAMAGED', 'SCRAPPED', 'MISSING', 'MAINTENANCE']),
+    status: z.enum(DIE_STATUSES),
     location: z.string().min(1, 'Location is required'),
     current_set: z.number().nullable().optional(),
     rack: z.number().nullable().optional(),

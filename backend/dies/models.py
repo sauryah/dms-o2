@@ -1,18 +1,12 @@
 from django.db import models
 from django.contrib.postgres.indexes import GinIndex
-
-STATUS_CHOICES = [
-    ('AVAILABLE','Available'), ('RUNNING','Running'),
-    ('CLEANING','Cleaning'), ('POLISHING','Polishing'),
-    ('DAMAGED','Damaged'), ('SCRAPPED','Scrapped'), ('MISSING','Missing'),
-    ('MAINTENANCE','Maintenance'),
-]
+from dies.contracts import DIE_STATUS_CHOICES, DIE_TYPE_CHOICES
 
 class Die(models.Model):
     die_id      = models.CharField(max_length=50, unique=True)
-    die_type    = models.CharField(max_length=10, choices=[('ROUND','Round'),('FLAT','Flat')])
+    die_type    = models.CharField(max_length=10, choices=DIE_TYPE_CHOICES)
     casing      = models.CharField(max_length=50)
-    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
+    status      = models.CharField(max_length=20, choices=DIE_STATUS_CHOICES, default='AVAILABLE')
     location    = models.CharField(max_length=200, blank=True)  # e.g. "Rack A - Shelf 3"
     rack        = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
     shelf       = models.PositiveSmallIntegerField(null=True, blank=True)

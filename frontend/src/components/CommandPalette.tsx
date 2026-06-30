@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useApi } from '../hooks/useApi'
+import { DIE_STATUSES } from '../contracts/dieContracts'
 import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle } from 'lucide-react'
 
 interface CommandPaletteProps {
@@ -121,7 +122,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [role, navigate, onClose])
 
   const canChangeStatus = role === 'ROOT' || role === 'ADMIN' || role === 'OPERATOR'
-  const validStatuses = ['AVAILABLE', 'RUNNING', 'CLEANING', 'POLISHING', 'MAINTENANCE', 'DAMAGED', 'SCRAPPED', 'MISSING']
+  const validStatuses = DIE_STATUSES
 
   // Compile final actions list
   const actions = useMemo<PaletteAction[]>(() => {

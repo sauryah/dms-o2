@@ -5,6 +5,7 @@ from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
 from users.middleware import get_current_user, get_current_ip
 from dies.services.search_service import SearchService
+from dies.contracts import DIE_SAVE_ACTION
 
 DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks']
 
@@ -89,7 +90,7 @@ def log_flat_changes(sender, instance, **kwargs):
 def _sync_die_from_related(instance):
     die = instance if isinstance(instance, Die) else instance.die
     SearchService.queue_die_sync(die.id)
-    SearchService.queue_die_broadcast(die.die_id, 'save')
+    SearchService.queue_die_broadcast(die.die_id, DIE_SAVE_ACTION)
 
 
 @receiver(post_save, sender=Die)

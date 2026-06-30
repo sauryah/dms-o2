@@ -2,6 +2,7 @@ import logging
 from celery import shared_task
 from celery.signals import task_failure, task_success
 from celery.utils.log import get_task_logger
+from dies.contracts import BACKUP_RESTORE_ACTION, BACKUP_UPDATE_EVENT
 from search.meili import client as meili_client, INDEX_NAME
 from dies.models import Die
 
@@ -209,7 +210,7 @@ def rebuild_search_index_task(self, filename=None):
             if filename:
                 try:
                     from dms.events import broadcast_event
-                    broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
+                    broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_RESTORE_ACTION, 'filename': filename})
                 except Exception as e:
                     logger.error(f"Failed to broadcast restore update: {e}")
             return {'status': 'success'}
@@ -265,7 +266,7 @@ def rebuild_search_index_task(self, filename=None):
         if filename:
             try:
                 from dms.events import broadcast_event
-                broadcast_event('backup_update', {'action': 'restore', 'filename': filename})
+                broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_RESTORE_ACTION, 'filename': filename})
             except Exception as e:
                 logger.error(f"Failed to broadcast restore update event: {e}")
                 
@@ -278,4 +279,3 @@ def rebuild_search_index_task(self, filename=None):
         )
         retry_delay = 30 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=retry_delay)
-

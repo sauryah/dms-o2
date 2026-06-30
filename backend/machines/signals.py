@@ -6,6 +6,14 @@ from dies.models import Die
 from history.models import MachineHistory
 from users.middleware import get_current_user, get_current_ip
 from dms.events import broadcast_event
+from dies.contracts import (
+    MACHINE_DELETE_ACTION,
+    MACHINE_SAVE_ACTION,
+    MACHINE_UPDATE_EVENT,
+    SET_DELETE_ACTION,
+    SET_SAVE_ACTION,
+    SET_UPDATE_EVENT,
+)
 
 @receiver(post_save, sender=Set)
 def sync_set_dies(sender, instance, **kwargs):
@@ -16,7 +24,7 @@ def sync_set_dies(sender, instance, **kwargs):
             from search.tasks import sync_dies_batch_task
             sync_dies_batch_task.delay(die_ids)
     transaction.on_commit(resync)
-    transaction.on_commit(lambda: broadcast_event('set_update', {'id': instance.id, 'action': 'save'}))
+    transaction.on_commit(lambda: broadcast_event(SET_UPDATE_EVENT, {'id': instance.id, 'action': SET_SAVE_ACTION}))
 
 @receiver(post_save, sender=Machine)
 def sync_machine_dies(sender, instance, **kwargs):
@@ -27,7 +35,7 @@ def sync_machine_dies(sender, instance, **kwargs):
             from search.tasks import sync_dies_batch_task
             sync_dies_batch_task.delay(die_ids)
     transaction.on_commit(resync)
-    transaction.on_commit(lambda: broadcast_event('machine_update', {'id': instance.id, 'action': 'save'}))
+    transaction.on_commit(lambda: broadcast_event(MACHINE_UPDATE_EVENT, {'id': instance.id, 'action': MACHINE_SAVE_ACTION}))
 
 @receiver(pre_delete, sender=Set)
 def handle_set_deletion(sender, instance, **kwargs):
@@ -39,11 +47,11 @@ def handle_set_deletion(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=Set)
 def delete_set_post_delete(sender, instance, **kwargs):
-    transaction.on_commit(lambda: broadcast_event('set_update', {'id': instance.id, 'action': 'delete'}))
+    transaction.on_commit(lambda: broadcast_event(SET_UPDATE_EVENT, {'id': instance.id, 'action': SET_DELETE_ACTION}))
 
 @receiver(post_delete, sender=Machine)
 def delete_machine_post_delete(sender, instance, **kwargs):
-    transaction.on_commit(lambda: broadcast_event('machine_update', {'id': instance.id, 'action': 'delete'}))
+    transaction.on_commit(lambda: broadcast_event(MACHINE_UPDATE_EVENT, {'id': instance.id, 'action': MACHINE_DELETE_ACTION}))
 
 
 # --- MachineHistory Logging Signals ---
