@@ -960,6 +960,70 @@ paths:
                 items:
                   $ref: '#/components/schemas/AuditDieHistory'
           description: ''
+  /api/history/machines/:
+    get:
+      operationId: api_history_machines_list
+      description: Retrieve paginated history list of changes for machines, sets,
+        and categories.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+        description: Filter by Action (CREATED/UPDATED/DELETED)
+      - in: query
+        name: entity_name
+        schema:
+          type: string
+        description: Filter by Entity Name
+      - in: query
+        name: entity_type
+        schema:
+          type: string
+        description: Filter by Entity Type (MACHINE/SET/CATEGORY)
+      - in: query
+        name: field
+        schema:
+          type: string
+        description: Filter by field name
+      - in: query
+        name: from
+        schema:
+          type: string
+        description: Start date (YYYY-MM-DD)
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Items per page
+      - in: query
+        name: to
+        schema:
+          type: string
+        description: End date (YYYY-MM-DD)
+      - in: query
+        name: user
+        schema:
+          type: string
+        description: Filter by Username
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditMachineHistory'
+          description: ''
   /api/import/:
     post:
       operationId: api_import_create
@@ -1913,18 +1977,6 @@ paths:
           description: ''
 components:
   schemas:
-    ActionEnum:
-      enum:
-      - LOGIN
-      - LOGOUT
-      - FAILED_LOGIN
-      - SESSION_EXPIRED
-      type: string
-      description: |-
-        * `LOGIN` - Login
-        * `LOGOUT` - Logout
-        * `FAILED_LOGIN` - Failed Login
-        * `SESSION_EXPIRED` - Session Expired
     AuditDieHistory:
       type: object
       properties:
@@ -1968,6 +2020,65 @@ components:
       - new_value
       - old_value
       - timestamp
+    AuditMachineHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        entity_type:
+          $ref: '#/components/schemas/EntityTypeEnum'
+        entity_id:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        entity_name:
+          type: string
+          maxLength: 100
+        action:
+          $ref: '#/components/schemas/AuditMachineHistoryActionEnum'
+        field_name:
+          type: string
+          nullable: true
+          maxLength: 50
+        old_value:
+          type: string
+          nullable: true
+        new_value:
+          type: string
+          nullable: true
+        changed_by:
+          type: integer
+          nullable: true
+        changed_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+      required:
+      - action
+      - changed_by_username
+      - entity_id
+      - entity_name
+      - entity_type
+      - id
+      - timestamp
+    AuditMachineHistoryActionEnum:
+      enum:
+      - CREATED
+      - UPDATED
+      - DELETED
+      type: string
+      description: |-
+        * `CREATED` - Created
+        * `UPDATED` - Updated
+        * `DELETED` - Deleted
     Backup:
       type: object
       properties:
@@ -2223,6 +2334,16 @@ components:
       description: |-
         * `ROUND` - Round
         * `FLAT` - Flat
+    EntityTypeEnum:
+      enum:
+      - MACHINE
+      - SET
+      - CATEGORY
+      type: string
+      description: |-
+        * `MACHINE` - Machine
+        * `SET` - Set
+        * `CATEGORY` - Category
     HealthCheckErrorResponse:
       type: object
       properties:
@@ -2720,7 +2841,7 @@ components:
           type: string
           maxLength: 150
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/UserActivityLogActionEnum'
         timestamp:
           type: string
           format: date-time
@@ -2736,6 +2857,18 @@ components:
       - id
       - timestamp
       - username
+    UserActivityLogActionEnum:
+      enum:
+      - LOGIN
+      - LOGOUT
+      - FAILED_LOGIN
+      - SESSION_EXPIRED
+      type: string
+      description: |-
+        * `LOGIN` - Login
+        * `LOGOUT` - Logout
+        * `FAILED_LOGIN` - Failed Login
+        * `SESSION_EXPIRED` - Session Expired
     UserSession:
       type: object
       properties:
