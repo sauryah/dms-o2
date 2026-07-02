@@ -5,6 +5,48 @@ info:
   description: DMS Django REST API for dies, machines, users, backups, and real-time
     events.
 paths:
+  /api/activity-logs/:
+    get:
+      operationId: api_activity_logs_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserActivityLogList'
+          description: ''
+  /api/activity-logs/{id}/:
+    get:
+      operationId: api_activity_logs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user activity log.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActivityLog'
+          description: ''
   /api/auth/change-password/:
     post:
       operationId: api_auth_change_password_create
@@ -74,6 +116,16 @@ paths:
           description: ''
         '401':
           description: Invalid credentials or inactive account
+  /api/auth/logout/:
+    post:
+      operationId: api_auth_logout_create
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
   /api/auth/me/:
     get:
       operationId: api_auth_me_retrieve
@@ -1803,6 +1855,18 @@ paths:
           description: ''
 components:
   schemas:
+    ActionEnum:
+      enum:
+      - LOGIN
+      - LOGOUT
+      - FAILED_LOGIN
+      - SESSION_EXPIRED
+      type: string
+      description: |-
+        * `LOGIN` - Login
+        * `LOGOUT` - Logout
+        * `FAILED_LOGIN` - Failed Login
+        * `SESSION_EXPIRED` - Session Expired
     AuditDieHistory:
       type: object
       properties:
@@ -2263,6 +2327,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DieList'
+    PaginatedUserActivityLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserActivityLog'
     PatchedDieCreate:
       type: object
       properties:
@@ -2538,6 +2625,35 @@ components:
           writeOnly: true
       required:
       - id
+      - username
+    UserActivityLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          nullable: true
+        username:
+          type: string
+          maxLength: 150
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+        device:
+          type: string
+          maxLength: 255
+      required:
+      - action
+      - id
+      - timestamp
       - username
     VerifyTokenResponse:
       type: object
