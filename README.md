@@ -1,6 +1,6 @@
 # DMS
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](backend)
 [![Go Version](https://img.shields.io/badge/go-1.21-blue.svg)](go-api)
 [![React Version](https://img.shields.io/badge/react-18-blue.svg)](frontend)
@@ -271,13 +271,13 @@ Contributions are welcome! Please review [CONTRIBUTING.md](file:///home/sahil/Pr
 
 ## 📄 License
 
-DMS is released under the open-source [MIT License](file:///home/sahil/Projects/dms-o2/LICENSE). See the license file for terms.
+DMS is proprietary software. All rights reserved. Refer to the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for terms.
 
 ---
 
 ## 👥 Credits
 
-Developed for industrial manufacturing shop floors by the DMS open-source community.
+Developed for industrial manufacturing shop floors by Sahil Pradhan.
 
 ---
 
