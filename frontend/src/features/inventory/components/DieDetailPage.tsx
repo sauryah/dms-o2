@@ -394,7 +394,7 @@ export function DieDetailPage() {
     const points: any[] = [];
 
     if (isRound) {
-      let currentVal = parseFloat(die.original_size || '0');
+      let currentVal = parseFloat(die.punched_size || '0');
       const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
       points.push({
         timestamp: new Date(creationDate).getTime(),
@@ -426,8 +426,8 @@ export function DieDetailPage() {
         });
       }
     } else {
-      let currentW = parseFloat(die.original_width || '0');
-      let currentT = parseFloat(die.original_thickness || '0');
+      let currentW = parseFloat(die.punched_width || '0');
+      let currentT = parseFloat(die.punched_thickness || '0');
       const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
       points.push({
         timestamp: new Date(creationDate).getTime(),
@@ -805,15 +805,15 @@ export function DieDetailPage() {
                     <>
                       <div 
                         className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'original_size' 
+                          highlightedDim === 'punched_size' 
                             ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
                             : 'border-transparent'
                         }`}
-                        onMouseEnter={() => setHighlightedDim('original_size')}
+                        onMouseEnter={() => setHighlightedDim('punched_size')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'original_size' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Original Size</span>
-                        <span className={`font-semibold ${highlightedDim === 'original_size' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.original_size} mm</span>
+                        <span className={highlightedDim === 'punched_size' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Punched Size</span>
+                        <span className={`font-semibold ${highlightedDim === 'punched_size' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.punched_size} mm</span>
                       </div>
                       <div 
                         className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -832,15 +832,15 @@ export function DieDetailPage() {
                     <>
                       <div 
                         className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'original_width_thickness' 
+                          highlightedDim === 'punched_width_thickness' 
                             ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
                             : 'border-transparent'
                         }`}
-                        onMouseEnter={() => setHighlightedDim('original_width_thickness')}
+                        onMouseEnter={() => setHighlightedDim('punched_width_thickness')}
                         onMouseLeave={() => setHighlightedDim(null)}
                       >
-                        <span className={highlightedDim === 'original_width_thickness' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Original Size (W×T)</span>
-                        <span className={`font-semibold ${highlightedDim === 'original_width_thickness' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.original_width} × {die.original_thickness} mm</span>
+                        <span className={highlightedDim === 'punched_width_thickness' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Punched Size (W×T)</span>
+                        <span className={`font-semibold ${highlightedDim === 'punched_width_thickness' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.punched_width} × {die.punched_thickness} mm</span>
                       </div>
                       <div 
                         className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
@@ -1011,13 +1011,13 @@ export function DieDetailPage() {
           
           {die.die_type === 'ROUND' ? (
             <>
-              {/* Original Size */}
+              {/* Punched Size */}
               <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
                 <span className="text-slate-500 flex items-center gap-2.5">
                   <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Original Size</span>
+                  <span>Punched Size</span>
                 </span>
-                <span className="font-semibold text-slate-900">{die.original_size} mm</span>
+                <span className="font-semibold text-slate-900">{die.punched_size} mm</span>
               </div>
               {/* Current Size */}
               <div className="flex justify-between items-center py-3 px-4 text-sm">
@@ -1030,13 +1030,13 @@ export function DieDetailPage() {
             </>
           ) : (
             <>
-              {/* Original Size WxT */}
+              {/* Punched Size WxT */}
               <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
                 <span className="text-slate-500 flex items-center gap-2.5">
                   <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Original Size (W×T)</span>
+                  <span>Punched Size (W×T)</span>
                 </span>
-                <span className="font-semibold text-slate-900">{die.original_width} × {die.original_thickness} mm</span>
+                <span className="font-semibold text-slate-900">{die.punched_width} × {die.punched_thickness} mm</span>
               </div>
               {/* Current Size WxT */}
               <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">

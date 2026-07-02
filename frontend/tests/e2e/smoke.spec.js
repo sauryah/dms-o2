@@ -36,7 +36,7 @@ test.describe('DMS E2E Smoke Tests', () => {
           casing: '25x10',
           status: 'AVAILABLE',
           location: 'Rack A - Shelf 3',
-          original_size: 2.5,
+          punched_size: 2.5,
           current_size: 2.5,
         }
       });

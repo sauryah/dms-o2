@@ -15,7 +15,7 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     remarks: z.string().optional().default(''),
     
     // ROUND die specific fields
-    original_size: z.coerce.number().positive('Original size must be positive'),
+    punched_size: z.coerce.number().positive('Punched size must be positive'),
     current_size: z.coerce.number().positive('Current size must be positive'),
   }),
   z.object({
@@ -30,9 +30,9 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     remarks: z.string().optional().default(''),
     
     // FLAT die specific fields
-    original_width: z.coerce.number().positive('Original width must be positive'),
+    punched_width: z.coerce.number().positive('Punched width must be positive'),
     current_width: z.coerce.number().positive('Current width must be positive'),
-    original_thickness: z.coerce.number().positive('Original thickness must be positive'),
+    punched_thickness: z.coerce.number().positive('Punched thickness must be positive'),
     current_thickness: z.coerce.number().positive('Current thickness must be positive'),
     radius: z.coerce.number().positive('Radius must be positive'),
   })

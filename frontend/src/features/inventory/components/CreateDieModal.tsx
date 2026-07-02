@@ -157,12 +157,12 @@ export function CreateDieModal({
     }
 
     if (dieType === 'ROUND') {
-      payload.original_size = originalSize
+      payload.punched_size = originalSize
       payload.current_size = currentSize
     } else {
-      payload.original_width = originalWidth
+      payload.punched_width = originalWidth
       payload.current_width = currentWidth
-      payload.original_thickness = originalThickness
+      payload.punched_thickness = originalThickness
       payload.current_thickness = currentThickness
       payload.radius = radius
     }
@@ -394,25 +394,25 @@ export function CreateDieModal({
             {dieType === 'ROUND' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
                 <div>
-                  <label htmlFor="form-round-original" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Original Diameter <span className="text-rose-500">*</span>
+                  <label htmlFor="form-round-punched" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Punched Diameter <span className="text-rose-500">*</span>
                   </label>
                   <input 
-                    id="form-round-original"
+                    id="form-round-punched"
                     type="number" 
                     step="0.001"
                     required
                     disabled={isSubmitting}
                     value={originalSize}
-                    onChange={(e) => handleFieldChange('original_size', e.target.value, setOriginalSize)}
+                    onChange={(e) => handleFieldChange('punched_size', e.target.value, setOriginalSize)}
                     className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
-                      getFieldError('original_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                      getFieldError('punched_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                     }`}
                     placeholder="e.g. 2.500"
-                    aria-invalid={!!getFieldError('original_size')}
+                    aria-invalid={!!getFieldError('punched_size')}
                   />
-                  {getFieldError('original_size') && (
-                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_size')}</p>
+                  {getFieldError('punched_size') && (
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_size')}</p>
                   )}
                 </div>
                 <div>
@@ -441,25 +441,25 @@ export function CreateDieModal({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                 <div>
-                  <label htmlFor="form-flat-orig-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Original Width <span className="text-rose-500">*</span>
+                  <label htmlFor="form-flat-punched-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Punched Width <span className="text-rose-500">*</span>
                   </label>
                   <input 
-                    id="form-flat-orig-width"
+                    id="form-flat-punched-width"
                     type="number" 
                     step="0.001"
                     required
                     disabled={isSubmitting}
                     value={originalWidth}
-                    onChange={(e) => handleFieldChange('original_width', e.target.value, setOriginalWidth)}
+                    onChange={(e) => handleFieldChange('punched_width', e.target.value, setOriginalWidth)}
                     className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
-                      getFieldError('original_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                      getFieldError('punched_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                     }`}
                     placeholder="e.g. 10.000"
-                    aria-invalid={!!getFieldError('original_width')}
+                    aria-invalid={!!getFieldError('punched_width')}
                   />
-                  {getFieldError('original_width') && (
-                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_width')}</p>
+                  {getFieldError('punched_width') && (
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_width')}</p>
                   )}
                 </div>
                 
@@ -487,25 +487,25 @@ export function CreateDieModal({
                 </div>
 
                 <div>
-                  <label htmlFor="form-flat-orig-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Original Thickness <span className="text-rose-500">*</span>
+                  <label htmlFor="form-flat-punched-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Punched Thickness <span className="text-rose-500">*</span>
                   </label>
                   <input 
-                    id="form-flat-orig-thick"
+                    id="form-flat-punched-thick"
                     type="number" 
                     step="0.001"
                     required
                     disabled={isSubmitting}
                     value={originalThickness}
-                    onChange={(e) => handleFieldChange('original_thickness', e.target.value, setOriginalThickness)}
+                    onChange={(e) => handleFieldChange('punched_thickness', e.target.value, setOriginalThickness)}
                     className={`w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
-                      getFieldError('original_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
+                      getFieldError('punched_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                     }`}
                     placeholder="e.g. 3.000"
-                    aria-invalid={!!getFieldError('original_thickness')}
+                    aria-invalid={!!getFieldError('punched_thickness')}
                   />
-                  {getFieldError('original_thickness') && (
-                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('original_thickness')}</p>
+                  {getFieldError('punched_thickness') && (
+                    <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_thickness')}</p>
                   )}
                 </div>
 
