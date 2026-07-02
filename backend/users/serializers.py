@@ -105,3 +105,10 @@ class BackupFilenameSerializer(serializers.Serializer):
 
 class BackupUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class UserActivityLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        from users.models import UserActivityLog
+        model = UserActivityLog
+        fields = ['id', 'user', 'username', 'action', 'timestamp', 'ip_address', 'device']

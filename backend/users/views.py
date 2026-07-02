@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken
-from users.models import User, UserSession
-from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer, ChangePasswordSerializer
+from users.models import User, UserSession, UserActivityLog
+from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer, ChangePasswordSerializer, UserActivityLogSerializer
 from users.permissions import IsRootOnly
 from dms.events import broadcast_event
 from users.services.backup_service import BackupService
@@ -71,6 +71,14 @@ class LoginView(APIView):
             pipe.expire(attempts_key, 300)
             pipe.execute()
 
+            # log failed login
+            UserActivityLog.objects.create(
+                username=username,
+                action='FAILED_LOGIN',
+                ip_address=get_client_ip(request),
+                device=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
+
             attempts = r.get(attempts_key)
             if attempts and int(attempts) >= 5:
                 return Response(
@@ -88,6 +96,15 @@ class LoginView(APIView):
             pipe.incr(attempts_key)
             pipe.expire(attempts_key, 300)
             pipe.execute()
+
+            # log failed login due to inactive account
+            UserActivityLog.objects.create(
+                user=user,
+                username=user.username,
+                action='FAILED_LOGIN',
+                ip_address=get_client_ip(request),
+                device=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
 
             attempts = r.get(attempts_key)
             if attempts and int(attempts) >= 5:
@@ -122,6 +139,15 @@ class LoginView(APIView):
         UserSession.objects.create(
             user=user,
             token_hash=token_hash,
+            ip_address=get_client_ip(request),
+            device=request.META.get('HTTP_USER_AGENT', '')[:255]
+        )
+
+        # Log successful login
+        UserActivityLog.objects.create(
+            user=user,
+            username=user.username,
+            action='LOGIN',
             ip_address=get_client_ip(request),
             device=request.META.get('HTTP_USER_AGENT', '')[:255]
         )
@@ -511,3 +537,56 @@ class VerifyTokenView(APIView):
     @extend_schema(exclude=True)
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(description="Logged out successfully")},
+    )
+    def post(self, request, *args, **kwargs):
+        import hashlib
+        from django.core.cache import cache
+        from django.conf import settings
+        
+        user = request.user
+        header = request.META.get('HTTP_AUTHORIZATION')
+        if header and header.startswith('Bearer '):
+            token_str = header.split(' ')[1]
+            token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+            
+            # Delete UserSession
+            UserSession.objects.filter(user=user, token_hash=token_hash).delete()
+            # Invalidate Cache
+            cache_key = f"user_session:{user.id}:{token_hash}"
+            cache.delete(cache_key)
+
+        # Log action
+        UserActivityLog.objects.create(
+            user=user,
+            username=user.username,
+            action='LOGOUT',
+            ip_address=get_client_ip(request),
+            device=request.META.get('HTTP_USER_AGENT', '')[:255]
+        )
+
+        return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+
+
+class UserActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = UserActivityLog.objects.all()
+    serializer_class = UserActivityLogSerializer
+    permission_classes = [IsRootOnly]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        username = self.request.query_params.get('username')
+        action = self.request.query_params.get('action')
+        if username:
+            queryset = queryset.filter(username__icontains=username)
+        if action:
+            queryset = queryset.filter(action=action)
+        return queryset
+

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from users.models import User, UserSession
+from users.models import User, UserSession, UserActivityLog
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -18,3 +18,10 @@ class UserSessionAdmin(admin.ModelAdmin):
     list_display = ['user', 'created_at', 'last_seen', 'ip_address', 'device']
     search_fields = ['user__username', 'ip_address', 'device']
     readonly_fields = ['created_at', 'last_seen']
+
+@admin.register(UserActivityLog)
+class UserActivityLogAdmin(admin.ModelAdmin):
+    list_display = ['username', 'action', 'timestamp', 'ip_address', 'device']
+    search_fields = ['username', 'ip_address', 'device']
+    list_filter = ['action', 'timestamp']
+    readonly_fields = ['timestamp']

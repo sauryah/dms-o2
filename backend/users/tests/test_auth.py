@@ -429,3 +429,83 @@ class AuthTests(APITestCase):
             response_c_works = self.client.get(self.dies_list_url)
             self.assertEqual(response_c_works.status_code, status.HTTP_200_OK)
 
+
+from users.models import UserActivityLog
+
+class UserActivityLogTests(APITestCase):
+    def setUp(self):
+        self.root_user = User.objects.create_user(
+            username='root_test_audit',
+            password='root_password_123',
+            role='ROOT'
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular_test_audit',
+            password='regular_password_123',
+            role='REGULAR'
+        )
+        self.login_url = reverse('login')
+        self.logout_url = reverse('logout')
+        self.activity_logs_url = '/api/activity-logs/'
+        self.dies_list_url = reverse('die-list')
+
+    def test_login_logout_creates_activity_logs(self):
+        # 1. Login success
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'regular_password_123'
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        
+        # Verify LOGIN log was created
+        log = UserActivityLog.objects.filter(username='regular_test_audit', action='LOGIN').first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.user, self.regular_user)
+
+        # 2. Logout success
+        token = res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        res_logout = self.client.post(self.logout_url)
+        self.assertEqual(res_logout.status_code, status.HTTP_200_OK)
+
+        # Verify LOGOUT log was created
+        logout_log = UserActivityLog.objects.filter(username='regular_test_audit', action='LOGOUT').first()
+        self.assertIsNotNone(logout_log)
+
+    def test_failed_login_creates_activity_logs(self):
+        # Failed login due to bad password
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'wrong_password'
+        })
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Verify FAILED_LOGIN log was created
+        log = UserActivityLog.objects.filter(username='regular_test_audit', action='FAILED_LOGIN').first()
+        self.assertIsNotNone(log)
+
+    def test_activity_logs_permissions(self):
+        # Regular user login
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'regular_password_123'
+        })
+        token = res.data['token']
+
+        # 1. Regular user gets 403 Forbidden on activity logs endpoint
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        res_logs = self.client.get(self.activity_logs_url)
+        self.assertEqual(res_logs.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. Root user gets 200 OK
+        res_root = self.client.post(self.login_url, {
+            'username': 'root_test_audit',
+            'password': 'root_password_123'
+        })
+        root_token = res_root.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {root_token}')
+        
+        res_logs_root = self.client.get(self.activity_logs_url)
+        self.assertEqual(res_logs_root.status_code, status.HTTP_200_OK)
+
+
