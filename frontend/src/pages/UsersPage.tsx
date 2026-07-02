@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserManager } from './users/UserManager'
 import { BackupManager } from './users/BackupManager'
+import { SessionAuditLogs } from './users/SessionAuditLogs'
 
 export function UsersPage() {
   const { role } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('users') // 'users' or 'backups'
+  const [activeTab, setActiveTab] = useState('users') // 'users', 'backups', or 'logs'
 
   useEffect(() => {
     if (role !== 'ROOT') {
@@ -27,9 +28,9 @@ export function UsersPage() {
             {activeTab === 'users' ? 'User Administration' : 'System Backups'}
           </h1>
           <p className="text-slate-400 mt-1">
-            {activeTab === 'users' 
-              ? 'Manage administrative credentials, system roles, and account statuses.' 
-              : 'Create, manage, and restore database backup archives (PostgreSQL custom format).'}
+            {activeTab === 'users' && 'Manage administrative credentials, system roles, and account statuses.'}
+            {activeTab === 'backups' && 'Create, manage, and restore database backup archives (PostgreSQL custom format).'}
+            {activeTab === 'logs' && 'View real-time login, logout, failed attempt, and session expiration audit logs.'}
           </p>
         </div>
       </div>
@@ -52,10 +53,19 @@ export function UsersPage() {
         >
           Database Backups
         </button>
+        <button 
+          onClick={() => setActiveTab('logs')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
+            activeTab === 'logs' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Session Logs
+        </button>
       </div>
 
       {activeTab === 'users' && <UserManager />}
       {activeTab === 'backups' && <BackupManager />}
+      {activeTab === 'logs' && <SessionAuditLogs />}
     </div>
   )
 }
