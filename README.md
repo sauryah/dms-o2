@@ -305,3 +305,4 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **Port conflict on 80/443** | Another server (Nginx/Apache) is running on the host | Disable host server: `sudo systemctl stop nginx`, or change port bindings in `docker-compose.yml`. |
 | **Write/Compile permission denied** | Root-owned files left in mounting volume | Run cleanup command: `docker compose exec frontend rm -rf dist` and restart. |
 | **401 Unauthorized loops** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
+| **Cannot log in from phone/external device (400 Bad Request)** | Host IP address is not permitted in Django ALLOWED_HOSTS | Add the laptop's network IP address or a wildcard (`*`) to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart the containers with `docker compose down && docker compose up -d`. |
