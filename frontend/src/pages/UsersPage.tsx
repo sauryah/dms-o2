@@ -4,11 +4,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { UserManager } from './users/UserManager'
 import { BackupManager } from './users/BackupManager'
 import { SessionAuditLogs } from './users/SessionAuditLogs'
+import { ActiveSessionsList } from './users/ActiveSessionsList'
 
 export function UsersPage() {
   const { role } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('users') // 'users', 'backups', or 'logs'
+  const [activeTab, setActiveTab] = useState('users') // 'users', 'backups', 'logs', or 'sessions'
 
   useEffect(() => {
     if (role !== 'ROOT') {
@@ -28,11 +29,13 @@ export function UsersPage() {
             {activeTab === 'users' && 'User Administration'}
             {activeTab === 'backups' && 'System Backups'}
             {activeTab === 'logs' && 'Session Audit Logs'}
+            {activeTab === 'sessions' && 'Active Device Sessions'}
           </h1>
           <p className="text-slate-400 mt-1">
             {activeTab === 'users' && 'Manage administrative credentials, system roles, and account statuses.'}
             {activeTab === 'backups' && 'Create, manage, and restore database backup archives (PostgreSQL custom format).'}
             {activeTab === 'logs' && 'View real-time login, logout, failed attempt, and session expiration audit logs.'}
+            {activeTab === 'sessions' && 'Monitor currently logged-in devices and force-logout active sessions.'}
           </p>
         </div>
       </div>
@@ -63,11 +66,20 @@ export function UsersPage() {
         >
           Session Logs
         </button>
+        <button 
+          onClick={() => setActiveTab('sessions')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all ${
+            activeTab === 'sessions' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Active Sessions
+        </button>
       </div>
 
       {activeTab === 'users' && <UserManager />}
       {activeTab === 'backups' && <BackupManager />}
       {activeTab === 'logs' && <SessionAuditLogs />}
+      {activeTab === 'sessions' && <ActiveSessionsList />}
     </div>
   )
 }
