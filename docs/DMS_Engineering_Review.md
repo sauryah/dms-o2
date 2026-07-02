@@ -383,7 +383,7 @@ Ranked by impact potential given this product's context:
 Use `DieHistory` time-series data (dimension values over time) to train a regression model predicting when each die will hit its minimum tolerance. Output: a "Predicted Days to Maintenance" column in the inventory table. This is the feature most likely to create genuine business value.
 
 ### 2. Smart Import Validation (Impact: High)
-Use an LLM to interpret ambiguous import rows: column header aliasing ("Size" → `original_size`), unit detection ("5mm" → `5.000`), and set name fuzzy matching ("Set A1" → "Set Alpha-1"). Reduce import errors without requiring perfectly formatted templates.
+Use an LLM to interpret ambiguous import rows: column header aliasing ("Size" → `punched_size`), unit detection ("5mm" → `5.000`), and set name fuzzy matching ("Set A1" → "Set Alpha-1"). Reduce import errors without requiring perfectly formatted templates.
 
 ### 3. Natural Language Search (Impact: High)
 Allow operators to type queries like "round dies over 10mm in Rack B that need polishing" and translate to structured API filter parameters. Particularly valuable for non-technical floor workers.

@@ -5,6 +5,32 @@ info:
   description: DMS Django REST API for dies, machines, users, backups, and real-time
     events.
 paths:
+  /api/auth/change-password/:
+    post:
+      operationId: api_auth_change_password_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordResponse'
+          description: ''
   /api/auth/keep-alive/:
     post:
       operationId: api_auth_keep_alive_create
@@ -48,6 +74,16 @@ paths:
           description: ''
         '401':
           description: Invalid credentials or inactive account
+  /api/auth/me/:
+    get:
+      operationId: api_auth_me_retrieve
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/auth/sse-ticket/:
     post:
       operationId: api_auth_sse_ticket_create
@@ -824,8 +860,8 @@ paths:
         Upload a spreadsheet file to create multiple dies at once.
         Supports CSV and XLSX formats with columns:
         - die_id, die_type (ROUND|FLAT), casing, status, location, current_set
-        - For ROUND: original_size, current_size
-        - For FLAT: original_width, current_width, original_thickness, current_thickness, radius
+        - For ROUND: punched_size, current_size
+        - For FLAT: punched_width, current_width, punched_thickness, current_thickness, radius
 
         **Request:**
         - Method: POST
@@ -1852,6 +1888,26 @@ components:
       - created_at
       - filename
       - size_kb
+    ChangePassword:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+    ChangePasswordResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        token:
+          type: string
+      required:
+      - detail
+      - token
     DieCreate:
       type: object
       properties:
@@ -1881,7 +1937,7 @@ components:
           maximum: 32767
           minimum: 0
           nullable: true
-        original_size:
+        punched_size:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
@@ -1889,7 +1945,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
-        original_width:
+        punched_width:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
@@ -1897,7 +1953,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
-        original_thickness:
+        punched_thickness:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
@@ -2236,7 +2292,7 @@ components:
           maximum: 32767
           minimum: 0
           nullable: true
-        original_size:
+        punched_size:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
@@ -2244,7 +2300,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
-        original_width:
+        punched_width:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
@@ -2252,7 +2308,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
-        original_thickness:
+        punched_thickness:
           type: string
           format: decimal
           pattern: ^-?\d{0,4}(?:\.\d{0,3})?$
