@@ -3,11 +3,11 @@ import React, { useState } from 'react'
 interface DieData {
   die_type: string
   die_id: string
-  original_size?: string
+  punched_size?: string
   current_size?: string
-  original_width?: string
+  punched_width?: string
   current_width?: string
-  original_thickness?: string
+  punched_thickness?: string
   current_thickness?: string
   radius?: string
   casing?: string
@@ -78,21 +78,21 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
           <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
             <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
             <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
-            {die.original_size && (
+            {die.punched_size && (
               <circle 
                 cx="100" 
                 cy="100" 
                 r="75" 
                 fill="none" 
                 className={`blueprint-outline-secondary transition-all duration-300 ${
-                  activeHighlight === 'original_size' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
+                  activeHighlight === 'punched_size' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
                 }`} 
               />
             )}
             <circle 
               cx="100" 
               cy="100" 
-              r={75 * (parseFloat(die.current_size || '0') / parseFloat(die.original_size || die.current_size || '1'))} 
+              r={75 * (parseFloat(die.current_size || '0') / parseFloat(die.punched_size || die.current_size || '1'))} 
               fill="rgba(59, 130, 246, 0.06)" 
               className="blueprint-outline animate-dash" 
             />
@@ -133,39 +133,39 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                 Ø {die.current_size}
               </text>
             </g>
-            {die.original_size && die.original_size !== die.current_size && (
+            {die.punched_size && die.punched_size !== die.current_size && (
               <g
-                className={`interactive-dim-group${activeHighlight === 'original_size' ? ' highlighted' : ''}`}
+                className={`interactive-dim-group${activeHighlight === 'punched_size' ? ' highlighted' : ''}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => handleDimClick(
-                  "Original Size",
-                  "The brand-new factory dimension of the die before any operational wear (mm).",
-                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                  "Punched Size",
+                  "The physical dimension marked (punched) on the die currently (mm).",
+                  "Comparing punched vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
                 )}
                 onMouseEnter={() => {
                   handleDimMouseEnter(
-                    "Original Size",
-                    "The brand-new factory dimension of the die before any operational wear (mm).",
-                    "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                    "Punched Size",
+                    "The physical dimension marked (punched) on the die currently (mm).",
+                    "Comparing punched vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
                   )
-                  onHoverDim?.('original_size')
+                  onHoverDim?.('punched_size')
                 }}
                 onMouseLeave={() => {
                   handleDimMouseLeave()
                   onHoverDim?.(null)
                 }}
                 onKeyDown={(e) => handleDimKeyDown(e,
-                  "Original Size",
-                  "The brand-new factory dimension of the die before any operational wear (mm).",
-                  "Comparing original vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
+                  "Punched Size",
+                  "The physical dimension marked (punched) on the die currently (mm).",
+                  "Comparing punched vs current size calculates the cumulative wear rate to forecast tool retirement/scrapping."
                 )}
-                aria-label={`Original diameter: ${die.original_size || '—'}mm`}
+                aria-label={`Punched diameter: ${die.punched_size || '—'}mm`}
               >
                 <line x1="100" y1="25" x2="145" y2="25" className="blueprint-dim-line" />
                 <circle cx="100" cy="25" r="2" fill="#10b981" />
                 <text x="150" y="28" className="blueprint-dim-text" textAnchor="start">
-                  Orig: Ø {die.original_size}
+                  Punched: Ø {die.punched_size}
                 </text>
               </g>
             )}
@@ -174,8 +174,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
           (() => {
             const width = parseFloat(die.current_width || '0')
             const thickness = parseFloat(die.current_thickness || '0')
-            const origWidth = parseFloat(die.original_width || die.current_width || '1')
-            const origThick = parseFloat(die.original_thickness || die.current_thickness || '1')
+            const origWidth = parseFloat(die.punched_width || die.current_width || '1')
+            const origThick = parseFloat(die.punched_thickness || die.current_thickness || '1')
             const radius = parseFloat(die.radius || '0')
 
             const maxVal = Math.max(origWidth, origThick)
@@ -195,7 +195,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
               <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
                 <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
                 <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
-                {die.original_width && (
+                {die.punched_width && (
                   <rect 
                     x={ox} 
                     y={oy} 
@@ -205,7 +205,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                     ry={r} 
                     fill="none" 
                     className={`blueprint-outline-secondary transition-all duration-300 ${
-                      activeHighlight === 'original_width_thickness' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
+                      activeHighlight === 'punched_width_thickness' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
                     }`} 
                   />
                 )}

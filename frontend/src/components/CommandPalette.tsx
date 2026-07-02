@@ -135,7 +135,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       const targetDieId = statusMatch[1].toUpperCase()
       const targetStatus = statusMatch[2].toUpperCase()
       
-      if (validStatuses.includes(targetStatus)) {
+      if (validStatuses.includes(targetStatus as any)) {
         list.push({
           id: `status-direct-${targetDieId}-${targetStatus}`,
           title: `Set die ${targetDieId} to ${targetStatus}`,

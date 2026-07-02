@@ -14,13 +14,13 @@ export interface Die {
   updated_at: string;
   
   // Round specific properties
-  original_size?: string | number;
+  punched_size?: string | number;
   current_size?: string | number;
   
   // Flat specific properties
-  original_width?: string | number;
+  punched_width?: string | number;
   current_width?: string | number;
-  original_thickness?: string | number;
+  punched_thickness?: string | number;
   current_thickness?: string | number;
   radius?: string | number;
 }

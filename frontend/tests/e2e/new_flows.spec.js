@@ -35,7 +35,7 @@ test.describe('DMS E2E New Flows Tests', () => {
           casing: '25x10',
           status: 'AVAILABLE',
           location: '', // empty -> unassigned
-          original_size: 2.5,
+          punched_size: 2.5,
           current_size: 2.5,
         }
       });
@@ -61,7 +61,7 @@ test.describe('DMS E2E New Flows Tests', () => {
     await expect(page.locator('h1')).toContainText('Bulk Import Dies');
 
     // Create a temporary CSV content and upload it
-    const csvContent = "die_id,die_type,casing,status,location,remarks,original_size,current_size\n" +
+    const csvContent = "die_id,die_type,casing,status,location,remarks,punched_size,current_size\n" +
                        "R-IMPORT-FLOW-1,ROUND,casing1,AVAILABLE,Rack A,,2.5,2.5\n";
 
     const buffer = Buffer.from(csvContent, 'utf-8');
