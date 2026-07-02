@@ -61,6 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    if (token) {
+      fetch('/api/auth/logout/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }).catch(err => console.error('Failed to notify backend logout:', err))
+    }
     setToken(null)
     setRole(null)
     setUsername(null)
