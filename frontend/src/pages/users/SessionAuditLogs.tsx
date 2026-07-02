@@ -19,7 +19,7 @@ export function SessionAuditLogs() {
       if (actionFilter) {
         url += `&action=${encodeURIComponent(actionFilter)}`
       }
-      return request(url)
+      return request(url, { keepMetadata: true })
     }
   })
 
