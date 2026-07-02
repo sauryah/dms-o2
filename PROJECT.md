@@ -79,12 +79,12 @@ Dies are modeled under a unified base model (`Die`) with type-specific attribute
 *   `remarks` (Text, notes or maintenance reports)
 
 ### Round Die Attributes
-*   `original_size` (Decimal, 3 decimal places, mm format)
+*   `punched_size` (Decimal, 3 decimal places, mm format)
 *   `current_size` (Decimal, 3 decimal places, mm format)
 
 ### Flat Die Attributes
-*   `original_width` & `current_width` (Decimal, 3 decimal places, mm format)
-*   `original_thickness` & `current_thickness` (Decimal, 3 decimal places, mm format)
+*   `punched_width` & `current_width` (Decimal, 3 decimal places, mm format)
+*   `punched_thickness` & `current_thickness` (Decimal, 3 decimal places, mm format)
 *   `radius` (Decimal, 3 decimal places, corner fillet mm format)
 
 ---
