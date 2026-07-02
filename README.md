@@ -1,6 +1,6 @@
 # DMS
 
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](backend)
 [![Go Version](https://img.shields.io/badge/go-1.21-blue.svg)](go-api)
 [![React Version](https://img.shields.io/badge/react-18-blue.svg)](frontend)
@@ -269,9 +269,12 @@ Contributions are welcome! Please review [CONTRIBUTING.md](file:///home/sahil/Pr
 
 ---
 
-## 📄 License
+## 📄 License & Commercial Licensing
 
-DMS is proprietary software. All rights reserved. Refer to the [LICENSE](file:///home/sahil/Projects/dms-o2/LICENSE) file for terms.
+DMS is dual-licensed under the following terms:
+
+1. **Open Source**: DMS is licensed under the strong copyleft [GNU AGPL v3](LICENSE) license. Anyone can use, modify, and distribute this software for free, provided that all modifications and backend source codes are also made open source under the AGPL (even when run as a network service).
+2. **Commercial License**: If you wish to use DMS in a commercial/proprietary environment without being bound by the copyleft obligations of the AGPL (e.g., keeping your custom modifications or factory configurations private), please contact the author to acquire a commercial license.
 
 ---
 
