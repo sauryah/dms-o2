@@ -5,7 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView
-from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
+from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
 from history.views import DieHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
@@ -13,6 +13,7 @@ router = DefaultRouter()
 router.register('dies', DieViewSet, basename='die')
 router.register('users', UserViewSet, basename='user')
 router.register('activity-logs', UserActivityLogViewSet, basename='user-activity-log')
+router.register('active-sessions', UserSessionViewSet, basename='active-session')
 router.register('categories', MachineCategoryViewSet, basename='category')
 router.register('machines', MachineViewSet, basename='machine')
 router.register('sets', SetViewSet, basename='set')

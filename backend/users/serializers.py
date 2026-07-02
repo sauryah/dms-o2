@@ -112,3 +112,14 @@ class UserActivityLogSerializer(serializers.ModelSerializer):
         from users.models import UserActivityLog
         model = UserActivityLog
         fields = ['id', 'user', 'username', 'action', 'timestamp', 'ip_address', 'device']
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    role = serializers.CharField(source='user.role', read_only=True)
+
+    class Meta:
+        from users.models import UserSession
+        model = UserSession
+        fields = ['id', 'username', 'role', 'created_at', 'last_seen', 'ip_address', 'device']
+

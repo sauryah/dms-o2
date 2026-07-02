@@ -590,3 +590,33 @@ class UserActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(action=action)
         return queryset
 
+
+class UserSessionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsRootOnly]
+    http_method_names = ['get', 'delete']
+
+    def get_queryset(self):
+        from users.models import UserSession
+        return UserSession.objects.all().select_related('user').order_by('-last_seen')
+
+    def get_serializer_class(self):
+        from users.serializers import UserSessionSerializer
+        return UserSessionSerializer
+
+    def perform_destroy(self, instance):
+        from django.core.cache import cache
+        cache_key = f"user_session_{instance.token_hash}"
+        cache.delete(cache_key)
+        
+        from users.models import UserActivityLog
+        UserActivityLog.objects.create(
+            user=instance.user,
+            username=instance.user.username,
+            action='SESSION_EXPIRED',
+            ip_address=instance.ip_address,
+            device=f"Forced terminate by admin ({self.request.user.username})"
+        )
+        
+        instance.delete()
+
+

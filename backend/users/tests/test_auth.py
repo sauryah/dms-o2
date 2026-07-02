@@ -508,4 +508,46 @@ class UserActivityLogTests(APITestCase):
         res_logs_root = self.client.get(self.activity_logs_url)
         self.assertEqual(res_logs_root.status_code, status.HTTP_200_OK)
 
+    def test_active_sessions_list_and_termination(self):
+        # 1. Login regular user to create a session
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'regular_password_123'
+        })
+        token = res.data['token']
+        
+        # Get active session from DB
+        from users.models import UserSession
+        session = UserSession.objects.filter(user=self.regular_user).first()
+        self.assertIsNotNone(session)
+
+        # 2. Login root user
+        res_root = self.client.post(self.login_url, {
+            'username': 'root_test_audit',
+            'password': 'root_password_123'
+        })
+        root_token = res_root.data['token']
+
+        # 3. Retrieve active sessions list as ROOT
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {root_token}')
+        res_sessions = self.client.get('/api/active-sessions/')
+        self.assertEqual(res_sessions.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(res_sessions.data) >= 2) # regular user and root user sessions
+
+        # 4. Revoke the regular user's session
+        res_delete = self.client.delete(f'/api/active-sessions/{session.id}/')
+        self.assertEqual(res_delete.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify session is deleted from DB
+        self.assertFalse(UserSession.objects.filter(id=session.id).exists())
+
+        # Verify activity log is created indicating forced expiration
+        log = UserActivityLog.objects.filter(
+            username='regular_test_audit',
+            action='SESSION_EXPIRED',
+            device__contains='Forced terminate by admin'
+        ).first()
+        self.assertIsNotNone(log)
+
+
 
