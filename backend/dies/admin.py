@@ -10,10 +10,10 @@ class DieAdmin(admin.ModelAdmin):
 
 @admin.register(RoundDie)
 class RoundDieAdmin(admin.ModelAdmin):
-    list_display  = ['die', 'original_size', 'current_size']
+    list_display  = ['die', 'punched_size', 'current_size']
     search_fields = ['die__die_id']
 
 @admin.register(FlatDie)
 class FlatDieAdmin(admin.ModelAdmin):
-    list_display  = ['die', 'original_width', 'current_width', 'original_thickness', 'current_thickness']
+    list_display  = ['die', 'punched_width', 'current_width', 'punched_thickness', 'current_thickness']
     search_fields = ['die__die_id']

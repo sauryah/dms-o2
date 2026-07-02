@@ -136,29 +136,29 @@ class ImportService:
             )
 
             if die_type == 'ROUND':
-                orig_size = ValidationService.validate_decimal(row_data.get('original_size'), 'original_size')
+                punched_size = ValidationService.validate_decimal(row_data.get('punched_size') or row_data.get('original_size'), 'punched_size')
                 curr_size = ValidationService.validate_decimal(row_data.get('current_size'), 'current_size')
 
                 RoundDie.objects.update_or_create(
                     die=die,
                     defaults={
-                        'original_size': orig_size,
+                        'punched_size': punched_size,
                         'current_size': curr_size,
                     }
                 )
             else:  # FLAT
-                orig_width = ValidationService.validate_decimal(row_data.get('original_width'), 'original_width')
+                punched_width = ValidationService.validate_decimal(row_data.get('punched_width') or row_data.get('original_width'), 'punched_width')
                 curr_width = ValidationService.validate_decimal(row_data.get('current_width'), 'current_width')
-                orig_thick = ValidationService.validate_decimal(row_data.get('original_thickness'), 'original_thickness')
+                punched_thickness = ValidationService.validate_decimal(row_data.get('punched_thickness') or row_data.get('original_thickness'), 'punched_thickness')
                 curr_thick = ValidationService.validate_decimal(row_data.get('current_thickness'), 'current_thickness')
                 radius = ValidationService.validate_decimal(row_data.get('radius'), 'radius')
 
                 FlatDie.objects.update_or_create(
                     die=die,
                     defaults={
-                        'original_width': orig_width,
+                        'punched_width': punched_width,
                         'current_width': curr_width,
-                        'original_thickness': orig_thick,
+                        'punched_thickness': punched_thickness,
                         'current_thickness': curr_thick,
                         'radius': radius,
                     }
@@ -218,7 +218,7 @@ class ImportService:
                         )
                         err_msg = str(e)
                         field_name = "General"
-                        for f_check in ['die_id', 'die_type', 'casing', 'status', 'location', 'remarks', 'original_size', 'current_size', 'original_width', 'current_width', 'original_thickness', 'current_thickness', 'radius']:
+                        for f_check in ['die_id', 'die_type', 'casing', 'status', 'location', 'remarks', 'punched_size', 'original_size', 'current_size', 'punched_width', 'original_width', 'current_width', 'punched_thickness', 'original_thickness', 'current_thickness', 'radius']:
                             if f_check in err_msg.lower():
                                 field_name = f_check
                                 break

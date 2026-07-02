@@ -80,7 +80,7 @@ class DieSignalTests(TestCase):
         )
         round_die = RoundDie.objects.create(
             die=die,
-            original_size=Decimal("10.000"),
+            punched_size=Decimal("10.000"),
             current_size=Decimal("10.000"),
         )
         # Verify no history created on creation of round_die either
@@ -104,9 +104,9 @@ class DieSignalTests(TestCase):
         )
         flat_die = FlatDie.objects.create(
             die=die,
-            original_width=Decimal("30.000"),
+            punched_width=Decimal("30.000"),
             current_width=Decimal("30.000"),
-            original_thickness=Decimal("15.000"),
+            punched_thickness=Decimal("15.000"),
             current_thickness=Decimal("15.000"),
             radius=Decimal("1.000"),
         )
@@ -128,9 +128,9 @@ class DieSignalTests(TestCase):
         )
         flat_die = FlatDie.objects.create(
             die=die,
-            original_width=Decimal("30.000"),
+            punched_width=Decimal("30.000"),
             current_width=Decimal("30.000"),
-            original_thickness=Decimal("15.000"),
+            punched_thickness=Decimal("15.000"),
             current_thickness=Decimal("15.000"),
             radius=Decimal("1.000"),
         )

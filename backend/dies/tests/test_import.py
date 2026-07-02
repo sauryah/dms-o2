@@ -31,7 +31,7 @@ class BulkImportTests(TestCase):
         return temp_file.name
 
     def test_import_new_round_dies(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-1,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
 R-IMP-2,ROUND,25x10,RUNNING,Rack A,remark2,3.0,3.0
 R-IMP-3,ROUND,25x10,CLEANING,Rack B,remark3,3.5,3.5
@@ -66,15 +66,15 @@ R-IMP-5,ROUND,25x10,DAMAGED,Rack C,remark5,4.5,4.5
     def test_import_existing_and_new_dies(self):
         # Create some existing ones
         die1 = Die.objects.create(die_id='R-IMP-1', die_type='ROUND', casing='25x10', status='AVAILABLE')
-        RoundDie.objects.create(die=die1, original_size=Decimal('2.5'), current_size=Decimal('2.5'))
+        RoundDie.objects.create(die=die1, punched_size=Decimal('2.5'), current_size=Decimal('2.5'))
         
         die2 = Die.objects.create(die_id='R-IMP-2', die_type='ROUND', casing='25x10', status='RUNNING')
-        RoundDie.objects.create(die=die2, original_size=Decimal('3.0'), current_size=Decimal('3.0'))
+        RoundDie.objects.create(die=die2, punched_size=Decimal('3.0'), current_size=Decimal('3.0'))
 
         die3 = Die.objects.create(die_id='R-IMP-3', die_type='ROUND', casing='25x10', status='CLEANING')
-        RoundDie.objects.create(die=die3, original_size=Decimal('3.5'), current_size=Decimal('3.5'))
+        RoundDie.objects.create(die=die3, punched_size=Decimal('3.5'), current_size=Decimal('3.5'))
 
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-1,ROUND,25x10,RUNNING,Rack A,remark1,2.5,2.5
 R-IMP-2,ROUND,25x10,AVAILABLE,Rack A,remark2,3.0,3.0
 R-IMP-3,ROUND,25x10,AVAILABLE,Rack B,remark3,3.5,3.5
@@ -91,7 +91,7 @@ R-IMP-7,ROUND,25x10,AVAILABLE,Rack C,,5.5,5.5
             os.remove(filepath)
 
     def test_import_missing_die_id_header(self):
-        content = """die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_type,casing,status,location,remarks,punched_size,current_size
 ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
 """
         filepath = self.write_temp_csv(content)
@@ -104,7 +104,7 @@ ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
             os.remove(filepath)
 
     def test_import_invalid_status_skips_row_but_others_succeed(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-8,ROUND,25x10,INVALID_STATUS,Rack A,remark1,2.5,2.5
 R-IMP-9,ROUND,25x10,AVAILABLE,Rack A,remark9,2.5,2.5
 """
@@ -123,7 +123,7 @@ R-IMP-9,ROUND,25x10,AVAILABLE,Rack A,remark9,2.5,2.5
             os.remove(filepath)
 
     def test_import_idempotent_double_import(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-10,ROUND,25x10,AVAILABLE,Rack A,,2.5,2.5
 """
         filepath = self.write_temp_csv(content)
@@ -141,7 +141,7 @@ R-IMP-10,ROUND,25x10,AVAILABLE,Rack A,,2.5,2.5
             os.remove(filepath)
 
     def test_import_flat_dies(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_width,current_width,original_thickness,current_thickness,radius
+        content = """die_id,die_type,casing,status,location,remarks,punched_width,current_width,punched_thickness,current_thickness,radius
 F-IMP-1,FLAT,30x15,AVAILABLE,Rack B,,5.5,5.5,15.0,15.0,1.0
 F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
 """
@@ -178,7 +178,7 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
         set_dup1 = Set.objects.create(name="DupSet", machine=mach1)
         set_dup2 = Set.objects.create(name="DupSet", machine=mach2)
         
-        content = """die_id,die_type,casing,status,location,remarks,set_name,machine_name,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,set_name,machine_name,punched_size,current_size
 R-IMP-101,ROUND,25x10,AVAILABLE,Rack A,,UniqueSet,,2.5,2.5
 R-IMP-102,ROUND,25x10,AVAILABLE,Rack A,,DupSet,Mach B,3.0,3.0
 """
@@ -197,7 +197,7 @@ R-IMP-102,ROUND,25x10,AVAILABLE,Rack A,,DupSet,Mach B,3.0,3.0
             os.remove(filepath)
 
     def test_import_dry_run_mode(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
 """
         filepath = self.write_temp_csv(content)
@@ -231,7 +231,7 @@ R-IMP-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         
         url = reverse('import-dies') + '?dry_run=true'
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-IMP-VIEW-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
 """
         filepath = self.write_temp_csv(content)
@@ -297,7 +297,7 @@ R-IMP-VIEW-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         
         url = reverse('import-dies')
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-LOG-1,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
 """
         filepath = self.write_temp_csv(content)

@@ -16,7 +16,7 @@ class DieModelTests(TestCase):
         )
         round_die = RoundDie.objects.create(
             die=die,
-            original_size=Decimal("12.345"),
+            punched_size=Decimal("12.345"),
             current_size=Decimal("12.345")
         )
         self.assertEqual(die.die_type, "ROUND")
@@ -46,9 +46,9 @@ class DieModelTests(TestCase):
         )
         flat_die = FlatDie.objects.create(
             die=die,
-            original_width=Decimal("30.000"),
+            punched_width=Decimal("30.000"),
             current_width=Decimal("29.950"),
-            original_thickness=Decimal("15.000"),
+            punched_thickness=Decimal("15.000"),
             current_thickness=Decimal("14.950"),
             radius=Decimal("1.500")
         )

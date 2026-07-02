@@ -49,7 +49,7 @@ class ImportServiceTests(TestCase):
         )
 
     def test_import_dies_service_directly(self):
-        content = """die_id,die_type,casing,status,location,remarks,original_size,current_size
+        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
 R-SERV-1,ROUND,25x10,AVAILABLE,Rack D,rem,1.5,1.5
 """
         with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', encoding='utf-8') as temp_file:

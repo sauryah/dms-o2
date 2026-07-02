@@ -28,7 +28,7 @@ class Die(models.Model):
 
 class RoundDie(models.Model):
     die           = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='rounddie')
-    original_size = models.DecimalField(max_digits=7, decimal_places=3)
+    punched_size  = models.DecimalField(max_digits=7, decimal_places=3)
     current_size  = models.DecimalField(max_digits=7, decimal_places=3)
 
     class Meta:
@@ -39,9 +39,9 @@ class RoundDie(models.Model):
 
 class FlatDie(models.Model):
     die                = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='flatdie')
-    original_width     = models.DecimalField(max_digits=7, decimal_places=3)
+    punched_width      = models.DecimalField(max_digits=7, decimal_places=3)
     current_width      = models.DecimalField(max_digits=7, decimal_places=3)
-    original_thickness = models.DecimalField(max_digits=7, decimal_places=3)
+    punched_thickness  = models.DecimalField(max_digits=7, decimal_places=3)
     current_thickness  = models.DecimalField(max_digits=7, decimal_places=3)
     radius             = models.DecimalField(max_digits=7, decimal_places=3)
 

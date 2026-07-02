@@ -125,8 +125,8 @@ class ImportDiesView(APIView):
     Upload a spreadsheet file to create multiple dies at once.
     Supports CSV and XLSX formats with columns:
     - die_id, die_type (ROUND|FLAT), casing, status, location, current_set
-    - For ROUND: original_size, current_size
-    - For FLAT: original_width, current_width, original_thickness, current_thickness, radius
+    - For ROUND: punched_size, current_size
+    - For FLAT: punched_width, current_width, punched_thickness, current_thickness, radius
     
     **Request:**
     - Method: POST
@@ -220,7 +220,7 @@ class ImportTemplateView(APIView):
         ws1.title = "Round Die"
         headers_round = [
             "die_id", "die_type", "casing", "status", "location", "remarks", 
-            "current_set", "machine_name", "original_size", "current_size"
+            "current_set", "machine_name", "punched_size", "current_size"
         ]
         ws1.append(headers_round)
         example_round = [
@@ -233,8 +233,8 @@ class ImportTemplateView(APIView):
         ws2 = wb.create_sheet(title="Flat Die")
         headers_flat = [
             "die_id", "die_type", "casing", "status", "location", "remarks",
-            "current_set", "machine_name", "original_width", "current_width",
-            "original_thickness", "current_thickness", "radius"
+            "current_set", "machine_name", "punched_width", "current_width",
+            "punched_thickness", "current_thickness", "radius"
         ]
         ws2.append(headers_flat)
         example_flat = [
@@ -255,11 +255,11 @@ class ImportTemplateView(APIView):
             ["remarks", "Optional", "Both", "Free-form text comments"],
             ["current_set", "Optional", "Both", "The Set name or Set ID the die belongs to"],
             ["machine_name", "Optional", "Both", "Machine name to resolve duplicate set names"],
-            ["original_size", "Required", "ROUND", "Original extrusion size in mm (decimal)"],
+            ["punched_size", "Required", "ROUND", "Punched extrusion size currently marked on die in mm (decimal)"],
             ["current_size", "Required", "ROUND", "Current measured extrusion size in mm (decimal)"],
-            ["original_width", "Required", "FLAT", "Original flat die width in mm (decimal)"],
+            ["punched_width", "Required", "FLAT", "Punched flat die width currently marked on die in mm (decimal)"],
             ["current_width", "Required", "FLAT", "Current flat die width in mm (decimal)"],
-            ["original_thickness", "Required", "FLAT", "Original flat die thickness in mm (decimal)"],
+            ["punched_thickness", "Required", "FLAT", "Punched flat die thickness currently marked on die in mm (decimal)"],
             ["current_thickness", "Required", "FLAT", "Current flat die thickness in mm (decimal)"],
             ["radius", "Required", "FLAT", "Corner/bearing radius in mm (decimal)"],
         ]
