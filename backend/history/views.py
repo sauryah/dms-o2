@@ -66,3 +66,77 @@ class DieHistoryListView(APIView):
             
         serializer = AuditDieHistorySerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+from history.models import MachineHistory
+from history.serializers import AuditMachineHistorySerializer
+
+class MachineHistoryPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class MachineHistoryListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('entity_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Entity Type (MACHINE/SET/CATEGORY)'),
+            OpenApiParameter('entity_name', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Entity Name'),
+            OpenApiParameter('action', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Action (CREATED/UPDATED/DELETED)'),
+            OpenApiParameter('user', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Username'),
+            OpenApiParameter('from', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Start date (YYYY-MM-DD)'),
+            OpenApiParameter('to', OpenApiTypes.STR, OpenApiParameter.QUERY, description='End date (YYYY-MM-DD)'),
+            OpenApiParameter('field', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by field name'),
+            OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Items per page'),
+        ],
+        responses={200: AuditMachineHistorySerializer(many=True)},
+        description="Retrieve paginated history list of changes for machines, sets, and categories."
+    )
+    def get(self, request, *args, **kwargs):
+        queryset = MachineHistory.objects.all().select_related('changed_by')
+        
+        # Authorization check: regular users only see their own actions
+        if request.user.role not in ['ADMIN', 'ROOT'] and not request.user.is_superuser:
+            queryset = queryset.filter(changed_by=request.user)
+
+        # Optional filters
+        entity_type = request.query_params.get('entity_type')
+        if entity_type:
+            queryset = queryset.filter(entity_type=entity_type)
+
+        entity_name = request.query_params.get('entity_name')
+        if entity_name:
+            queryset = queryset.filter(entity_name__icontains=entity_name)
+
+        action = request.query_params.get('action')
+        if action:
+            queryset = queryset.filter(action=action)
+
+        user = request.query_params.get('user')
+        if user:
+            queryset = queryset.filter(changed_by__username__icontains=user)
+
+        field = request.query_params.get('field')
+        if field:
+            queryset = queryset.filter(field_name__icontains=field)
+
+        from_date = request.query_params.get('from')
+        if from_date:
+            queryset = queryset.filter(timestamp__date__gte=from_date)
+
+        to_date = request.query_params.get('to')
+        if to_date:
+            queryset = queryset.filter(timestamp__date__lte=to_date)
+
+        paginator = MachineHistoryPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        if page is not None:
+            serializer = AuditMachineHistorySerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = AuditMachineHistorySerializer(queryset, many=True)
+        return Response(serializer.data)
+

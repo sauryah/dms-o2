@@ -11,3 +11,16 @@ class AuditDieHistorySerializer(serializers.ModelSerializer):
             'id', 'die', 'die_id', 'changed_by', 'changed_by_username', 
             'timestamp', 'field_name', 'old_value', 'new_value', 'ip_address', 'note'
         ]
+
+
+class AuditMachineHistorySerializer(serializers.ModelSerializer):
+    changed_by_username = serializers.CharField(source='changed_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        from history.models import MachineHistory
+        model = MachineHistory
+        fields = [
+            'id', 'entity_type', 'entity_id', 'entity_name', 'action', 
+            'field_name', 'old_value', 'new_value', 'changed_by', 
+            'changed_by_username', 'timestamp', 'ip_address'
+        ]

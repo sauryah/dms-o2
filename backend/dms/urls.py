@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView
 from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
-from history.views import DieHistoryListView
+from history.views import DieHistoryListView, MachineHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
 router = DefaultRouter()
@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/events/', EventStreamView.as_view(), name='events'),
     path('api/health/', HealthCheckView.as_view(), name='health'),
     path('api/history/', DieHistoryListView.as_view(), name='die-history'),
+    path('api/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/', include(router.urls)),
 ]
