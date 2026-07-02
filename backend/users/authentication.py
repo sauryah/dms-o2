@@ -77,6 +77,17 @@ class CustomJWTAuthentication(JWTAuthentication):
             # Cleanup DB & Cache
             UserSession.objects.filter(user=user, token_hash=token_hash).delete()
             cache.delete(cache_key)
+            
+            # Log session expiration
+            from users.models import UserActivityLog
+            UserActivityLog.objects.create(
+                user=user,
+                username=user.username,
+                action='SESSION_EXPIRED',
+                ip_address=ip_address,
+                device=device
+            )
+            
             raise AuthenticationFailed("Session replaced on another device or expired")
 
         # Update last_seen (throttled to once per minute to reduce DB writes)

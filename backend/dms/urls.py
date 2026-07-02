@@ -5,13 +5,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView
-from users.views import LoginView, UserViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
+from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView
 from history.views import DieHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
 router = DefaultRouter()
 router.register('dies', DieViewSet, basename='die')
 router.register('users', UserViewSet, basename='user')
+router.register('activity-logs', UserActivityLogViewSet, basename='user-activity-log')
 router.register('categories', MachineCategoryViewSet, basename='category')
 router.register('machines', MachineViewSet, basename='machine')
 router.register('sets', SetViewSet, basename='set')
@@ -28,6 +29,7 @@ urlpatterns = [
     
     # Authentication and Utility Endpoints
     path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
     path('api/auth/me/', MeView.as_view(), name='auth-me'),
     path('api/auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('api/auth/keep-alive/', KeepAliveView.as_view(), name='keep-alive'),

@@ -24,3 +24,24 @@ class UserSession(models.Model):
 
     def __str__(self):
         return f"Session: {self.user.username}"
+
+
+class UserActivityLog(models.Model):
+    ACTION_CHOICES = [
+        ('LOGIN', 'Login'),
+        ('LOGOUT', 'Logout'),
+        ('FAILED_LOGIN', 'Failed Login'),
+        ('SESSION_EXPIRED', 'Session Expired'),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    username = models.CharField(max_length=150)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    device = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.username} - {self.action} at {self.timestamp}"

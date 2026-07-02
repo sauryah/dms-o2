@@ -19,5 +19,16 @@ class Command(BaseCommand):
             created_at__lt=absolute_limit
         )
 
+        # Log session expirations
+        from users.models import UserActivityLog
+        for session in expired_sessions:
+            UserActivityLog.objects.create(
+                user=session.user,
+                username=session.user.username,
+                action='SESSION_EXPIRED',
+                ip_address=session.ip_address,
+                device=session.device
+            )
+
         deleted_count, _ = expired_sessions.delete()
         self.stdout.write(self.style.SUCCESS(f"Deleted {deleted_count} expired/idle sessions."))
