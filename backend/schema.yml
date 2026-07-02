@@ -5,6 +5,64 @@ info:
   description: DMS Django REST API for dies, machines, users, backups, and real-time
     events.
 paths:
+  /api/active-sessions/:
+    get:
+      operationId: api_active_sessions_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserSessionList'
+          description: ''
+  /api/active-sessions/{id}/:
+    get:
+      operationId: api_active_sessions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user session.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSession'
+          description: ''
+    delete:
+      operationId: api_active_sessions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user session.
+        required: true
+      tags:
+      - api
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/activity-logs/:
     get:
       operationId: api_activity_logs_list
@@ -2350,6 +2408,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserActivityLog'
+    PaginatedUserSessionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSession'
     PatchedDieCreate:
       type: object
       properties:
@@ -2654,6 +2735,38 @@ components:
       - action
       - id
       - timestamp
+      - username
+    UserSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_seen:
+          type: string
+          format: date-time
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+        device:
+          type: string
+          maxLength: 255
+      required:
+      - created_at
+      - id
+      - last_seen
+      - role
       - username
     VerifyTokenResponse:
       type: object
