@@ -164,7 +164,7 @@ class NewEndpointsTests(APITestCase):
         # ADMIN success
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
         with tempfile.NamedTemporaryFile(suffix='.csv', mode='w+', encoding='utf-8') as f:
-            f.write("die_id,die_type,casing,status,location,remarks,original_size,current_size\n")
+            f.write("die_id,die_type,casing,status,location,remarks,punched_size,current_size\n")
             f.write("R-TEST-1,ROUND,casing1,AVAILABLE,Rack A,,2.5,2.5\n")
             f.seek(0)
             response = self.client.post(url, {'file': f})

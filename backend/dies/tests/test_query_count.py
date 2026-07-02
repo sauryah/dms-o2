@@ -16,7 +16,7 @@ class QueryCountTests(APITestCase):
             )
             RoundDie.objects.create(
                 die=die,
-                original_size=Decimal("2.400"),
+                punched_size=Decimal("2.400"),
                 current_size=Decimal("2.400")
             )
         for i in range(25):
@@ -29,9 +29,9 @@ class QueryCountTests(APITestCase):
             )
             FlatDie.objects.create(
                 die=die,
-                original_width=Decimal("5.500"),
+                punched_width=Decimal("5.500"),
                 current_width=Decimal("5.500"),
-                original_thickness=Decimal("15.000"),
+                punched_thickness=Decimal("15.000"),
                 current_thickness=Decimal("15.000"),
                 radius=Decimal("1.000")
             )

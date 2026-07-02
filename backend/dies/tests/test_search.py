@@ -23,7 +23,7 @@ class MeilisearchTests(TransactionTestCase):
         )
         round_die = RoundDie.objects.create(
             die=die,
-            original_size=Decimal("3.500"),
+            punched_size=Decimal("3.500"),
             current_size=Decimal("3.500")
         )
         
@@ -56,7 +56,7 @@ class MeilisearchTests(TransactionTestCase):
         )
         RoundDie.objects.create(
             die=die1,
-            original_size=Decimal("3.500"),
+            punched_size=Decimal("3.500"),
             current_size=Decimal("3.500")
         )
         
@@ -69,7 +69,7 @@ class MeilisearchTests(TransactionTestCase):
         )
         RoundDie.objects.create(
             die=die2,
-            original_size=Decimal("5.500"),
+            punched_size=Decimal("5.500"),
             current_size=Decimal("5.500")
         )
         
@@ -96,7 +96,7 @@ class MeilisearchTests(TransactionTestCase):
         )
         RoundDie.objects.create(
             die=die,
-            original_size=Decimal("3.500"),
+            punched_size=Decimal("3.500"),
             current_size=Decimal("3.500")
         )
         

@@ -48,7 +48,7 @@ class Command(BaseCommand):
             
             RoundDie.objects.create(
                 die=die,
-                original_size=Decimal(str(orig_size)),
+                punched_size=Decimal(str(orig_size)),
                 current_size=Decimal(str(curr_size))
             )
             created_count += 1
@@ -72,9 +72,9 @@ class Command(BaseCommand):
 
             FlatDie.objects.create(
                 die=die,
-                original_width=Decimal(str(orig_w)),
+                punched_width=Decimal(str(orig_w)),
                 current_width=Decimal(str(curr_w)),
-                original_thickness=Decimal(str(orig_t)),
+                punched_thickness=Decimal(str(orig_t)),
                 current_thickness=Decimal(str(curr_t)),
                 radius=Decimal(str(radius))
             )

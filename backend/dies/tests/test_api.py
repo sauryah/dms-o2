@@ -35,7 +35,7 @@ class DieAPITests(APITestCase):
         )
         self.rd_details = RoundDie.objects.create(
             die=self.round_die,
-            original_size=Decimal("2.400"),
+            punched_size=Decimal("2.400"),
             current_size=Decimal("2.400")
         )
 
@@ -48,9 +48,9 @@ class DieAPITests(APITestCase):
         )
         self.fd_details = FlatDie.objects.create(
             die=self.flat_die,
-            original_width=Decimal("5.500"),
+            punched_width=Decimal("5.500"),
             current_width=Decimal("5.500"),
-            original_thickness=Decimal("15.000"),
+            punched_thickness=Decimal("15.000"),
             current_thickness=Decimal("15.000"),
             radius=Decimal("1.000")
         )
@@ -118,7 +118,7 @@ class DieAPITests(APITestCase):
             'casing': '30x30',
             'status': 'AVAILABLE',
             'location': 'Rack C',
-            'original_size': 3.5,
+            'punched_size': 3.5,
             'current_size': 3.5
         }
         response = self.client.post(url, data)
@@ -180,7 +180,7 @@ class DieAPITests(APITestCase):
             'casing': '30x30',
             'status': 'AVAILABLE',
             'location': 'Rack C',
-            'original_size': 3.5,
+            'punched_size': 3.5,
             'current_size': 3.5
         }
         response = self.client.post(url_list, data)

@@ -41,7 +41,7 @@ class DieWorkflowIntegrationTest(TestCase):
             'location': 'Shelf A',
             'current_set': self.set.id,
             'remarks': 'Integration test die',
-            'original_size': 2.5,
+            'punched_size': 2.5,
             'current_size': 2.5,
         }
         
@@ -71,9 +71,9 @@ class DieWorkflowIntegrationTest(TestCase):
             'location': 'Shop Floor',
             'current_set': self.set.id,
             'remarks': 'FLAT test die',
-            'original_width': 15.5,
+            'punched_width': 15.5,
             'current_width': 15.2,
-            'original_thickness': 3.5,
+            'punched_thickness': 3.5,
             'current_thickness': 3.2,
             'radius': 2.0,
         }
@@ -102,7 +102,7 @@ class DieWorkflowIntegrationTest(TestCase):
             location='Shelf A',
             current_set=self.set
         )
-        RoundDie.objects.create(die=die, original_size=2.5, current_size=2.5)
+        RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         
         # UPDATE die status
         update_payload = {
@@ -130,13 +130,13 @@ class DieWorkflowIntegrationTest(TestCase):
                 current_set=self.set
             )
             if die.die_type == 'ROUND':
-                RoundDie.objects.create(die=die, original_size=2.5, current_size=2.5)
+                RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
             else:
                 FlatDie.objects.create(
                     die=die,
-                    original_width=15.0,
+                    punched_width=15.0,
                     current_width=15.0,
-                    original_thickness=3.0,
+                    punched_thickness=3.0,
                     current_thickness=3.0,
                     radius=2.0
                 )
@@ -163,7 +163,7 @@ class DieWorkflowIntegrationTest(TestCase):
             location='Shelf A',
             current_set=self.set
         )
-        RoundDie.objects.create(die=die, original_size=2.5, current_size=2.5)
+        RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         die_id = die.die_id
         
         # DELETE die
@@ -192,7 +192,7 @@ class DieWorkflowIntegrationTest(TestCase):
             'casing': '25x10',
             'status': 'AVAILABLE',
             'location': 'Shelf A',
-            'original_size': 2.5,
+            'punched_size': 2.5,
             'current_size': 2.5,
         }
         
@@ -229,7 +229,7 @@ class SearchIntegrationTest(TestCase):
             location='Test Location',
             current_set=self.set
         )
-        RoundDie.objects.create(die=die, original_size=2.5, current_size=2.5)
+        RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         
         # SEARCH by die_id (using internal Django endpoint for testing)
         response = self.client.get('/api/dies/?die_type=ROUND')
@@ -250,7 +250,7 @@ class SearchIntegrationTest(TestCase):
                 location='Shelf A',
                 current_set=self.set
             )
-            RoundDie.objects.create(die=die, original_size=2.5, current_size=2.5)
+            RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         
         # SEARCH by status
         response = self.client.get('/api/dies/?status=RUNNING')
@@ -270,7 +270,7 @@ class SearchIntegrationTest(TestCase):
                 location='Shelf A',
                 current_set=self.set
             )
-            RoundDie.objects.create(die=die, original_size=size, current_size=size)
+            RoundDie.objects.create(die=die, punched_size=size, current_size=size)
         
         # SEARCH with size range filter
         response = self.client.get('/api/dies/?die_type=ROUND&size_min=2.5&size_max=3.5')

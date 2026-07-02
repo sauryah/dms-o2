@@ -140,7 +140,7 @@ class AuthTests(APITestCase):
             'die_type': 'ROUND',
             'casing': '10x10',
             'status': 'AVAILABLE',
-            'original_size': 1.0,
+            'punched_size': 1.0,
             'current_size': 1.0
         })
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -160,7 +160,7 @@ class AuthTests(APITestCase):
             'die_type': 'ROUND',
             'casing': '10x10',
             'status': 'AVAILABLE',
-            'original_size': 1.0,
+            'punched_size': 1.0,
             'current_size': 1.0
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
