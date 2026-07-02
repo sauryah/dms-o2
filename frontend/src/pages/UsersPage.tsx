@@ -25,7 +25,9 @@ export function UsersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            {activeTab === 'users' ? 'User Administration' : 'System Backups'}
+            {activeTab === 'users' && 'User Administration'}
+            {activeTab === 'backups' && 'System Backups'}
+            {activeTab === 'logs' && 'Session Audit Logs'}
           </h1>
           <p className="text-slate-400 mt-1">
             {activeTab === 'users' && 'Manage administrative credentials, system roles, and account statuses.'}
