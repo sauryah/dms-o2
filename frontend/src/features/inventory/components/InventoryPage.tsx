@@ -81,6 +81,7 @@ export function InventoryPage() {
     searchParams.get('thick_max')
   ))
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const hasActiveFilter = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
   // Fetch list of sets for the dropdown
   const { data: setsList } = useQuery({
@@ -1099,14 +1100,21 @@ export function InventoryPage() {
           <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800/40 blueprint-grid relative">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between relative z-10">
               <div className="relative flex-1 w-full">
-                <Search className="absolute left-3 sm:left-4 top-3 sm:top-3.5 h-4 sm:h-5 w-4 sm:w-5 text-slate-500" />
-                <input 
-                  type="text" 
-                  placeholder="Search dies..."
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-3 sm:pr-4 text-sm sm:text-base text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
-                />
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3 sm:left-4 h-4 sm:h-5 w-4 sm:w-5 text-slate-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Search dies..."
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    className="w-full glass-input rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-28 sm:pr-32 text-sm sm:text-base text-white placeholder-slate-550 focus:outline-none transition-all duration-350"
+                  />
+                  {hasActiveFilter && (
+                    <span className="absolute right-3 bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:py-1 rounded-lg select-none">
+                      {isLoading ? '...' : `${totalCount} ${totalCount === 1 ? 'result' : 'results'}`}
+                    </span>
+                  )}
+                </div>
                 <p className="hidden sm:block text-slate-400 text-xs mt-1.5 ml-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1</p>
               </div>
               

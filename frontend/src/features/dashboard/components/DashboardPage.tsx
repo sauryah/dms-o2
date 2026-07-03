@@ -358,8 +358,8 @@ export function DashboardPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-grow" ref={searchRef}>
-                <Search className="absolute left-4 top-3.5 h-6 w-6 text-slate-500" />
+              <div className="relative flex-grow flex items-center" ref={searchRef}>
+                <Search className="absolute left-4 h-6 w-6 text-slate-500" />
                 <input 
                   type="text" 
                   placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
@@ -389,8 +389,13 @@ export function DashboardPage() {
                       setActiveIndex(-1);
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-4 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-28 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
                 />
+                {searchEnabled && (
+                  <span className="absolute right-4 bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-lg select-none">
+                    {isSearchLoading ? '...' : `${searchDies.length} ${searchDies.length === 1 ? 'result' : 'results'}`}
+                  </span>
+                )}
 
                 {/* Search Dropdown Suggestions */}
                 {showDropdown && q.trim() && (
@@ -616,9 +621,9 @@ export function DashboardPage() {
           <div className="mb-6 flex justify-between items-center">
             <h3 className="text-lg font-semibold text-slate-300">
               {q ? (
-                <>Search Results for <span className="text-blue-400">"{q}"</span></>
+                <>Search Results for <span className="text-blue-400">"{q}"</span> <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
               ) : (
-                <>Filtered Search Results</>
+                <>Filtered Search Results <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
               )}
             </h3>
             <Link 
