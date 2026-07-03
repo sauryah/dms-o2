@@ -230,6 +230,7 @@ class ImportService:
                         })
                     
                     if dry_run:
+                        # Roll back everything after simulating the import.
                         transaction.set_rollback(True)
 
             if successful_die_ids and not dry_run:
