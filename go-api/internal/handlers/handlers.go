@@ -248,11 +248,11 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	var total int
 	var err error
 
-	if q == "" {
+	if q == "" || sizeMin != "" || sizeMax != "" || widthMin != "" || widthMax != "" || thickMin != "" || thickMax != "" {
 		// 1. Direct database query
-		dies, err = h.db.QueryPostgresDirectly(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		dies, err = h.db.QueryPostgresDirectly(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 		if err == nil {
-			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), "", dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
 		}
 	} else {
 		// 2. Query Meilisearch first, then database

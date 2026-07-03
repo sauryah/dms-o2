@@ -111,25 +111,7 @@ export function InventoryPage() {
   const [createError, setCreateError] = useState<string | null>(null)
   const [showEmptyNodes, setShowEmptyNodes] = useState(true)
 
-  // Mutually clear main search 'q' and custom ranges to prevent conflicting queries
-  useEffect(() => {
-    if (sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax) {
-      if (q !== '') {
-        setQ('')
-      }
-    }
-  }, [sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
 
-  useEffect(() => {
-    if (q) {
-      setSizeMin('')
-      setSizeMax('')
-      setWidthMin('')
-      setWidthMax('')
-      setThickMin('')
-      setThickMax('')
-    }
-  }, [q])
 
   // React Query Fetcher
   const { data: searchData, isLoading, error } = useQuery({
