@@ -201,37 +201,37 @@ class ImportService:
                     sets_by_name[name_lower] = []
                 sets_by_name[name_lower].append(s)
 
-            with transaction.atomic():
-                for line_num, row_data in rows:
-                    try:
+            for line_num, row_data in rows:
+                try:
+                    with transaction.atomic():
                         die_id, is_created = ImportService._process_row(row_data, sets_by_id, sets_by_name)
-                        successful_die_ids.append(die_id)
                         if is_created:
                             created += 1
                         else:
                             updated += 1
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to import row {line_num} due to error: {str(e)}",
-                            exc_info=True,
-                            extra={'row': line_num, 'die_id': row_data.get('die_id')}
-                        )
-                        err_msg = str(e)
-                        field_name = "General"
-                        for f_check in ['die_id', 'die_type', 'casing', 'status', 'location', 'remarks', 'punched_size', 'original_size', 'current_size', 'punched_width', 'original_width', 'current_width', 'punched_thickness', 'original_thickness', 'current_thickness', 'radius']:
-                            if f_check in err_msg.lower():
-                                field_name = f_check
-                                break
-                        errors.append({
-                            'row': line_num,
-                            'die_id': row_data.get('die_id') or 'N/A',
-                            'field': field_name,
-                            'error': err_msg
-                        })
-                    
-                    if dry_run:
-                        # Roll back everything after simulating the import.
-                        transaction.set_rollback(True)
+                        
+                        if dry_run:
+                            transaction.set_rollback(True)
+                        else:
+                            successful_die_ids.append(die_id)
+                except Exception as e:
+                    logger.error(
+                        f"Failed to import row {line_num} due to error: {str(e)}",
+                        exc_info=True,
+                        extra={'row': line_num, 'die_id': row_data.get('die_id')}
+                    )
+                    err_msg = str(e)
+                    field_name = "General"
+                    for f_check in ['die_id', 'die_type', 'casing', 'status', 'location', 'remarks', 'punched_size', 'original_size', 'current_size', 'punched_width', 'original_width', 'current_width', 'punched_thickness', 'original_thickness', 'current_thickness', 'radius']:
+                        if f_check in err_msg.lower():
+                            field_name = f_check
+                            break
+                    errors.append({
+                        'row': line_num,
+                        'die_id': row_data.get('die_id') or 'N/A',
+                        'field': field_name,
+                        'error': err_msg
+                    })
 
             if successful_die_ids and not dry_run:
                 SearchService.sync_dies_batch(successful_die_ids)
