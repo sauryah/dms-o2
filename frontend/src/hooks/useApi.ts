@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 export const useApi = () => {
-  const { token, setToken } = useAuth()
+  const { token, logout } = useAuth()
   const tokenRef = useRef(token)
   tokenRef.current = token
 
@@ -25,7 +25,7 @@ export const useApi = () => {
         const res = await fetch(url, { ...options, headers })
 
         if (res.status === 401) {
-          setToken(null)
+          logout()
           window.location.hash = '/login'
           throw new Error('Unauthorized')
         }
@@ -80,7 +80,7 @@ export const useApi = () => {
     }
 
     throw lastError || new Error('Request failed after retries')
-  }, [setToken])
+  }, [logout])
 
   return { request }
 }
