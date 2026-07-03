@@ -120,6 +120,12 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-03 · feat: implement API rate limiting and support combined multi-faceted query search parameters (Phase 14)
+- Configured REST framework API rate limiting (throttling) for anonymous and authenticated user endpoints.
+- Re-architected search parameters processing to execute combined queries (text query and custom numeric range filters) simultaneously.
+- Configured direct database queries to bypass Meilisearch queries when range filters are active, avoiding top-hits filtering conflicts.
+- Removed mutually clearing inputs in the frontend Inventory and Dashboard search UI, enabling concurrent text search and dimension range sliding.
+
 ### 2026-06-30 · fix: resolve critical security vulnerabilities, backup NameError crashes, test transaction issues, search performance bottlenecks, and connection lifetimes (Phase 13)
 - Fixed privilege escalation vulnerability in `UserSerializer`, blocking self-role updates for non-ROOT users.
 - Prevented ROOT users from self-demoting or self-deactivating.
