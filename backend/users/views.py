@@ -454,6 +454,7 @@ class EventStreamView(APIView):
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = []
 
     @extend_schema(
         request=None,
@@ -513,6 +514,7 @@ class HealthCheckView(APIView):
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class VerifyTokenView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = []
 
     @extend_schema(
         request=None,
