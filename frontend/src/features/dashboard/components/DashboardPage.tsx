@@ -200,6 +200,26 @@ export function DashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Mutually clear main search 'q' and custom ranges to prevent conflicting queries
+  useEffect(() => {
+    if (sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax) {
+      if (q !== '') {
+        setQ('')
+      }
+    }
+  }, [sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
+  useEffect(() => {
+    if (q) {
+      setSizeMin('')
+      setSizeMax('')
+      setWidthMin('')
+      setWidthMax('')
+      setThickMin('')
+      setThickMax('')
+    }
+  }, [q])
+
   const { request } = useApi()
   const [trendBaseline, setTrendBaseline] = useState<any>(null)
 
