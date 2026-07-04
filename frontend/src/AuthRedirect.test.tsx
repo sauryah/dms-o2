@@ -42,7 +42,7 @@ function TestAuthComponent() {
 
 describe('Auth Redirect on 401', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
     localStorage.clear()
   })
 

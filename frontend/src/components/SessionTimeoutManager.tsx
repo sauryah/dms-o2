@@ -20,6 +20,9 @@ export function SessionTimeoutManager() {
       return
     }
 
+    // Reset last activity to current time when user logs in
+    lastActivity.current = Date.now()
+
     const handleActivity = () => {
       lastActivity.current = Date.now()
     }
