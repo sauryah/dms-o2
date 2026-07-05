@@ -1,24 +1,20 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { 
   Search, 
   SlidersHorizontal, 
   Plus, 
   ChevronRight, 
   ChevronLeft, 
-  X, 
   Menu, 
   Cpu, 
   Layers, 
   Database, 
   Sliders,
-  ChevronDown,
-  Activity,
-  FolderOpen
+  Activity
 } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
-import { useToast } from '../../../contexts/ToastContext'
 import { useAnnouncer } from '../../../contexts/AccessibilityContext'
 import { useApi } from '../../../hooks/useApi'
 import { useDebounce } from '../../../hooks/useDebounce'
@@ -31,25 +27,13 @@ import { RackLayoutGrid } from './RackLayoutGrid'
 import { Skeleton, TableSkeleton } from '../../../components/Skeleton'
 import { EmptyState } from '../../../components/EmptyState'
 
-const mapQueryDataList = (old: any, mapFn: (d: any) => any) => {
-  if (!old) return old
-  if (Array.isArray(old)) {
-    return old.map(mapFn)
-  }
-  if (old && typeof old === 'object' && Array.isArray(old.results)) {
-    return {
-      ...old,
-      results: old.results.map(mapFn)
-    }
-  }
-  return old
-}
+// New imports:
+import { MachineSidebarTree, MachineSidebarTreeRef } from './MachineSidebarTree'
+import { useInventoryMutations } from '../hooks/useInventoryMutations'
 
 export function InventoryPage() {
   const { request } = useApi()
   const { role } = useAuth()
-  const { showToast } = useToast()
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
@@ -95,23 +79,7 @@ export function InventoryPage() {
     queryFn: () => request('/api/machines/')
   })
 
-  // Tree expanded states
-  const [expandedMachines, setExpandedMachines] = useState<Record<string | number, boolean>>({})
-  const [expandedSets, setExpandedSets] = useState<Record<string | number, boolean>>({})
-  const [expandedUnassigned, setExpandedUnassigned] = useState(true)
-
-  const toggleMachine = useCallback((id: any) => {
-    setExpandedMachines((prev: Record<string | number, boolean>) => ({ ...prev, [id]: !prev[id] }))
-  }, [])
-
-  const toggleSet = useCallback((id: any) => {
-    setExpandedSets((prev: Record<string | number, boolean>) => ({ ...prev, [id]: !prev[id] }))
-  }, [])
-
   const [createError, setCreateError] = useState<string | null>(null)
-  const [showEmptyNodes, setShowEmptyNodes] = useState(true)
-
-
 
   // React Query Fetcher
   const { data: searchData, isLoading, error } = useQuery({
@@ -152,473 +120,48 @@ export function InventoryPage() {
   const dies = searchData?.results || []
   const totalCount = searchData?.total ?? dies.length
 
-  // Create die mutation
-  const createDieMutation = useMutation({
-    mutationFn: (payload: any) => request('/api/dies/', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-      setIsCreateOpen(false)
-    },
-    onError: (err: any) => {
-      setCreateError(err.message)
-    }
-  })
+  // Hook up custom mutations hook:
+  const {
+    createDieMutation,
+    moveDieLocationMutation,
+    reallocateDieMutation,
+    reallocateSetMutation
+  } = useInventoryMutations(setIsCreateOpen, setCreateError)
 
-  // Mutation for updating die location (visual grid)
-  const moveDieLocationMutation = useMutation({
-    mutationFn: ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => request(`/api/dies/${dieId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ location, rack, shelf })
-    }),
-    onMutate: async ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => {
-      await queryClient.cancelQueries({ queryKey: ['dies'] })
-      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
-      const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
-      const previousSearch = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+  const [activeDragType, setActiveDragType] = useState<string | null>(null) // shared drag state
 
-      const updateLoc = (old: any) => {
-        return mapQueryDataList(old, (d: any) => String(d.die_id) === String(dieId) ? { ...d, location: location !== undefined ? location : d.location, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
-      }
-      queryClient.setQueriesData({ queryKey: ['dies'] }, updateLoc)
-      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLoc)
-
-      return { previousDies, previousSearch }
-    },
-    onError: (err: any, variables: any, context: any) => {
-      if (context) {
-        if (context.previousDies) {
-          context.previousDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-        if (context.previousSearch) {
-          context.previousSearch.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-      }
-      showToast(`Failed to move die: ${err.message}`, 'error')
-    },
-    onSuccess: (data: any, variables: any) => {
-      showToast(`Successfully moved die ${variables.dieId} to ${variables.location}.`, 'success')
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
-      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-    }
-  })
-
-  // Drag and Drop State & Handler Hooks
-  const [activeDragType, setActiveDragType] = useState<string | null>(null) // 'die' or 'set'
-  const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: any } | null>(null) // { type: 'machine'|'set'|'unassigned', id: ... }
-
-  const reallocateDieMutation = useMutation({
-    mutationFn: ({ dieId, setId }: { dieId: any, setId: any }) => request(`/api/dies/${dieId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ current_set: setId })
-    }),
-    onMutate: async ({ dieId, setId }: { dieId: any, setId: any }) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: ['dies'] })
-      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
-      await queryClient.cancelQueries({ queryKey: ['machinesList'] })
-      await queryClient.cancelQueries({ queryKey: ['setsDropdownList'] })
-
-      // Snapshot
-      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
-      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
-      const previousMachines = queryClient.getQueryData(['machinesList'])
-      const previousSets = queryClient.getQueryData(['setsDropdownList'])
-
-      // Find set name if setId is provided
-      let newSetName = ''
-      if (setId) {
-        const sets: any[] = (previousSets as any[]) || []
-        const foundSet = sets.find((s: any) => Number(s.id) === Number(setId))
-        if (foundSet) {
-          newSetName = foundSet.name
-        } else if (previousMachines) {
-          for (const machine of (previousMachines as any[])) {
-            const foundSetInMachine = machine.sets?.find((s: any) => Number(s.id) === Number(setId))
-            if (foundSetInMachine) {
-              newSetName = foundSetInMachine.name
-              break
-            }
-          }
-        }
-      }
-
-      // Optimistically update list queries
-      const updateCurrentSet = (old: any) => {
-        return mapQueryDataList(old, (die: any) => {
-          if (String(die.die_id) === String(dieId)) {
-            return {
-              ...die,
-              current_set: setId ? Number(setId) : null,
-              current_set_name: newSetName || undefined,
-              set_name: newSetName || undefined,
-            }
-          }
-          return die
-        })
-      }
-      queryClient.setQueriesData({ queryKey: ['dies'] }, updateCurrentSet)
-      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateCurrentSet)
-
-      // Optimistically update sets dropdown query
-      if (previousSets) {
-        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
-          if (!Array.isArray(old)) return old
-          let foundDie: any = null
-          const updatedSets = old.map((set: any) => {
-            const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
-            if (hasDie) {
-              foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
-              return {
-                ...set,
-                dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
-              }
-            }
-            return set
-          })
-
-          if (!foundDie) {
-            for (const [, diesData] of previousDiesQueries) {
-              if (Array.isArray(diesData)) {
-                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
-                if (foundDie) break
-              }
-            }
-          }
-
-          if (foundDie) {
-            const updatedDie = {
-              ...foundDie,
-              current_set: setId ? Number(setId) : null,
-              current_set_name: newSetName || undefined,
-              set_name: newSetName || undefined,
-            }
-            return updatedSets.map((set: any) => {
-              if (setId && Number(set.id) === Number(setId)) {
-                const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
-                return {
-                  ...set,
-                  dies: [...otherDies, updatedDie]
-                }
-              }
-              return set
-            })
-          }
-          return old
-        })
-      }
-
-      // Optimistically update machines list
-      if (previousMachines) {
-        queryClient.setQueryData(['machinesList'], (old: any) => {
-          if (!Array.isArray(old)) return old
-          let foundDie: any = null
-          const updatedMachines = old.map((machine: any) => {
-            if (!machine.sets) return machine
-            const updatedSets = machine.sets.map((set: any) => {
-              const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
-              if (hasDie) {
-                foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
-                return {
-                  ...set,
-                  dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
-                }
-              }
-              return set
-            })
-            return { ...machine, sets: updatedSets }
-          })
-
-          if (!foundDie) {
-            for (const [, diesData] of previousDiesQueries) {
-              if (Array.isArray(diesData)) {
-                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
-                if (foundDie) break
-              }
-            }
-          }
-
-          if (foundDie) {
-            const updatedDie = {
-              ...foundDie,
-              current_set: setId ? Number(setId) : null,
-              current_set_name: newSetName || undefined,
-              set_name: newSetName || undefined,
-            }
-            return updatedMachines.map((machine: any) => {
-              if (!machine.sets) return machine
-              const updatedSets = machine.sets.map((set: any) => {
-                if (setId && Number(set.id) === Number(setId)) {
-                  const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
-                  return {
-                    ...set,
-                    dies: [...otherDies, updatedDie]
-                  }
-                }
-                return set
-              })
-              return { ...machine, sets: updatedSets }
-            })
-          }
-          return old
-        })
-      }
-
-      // Update individual die detail queries as well (if any are cached)
-      const p1 = queryClient.getQueryData(['die', dieId])
-      const p2 = queryClient.getQueryData(['dieDetail', dieId])
-      if (p1 !== undefined) {
-        queryClient.setQueryData(['die', dieId], (old: any) => old ? {
-          ...old,
-          current_set: setId ? Number(setId) : null,
-          current_set_name: newSetName || undefined,
-          set_name: newSetName || undefined,
-        } : old)
-      }
-      if (p2 !== undefined) {
-        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? {
-          ...old,
-          current_set: setId ? Number(setId) : null,
-          current_set_name: newSetName || undefined,
-          set_name: newSetName || undefined,
-        } : old)
-      }
-
-      return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets, previousDie: p1, previousDieDetail: p2 }
-    },
-    onError: (err: any, variables: any, context: any) => {
-      if (context) {
-        if (context.previousDiesQueries) {
-          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-        if (context.previousSearchDiesQueries) {
-          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-        if (context.previousMachines !== undefined) {
-          queryClient.setQueryData(['machinesList'], context.previousMachines)
-        }
-        if (context.previousSets !== undefined) {
-          queryClient.setQueryData(['setsDropdownList'], context.previousSets)
-        }
-        if (context.previousDie !== undefined) {
-          queryClient.setQueryData(['die', variables.dieId], context.previousDie)
-        }
-        if (context.previousDieDetail !== undefined) {
-          queryClient.setQueryData(['dieDetail', variables.dieId], context.previousDieDetail)
-        }
-      }
-      showToast(`Failed to allocate die: ${err.message}`, 'error')
-    },
-    onSettled: (data: any, err: any, variables: any) => {
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
-      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
-      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
-      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-      queryClient.invalidateQueries({ queryKey: ['die', variables.dieId] })
-      queryClient.invalidateQueries({ queryKey: ['dieDetail', variables.dieId] })
-    }
-  })
-
-  const reallocateSetMutation = useMutation({
-    mutationFn: ({ setId, machineId }: { setId: any, machineId: any }) => request(`/api/sets/${setId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ machine: machineId })
-    }),
-    onMutate: async ({ setId, machineId }: { setId: any, machineId: any }) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: ['dies'] })
-      await queryClient.cancelQueries({ queryKey: ['searchDies'] })
-      await queryClient.cancelQueries({ queryKey: ['machinesList'] })
-      await queryClient.cancelQueries({ queryKey: ['setsDropdownList'] })
-
-      // Snapshot
-      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
-      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
-      const previousMachines = queryClient.getQueryData(['machinesList'])
-      const previousSets = queryClient.getQueryData(['setsDropdownList'])
-
-      // Find machine name
-      let newMachineName = ''
-      if (machineId && previousMachines) {
-        const foundMachine = (previousMachines as any[]).find((m: any) => Number(m.id) === Number(machineId))
-        if (foundMachine) {
-          newMachineName = foundMachine.name
-        }
-      }
-
-      // Optimistically update sets dropdown query
-      if (previousSets) {
-        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
-          if (!Array.isArray(old)) return old
-          return old.map((set: any) => {
-            if (Number(set.id) === Number(setId)) {
-              return {
-                ...set,
-                machine: machineId ? Number(machineId) : null,
-                machine_name: newMachineName || undefined,
-              }
-            }
-            return set
-          })
-        })
-      }
-
-      // Optimistically update machines list
-      if (previousMachines) {
-        queryClient.setQueryData(['machinesList'], (old: any) => {
-          if (!Array.isArray(old)) return old
-          let foundSet: any = null
-          const updatedMachines = old.map((machine: any) => {
-            const hasSet = machine.sets?.some((s: any) => Number(s.id) === Number(setId))
-            if (hasSet) {
-              foundSet = machine.sets.find((s: any) => Number(s.id) === Number(setId))
-              return {
-                ...machine,
-                sets: machine.sets.filter((s: any) => Number(s.id) !== Number(setId))
-              }
-            }
-            return machine
-          })
-
-          if (!foundSet && previousSets) {
-            foundSet = (previousSets as any[]).find((s: any) => Number(s.id) === Number(setId))
-          }
-
-          if (foundSet) {
-            const updatedSet = {
-              ...foundSet,
-              machine: machineId ? Number(machineId) : null,
-              machine_name: newMachineName || undefined,
-            }
-            return updatedMachines.map((machine: any) => {
-              if (machineId && Number(machine.id) === Number(machineId)) {
-                const otherSets = (machine.sets || []).filter((s: any) => Number(s.id) !== Number(setId))
-                return {
-                  ...machine,
-                  sets: [...otherSets, updatedSet]
-                }
-              }
-              return machine
-            })
-          }
-          return old
-        })
-      }
-
-      // Optimistically update dies lists (dies in that set get machine_name updated)
-      const updateSetMachine = (old: any) => {
-        return mapQueryDataList(old, (die: any) => {
-          if (Number(die.current_set) === Number(setId)) {
-            return {
-              ...die,
-              machine_name: newMachineName || undefined,
-            }
-          }
-          return die
-        })
-      }
-      queryClient.setQueriesData({ queryKey: ['dies'] }, updateSetMachine)
-      queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateSetMachine)
-
-      return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets }
-    },
-    onError: (err: any, variables: any, context: any) => {
-      if (context) {
-        if (context.previousDiesQueries) {
-          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-        if (context.previousSearchDiesQueries) {
-          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
-        }
-        if (context.previousMachines !== undefined) {
-          queryClient.setQueryData(['machinesList'], context.previousMachines)
-        }
-        if (context.previousSets !== undefined) {
-          queryClient.setQueryData(['setsDropdownList'], context.previousSets)
-        }
-      }
-      showToast(`Failed to allocate set: ${err.message}`, 'error')
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['dies'] })
-      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
-      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
-      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
-    }
-  })
-
-  const handleDropOnMachine = useCallback((e: React.DragEvent, machineId: any) => {
-    e.preventDefault()
-    setDragOverNode(null)
-    setActiveDragType(null)
-    if (role !== 'ROOT' && role !== 'ADMIN') return
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
-      if (data.type === 'set') {
-        const { id: setId, currentMachineId } = data
-        if (Number(currentMachineId) === Number(machineId)) return
-        reallocateSetMutation.mutate({ setId, machineId })
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }, [role, reallocateSetMutation])
-
-  const handleDropOnSet = useCallback((e: React.DragEvent, setId: any) => {
-    e.preventDefault()
-    setDragOverNode(null)
-    setActiveDragType(null)
-    if (role !== 'ROOT' && role !== 'ADMIN') return
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
-      if (data.type === 'die') {
-        const { id: dieId } = data
-        reallocateDieMutation.mutate({ dieId, setId })
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }, [role, reallocateDieMutation])
-
-  const handleDropOnUnassigned = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOverNode(null)
-    setActiveDragType(null)
-    if (role !== 'ROOT' && role !== 'ADMIN') return
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
-      if (data.type === 'die') {
-        const { id: dieId } = data
-        reallocateDieMutation.mutate({ dieId, setId: null })
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }, [role, reallocateDieMutation])
-
-  const handleDragStartDie = useCallback((id: string) => {
+  const handleDragStartDie = (id: string) => {
     setActiveDragType('die')
-  }, [])
+  }
 
-  const handleDragEndDie = useCallback(() => {
+  const handleDragEndDie = () => {
     setActiveDragType(null)
-    setDragOverNode(null)
-  }, [])
+  }
 
   const handleCreateSubmit = (payload: any) => {
     setCreateError(null)
     createDieMutation.mutate(payload)
   }
 
-  // Group dies into tree data structure (Memoized to prevent high-render CPU recalculations)
-  const { diesBySet, unassignedDies, machinesWithData } = useMemo(() => {
+  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const isSearchActive = useMemo(() => {
+    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
+  // Automatically select search node when search starts/ends
+  useEffect(() => {
+    if (isSearchActive) {
+      setSelectedNode({ type: 'search' })
+    } else {
+      setSelectedNode(null)
+    }
+  }, [isSearchActive])
+
+  // Group dies for selection fallback calculations
+  const { unassignedDies, machinesWithData } = useMemo(() => {
     const diesBySet: Record<string | number, any[]> = {}
     const unassignedDies: any[] = []
     
@@ -633,7 +176,6 @@ export function InventoryPage() {
       }
     })
 
-    // Index sets by machine ID in O(S) time to avoid O(M * S) nested iterations
     const setsByMachine: Record<string | number, any[]> = {}
     setsList?.forEach((set: any) => {
       if (set.machine) {
@@ -652,72 +194,17 @@ export function InventoryPage() {
           ...set,
           dies: setDies
         }
-      }).filter((set: any) => showEmptyNodes || set.dies.length > 0)
+      })
 
       return {
         ...machine,
         sets: machineSets,
         totalDies: machineSets.reduce((sum: number, s: any) => sum + s.dies.length, 0)
       }
-    }).filter((m: any) => showEmptyNodes || m.totalDies > 0)
-
-    return { diesBySet, unassignedDies, machinesWithData }
-  }, [dies, machinesList, setsList, showEmptyNodes])
-
-  const handleExpandAll = () => {
-    const nextMachs: Record<string | number, boolean> = {}
-    const nextSets: Record<string | number, boolean> = {}
-    machinesWithData.forEach((m: any) => {
-      nextMachs[m.id] = true
-      m.sets.forEach((s: any) => {
-        nextSets[s.id] = true
-      })
     })
-    setExpandedMachines(nextMachs)
-    setExpandedSets(nextSets)
-    setExpandedUnassigned(true)
-  }
 
-  const handleCollapseAll = () => {
-    setExpandedMachines({})
-    setExpandedSets({})
-    setExpandedUnassigned(false)
-  }
-
-  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
-  const [treeSearch, setTreeSearch] = useState('')
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-
-  // Filtered machines list for the tree navigation search
-  const filteredMachines = useMemo(() => {
-    if (!treeSearch) return machinesWithData
-    const query = treeSearch.toLowerCase()
-    return machinesWithData.map((m: any) => {
-      const matchingSets = m.sets.filter((s: any) => s.name.toLowerCase().includes(query))
-      const machineMatches = m.name.toLowerCase().includes(query)
-      if (machineMatches || matchingSets.length > 0) {
-        return {
-          ...m,
-          sets: machineMatches ? m.sets : matchingSets
-        }
-      }
-      return null
-    }).filter(Boolean) as any[]
-  }, [machinesWithData, treeSearch])
-
-  const isSearchActive = useMemo(() => {
-    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
-  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
-
-  // Automatically select search node when search starts/ends
-  useEffect(() => {
-    if (isSearchActive) {
-      setSelectedNode({ type: 'search' })
-    } else {
-      setSelectedNode(null)
-    }
-  }, [isSearchActive])
+    return { unassignedDies, machinesWithData }
+  }, [dies, machinesList, setsList])
 
   // Set default selected node once data is loaded and no search is active
   useEffect(() => {
@@ -791,237 +278,16 @@ export function InventoryPage() {
 
   const canCreate = role === 'ROOT' || role === 'ADMIN'
 
-  const sidebarTree = useMemo(() => (
-    <div 
-      className={`fixed inset-y-0 left-0 z-50 w-72 glass-panel border-r border-slate-800/40 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      } ${
-        isSidebarCollapsed ? 'md:hidden' : 'md:flex'
-      }`}
-    >
-      {/* Sidebar Header with Tree Search */}
-      <div className="p-4 border-b border-slate-800/45 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-200 text-xs tracking-wider uppercase">Inventory Explorer</span>
-          {/* Close button for mobile */}
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden p-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        
-        {/* Tree Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-          <input 
-            type="text"
-            placeholder="Search machines or sets..."
-            value={treeSearch}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTreeSearch(e.target.value)}
-            className="w-full glass-input rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
-          />
-        </div>
+  // Ref to invoke expandAll / collapseAll on the tree
+  const sidebarRef = useRef<MachineSidebarTreeRef>(null)
 
-        {/* Toggle to show/hide empty nodes */}
-        <div 
-          className="flex items-center justify-between px-1 mt-1 text-slate-450 hover:text-slate-200 transition-colors select-none cursor-pointer" 
-          onClick={() => setShowEmptyNodes(!showEmptyNodes)}
-        >
-          <span className="text-[10px] font-medium tracking-wider uppercase text-slate-400">Show empty machines & sets</span>
-          <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 shrink-0 ${showEmptyNodes ? 'bg-blue-600' : 'bg-slate-800'}`}>
-            <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${showEmptyNodes ? 'translate-x-4' : 'translate-x-0'}`} />
-          </div>
-        </div>
-      </div>
+  const handleExpandAll = () => {
+    sidebarRef.current?.expandAll()
+  }
 
-      {/* Tree Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        <div>
-          {/* Search Results Tree Node */}
-          {isSearchActive && (
-            <div className="mb-4">
-              <div
-                onClick={() => setSelectedNode({ type: 'search' })}
-                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
-                  selectedNode?.type === 'search'
-                    ? 'bg-blue-600/10 text-white border-blue-500 glow-blue'
-                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
-                }`}
-              >
-                <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
-                <span className="text-xs font-bold truncate flex-1">Search Results</span>
-                <span className="bg-slate-955 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
-                  {dies?.length || 0}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            <Database className="h-3.5 w-3.5 text-blue-500" />
-            <span>Machines / Production Sets</span>
-          </div>
-          
-          <div className="space-y-1 mt-2">
-            {filteredMachines.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-slate-505 italic">No matches found</div>
-            ) : (
-              filteredMachines.map((machine: any) => {
-                const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
-                const isMachineSelected = selectedNode?.type === 'machine' && selectedNode?.id === machine.id
-                const isMachineDragOver = dragOverNode?.type === 'machine' && dragOverNode?.id === machine.id
-                
-                return (
-                  <div key={machine.id} className="space-y-0.5">
-                    {/* Machine Node */}
-                    <div 
-                      className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
-                        isMachineDragOver
-                          ? 'bg-blue-650 text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
-                          : isMachineSelected 
-                            ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2 glow-blue' 
-                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
-                      }`}
-                      onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
-                      onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
-                      onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
-                      onDragLeave={canCreate ? (e: React.DragEvent<HTMLDivElement>) => setDragOverNode(null) : undefined}
-                      onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnMachine(e, machine.id) : undefined}
-                    >
-                      <button
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.stopPropagation()
-                          toggleMachine(machine.id)
-                        }}
-                        className="p-1 hover:bg-slate-850 rounded transition mr-1"
-                      >
-                        {isMachineExpanded ? (
-                          <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
-                        )}
-                      </button>
-                      <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-500'}`} />
-                      <span className="text-xs font-semibold truncate flex-1">{machine.name}</span>
-                      <span className="bg-slate-950 text-slate-500 text-xxs px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
-                        {machine.totalDies}
-                      </span>
-                    </div>
-                    
-                    {/* Set Nodes (Children) */}
-                    {isMachineExpanded && (
-                      <div className="relative pl-4 space-y-0.5 ml-4 mt-0.5">
-                        <div className="tree-branch-line" />
-                        {machine.sets.map((set: any) => {
-                          const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
-                          const activeCount = set.dies.filter(isDieActive).length
-                          const isSetDragOver = dragOverNode?.type === 'set' && dragOverNode?.id === set.id
-                          return (
-                            <div key={set.id} className="relative pl-6">
-                              <div className="tree-leaf-line" />
-                              <div
-                                onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: machine.id })}
-                                draggable={canCreate}
-                                onDragStart={(e: React.DragEvent<HTMLDivElement>) => {
-                                  if (canCreate) {
-                                    e.dataTransfer.effectAllowed = 'move';
-                                    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'set', id: set.id, currentMachineId: machine.id }));
-                                    setActiveDragType('set');
-                                  }
-                                }}
-                                onDragEnd={() => {
-                                  setActiveDragType(null);
-                                  setDragOverNode(null);
-                                }}
-                                onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                                onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
-                                onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                                onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id) : undefined}
-                                className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
-                                  canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-                                } ${
-                                  isSetDragOver
-                                    ? 'bg-indigo-600/30 text-white border-indigo-500 ring-2 ring-indigo-500/20'
-                                    : isSetSelected
-                                      ? 'bg-indigo-600/10 text-white border-indigo-500 glow-indigo'
-                                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
-                                }`}
-                              >
-                                <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
-                                <span className="text-xs font-medium truncate flex-1">{set.name}</span>
-                                <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-955 border border-slate-800 shrink-0">
-                                  {activeCount > 0 && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
-                                  )}
-                                  {set.dies.length}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-           {/* Unassigned / Standalone Dies Node */}
-           {unassignedDies.length > 0 && (
-             <div className="pt-4 border-t border-slate-800/60 mt-4">
-               {(() => {
-                 const isUnassignedDragOver = dragOverNode?.type === 'unassigned'
-                 return (
-                   <div
-                     onClick={() => setSelectedNode({ type: 'unassigned' })}
-                     onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                     onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
-                     onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                     onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnUnassigned(e) : undefined}
-                     className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
-                       isUnassignedDragOver
-                         ? 'bg-amber-655 text-white border-amber-500 ring-2 ring-amber-500/20'
-                         : selectedNode?.type === 'unassigned'
-                           ? 'bg-amber-600/10 text-white border-amber-500 glow-amber'
-                           : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
-                     }`}
-                   >
-                     <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
-                     <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
-                     <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
-                       {unassignedDies.length}
-                     </span>
-                   </div>
-                 )
-               })()}
-             </div>
-           )}
-        </div>
-      </div>
-    </div>
-  ), [
-    isSidebarOpen,
-    isSidebarCollapsed,
-    treeSearch,
-    isSearchActive,
-    selectedNode,
-    dies?.length,
-    filteredMachines,
-    expandedMachines,
-    dragOverNode,
-    activeDragType,
-    canCreate,
-    unassignedDies,
-    expandedSets,
-    toggleMachine,
-    toggleSet,
-    handleDropOnMachine,
-    handleDropOnSet,
-    handleDropOnUnassigned
-  ])
+  const handleCollapseAll = () => {
+    sidebarRef.current?.collapseAll()
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] relative bg-slate-950 text-white font-sans">
@@ -1035,7 +301,23 @@ export function InventoryPage() {
       )}
 
       {/* LEFT PANEL - Tree Navigation */}
-      {sidebarTree}
+      <MachineSidebarTree 
+        ref={sidebarRef}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        isSidebarCollapsed={isSidebarCollapsed}
+        selectedNode={selectedNode}
+        setSelectedNode={setSelectedNode}
+        machinesList={machinesList}
+        setsList={setsList}
+        dies={dies}
+        isSearchActive={isSearchActive}
+        canCreate={canCreate}
+        activeDragType={activeDragType}
+        setActiveDragType={setActiveDragType}
+        onReallocateDie={(dieId, setId) => reallocateDieMutation.mutate({ dieId, setId })}
+        onReallocateSet={(setId, machineId) => reallocateSetMutation.mutate({ setId, machineId })}
+      />
 
       {/* RIGHT PANEL - Content Area */}
       <div className="flex-1 min-w-0 bg-slate-950 flex flex-col">
@@ -1052,7 +334,7 @@ export function InventoryPage() {
                   setIsSidebarCollapsed(!isSidebarCollapsed)
                 }
               }}
-              className="p-2 bg-slate-950 border border-slate-800 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-white transition shadow-sm mr-4"
+              className="p-2 bg-slate-955 border border-slate-800 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-white transition shadow-sm mr-4"
               title="Toggle Sidebar"
             >
               {/* Mobile View: Hamburger Menu */}
@@ -1083,7 +365,7 @@ export function InventoryPage() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between relative z-10">
               <div className="relative flex-1 w-full">
                 <div className="relative flex items-center">
-                  <Search className="absolute left-3 sm:left-4 h-4 sm:h-5 w-4 sm:w-5 text-slate-500" />
+                  <Search className="absolute left-3 sm:left-4 h-4 sm:h-5 w-4 sm:w-5 text-slate-505" />
                   <input 
                     type="text" 
                     placeholder="Search dies..."
@@ -1105,7 +387,7 @@ export function InventoryPage() {
                 className={`flex items-center justify-center space-x-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl border font-bold transition-all duration-350 w-full sm:w-auto btn-glow glow-blue ${
                   showFilters 
                     ? 'bg-blue-600/15 text-blue-400 border-blue-500/30' 
-                    : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:border-slate-700'
+                    : 'bg-slate-955/60 text-slate-300 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <SlidersHorizontal className="h-4 sm:h-5 w-4 sm:w-5" />
@@ -1133,14 +415,14 @@ export function InventoryPage() {
               </div>
 
               {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-1 rounded-xl shadow-inner self-center sm:self-auto">
+              <div className="flex items-center gap-1 bg-slate-955/80 border border-slate-800 p-1 rounded-xl shadow-inner self-center sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
                   className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
                     viewMode === 'list' 
                       ? 'bg-blue-600 text-white shadow-md' 
-                      : 'text-slate-450 hover:text-white'
+                      : 'text-slate-455 hover:text-white'
                   }`}
                 >
                   List
@@ -1151,7 +433,7 @@ export function InventoryPage() {
                   className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
                     viewMode === 'grid' 
                       ? 'bg-blue-600 text-white shadow-md' 
-                      : 'text-slate-450 hover:text-white'
+                      : 'text-slate-455 hover:text-white'
                   }`}
                 >
                   Rack Grid
@@ -1372,7 +654,7 @@ export function InventoryPage() {
                     /* Fallback when selected machine is filtered out */
                     <div className="space-y-6">
                       <div className="border-b border-slate-800/40 pb-5">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-505 uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-550 uppercase tracking-wider mb-1">
                           <Cpu className="h-4 w-4 text-blue-500" />
                           <span>Machine Explorer</span>
                         </div>
@@ -1410,13 +692,13 @@ export function InventoryPage() {
                           <span className="text-2xl md:text-3xl font-black text-white mt-2 font-heading">{selectedSetData.set.dies.length}</span>
                         </div>
                         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 transition-all duration-300">
-                          <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
+                          <span className="text-slate-455 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
                           <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 font-heading">
                             {selectedSetData.set.dies.filter(isDieActive).length}
                           </span>
                         </div>
                         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 transition-all duration-300">
-                          <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
+                          <span className="text-slate-455 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
                           <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 font-heading">
                             {selectedSetData.set.dies.length - selectedSetData.set.dies.filter(isDieActive).length}
                           </span>
@@ -1442,7 +724,7 @@ export function InventoryPage() {
                             </div>
                             <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-850 p-0.5">
                               <div className="bg-gradient-to-r from-emerald-600 to-emerald-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
-                              <div className="bg-gradient-to-r from-rose-600 to-rose-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%` }} />
+                              <div className="bg-gradient-to-r from-rose-600 to-rose-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
                             </div>
                           </div>
                         )
@@ -1578,5 +860,3 @@ export function InventoryPage() {
     </div>
   )
 }
-
-

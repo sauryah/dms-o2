@@ -38,7 +38,8 @@ describe('SessionTimeoutManager', () => {
       role: 'admin',
       username: 'test',
       userId: 1,
-      setToken: vi.fn()
+      setToken: vi.fn(),
+      login: vi.fn()
     })
 
     vi.mocked(useApi).mockReturnValue({
@@ -61,7 +62,8 @@ describe('SessionTimeoutManager', () => {
       role: null,
       username: null,
       userId: null,
-      setToken: vi.fn()
+      setToken: vi.fn(),
+      login: vi.fn()
     })
 
     const { rerender } = render(<SessionTimeoutManager />)
@@ -79,7 +81,8 @@ describe('SessionTimeoutManager', () => {
       role: 'admin',
       username: 'test',
       userId: 1,
-      setToken: vi.fn()
+      setToken: vi.fn(),
+      login: vi.fn()
     })
 
     act(() => {
