@@ -2,11 +2,32 @@ import { useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 export const useApi = () => {
-  const { token, logout } = useAuth()
+  const { token, refreshToken, logout, setToken, setRefreshToken } = useAuth()
   const tokenRef = useRef(token)
+  const refreshTokenRef = useRef(refreshToken)
   tokenRef.current = token
+  refreshTokenRef.current = refreshToken
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+  const refreshAccessToken = async (): Promise<string | null> => {
+    const currentRefresh = refreshTokenRef.current
+    if (!currentRefresh) return null
+    try {
+      const res = await fetch('/api/auth/refresh/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: currentRefresh })
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      setToken(data.access)
+      if (data.refresh) setRefreshToken(data.refresh)
+      return data.access
+    } catch {
+      return null
+    }
+  }
 
   const request = useCallback(async (url: string, options: any = {}) => {
     const headers = { ...options.headers }
@@ -25,6 +46,22 @@ export const useApi = () => {
         const res = await fetch(url, { ...options, headers })
 
         if (res.status === 401) {
+          const newToken = await refreshAccessToken()
+          if (newToken) {
+            headers['Authorization'] = `Bearer ${newToken}`
+            const retryRes = await fetch(url, { ...options, headers })
+            if (retryRes.status === 401) {
+              logout()
+              window.location.hash = '/login'
+              throw new Error('Unauthorized')
+            }
+            if (retryRes.status === 204) return null
+            const retryData = await retryRes.json()
+            if (!options.keepMetadata && retryData && typeof retryData === 'object' && 'results' in retryData && Array.isArray(retryData.results)) {
+              return retryData.results
+            }
+            return retryData
+          }
           logout()
           window.location.hash = '/login'
           throw new Error('Unauthorized')
@@ -80,7 +117,7 @@ export const useApi = () => {
     }
 
     throw lastError || new Error('Request failed after retries')
-  }, [logout])
+  }, [logout, setToken, setRefreshToken])
 
   return { request }
 }

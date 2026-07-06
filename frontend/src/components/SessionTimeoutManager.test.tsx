@@ -34,11 +34,13 @@ describe('SessionTimeoutManager', () => {
 
     vi.mocked(useAuth).mockReturnValue({
       token: currentToken,
+      refreshToken: null,
       logout: mockLogout,
       role: 'admin',
       username: 'test',
       userId: 1,
       setToken: vi.fn(),
+      setRefreshToken: vi.fn(),
       login: vi.fn()
     })
 
@@ -58,11 +60,13 @@ describe('SessionTimeoutManager', () => {
     currentToken = null
     vi.mocked(useAuth).mockReturnValue({
       token: currentToken,
+      refreshToken: null,
       logout: mockLogout,
       role: null,
       username: null,
       userId: null,
       setToken: vi.fn(),
+      setRefreshToken: vi.fn(),
       login: vi.fn()
     })
 
@@ -77,11 +81,13 @@ describe('SessionTimeoutManager', () => {
     currentToken = 'valid-token'
     vi.mocked(useAuth).mockReturnValue({
       token: currentToken,
+      refreshToken: 'valid-refresh',
       logout: mockLogout,
       role: 'admin',
       username: 'test',
       userId: 1,
       setToken: vi.fn(),
+      setRefreshToken: vi.fn(),
       login: vi.fn()
     })
 

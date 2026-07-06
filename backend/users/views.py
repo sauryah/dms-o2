@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from users.models import User, UserSession, UserActivityLog
 from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer, ChangePasswordSerializer, UserActivityLogSerializer
 from users.permissions import IsRootOnly
@@ -121,9 +121,10 @@ class LoginView(APIView):
         # Success - clear any failed attempts
         r.delete(attempts_key)
 
-        # Generate token
-        access_token = AccessToken.for_user(user)
-        token_str = str(access_token)
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+        token_str = str(refresh.access_token)
+        refresh_token_str = str(refresh)
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
 
         # Prune older sessions if count >= SESSION_MAX_CONCURRENT
@@ -154,6 +155,7 @@ class LoginView(APIView):
 
         return Response({
             'token': token_str,
+            'refresh': refresh_token_str,
             'role': user.role
         }, status=status.HTTP_200_OK)
 
@@ -207,10 +209,12 @@ class ChangePasswordView(APIView):
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
+        refresh_token_str = str(refresh)
 
         return Response({
             "detail": "Password changed successfully.",
             "token": access_token,
+            "refresh": refresh_token_str,
         }, status=status.HTTP_200_OK)
 
 
@@ -435,7 +439,7 @@ class EventStreamView(APIView):
         if not token:
             return Response({'error': 'Authentication token is required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        from rest_framework_simplejwt.tokens import AccessToken
+        from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
         try:
             validated_token = AccessToken(token)
         except Exception:

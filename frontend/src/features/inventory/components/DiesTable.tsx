@@ -1,4 +1,4 @@
-import React, { memo, useState, useMemo } from 'react'
+import React, { memo, useState, useMemo, useEffect } from 'react'
 import { List, RowComponentProps } from 'react-window'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -26,6 +26,14 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
 
   const canEdit = role === 'ROOT' || role === 'ADMIN'
   const canChangeStatus = role === 'ROOT' || role === 'ADMIN' || role === 'OPERATOR'
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleStatusChange = async (dieId: string, newStatus: string) => {
     await queryClient.cancelQueries({ queryKey: ['dies'] })
@@ -211,16 +219,12 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   const handleBulkStatusUpdate = async () => {
     if (!bulkStatus) return
     setIsUpdating(true)
-
-    // Cancel queries
     await queryClient.cancelQueries({ queryKey: ['dies'] })
     await queryClient.cancelQueries({ queryKey: ['searchDies'] })
 
-    // Snapshot previous data
     const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
     const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
-    // Optimistically update list caches
     const updateStatus = (old: any) => {
       if (!Array.isArray(old)) return old
       return old.map((die: any) => {
@@ -233,7 +237,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     queryClient.setQueriesData({ queryKey: ['dies'] }, updateStatus)
     queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateStatus)
 
-    // Update individual die detail queries as well (if any are cached)
     const affectedDieIds = Array.from(selectedDieIds)
     const previousIndividualDies: [any, any][] = []
     affectedDieIds.forEach(dieId => {
@@ -263,7 +266,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
       showToast(`Successfully updated status of ${snapshotDieIds.size} dies to ${bulkStatus}.`, 'success')
     } catch (err: any) {
       console.error(err)
-      // Rollback
       if (previousDiesQueries) {
         previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
       }
@@ -289,17 +291,14 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     if (!bulkLocation.trim()) return
     setIsUpdating(true)
 
-    const nextLocation = bulkLocation.trim()
-
-    // Cancel queries
     await queryClient.cancelQueries({ queryKey: ['dies'] })
     await queryClient.cancelQueries({ queryKey: ['searchDies'] })
 
-    // Snapshot previous data
+    const nextLocation = bulkLocation.trim()
+
     const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
     const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
-    // Optimistically update list caches
     const updateLocation = (old: any) => {
       if (!Array.isArray(old)) return old
       return old.map((die: any) => {
@@ -312,7 +311,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     queryClient.setQueriesData({ queryKey: ['dies'] }, updateLocation)
     queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLocation)
 
-    // Update individual die detail queries as well (if any are cached)
     const affectedDieIds = Array.from(selectedDieIds)
     const previousIndividualDies: [any, any][] = []
     affectedDieIds.forEach(dieId => {
@@ -342,7 +340,6 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
       showToast(`Successfully updated location of ${snapshotDieIds.size} dies to "${nextLocation}".`, 'success')
     } catch (err: any) {
       console.error(err)
-      // Rollback
       if (previousDiesQueries) {
         previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
       }
@@ -462,6 +459,155 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
       </div>
     );
   };
+
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {/* Bulk Action Bar */}
+        {selectedDieIds.size > 0 && (
+          <div className="bg-slate-950/90 backdrop-blur-md border border-slate-800/80 rounded-xl px-4 py-3 space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-200">
+                <span className="font-extrabold text-blue-400">{selectedDieIds.size}</span> selected
+              </span>
+              <button
+                onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
+                className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-300 flex-1 min-w-0"
+              >
+                <option value="">Set Status...</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="RUNNING">Running</option>
+                <option value="CLEANING">Cleaning</option>
+                <option value="POLISHING">Polishing</option>
+                <option value="DAMAGED">Damaged</option>
+                <option value="SCRAPPED">Scrapped</option>
+                <option value="MISSING">Missing</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+              <button
+                onClick={handleBulkStatusUpdate}
+                disabled={!bulkStatus || isUpdating}
+                className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50"
+              >
+                {isUpdating ? '...' : 'Apply'}
+              </button>
+              <input
+                type="text"
+                value={bulkLocation}
+                onChange={(e) => setBulkLocation(e.target.value)}
+                placeholder="Location..."
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white placeholder-slate-500 flex-1 min-w-0"
+              />
+              <button
+                onClick={handleBulkLocationUpdate}
+                disabled={!bulkLocation.trim() || isUpdating}
+                className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50"
+              >
+                {isUpdating ? '...' : 'Set'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Card List */}
+        {sortedDies.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 italic">No dies found.</div>
+        ) : (
+          sortedDies.map((die) => {
+            const isSelected = selectedDieIds.has(die.die_id)
+            return (
+              <div
+                key={die.die_id}
+                className={`bg-slate-900 border rounded-xl p-4 transition-all duration-200 ${
+                  isSelected ? 'border-blue-500/40 bg-blue-600/5' : 'border-slate-800/60'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {canEdit && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(die.die_id)}
+                        className="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-2 focus:ring-blue-500 w-4 h-4 shrink-0 mt-0.5"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-bold font-mono text-sm truncate">{die.die_id}</span>
+                        <span className={`px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded border bg-slate-800 text-slate-300 border-slate-700`}>
+                          {die.die_type}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-xs mt-0.5 font-mono">{die.casing}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs mb-3">
+                  <div>
+                    <span className="text-slate-500">Size: </span>
+                    <span className="text-slate-200 font-mono">
+                      {die.die_type === 'ROUND'
+                        ? `Ø ${die.current_size || '—'} mm`
+                        : `${die.current_width || '—'}×${die.current_thickness || '—'} mm`
+                      }
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Location: </span>
+                    <span className="text-slate-200 truncate">{die.location || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Updated: </span>
+                    <span className="text-slate-200">{new Date(die.updated_at).toLocaleDateString()}</span>
+                  </div>
+                  <div>
+                    {canChangeStatus ? (
+                      <select
+                        value={die.status}
+                        onChange={(e) => handleStatusChange(die.die_id, e.target.value)}
+                        className={`text-[10px] font-mono font-semibold rounded-md border bg-slate-900 px-1.5 py-0.5 w-full ${
+                          statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                        }`}
+                      >
+                        {Object.keys(statusColors).map(opt => (
+                          <option key={opt} value={opt}>{statusLabels[opt] || opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md border ${
+                        statusColors[die.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                      }`}>
+                        {statusLabels[die.status] || die.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/dies/${die.die_id}`)}
+                  className="w-full bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 py-2 rounded-xl text-xs font-semibold transition"
+                >
+                  View Details
+                </button>
+              </div>
+            )
+          })
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">

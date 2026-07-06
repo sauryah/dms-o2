@@ -47,7 +47,7 @@ export function SettingsPage() {
           new_password: newPassword,
         }),
       })
-      login(data.token, role || '', username || '')
+      login(data.token, data.refresh || '', role || '', username || '')
       setSuccess('Password changed successfully.')
       setCurrentPassword('')
       setNewPassword('')

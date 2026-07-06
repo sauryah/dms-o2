@@ -34,7 +34,7 @@ function TestAuthComponent() {
       <span data-testid="token">{token}</span>
       <span data-testid="role">{role}</span>
       <span data-testid="username">{username}</span>
-      <button onClick={() => login('new_token', 'admin', 'john_doe')}>Login</button>
+      <button onClick={() => login('new_token', '', 'admin', 'john_doe')}>Login</button>
       <button onClick={logout}>Logout</button>
     </div>
   )

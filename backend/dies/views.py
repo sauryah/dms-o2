@@ -4,12 +4,12 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from dies.models import Die, ImportLog
+from dies.models import Die, ImportLog, MaintenanceLog
 from dies.serializers import (
     DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
-    serialize_die_list_fast, ImportLogSerializer
+    serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer
 )
 from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate
 from search.meili import client as meili_client, INDEX_NAME
@@ -107,6 +107,19 @@ class DieViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(flatdie__current_thickness__lte=thick_max)
             
         return queryset
+
+    @action(detail=True, methods=['get', 'post'], url_path='maintenance-logs')
+    def maintenance_logs(self, request, die_id=None):
+        die = self.get_object()
+        if request.method == 'GET':
+            logs = die.maintenance_logs.select_related('created_by').all()
+            serializer = MaintenanceLogSerializer(logs, many=True)
+            return Response(serializer.data)
+        elif request.method == 'POST':
+            serializer = MaintenanceLogSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(die=die, created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 import tempfile

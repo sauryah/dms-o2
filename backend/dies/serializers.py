@@ -2,7 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.db import transaction
 from dies.contracts import DIE_STATUSES
-from dies.models import Die, RoundDie, FlatDie, ImportLog
+from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog
 from history.models import DieHistory
 
 class DieHistorySerializer(serializers.ModelSerializer):
@@ -207,6 +207,19 @@ def serialize_die_list_fast(dies_queryset):
                 rep['radius'] = str(fd.radius)
         data.append(rep)
     return data
+
+
+class MaintenanceLogSerializer(serializers.ModelSerializer):
+    created_by_username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MaintenanceLog
+        fields = ['id', 'die', 'created_by', 'created_by_username', 'created_at', 'note', 'category']
+        read_only_fields = ['id', 'die', 'created_by', 'created_by_username', 'created_at']
+
+    @extend_schema_field(serializers.CharField)
+    def get_created_by_username(self, obj):
+        return obj.created_by.username if obj.created_by else ''
 
 
 class ImportLogSerializer(serializers.ModelSerializer):

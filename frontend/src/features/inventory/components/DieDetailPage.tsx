@@ -231,6 +231,134 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
   );
 }
 
+function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boolean }) {
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+  const [showForm, setShowForm] = useState(false)
+  const [note, setNote] = useState('')
+  const [category, setCategory] = useState('INSPECTION')
+
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ['maintenanceLogs', dieId],
+    queryFn: () => request(`/api/dies/${dieId}/maintenance-logs/`),
+  })
+
+  const addLogMutation = useMutation({
+    mutationFn: (data: any) => request(`/api/dies/${dieId}/maintenance-logs/`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceLogs', dieId] })
+      setShowForm(false)
+      setNote('')
+      setCategory('INSPECTION')
+      showToast('Maintenance log added', 'success')
+    },
+    onError: (err: any) => {
+      showToast(`Failed to add log: ${err.message}`, 'error')
+    }
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!note.trim()) return
+    addLogMutation.mutate({ note: note.trim(), category })
+  }
+
+  const categoryBadge = (cat: string) => {
+    const colors: Record<string, string> = {
+      INSPECTION: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      REPAIR: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+      CLEANING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      POLISHING: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+      MEASUREMENT: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      OTHER: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    }
+    return colors[cat] || colors.OTHER
+  }
+
+  return (
+    <div className="space-y-4">
+      {canAdd && !showForm && (
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-slate-950 hover:bg-slate-800 text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+        >
+          + Add Entry
+        </button>
+      )}
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-slate-950/50 rounded-xl p-4 border border-slate-800 space-y-3">
+          <div className="flex gap-3">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="INSPECTION">Inspection</option>
+              <option value="REPAIR">Repair</option>
+              <option value="CLEANING">Cleaning</option>
+              <option value="POLISHING">Polishing</option>
+              <option value="MEASUREMENT">Measurement</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="text-slate-400 hover:text-white text-sm px-3"
+            >
+              Cancel
+            </button>
+          </div>
+          <textarea
+            rows={3}
+            placeholder="Describe the maintenance activity..."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+            required
+          />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={addLogMutation.isPending || !note.trim()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+            >
+              {addLogMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-2 max-h-80 overflow-y-auto">
+        {isLoading ? (
+          <p className="text-slate-500 text-sm">Loading...</p>
+        ) : !logs || logs.length === 0 ? (
+          <p className="text-slate-500 text-sm italic">No maintenance logs recorded.</p>
+        ) : (
+          logs.map((log: any) => (
+            <div key={log.id} className="bg-slate-950/30 rounded-xl p-4 border border-slate-800/60">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 text-[10px] font-mono font-semibold rounded-md border ${categoryBadge(log.category)}`}>
+                    {log.category || 'OTHER'}
+                  </span>
+                  <span className="text-xs text-slate-500">{log.created_by_username || 'System'}</span>
+                </div>
+                <span className="text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</span>
+              </div>
+              <p className="text-sm text-slate-300 whitespace-pre-line">{log.note}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function DieDetailPage() {
   const { id } = useParams()
   const { request } = useApi()
@@ -897,6 +1025,12 @@ export function DieDetailPage() {
       <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
         <h3 className="text-lg font-bold text-white mb-6">Dimension Wear Trend</h3>
         <DimensionWearChart data={getChartData()} dieType={die.die_type} />
+      </div>
+
+      {/* Maintenance Logs */}
+      <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
+        <h3 className="text-lg font-bold text-white mb-6">Maintenance Log</h3>
+        <MaintenanceLogSection dieId={die.die_id} canAdd={canEdit} />
       </div>
 
       {/* History timeline */}

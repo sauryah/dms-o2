@@ -54,6 +54,27 @@ class FlatDie(models.Model):
 
 from django.conf import settings
 
+class MaintenanceLog(models.Model):
+    die        = models.ForeignKey(Die, on_delete=models.CASCADE, related_name='maintenance_logs')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    note       = models.TextField()
+    category   = models.CharField(max_length=30, blank=True, choices=[
+        ('INSPECTION', 'Inspection'),
+        ('REPAIR', 'Repair'),
+        ('CLEANING', 'Cleaning'),
+        ('POLISHING', 'Polishing'),
+        ('MEASUREMENT', 'Measurement'),
+        ('OTHER', 'Other'),
+    ])
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Maintenance: {self.die.die_id} - {self.get_category_display()} ({self.created_at.date()})"
+
+
 class ImportLog(models.Model):
     imported_by   = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     imported_at   = models.DateTimeField(auto_now_add=True)

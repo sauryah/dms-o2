@@ -26,7 +26,7 @@ export function LoginPage() {
         throw new Error('Invalid username or password')
       }
       const data = await res.json()
-      login(data.token, data.role, usernameInput)
+      login(data.token, data.refresh, data.role, usernameInput)
       navigate('/')
     } catch (err: any) {
       setErrorMsg(err.message)

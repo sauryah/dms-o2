@@ -2,18 +2,21 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 
 interface AuthContextValue {
   token: string | null
+  refreshToken: string | null
   role: string | null
   username: string | null
   userId: number | null
-  login: (newToken: string, userRole: string, userN: string, id?: number) => void
+  login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number) => void
   logout: () => void
   setToken: React.Dispatch<React.SetStateAction<string | null>>
+  setRefreshToken: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 const AuthContext = createContext<AuthContextValue>(null as any)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('dms_token'))
+  const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem('dms_refresh_token'))
   const [role, setRole] = useState<string | null>(() => localStorage.getItem('dms_role'))
   const [username, setUsername] = useState<string | null>(() => localStorage.getItem('dms_username'))
   const [userId, setUserId] = useState<number | null>(() => {
@@ -28,6 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('dms_token')
     }
   }, [token])
+
+  useEffect(() => {
+    if (refreshToken) {
+      localStorage.setItem('dms_refresh_token', refreshToken)
+    } else {
+      localStorage.removeItem('dms_refresh_token')
+    }
+  }, [refreshToken])
 
   useEffect(() => {
     if (role) {
@@ -53,8 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userId])
 
-  const login = (newToken: string, userRole: string, userN: string, id?: number) => {
+  const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number) => {
     setToken(newToken)
+    setRefreshToken(refresh)
     setRole(userRole)
     setUsername(userN)
     if (id !== undefined) setUserId(id)
@@ -70,13 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }).catch(err => console.error('Failed to notify backend logout:', err))
     }
     setToken(null)
+    setRefreshToken(null)
     setRole(null)
     setUsername(null)
     setUserId(null)
   }
 
   return (
-    <AuthContext.Provider value={{ token, role, username, userId, login, logout, setToken }}>
+    <AuthContext.Provider value={{ token, refreshToken, role, username, userId, login, logout, setToken, setRefreshToken }}>
       {children}
     </AuthContext.Provider>
   )
