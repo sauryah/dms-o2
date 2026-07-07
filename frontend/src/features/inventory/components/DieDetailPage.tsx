@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText } from 'lucide-react'
+import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
@@ -382,6 +382,49 @@ export function DieDetailPage() {
   const [highlightedDim, setHighlightedDim] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  const [isRecutOpen, setIsRecutOpen] = useState(false)
+  const [newSize, setNewSize] = useState('')
+  const [newWidth, setNewWidth] = useState('')
+  const [newThickness, setNewThickness] = useState('')
+  const [newRadius, setNewRadius] = useState('')
+  const [recutNote, setRecutNote] = useState('')
+  const [recutError, setRecutError] = useState<string | null>(null)
+
+  // Populate recut defaults when modal is opened or die changes
+  useEffect(() => {
+    if (die) {
+      if (die.die_type === 'ROUND' && die.rounddie) {
+        setNewSize(String(Number(die.rounddie.current_size) + 1.0))
+      } else if (die.die_type === 'FLAT' && die.flatdie) {
+        setNewWidth(String(Number(die.flatdie.current_width) + 1.0))
+        setNewThickness(String(Number(die.flatdie.current_thickness) + 0.5))
+        setNewRadius(String(die.flatdie.radius))
+      }
+    }
+  }, [die, isRecutOpen])
+
+  // Mutation for recutting die
+  const recutMutation = useMutation({
+    mutationFn: (data: any) => request(`/api/dies/${id}/recut/`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    onSuccess: () => {
+      showToast('Die recut successfully.', 'success')
+      queryClient.invalidateQueries({ queryKey: ['die', id] })
+      queryClient.invalidateQueries({ queryKey: ['dieDetail', id] })
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      setIsRecutOpen(false)
+      setRecutNote('')
+      setRecutError(null)
+    },
+    onError: (err: any) => {
+      setRecutError(err.message || 'An error occurred during recutting.')
+    }
+  })
+
   // Query details
   const { data: die, isLoading, error } = useQuery({
     queryKey: ['die', id],
@@ -748,6 +791,13 @@ export function DieDetailPage() {
             {canEdit && (
               <>
                 <button 
+                  onClick={() => setIsRecutOpen(true)}
+                  className="bg-slate-950 hover:bg-slate-800 text-blue-400 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 animate-fadeIn"
+                >
+                  <Wrench className="h-4 w-4" />
+                  <span>Recut</span>
+                </button>
+                <button 
                   onClick={() => setIsEditing(!isEditing)}
                   className="bg-slate-950 hover:bg-slate-800 text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
                 >
@@ -1050,6 +1100,137 @@ export function DieDetailPage() {
         }}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      {isRecutOpen && die && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-slate-950/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onClick={() => setIsRecutOpen(false)}></div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="relative inline-block align-bottom bg-slate-900 border border-slate-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-slate-900 px-6 pt-6 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-500/10 text-blue-500 sm:mx-0 sm:h-10 sm:w-10">
+                    <Wrench className="h-6 w-6" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-bold text-white font-heading" id="modal-title">
+                      Recut / Re-bore Die: {die.die_id}
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-slate-400">
+                        This action updates the design base size (punched size) and resets the current size. The die status will be set to AVAILABLE.
+                      </p>
+                    </div>
+
+                    {recutError && (
+                      <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                        {recutError}
+                      </div>
+                    )}
+
+                    <div className="mt-6 space-y-4">
+                      {die.die_type === 'ROUND' ? (
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">New Punched/Current Diameter (mm)</label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={newSize}
+                            onChange={(e) => setNewSize(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                            placeholder="e.g. 12.000"
+                          />
+                          <p className="mt-1 text-xs text-slate-500">
+                            Current size is {die.rounddie?.current_size} mm (original punched size: {die.rounddie?.punched_size} mm)
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">New Width (mm)</label>
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={newWidth}
+                                onChange={(e) => setNewWidth(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">New Thick (mm)</label>
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={newThickness}
+                                onChange={(e) => setNewThickness(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">New Radius (mm)</label>
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={newRadius}
+                                onChange={(e) => setNewRadius(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            Current dims: {die.flatdie?.current_width} x {die.flatdie?.current_thickness} mm (fillet radius: {die.flatdie?.radius} mm)
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Maintenance Note / Reason</label>
+                        <textarea
+                          rows={3}
+                          value={recutNote}
+                          onChange={(e) => setRecutNote(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                          placeholder="Why is this die being recut? (e.g. Ring formation removed, recut to size 12.0)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-950 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse gap-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  disabled={recutMutation.isPending}
+                  onClick={() => {
+                    const payload: any = { note: recutNote }
+                    if (die.die_type === 'ROUND') {
+                      payload.new_size = newSize
+                    } else {
+                      payload.new_width = newWidth
+                      payload.new_thickness = newThickness
+                      payload.new_radius = newRadius
+                    }
+                    recutMutation.mutate(payload)
+                  }}
+                  className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-base font-semibold text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:bg-blue-800 transition-colors"
+                >
+                  {recutMutation.isPending ? 'Processing...' : 'Confirm Recut'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRecutOpen(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-800 shadow-sm px-4 py-2.5 bg-slate-900 text-base font-semibold text-slate-300 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
     {/* Print-only View */}

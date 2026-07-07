@@ -121,6 +121,106 @@ class DieViewSet(viewsets.ModelViewSet):
             serializer.save(die=die, created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'], url_path='recut')
+    @transaction.atomic
+    def recut(self, request, die_id=None):
+        die = self.get_object()
+        
+        # Check permissions: ADMIN or ROOT only
+        if request.user.role not in ['ADMIN', 'ROOT'] and not request.user.is_superuser:
+            return Response({"detail": "Only Admin or Root can recut dies."}, status=status.HTTP_403_FORBIDDEN)
+            
+        note = request.data.get('note', '').strip()
+        if not note:
+            return Response({"detail": "A note explaining the recut is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from decimal import Decimal, InvalidOperation
+        
+        if die.die_type == 'ROUND':
+            new_size_val = request.data.get('new_size')
+            if not new_size_val:
+                return Response({"detail": "new_size is required for ROUND die."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                new_size = Decimal(str(new_size_val))
+            except (ValueError, InvalidOperation):
+                return Response({"detail": "Invalid new_size value."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if not hasattr(die, 'rounddie') or not die.rounddie:
+                return Response({"detail": "Round die details not found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            old_punched = die.rounddie.punched_size
+            old_current = die.rounddie.current_size
+            
+            if new_size <= old_current:
+                return Response({"detail": f"New recut size ({new_size}) must be greater than current size ({old_current})."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Update specifications
+            die.rounddie.punched_size = new_size
+            die.rounddie.current_size = new_size
+            die.rounddie.save()
+            
+            # Reset status and save die to trigger signals
+            die.status = 'AVAILABLE'
+            die.save()
+            
+            # Create Maintenance Log
+            MaintenanceLog.objects.create(
+                die=die,
+                created_by=request.user,
+                category='RECUT',
+                note=f"Die recut from {old_current} mm (punched: {old_punched} mm) to {new_size} mm. Note: {note}"
+            )
+            
+        elif die.die_type == 'FLAT':
+            new_width_val = request.data.get('new_width')
+            new_thickness_val = request.data.get('new_thickness')
+            new_radius_val = request.data.get('new_radius')
+            
+            if not new_width_val or not new_thickness_val or new_radius_val is None:
+                return Response({"detail": "new_width, new_thickness, and new_radius are required for FLAT die."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                new_width = Decimal(str(new_width_val))
+                new_thickness = Decimal(str(new_thickness_val))
+                new_radius = Decimal(str(new_radius_val))
+            except (ValueError, InvalidOperation):
+                return Response({"detail": "Invalid decimal values for flat die."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if not hasattr(die, 'flatdie') or not die.flatdie:
+                return Response({"detail": "Flat die details not found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            old_width = die.flatdie.current_width
+            old_thickness = die.flatdie.current_thickness
+            old_radius = die.flatdie.radius
+            
+            if new_width < old_width:
+                return Response({"detail": f"New width ({new_width}) cannot be smaller than current width ({old_width})."}, status=status.HTTP_400_BAD_REQUEST)
+            if new_thickness < old_thickness:
+                return Response({"detail": f"New thickness ({new_thickness}) cannot be smaller than current thickness ({old_thickness})."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            die.flatdie.punched_width = new_width
+            die.flatdie.current_width = new_width
+            die.flatdie.punched_thickness = new_thickness
+            die.flatdie.current_thickness = new_thickness
+            die.flatdie.radius = new_radius
+            die.flatdie.save()
+            
+            # Reset status and save die to trigger signals
+            die.status = 'AVAILABLE'
+            die.save()
+            
+            # Create Maintenance Log
+            MaintenanceLog.objects.create(
+                die=die,
+                created_by=request.user,
+                category='RECUT',
+                note=f"Die recut: width {old_width}->{new_width} mm, thickness {old_thickness}->{new_thickness} mm, radius {old_radius}->{new_radius} mm. Note: {note}"
+            )
+            
+        else:
+            return Response({"detail": "Unsupported die type."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({"detail": "Die recut successfully."}, status=status.HTTP_200_OK)
+
 
 import tempfile
 import os

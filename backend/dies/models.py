@@ -62,6 +62,7 @@ class MaintenanceLog(models.Model):
     category   = models.CharField(max_length=30, blank=True, choices=[
         ('INSPECTION', 'Inspection'),
         ('REPAIR', 'Repair'),
+        ('RECUT', 'Recut / Re-bore'),
         ('CLEANING', 'Cleaning'),
         ('POLISHING', 'Polishing'),
         ('MEASUREMENT', 'Measurement'),
