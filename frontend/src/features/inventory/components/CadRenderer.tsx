@@ -76,6 +76,18 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
       <div className="flex-1 flex items-center justify-center p-3">
         {isRound ? (
           <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
+            <style>{`
+              .blueprint-axis { stroke: rgba(99, 102, 241, 0.25); stroke-width: 1; stroke-dasharray: 4 4; }
+              .blueprint-outline { stroke: #3b82f6; stroke-width: 2.5; fill: none; }
+              .blueprint-outline-secondary { stroke: rgba(99, 102, 241, 0.4); stroke-width: 1.5; stroke-dasharray: 4 2; fill: none; }
+              .blueprint-dim-line { stroke: #10b981; stroke-width: 1; fill: none; }
+              .blueprint-dim-text { fill: #10b981; font-family: monospace; font-size: 10px; font-weight: 600; }
+              .interactive-dim-group:hover .blueprint-dim-text,
+              .interactive-dim-group.highlighted .blueprint-dim-text { fill: #60a5fa !important; }
+              .interactive-dim-group:hover .blueprint-dim-line,
+              .interactive-dim-group.highlighted .blueprint-dim-line { stroke: #60a5fa !important; stroke-width: 1.5; }
+            `}</style>
+            <rect width="200" height="200" rx="10" fill="#090d16" />
             <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
             <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
             {die.punched_size && (
@@ -193,6 +205,18 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
 
             return (
               <svg className="w-full max-w-[180px] h-[180px]" viewBox="0 0 200 200">
+                <style>{`
+                  .blueprint-axis { stroke: rgba(99, 102, 241, 0.25); stroke-width: 1; stroke-dasharray: 4 4; }
+                  .blueprint-outline { stroke: #3b82f6; stroke-width: 2.5; fill: none; }
+                  .blueprint-outline-secondary { stroke: rgba(99, 102, 241, 0.4); stroke-width: 1.5; stroke-dasharray: 4 2; fill: none; }
+                  .blueprint-dim-line { stroke: #10b981; stroke-width: 1; fill: none; }
+                  .blueprint-dim-text { fill: #10b981; font-family: monospace; font-size: 10px; font-weight: 600; }
+                  .interactive-dim-group:hover .blueprint-dim-text,
+                  .interactive-dim-group.highlighted .blueprint-dim-text { fill: #60a5fa !important; }
+                  .interactive-dim-group:hover .blueprint-dim-line,
+                  .interactive-dim-group.highlighted .blueprint-dim-line { stroke: #60a5fa !important; stroke-width: 1.5; }
+                `}</style>
+                <rect width="200" height="200" rx="10" fill="#090d16" />
                 <line x1="100" y1="10" x2="100" y2="190" className="blueprint-axis" />
                 <line x1="10" y1="100" x2="190" y2="100" className="blueprint-axis" />
                 {die.punched_width && (
