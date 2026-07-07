@@ -840,7 +840,6 @@ export function DieDetailPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <select 
                       value={rack}
-                      required
                       onChange={(e) => setRack(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none cursor-pointer"
                     >
@@ -852,7 +851,6 @@ export function DieDetailPage() {
                     <input 
                       type="number" 
                       min="1"
-                      required
                       placeholder="Shelf"
                       value={shelf}
                       onChange={(e) => setShelf(e.target.value)}
