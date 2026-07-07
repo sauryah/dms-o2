@@ -28,8 +28,14 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+from rest_framework.throttling import AnonRateThrottle
+
+class LoginRateThrottle(AnonRateThrottle):
+    rate = '5/minute'
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
         request=LoginSerializer,
