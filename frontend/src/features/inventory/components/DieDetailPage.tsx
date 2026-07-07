@@ -390,6 +390,12 @@ export function DieDetailPage() {
   const [recutNote, setRecutNote] = useState('')
   const [recutError, setRecutError] = useState<string | null>(null)
 
+  // Query details
+  const { data: die, isLoading, error } = useQuery({
+    queryKey: ['die', id],
+    queryFn: () => request(`/api/dies/${id}/`),
+  })
+
   // Populate recut defaults when modal is opened or die changes
   useEffect(() => {
     if (die) {
@@ -423,12 +429,6 @@ export function DieDetailPage() {
     onError: (err: any) => {
       setRecutError(err.message || 'An error occurred during recutting.')
     }
-  })
-
-  // Query details
-  const { data: die, isLoading, error } = useQuery({
-    queryKey: ['die', id],
-    queryFn: () => request(`/api/dies/${id}/`),
   })
 
   const { data: racksList } = useQuery({
