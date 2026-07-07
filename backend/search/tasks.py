@@ -103,44 +103,80 @@ def sync_dies_batch_task(self, die_ids):
     Args:
         die_ids: List of database IDs of the dies to sync
     """
-    try:
-        logger.info(f"Starting batch sync for {len(die_ids)} dies")
-        dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=die_ids)
-    except Exception as exc:
-        logger.error(f"Failed to query dies for batch: {exc}")
-        raise self.retry(exc=exc, countdown=10)
+    import redis
+    import json
+    from django.conf import settings
+    from search.meili import client as meili_client, INDEX_NAME
+    from dies.models import Die
 
-    docs = []
-    for die in dies:
-        doc = {
-            'id':       str(die.id),
-            'die_id':   die.die_id,
-            'type':     die.die_type,
-            'die_type': die.die_type,
-            'casing':   die.casing,
-            'status':   die.status,
-            'location': die.location,
-            'set':      die.current_set.name if die.current_set else '',
-            'machine':  die.current_set.machine.name if die.current_set else '',
-        }
-        if hasattr(die, 'rounddie') and die.rounddie:
-            doc['size'] = float(die.rounddie.current_size)
-        if hasattr(die, 'flatdie') and die.flatdie:
-            doc['width']     = float(die.flatdie.current_width)
-            doc['thickness'] = float(die.flatdie.current_thickness)
-        docs.append(doc)
+    redis_url = settings.CACHES['default']['LOCATION']
+    r = redis.Redis.from_url(redis_url)
 
-    if not docs:
+    def update_status(status, progress, total, message=None):
+        payload = {"status": status, "progress": progress, "total": total}
+        if message:
+            payload["message"] = message
+        try:
+            r.set('search_index_status', json.dumps(payload))
+        except Exception as e:
+            logger.error(f"Failed to write progress to Redis: {e}")
+
+    total_dies = len(die_ids)
+    if total_dies == 0:
         return {'status': 'empty'}
 
     try:
-        meili_client.index(INDEX_NAME).add_documents(docs)
-        logger.info(f"Successfully batch-synced {len(docs)} dies to Meilisearch")
-        return {'status': 'synced', 'count': len(docs)}
+        logger.info(f"Starting batch sync for {total_dies} dies with progress tracking")
+        
+        # If it is a substantial batch, show progress bar on the dashboard
+        if total_dies > 20:
+            update_status("rebuilding", 0, 100, f"Synchronizing {total_dies} dies to search index...")
+
+        batch_size = 100
+        for i in range(0, total_dies, batch_size):
+            chunk_ids = die_ids[i:i+batch_size]
+            dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=chunk_ids)
+            
+            docs = []
+            for die in dies:
+                doc = {
+                    'id':       str(die.id),
+                    'die_id':   die.die_id,
+                    'type':     die.die_type,
+                    'die_type': die.die_type,
+                    'casing':   die.casing,
+                    'status':   die.status,
+                    'location': die.location,
+                    'set':      die.current_set.name if die.current_set else '',
+                    'machine':  die.current_set.machine.name if die.current_set else '',
+                }
+                if hasattr(die, 'rounddie') and die.rounddie:
+                    doc['size'] = float(die.rounddie.current_size)
+                if hasattr(die, 'flatdie') and die.flatdie:
+                    doc['width']     = float(die.flatdie.current_width)
+                    doc['thickness'] = float(die.flatdie.current_thickness)
+                docs.append(doc)
+
+            if docs:
+                task = meili_client.index(INDEX_NAME).add_documents(docs)
+                task_uid = task.task_uid if hasattr(task, 'task_uid') else task['taskUid']
+                meili_client.wait_for_task(task_uid)
+
+            if total_dies > 20:
+                progress = int(min(99, ((i + len(chunk_ids)) / total_dies) * 100))
+                update_status("rebuilding", progress, 100, f"Synchronizing {total_dies} dies to search index...")
+
+        if total_dies > 20:
+            update_status("ready", 100, 100)
+            
+        logger.info(f"Successfully batch-synced {total_dies} dies to Meilisearch")
+        return {'status': 'synced', 'count': total_dies}
+        
     except Exception as exc:
-        logger.error(f"Failed to batch-sync dies to Meilisearch (attempt {self.request.retries}): {exc}")
-        retry_delay = 60 * (2 ** self.request.retries)
-        raise self.retry(exc=exc, countdown=retry_delay)
+        if total_dies > 20:
+            update_status("error", 0, 100, str(exc))
+        logger.error(f"Failed to query or sync dies for batch: {exc}")
+        raise self.retry(exc=exc, countdown=10)
 
 
 @shared_task(bind=True, max_retries=3)

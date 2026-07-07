@@ -148,6 +148,7 @@ function AppContent() {
             }, 3000)
 
             queryClient.invalidateQueries()
+            checkIndexStatus()
 
             if (payload.type === DIE_UPDATE_EVENT) {
               if (payload.data?.action === 'delete') {
@@ -238,7 +239,7 @@ function AppContent() {
         eventSource.close()
       }
     }
-  }, [token, queryClient, request, showToast])
+  }, [token, queryClient, request, showToast, checkIndexStatus])
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
