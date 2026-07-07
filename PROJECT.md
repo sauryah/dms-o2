@@ -120,6 +120,14 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-07 · feat: implement recut workflow, auto-parse location strings, and verify rate limiting and history explorer (Phase 15)
+- Added `RECUT` category choice to `MaintenanceLog` model and custom `POST /api/dies/{id}/recut/` action in backend `DieViewSet`.
+- Manually compiled and saved Django migration `0010_alter_maintenancelog_category.py` to support choices migration.
+- Automatically parse free-text location strings (e.g. "Rack A - Shelf 3") to populate and sync structured `rack` and `shelf` model fields.
+- Implemented "Recut" action button and form modal on the frontend `DieDetailPage` to re-bore worn dies and reset punched/current sizes.
+- Verified rate limiting configurations on proxy (Traefik) and application levels.
+- Verified the functionally complete frontend History Explorer UI.
+
 ### 2026-07-03 · feat: implement API rate limiting and support combined multi-faceted query search parameters (Phase 14)
 - Configured REST framework API rate limiting (throttling) for anonymous and authenticated user endpoints.
 - Re-architected search parameters processing to execute combined queries (text query and custom numeric range filters) simultaneously.
