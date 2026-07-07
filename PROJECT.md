@@ -120,6 +120,10 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-08 · fix: resolve location synchronization bugs and implement brute-force IP rate limiting (Phase 19)
+- Overhauled location synchronization signal logic in `backend/dies/signals.py` to prioritize direct coordinate (rack and shelf) edits and prevent accidental coordinate deletion.
+- Defined `LoginRateThrottle` class and applied it to `LoginView` in `backend/users/views.py` to rate limit authentication attempts to 5 per minute per IP address.
+
 ### 2026-07-07 · feat: implement recut workflow, auto-parse location strings, and verify rate limiting and history explorer (Phase 15)
 - Added `RECUT` category choice to `MaintenanceLog` model and custom `POST /api/dies/{id}/recut/` action in backend `DieViewSet`.
 - Manually compiled and saved Django migration `0010_alter_maintenancelog_category.py` to support choices migration.
