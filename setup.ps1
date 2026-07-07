@@ -92,15 +92,19 @@ docker compose exec django python manage.py sync_search
 # 8. Firewall Check (Open Port 80)
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($isAdmin) {
-    Write-Host ">>> Administrator privileges detected. Opening Port 80 in Windows Firewall..."
+    Write-Host ">>> Administrator privileges detected. Configuring Windows Firewall for LAN Access..."
     New-NetFirewallRule -DisplayName "DMS Port 80" -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
+    Get-NetFirewallRule -DisplayName "Docker Desktop Backend" -ErrorAction SilentlyContinue | Set-NetFirewallRule -Profile Any -ErrorAction SilentlyContinue | Out-Null
 } else {
     Write-Host ""
     Write-Host ">>> LAN ACCESS SETUP NOTE:" -ForegroundColor Yellow
-    Write-Host "    To allow other LAN devices to access this server, open Port 80 in Windows Firewall."
-    Write-Host "    Open PowerShell as Administrator and run:"
-    Write-Host "    New-NetFirewallRule -DisplayName 'DMS Port 80' -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow"
+    Write-Host "    To allow other LAN devices (like phones) to access this server:"
+    Write-Host "    1. Make sure your Wi-Fi connection profile is set to 'Private' in Windows settings."
+    Write-Host "    2. Open PowerShell as Administrator and run the following command to allow Docker & Port 80:"
+    Write-Host "       New-NetFirewallRule -DisplayName 'DMS Port 80' -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow"
+    Write-Host "       Get-NetFirewallRule -DisplayName 'Docker Desktop Backend' | Set-NetFirewallRule -Profile Any"
 }
+
 
 # 9. Access Info
 $computerName = $env:COMPUTERNAME.ToLower()
