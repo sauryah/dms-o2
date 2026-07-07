@@ -120,6 +120,10 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-08 · feat: implement real-time search indexing progress bar for bulk spreadsheet imports (Phase 20)
+- Modified `sync_dies_batch_task` in `backend/search/tasks.py` to upload document batches in chunks of 100, track the sync percentage, and write intermediate progress status to Redis.
+- Updated `frontend/src/App.tsx` to automatically trigger `checkIndexStatus()` whenever a real-time SSE ticket event is received, starting/stopping index progress bar rendering and polling seamlessly.
+
 ### 2026-07-08 · fix: resolve location synchronization bugs and implement brute-force IP rate limiting (Phase 19)
 - Overhauled location synchronization signal logic in `backend/dies/signals.py` to prioritize direct coordinate (rack and shelf) edits and prevent accidental coordinate deletion.
 - Defined `LoginRateThrottle` class and applied it to `LoginView` in `backend/users/views.py` to rate limit authentication attempts to 5 per minute per IP address.
