@@ -18,6 +18,31 @@ def _get_change_context():
 
 @receiver(pre_save, sender=Die)
 def log_die_changes(sender, instance, **kwargs):
+    # Parse location string to populate rack and shelf if they are not explicitly set
+    if instance.location:
+        loc_str = instance.location.strip()
+        if loc_str.lower() in ('', 'general', 'none', 'unassigned'):
+            instance.rack = None
+            instance.shelf = None
+            instance.location = ''
+        elif not instance.rack or instance.shelf is None:
+            import re
+            from machines.models import Rack
+            match = re.match(r'Rack\s+([A-Za-z0-9]+)\s*-\s*Shelf\s*([0-9]+)', loc_str, re.IGNORECASE)
+            if match:
+                rack_name = match.group(1).strip()
+                shelf_num = int(match.group(2))
+                try:
+                    rack = Rack.objects.filter(name__iexact=rack_name).first()
+                    if rack:
+                        instance.rack = rack
+                        instance.shelf = shelf_num
+                except Exception:
+                    pass
+    else:
+        instance.rack = None
+        instance.shelf = None
+
     if instance.rack and instance.shelf is not None:
         instance.location = f"{instance.rack.name} - Shelf {instance.shelf}"
 
