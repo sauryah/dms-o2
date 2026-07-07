@@ -1,0 +1,9 @@
+{
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingModuleSource": "none",
+    "reportMissingImports": "none"
+  },
+  "python.analysis.extraPaths": [
+    "./backend"
+  ]
+}
