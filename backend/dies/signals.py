@@ -7,7 +7,7 @@ from users.middleware import get_current_user, get_current_ip
 from dies.services.search_service import SearchService
 from dies.contracts import DIE_SAVE_ACTION
 
-DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks']
+DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks', 'die_id', 'casing']
 
 def _get_change_context():
     user = get_current_user()
@@ -78,39 +78,47 @@ def log_die_changes(sender, instance, **kwargs):
 def log_round_size_change(sender, instance, **kwargs):
     if not instance.pk:
         return
-    old_size = RoundDie.objects.filter(pk=instance.pk).values_list('current_size', flat=True).first()
-    if old_size is None:
+    old_vals = RoundDie.objects.filter(pk=instance.pk).values('current_size', 'punched_size').first()
+    if not old_vals:
         return
 
-    if old_size != instance.current_size:
-        DieHistory.objects.create(
-            die=instance.die,
-            field_name='current_size',
-            old_value=str(old_size),
-            new_value=str(instance.current_size),
-            **_get_change_context(),
-        )
+    ctx = _get_change_context()
+    for field in ['current_size', 'punched_size']:
+        old_val = old_vals.get(field)
+        new_val = getattr(instance, field)
+        old_str = str(old_val) if old_val is not None else ''
+        new_str = str(new_val) if new_val is not None else ''
+        if old_str != new_str:
+            DieHistory.objects.create(
+                die=instance.die,
+                field_name=field,
+                old_value=old_str,
+                new_value=new_str,
+                **ctx,
+            )
 
 
 @receiver(pre_save, sender=FlatDie)
 def log_flat_changes(sender, instance, **kwargs):
     if not instance.pk:
         return
-    old_values = FlatDie.objects.filter(pk=instance.pk).values('current_width', 'current_thickness').first()
+    old_values = FlatDie.objects.filter(pk=instance.pk).values('current_width', 'current_thickness', 'punched_width', 'punched_thickness', 'radius').first()
     if not old_values:
-        return
+      return
 
     ctx = _get_change_context()
 
-    for field in ['current_width', 'current_thickness']:
+    for field in ['current_width', 'current_thickness', 'punched_width', 'punched_thickness', 'radius']:
         old_val = old_values.get(field)
         new_val = getattr(instance, field)
-        if old_val != new_val:
+        old_str = str(old_val) if old_val is not None else ''
+        new_str = str(new_val) if new_val is not None else ''
+        if old_str != new_str:
             DieHistory.objects.create(
                 die=instance.die,
                 field_name=field,
-                old_value=str(old_val),
-                new_value=str(new_val),
+                old_value=old_str,
+                new_value=new_str,
                 **ctx,
             )
 
