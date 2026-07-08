@@ -16,9 +16,20 @@ interface DiesTableProps {
   navigate: any;
   onDragStartDie?: (id: string) => void;
   onDragEndDie?: () => void;
+  sortField?: string;
+  sortOrder?: string;
+  onSort?: (field: string) => void;
 }
 
-export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDragStartDie, onDragEndDie }: DiesTableProps) {
+export const DiesTable = memo(function DiesTable({ 
+  diesList = [], 
+  navigate, 
+  onDragStartDie, 
+  onDragEndDie,
+  sortField: externalSortField,
+  sortOrder: externalSortOrder,
+  onSort
+}: DiesTableProps) {
   const { role } = useAuth()
   const { request } = useApi()
   const { showToast } = useToast()
@@ -99,8 +110,11 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
     }
   }
 
-  const [sortField, setSortField] = useState('die_id')
-  const [sortOrder, setSortOrder] = useState('asc')
+  const [localSortField, setLocalSortField] = useState('die_id')
+  const [localSortOrder, setLocalSortOrder] = useState('asc')
+
+  const sortField = externalSortField !== undefined ? externalSortField : localSortField
+  const sortOrder = externalSortOrder !== undefined ? externalSortOrder : localSortOrder
 
   const [selectedDieIds, setSelectedDieIds] = useState(new Set<string>())
   const [bulkStatus, setBulkStatus] = useState('')
@@ -157,15 +171,22 @@ export const DiesTable = memo(function DiesTable({ diesList = [], navigate, onDr
   }
 
   const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    if (onSort) {
+      onSort(field)
     } else {
-      setSortField(field)
-      setSortOrder('asc')
+      if (localSortField === field) {
+        setLocalSortOrder(localSortOrder === 'asc' ? 'desc' : 'asc')
+      } else {
+        setLocalSortField(field)
+        setLocalSortOrder('asc')
+      }
     }
   }
 
   const sortedDies = useMemo(() => {
+    if (sortField === 'relevance') {
+      return diesList
+    }
     return [...diesList].sort((a, b) => {
       let valA = a[sortField] || ''
       let valB = b[sortField] || ''

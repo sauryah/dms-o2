@@ -252,7 +252,17 @@ export function DashboardPage() {
     thick_min: thickMin,
     thick_max: thickMax,
   }, searchEnabled)
-  const searchDies = searchDiesData || []
+  const [sortOption, setSortOption] = useState<'default' | 'size_asc' | 'size_desc'>('default')
+  const sortedSearchDies = useMemo(() => {
+    const raw = searchDiesData || []
+    if (sortOption === 'default') return raw
+    return [...raw].sort((a, b) => {
+      const sizeA = a.die_type === 'ROUND' ? parseFloat(String(a.current_size || '0')) : parseFloat(String(a.current_width || '0'))
+      const sizeB = b.die_type === 'ROUND' ? parseFloat(String(b.current_size || '0')) : parseFloat(String(b.current_width || '0'))
+      return sortOption === 'size_asc' ? sizeA - sizeB : sizeB - sizeA
+    })
+  }, [searchDiesData, sortOption])
+  const searchDies = sortedSearchDies
 
   const hasActiveFilter = !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
@@ -600,7 +610,7 @@ export function DashboardPage() {
 
       {hasActiveFilter && (
         <div className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
-          <div className="mb-6 flex justify-between items-center">
+          <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
             <h3 className="text-lg font-semibold text-slate-300">
               {q ? (
                 <>Search Results for <span className="text-blue-400">"{q}"</span> <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
@@ -608,23 +618,38 @@ export function DashboardPage() {
                 <>Filtered Search Results <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
               )}
             </h3>
-            <Link 
-              to={`/inventory?${new URLSearchParams({
-                ...(q && { q }),
-                ...(dieType && { die_type: dieType }),
-                ...(statusVal && { status: statusVal }),
-                ...(casing && { casing }),
-                ...(sizeMin && { size_min: sizeMin }),
-                ...(sizeMax && { size_max: sizeMax }),
-                ...(widthMin && { width_min: widthMin }),
-                ...(widthMax && { width_max: widthMax }),
-                ...(thickMin && { thick_min: thickMin }),
-                ...(thickMax && { thick_max: thickMax }),
-              }).toString()}`} 
-              className="text-sm text-blue-400 hover:underline"
-            >
-              View in Inventory
-            </Link>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl shadow-inner text-xs font-semibold text-slate-400">
+                <span>Sort:</span>
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as any)}
+                  className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="default" className="bg-slate-950 text-slate-350">Relevance</option>
+                  <option value="size_asc" className="bg-slate-950 text-slate-350">Size: Small to Large</option>
+                  <option value="size_desc" className="bg-slate-950 text-slate-350">Size: Large to Small</option>
+                </select>
+              </div>
+
+              <Link 
+                to={`/inventory?${new URLSearchParams({
+                  ...(q && { q }),
+                  ...(dieType && { die_type: dieType }),
+                  ...(statusVal && { status: statusVal }),
+                  ...(casing && { casing }),
+                  ...(sizeMin && { size_min: sizeMin }),
+                  ...(sizeMax && { size_max: sizeMax }),
+                  ...(widthMin && { width_min: widthMin }),
+                  ...(widthMax && { width_max: widthMax }),
+                  ...(thickMin && { thick_min: thickMin }),
+                  ...(thickMax && { thick_max: thickMax }),
+                }).toString()}`} 
+                className="text-sm text-blue-400 hover:underline"
+              >
+                View in Inventory
+              </Link>
+            </div>
           </div>
 
           {isSearchLoading ? (

@@ -67,6 +67,18 @@ export function InventoryPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const hasActiveFilter = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
+  const [sortField, setSortField] = useState<string>('relevance')
+  const [sortOrder, setSortOrder] = useState<string>('asc')
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+  }
+
   // Fetch list of sets for the dropdown
   const { data: setsList } = useQuery({
     queryKey: ['setsDropdownList'],
@@ -117,7 +129,36 @@ export function InventoryPage() {
     }
   }, [searchData])
 
-  const dies = searchData?.results || []
+  const rawDies = searchData?.results || []
+  const sortedDies = useMemo(() => {
+    if (sortField === 'relevance') {
+      return rawDies
+    }
+    return [...rawDies].sort((a, b) => {
+      let valA = a[sortField] || ''
+      let valB = b[sortField] || ''
+      
+      if (sortField === 'category') {
+        valA = a.die_type || ''
+        valB = b.die_type || ''
+      }
+      
+      if (sortField === 'current_size') {
+        valA = a.die_type === 'ROUND' ? parseFloat(a.current_size || 0) : parseFloat(a.current_width || 0)
+        valB = b.die_type === 'ROUND' ? parseFloat(b.current_size || 0) : parseFloat(b.current_width || 0)
+      }
+      
+      if (typeof valA === 'string') {
+        return sortOrder === 'asc' 
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA)
+      } else {
+        return sortOrder === 'asc' ? valA - valB : valB - valA
+      }
+    })
+  }, [rawDies, sortField, sortOrder])
+
+  const dies = sortedDies
   const totalCount = searchData?.total ?? dies.length
 
   // Hook up custom mutations hook:
@@ -414,30 +455,63 @@ export function InventoryPage() {
                 </button>
               </div>
 
-              {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-slate-955/80 border border-slate-800 p-1 rounded-xl shadow-inner self-center sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'text-slate-455 hover:text-white'
-                  }`}
-                >
-                  List
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
-                    viewMode === 'grid' 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'text-slate-455 hover:text-white'
-                  }`}
-                >
-                  Rack Grid
-                </button>
+              {/* Sorting & View Toggle Container */}
+              <div className="flex flex-wrap items-center gap-3 self-center sm:self-auto">
+                {activeView === 'search' && (
+                  <div className="flex items-center gap-1.5 bg-slate-955/80 border border-slate-800 px-3 py-1.5 rounded-xl shadow-inner text-xs font-semibold text-slate-400">
+                    <span>Sort:</span>
+                    <select
+                      value={sortField === 'relevance' ? 'default' : `${sortField}_${sortOrder}`}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === 'default') {
+                          setSortField('relevance')
+                          setSortOrder('asc')
+                        } else {
+                          const [field, order] = val.split('_')
+                          setSortField(field)
+                          setSortOrder(order)
+                        }
+                      }}
+                      className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="default" className="bg-slate-950 text-slate-300">Relevance</option>
+                      <option value="current_size_asc" className="bg-slate-950 text-slate-300">Size: Small to Large</option>
+                      <option value="current_size_desc" className="bg-slate-950 text-slate-300">Size: Large to Small</option>
+                      {sortField !== 'relevance' && sortField !== 'current_size' && (
+                        <option value={`${sortField}_${sortOrder}`} className="bg-slate-950 text-slate-300">
+                          Sorted by {sortField === 'die_id' ? 'ID' : sortField} ({sortOrder === 'asc' ? 'Asc' : 'Desc'})
+                        </option>
+                      )}
+                    </select>
+                  </div>
+                )}
+
+                {/* View Toggle */}
+                <div className="flex items-center gap-1 bg-slate-955/80 border border-slate-800 p-1 rounded-xl shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                      viewMode === 'list' 
+                        ? 'bg-blue-600 text-white shadow-md' 
+                        : 'text-slate-455 hover:text-white'
+                    }`}
+                  >
+                    List
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-300 ${
+                      viewMode === 'grid' 
+                        ? 'bg-blue-600 text-white shadow-md' 
+                        : 'text-slate-455 hover:text-white'
+                    }`}
+                  >
+                    Rack Grid
+                  </button>
+                </div>
               </div>
 
               {canCreate && (
@@ -557,6 +631,9 @@ export function InventoryPage() {
                               navigate={navigate} 
                               onDragStartDie={handleDragStartDie}
                               onDragEndDie={handleDragEndDie}
+                              sortField={sortField}
+                              sortOrder={sortOrder}
+                              onSort={handleSort}
                             />
                           </div>
                         )}

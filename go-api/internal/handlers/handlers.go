@@ -248,7 +248,7 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	var total int
 	var err error
 
-	if q == "" || sizeMin != "" || sizeMax != "" || widthMin != "" || widthMax != "" || thickMin != "" || thickMax != "" {
+	if q == "" {
 		// 1. Direct database query
 		dies, err = h.db.QueryPostgresDirectly(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
 		if err == nil {
