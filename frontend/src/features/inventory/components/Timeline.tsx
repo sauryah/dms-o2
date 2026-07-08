@@ -42,10 +42,24 @@ export function Timeline({ history }: TimelineProps) {
             } else if (
               hist.field_name === 'current_size' || 
               hist.field_name === 'current_width' || 
-              hist.field_name === 'current_thickness'
+              hist.field_name === 'current_thickness' ||
+              hist.field_name === 'radius'
             ) {
               actionTitle = 'Wear Calibrated'
               dotColor = 'bg-amber-500'
+            } else if (hist.field_name === 'die_id') {
+              actionTitle = 'Die ID Altered'
+              dotColor = 'bg-rose-500'
+            } else if (hist.field_name === 'casing') {
+              actionTitle = 'Casing Modified'
+              dotColor = 'bg-sky-500'
+            } else if (
+              hist.field_name === 'punched_size' ||
+              hist.field_name === 'punched_width' ||
+              hist.field_name === 'punched_thickness'
+            ) {
+              actionTitle = 'Base Dimension Modified'
+              dotColor = 'bg-purple-500'
             }
 
             return (
