@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench } from 'lucide-react'
+import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
@@ -776,11 +776,21 @@ export function DieDetailPage() {
 
 
 
-      {/* Breadcrumbs */}
-      <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6 print:hidden">
-        <Link to="/inventory" className="hover:text-slate-300">Inventory</Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-slate-300">{die.die_id}</span>
+      {/* Back Button and Breadcrumbs */}
+      <div className="flex items-center justify-between gap-4 mb-6 print:hidden">
+        <button 
+          onClick={() => navigate('/inventory')}
+          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-950 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl transition-all duration-300 hover:text-white"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 text-blue-500 animate-pulse" />
+          <span>Back to Inventory</span>
+        </button>
+        
+        <div className="flex items-center space-x-2 text-sm text-slate-500">
+          <Link to="/inventory" className="hover:text-slate-300">Inventory</Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-slate-300 font-mono">{die.die_id}</span>
+        </div>
       </div>
 
       <div className="bg-slate-900 print:bg-transparent border border-slate-800 print:border-none rounded-2xl shadow-xl print:shadow-none overflow-hidden mb-8">
