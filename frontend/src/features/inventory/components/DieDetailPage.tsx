@@ -375,6 +375,12 @@ export function DieDetailPage() {
   const [remarks, setRemarks] = useState('')
   const [currentSetId, setCurrentSetId] = useState('')
   
+  const [dieIdVal, setDieIdVal] = useState('')
+  const [casingVal, setCasingVal] = useState('')
+  const [punchedSize, setPunchedSize] = useState('')
+  const [punchedWidth, setPunchedWidth] = useState('')
+  const [punchedThickness, setPunchedThickness] = useState('')
+  
   // Custom subfields editing
   const [currentSize, setCurrentSize] = useState('')
   const [currentWidth, setCurrentWidth] = useState('')
@@ -440,6 +446,8 @@ export function DieDetailPage() {
   // Populate form states once data loads or changes
   useEffect(() => {
     if (die) {
+      setDieIdVal(die.die_id || '')
+      setCasingVal(die.casing || '')
       setStatusVal(die.status || 'AVAILABLE')
       setLocation(die.location || '')
       setRack(die.rack ? String(die.rack) : '')
@@ -449,6 +457,9 @@ export function DieDetailPage() {
       setCurrentSize(die.current_size || '')
       setCurrentWidth(die.current_width || '')
       setCurrentThickness(die.current_thickness || '')
+      setPunchedSize(die.punched_size || '')
+      setPunchedWidth(die.punched_width || '')
+      setPunchedThickness(die.punched_thickness || '')
     }
   }, [die])
 
@@ -493,6 +504,12 @@ export function DieDetailPage() {
 
       return { previousDie, previousDieDetail, previousDiesQueries, previousSearchDiesQueries }
     },
+    onSuccess: (data: any) => {
+      showToast('Die updated successfully.', 'success')
+      if (data && data.die_id && String(data.die_id) !== String(id)) {
+        navigate(`/dies/${data.die_id}`, { replace: true })
+      }
+    },
     onError: (err, data, context: any) => {
       if (context) {
         if (context.previousDie !== undefined) queryClient.setQueryData(['die', id], context.previousDie)
@@ -534,6 +551,8 @@ export function DieDetailPage() {
     const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
 
     const payload: any = {
+      die_id: dieIdVal,
+      casing: casingVal,
       status: statusVal,
       location: finalLocation,
       rack: rack ? Number(rack) : null,
@@ -543,9 +562,12 @@ export function DieDetailPage() {
     }
     if (die.die_type === 'ROUND') {
       payload.current_size = currentSize
+      payload.punched_size = punchedSize
     } else {
       payload.current_width = currentWidth
       payload.current_thickness = currentThickness
+      payload.punched_width = punchedWidth
+      payload.punched_thickness = punchedThickness
     }
     updateMutation.mutate(payload)
   }
@@ -819,6 +841,26 @@ export function DieDetailPage() {
             <form onSubmit={handleSave} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID</label>
+                  <input 
+                    type="text"
+                    value={dieIdVal}
+                    onChange={(e) => setDieIdVal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <input 
+                    type="text"
+                    value={casingVal}
+                    onChange={(e) => setCasingVal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold"
+                    required
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
                   <select 
                     value={statusVal}
@@ -871,19 +913,42 @@ export function DieDetailPage() {
                     ))}
                   </select>
                 </div>
+
                 {die.die_type === 'ROUND' ? (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
-                    <input 
-                      type="number"
-                      step="0.001"
-                      value={currentSize}
-                      onChange={(e) => setCurrentSize(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Size (mm)</label>
+                      <input 
+                        type="number"
+                        step="0.001"
+                        value={punchedSize}
+                        onChange={(e) => setPunchedSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
+                      <input 
+                        type="number"
+                        step="0.001"
+                        value={currentSize}
+                        onChange={(e) => setCurrentSize(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                  </>
                 ) : (
                   <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Width (mm)</label>
+                      <input 
+                        type="number"
+                        step="0.001"
+                        value={punchedWidth}
+                        onChange={(e) => setPunchedWidth(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
                       <input 
@@ -891,7 +956,17 @@ export function DieDetailPage() {
                         step="0.001"
                         value={currentWidth}
                         onChange={(e) => setCurrentWidth(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Thickness (mm)</label>
+                      <input 
+                        type="number"
+                        step="0.001"
+                        value={punchedThickness}
+                        onChange={(e) => setPunchedThickness(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
                       />
                     </div>
                     <div>
@@ -901,7 +976,7 @@ export function DieDetailPage() {
                         step="0.001"
                         value={currentThickness}
                         onChange={(e) => setCurrentThickness(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
                       />
                     </div>
                   </>
