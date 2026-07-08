@@ -12,12 +12,14 @@ import {
   Layers, 
   Database, 
   Sliders,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAnnouncer } from '../../../contexts/AccessibilityContext'
 import { useApi } from '../../../hooks/useApi'
 import { useDebounce } from '../../../hooks/useDebounce'
+import { useToast } from '../../../contexts/ToastContext'
 import { isDieActive } from '../../../utils/dieHelpers'
 import { DiesTable } from './DiesTable'
 import { CreateDieModal } from './CreateDieModal'
@@ -35,6 +37,7 @@ export function InventoryPage() {
   const { request } = useApi()
   const { role } = useAuth()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   
@@ -330,6 +333,70 @@ export function InventoryPage() {
     sidebarRef.current?.collapseAll()
   }
 
+  const handleExportCSV = () => {
+    const listToExport = activeDiesList
+    if (!listToExport || listToExport.length === 0) {
+      showToast('No dies to export.', 'error')
+      return
+    }
+
+    const headers = [
+      'Die ID',
+      'Type',
+      'Casing',
+      'Status',
+      'Location',
+      'Assigned Set',
+      'Current Size (mm)',
+      'Punched Size (mm)',
+      'Current Width (mm)',
+      'Punched Width (mm)',
+      'Current Thickness (mm)',
+      'Punched Thickness (mm)',
+      'Radius (mm)',
+      'Remarks'
+    ]
+
+    const rows = listToExport.map((die: any) => {
+      const isRound = die.die_type === 'ROUND'
+      return [
+        die.die_id || '',
+        die.die_type || '',
+        die.casing || '',
+        die.status || '',
+        die.location || '',
+        die.set_name || '',
+        isRound ? (die.current_size || '') : '',
+        isRound ? (die.punched_size || '') : '',
+        !isRound ? (die.current_width || '') : '',
+        !isRound ? (die.punched_width || '') : '',
+        !isRound ? (die.current_thickness || '') : '',
+        !isRound ? (die.punched_thickness || '') : '',
+        !isRound ? (die.radius || '') : '',
+        die.remarks ? `"${String(die.remarks).replace(/"/g, '""')}"` : ''
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row: any) => row.join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    const dateStr = new Date().toISOString().split('T')[0]
+    const filename = `die_inventory_${activeView}_${dateStr}.csv`
+    
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    showToast(`Successfully exported ${listToExport.length} dies to CSV.`, 'success')
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] relative bg-slate-950 text-white font-sans">
       
@@ -486,6 +553,17 @@ export function InventoryPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Export CSV */}
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 bg-slate-955/80 border border-slate-800 hover:border-slate-700 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all duration-300 shadow-inner"
+                  title="Export current list to CSV"
+                >
+                  <Download className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Export CSV</span>
+                </button>
 
                 {/* View Toggle */}
                 <div className="flex items-center gap-1 bg-slate-955/80 border border-slate-800 p-1 rounded-xl shadow-inner">
