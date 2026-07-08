@@ -61,8 +61,25 @@ def log_die_changes(sender, instance, **kwargs):
         old_val = old_values.get(field)
         new_val = getattr(instance, field)
 
-        old_str = str(old_val) if old_val is not None else ''
-        new_str = str(new_val) if new_val is not None else ''
+        if field == 'current_set_id':
+            from machines.models import Set
+            old_set_name = ''
+            new_set_name = ''
+            if old_val:
+                try:
+                    old_set_name = Set.objects.filter(pk=old_val).values_list('name', flat=True).first() or ''
+                except Exception:
+                    old_set_name = str(old_val)
+            if new_val:
+                try:
+                    new_set_name = Set.objects.filter(pk=new_val).values_list('name', flat=True).first() or ''
+                except Exception:
+                    new_set_name = str(new_val)
+            old_str = old_set_name
+            new_str = new_set_name
+        else:
+            old_str = str(old_val) if old_val is not None else ''
+            new_str = str(new_val) if new_val is not None else ''
 
         if old_str != new_str:
             DieHistory.objects.create(
