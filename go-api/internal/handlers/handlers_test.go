@@ -688,3 +688,63 @@ func TestHandleStats(t *testing.T) {
 	}
 }
 
+func TestHandleSearch_MeilisearchFailureFallback(t *testing.T) {
+	cfg := &config.Config{}
+	
+	// Mock Meilisearch to return an error (e.g. timeout or server down)
+	mockSearch := &MockSearch{
+		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+			return nil, errors.New("meilisearch connection timeout")
+		},
+	}
+
+	// Mock DB to return Postgres direct results
+	expectedDies := []database.DieRepresentation{
+		{DieID: "POSTGRES-FALLBACK-1", DieType: "ROUND", Status: "AVAILABLE"},
+	}
+	postgresDirectlyCalled := false
+
+	mockDb := &MockDatabase{
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error) {
+			if q == "fallback-query" {
+				postgresDirectlyCalled = true
+				return expectedDies, nil
+			}
+			return nil, nil
+		},
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
+			return 1, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, mockSearch, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/search?q=fallback-query", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp struct {
+		Total   int                          `json:"total"`
+		Limit   int                          `json:"limit"`
+		Offset  int                          `json:"offset"`
+		Results []database.DieRepresentation `json:"results"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if !postgresDirectlyCalled {
+		t.Error("expected Postgres direct fallback query to be called on Meilisearch error")
+	}
+
+	if len(resp.Results) != 1 || resp.Results[0].DieID != "POSTGRES-FALLBACK-1" {
+		t.Errorf("expected fallback result POSTGRES-FALLBACK-1, got: %+v", resp.Results)
+	}
+}
+
+
