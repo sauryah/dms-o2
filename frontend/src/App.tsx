@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { CommandPalette } from './components/CommandPalette'
 import { SessionTimeoutManager } from './components/SessionTimeoutManager'
+import { Footer } from './components/Footer'
 import { AuthProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
 import { useApi } from './hooks/useApi'
 import { DIE_UPDATE_EVENT, SET_UPDATE_EVENT, MACHINE_UPDATE_EVENT, BACKUP_UPDATE_EVENT } from './contracts/dieContracts'
@@ -242,89 +243,92 @@ function AppContent() {
   }, [token, queryClient, request, showToast, checkIndexStatus])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white">
-      <Navbar />
-      {rebuildStatus && rebuildStatus.status === 'rebuilding' && (
-        <div className="bg-blue-950/80 border-b border-blue-500/20 px-6 py-3 flex items-center justify-between shadow-md animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-400 dot-glow glow-blue animate-pulse shrink-0" />
-            <div className="text-xs">
-              <span className="font-bold text-white">Search index rebuilding...</span>
-              <span className="text-slate-400 ml-2 font-medium">System is synchronizing data after database restore. Search results may be incomplete.</span>
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col">
+      <div className="flex-grow">
+        <Navbar />
+        {rebuildStatus && rebuildStatus.status === 'rebuilding' && (
+          <div className="bg-blue-950/80 border-b border-blue-500/20 px-6 py-3 flex items-center justify-between shadow-md animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 dot-glow glow-blue animate-pulse shrink-0" />
+              <div className="text-xs">
+                <span className="font-bold text-white">Search index rebuilding...</span>
+                <span className="text-slate-400 ml-2 font-medium">System is synchronizing data after database restore. Search results may be incomplete.</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-32 bg-slate-805 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${rebuildStatus.progress}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold text-blue-405 font-mono">{rebuildStatus.progress}%</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-32 bg-slate-805 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${rebuildStatus.progress}%` }}
-              />
-            </div>
-            <span className="text-xs font-bold text-blue-405 font-mono">{rebuildStatus.progress}%</span>
-          </div>
-        </div>
-      )}
-      <SessionTimeoutManager />
-      <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={
-            <ErrorBoundary>
+        )}
+        <SessionTimeoutManager />
+        <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/inventory" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <InventoryPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/dies/*" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <DieDetailPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/machines" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <MachineSetsPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/import" element={
+              <ErrorBoundary>
+                <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
+                  <ImportPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/users" element={
+              <ErrorBoundary>
+                <ProtectedRoute allowedRoles={['ROOT']}>
+                  <UsersPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/history" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <HistoryPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/settings" element={
               <ProtectedRoute>
-                <DashboardPage />
+                <SettingsPage />
               </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/inventory" element={
-            <ErrorBoundary>
-              <ProtectedRoute>
-                <InventoryPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/dies/*" element={
-            <ErrorBoundary>
-              <ProtectedRoute>
-                <DieDetailPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/machines" element={
-            <ErrorBoundary>
-              <ProtectedRoute>
-                <MachineSetsPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/import" element={
-            <ErrorBoundary>
-              <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
-                <ImportPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/users" element={
-            <ErrorBoundary>
-              <ProtectedRoute allowedRoles={['ROOT']}>
-                <UsersPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/history" element={
-            <ErrorBoundary>
-              <ProtectedRoute>
-                <HistoryPage />
-              </ProtectedRoute>
-            </ErrorBoundary>
-          } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          } />
-        </Routes>
-      </Suspense>
+            } />
+          </Routes>
+        </Suspense>
+      </div>
+      <Footer />
     </div>
   )
 }
