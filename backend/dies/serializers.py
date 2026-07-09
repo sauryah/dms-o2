@@ -102,6 +102,13 @@ class DieCreateSerializer(serializers.ModelSerializer):
             data['status'] = status_val
         return super().to_internal_value(data)
 
+    def validate_die_id(self, value):
+        from dies.services.validation_service import ValidationService
+        try:
+            return ValidationService.validate_die_id(value)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
+
     def validate(self, attrs):
         die_type = attrs.get('die_type')
         if die_type == 'ROUND':

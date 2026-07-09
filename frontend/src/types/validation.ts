@@ -4,7 +4,10 @@ import { DIE_STATUSES } from '../contracts/dieContracts'
 // Validation schema for die creation
 export const DieCreateSchema = z.discriminatedUnion('die_type', [
   z.object({
-    die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
+    die_id: z.string()
+      .min(1, 'Die ID is required')
+      .max(50, 'Die ID must be 50 characters or less')
+      .regex(/^[a-zA-Z0-9_\-./]+$/, 'Die ID can only contain alphanumeric characters, hyphens, underscores, dots, and slashes'),
     die_type: z.literal('ROUND'),
     casing: z.string().min(1, 'Casing is required'),
     status: z.enum(DIE_STATUSES),
@@ -19,7 +22,10 @@ export const DieCreateSchema = z.discriminatedUnion('die_type', [
     current_size: z.coerce.number().positive('Current size must be positive'),
   }),
   z.object({
-    die_id: z.string().min(1, 'Die ID is required').max(50, 'Die ID must be 50 characters or less'),
+    die_id: z.string()
+      .min(1, 'Die ID is required')
+      .max(50, 'Die ID must be 50 characters or less')
+      .regex(/^[a-zA-Z0-9_\-./]+$/, 'Die ID can only contain alphanumeric characters, hyphens, underscores, dots, and slashes'),
     die_type: z.literal('FLAT'),
     casing: z.string().min(1, 'Casing is required'),
     status: z.enum(DIE_STATUSES),

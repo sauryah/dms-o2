@@ -282,7 +282,7 @@ function AppContent() {
               </ProtectedRoute>
             </ErrorBoundary>
           } />
-          <Route path="/dies/:id" element={
+          <Route path="/dies/*" element={
             <ErrorBoundary>
               <ProtectedRoute>
                 <DieDetailPage />

@@ -39,6 +39,18 @@ class ValidationServiceTests(TestCase):
         with self.assertRaises(ValueError):
             ValidationService.validate_decimal(None, "test_field")
 
+    def test_validate_die_id_valid(self):
+        self.assertEqual(ValidationService.validate_die_id("AL-F/1-05"), "AL-F/1-05")
+        self.assertEqual(ValidationService.validate_die_id("R-101.A_B-C"), "R-101.A_B-C")
+
+    def test_validate_die_id_invalid(self):
+        with self.assertRaises(ValueError):
+            ValidationService.validate_die_id("AL-F#1-05")
+        with self.assertRaises(ValueError):
+            ValidationService.validate_die_id("AL-F?1-05")
+        with self.assertRaises(ValueError):
+            ValidationService.validate_die_id("")
+
 
 class ImportServiceTests(TestCase):
     def setUp(self):

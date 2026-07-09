@@ -360,7 +360,8 @@ function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boole
 }
 
 export function DieDetailPage() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params['*']
   const { request } = useApi()
   const { role } = useAuth()
   const { showToast } = useToast()
@@ -547,11 +548,21 @@ export function DieDetailPage() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
+    const trimmedId = dieIdVal.trim()
+    if (!trimmedId) {
+      showToast("Die ID is required.", "error")
+      return
+    }
+    if (!/^[a-zA-Z0-9_\-./]+$/.test(trimmedId)) {
+      showToast("Die ID can only contain alphanumeric characters, hyphens, underscores, dots, and slashes.", "error")
+      return
+    }
+
     const selectedRack = racks.find((r: any) => String(r.id) === String(rack))
     const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
 
     const payload: any = {
-      die_id: dieIdVal,
+      die_id: trimmedId,
       casing: casingVal,
       status: statusVal,
       location: finalLocation,
@@ -686,7 +697,8 @@ export function DieDetailPage() {
     const svgUrl = URL.createObjectURL(svgBlob);
     const downloadLink = document.createElement('a');
     downloadLink.href = svgUrl;
-    downloadLink.download = `dms_blueprint_${die?.die_id || 'die'}.svg`;
+    const safeDieId = (die?.die_id || 'die').replace(/\//g, '_');
+    downloadLink.download = `dms_blueprint_${safeDieId}.svg`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);

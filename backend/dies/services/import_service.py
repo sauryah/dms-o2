@@ -104,10 +104,7 @@ class ImportService:
     @staticmethod
     def _process_row(row_data: Dict[str, Any], sets_by_id: Dict[int, Set], sets_by_name: Dict[str, List[Set]]) -> Tuple[int, bool]:
         """Processes a single row, validates and creates/updates the die. Returns (die_id, is_created)."""
-        die_id = row_data.get('die_id')
-        if not die_id:
-            raise ValueError("Missing 'die_id'")
-        die_id = str(die_id).strip()
+        die_id = ValidationService.validate_die_id(row_data.get('die_id'))
 
         die_type = ValidationService.validate_die_type(row_data.get('die_type'))
         casing = row_data.get('casing')
