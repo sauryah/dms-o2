@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FileSpreadsheet } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
@@ -11,7 +11,18 @@ export function ImportPage() {
     type: 'success' | 'error'
     text: string
   } | null>(null)
-  const [progress, setProgress] = useState(false)
+
+  const [importStatus, setImportStatus] = useState<{
+    status: 'idle' | 'importing' | 'ready' | 'error'
+    progress: number
+    total: number
+    filename: string
+    dry_run: boolean
+    message?: string
+    result?: any
+  } | null>(null)
+
+  const progress = importStatus?.status === 'importing'
 
   // Import results state
   const [importResult, setImportResult] = useState<{
@@ -29,6 +40,59 @@ export function ImportPage() {
     skipped: number
     errors: any[]
   } | null>(null)
+
+  const checkStatus = async () => {
+    try {
+      const status = await request('/api/go/import-status')
+      if (status.status === 'importing') {
+        setImportStatus(status)
+      } else if (status.status === 'ready') {
+        const result = status.result
+        if (status.dry_run) {
+          setDryRunResult({
+            created: result.created,
+            updated: result.updated,
+            skipped: result.skipped,
+            errors: result.errors || []
+          })
+          setShowPreviewModal(true)
+        } else {
+          setImportResult({
+            created: result.created,
+            updated: result.updated,
+            skipped: result.skipped,
+            errors: result.errors || []
+          })
+          setStatusMsg({
+            type: 'success',
+            text: `Import complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
+          })
+        }
+        setImportStatus(null)
+      } else if (status.status === 'error') {
+        setStatusMsg({
+          type: 'error',
+          text: status.message || 'Import failed.'
+        })
+        setImportStatus(null)
+      } else {
+        setImportStatus(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch import status', err)
+    }
+  }
+
+  useEffect(() => {
+    checkStatus()
+  }, [])
+
+  useEffect(() => {
+    if (importStatus?.status === 'importing') {
+      const interval = setInterval(checkStatus, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [importStatus?.status])
 
   const downloadTemplate = async () => {
     try {
@@ -72,8 +136,9 @@ export function ImportPage() {
     if (e) e.preventDefault()
     if (!file) return
 
-    setProgress(true)
     setStatusMsg(null)
+    setImportResult(null)
+    setDryRunResult(null)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -81,40 +146,24 @@ export function ImportPage() {
     const url = `/api/import/${dryRun ? '?dry_run=true' : ''}`
 
     try {
-      const res = await request(url, {
+      setImportStatus({
+        status: 'importing',
+        progress: 0,
+        total: 100,
+        filename: file.name,
+        dry_run: dryRun
+      })
+
+      await request(url, {
         method: 'POST',
         body: formData
       })
-      if (dryRun) {
-        setDryRunResult({
-          created: res.created,
-          updated: res.updated,
-          skipped: res.skipped,
-          errors: res.errors || []
-        })
-        setShowPreviewModal(true)
-      } else {
-        setDryRunResult(null)
-        setShowPreviewModal(false)
-        setImportResult({
-          created: res.created,
-          updated: res.updated,
-          skipped: res.skipped,
-          errors: res.errors || []
-        })
-        setStatusMsg({
-          type: 'success',
-          text: `Import complete: ${res.created} created, ${res.updated} updated, ${res.skipped} skipped.`
-        })
-      }
     } catch (err: any) {
       setStatusMsg({
         type: 'error',
         text: err.message || 'Import failed.'
       })
-      setImportResult(null)
-    } finally {
-      setProgress(false)
+      setImportStatus(null)
     }
   }
 
@@ -209,6 +258,27 @@ export function ImportPage() {
             </button>
           </div>
         </form>
+
+        {importStatus && importStatus.status === 'importing' && (
+          <div className="mt-8 p-6 bg-slate-950/40 border border-slate-800 rounded-xl space-y-4">
+            <div className="flex justify-between items-center text-xs font-semibold text-slate-400">
+              <span className="truncate max-w-xs sm:max-w-sm">Importing: {importStatus.filename}</span>
+              <span className="font-mono text-blue-400 font-extrabold">
+                {importStatus.total > 0 ? `${Math.round((importStatus.progress / importStatus.total) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800/80">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${importStatus.total > 0 ? (importStatus.progress / importStatus.total) * 100 : 0}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xxs font-medium text-slate-500">
+              <span>Processed {importStatus.progress} of {importStatus.total} rows</span>
+              <span className="animate-pulse">Import running in background...</span>
+            </div>
+          </div>
+        )}
 
         {statusMsg && (
           <div className={`mt-8 p-6 rounded-xl border ${

@@ -131,6 +131,22 @@ func (h *Handler) HandleIndexStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ready"}`))
 }
 
+func (h *Handler) HandleImportStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if h.cache.Enabled() {
+		statusJSON, err := h.cache.Get(r.Context(), "import_status")
+		if err == nil {
+			w.WriteHeader(http.StatusOK)
+			w.Write(statusJSON)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"idle"}`))
+}
+
 func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

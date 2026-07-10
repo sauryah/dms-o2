@@ -68,6 +68,7 @@ func main() {
 	mux.Handle("GET /api/go/stats", jwtAuth(http.HandlerFunc(handler.HandleStats)))
 	mux.Handle("GET /api/events/", jwtAuth(http.HandlerFunc(handler.HandleEvents)))
 	mux.Handle("GET /api/go/index-status", jwtAuth(http.HandlerFunc(handler.HandleIndexStatus)))
+	mux.Handle("GET /api/go/import-status", jwtAuth(http.HandlerFunc(handler.HandleImportStatus)))
 
 	port := cfg.Port
 
