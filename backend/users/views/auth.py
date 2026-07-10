@@ -1,24 +1,22 @@
 import hashlib
+import redis
+import uuid
+from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from users.models import User, UserSession, UserActivityLog
-from users.serializers import BackupFilenameSerializer, BackupSerializer, BackupUploadSerializer, UserSerializer, LoginSerializer, ChangePasswordSerializer, UserActivityLogSerializer
-from users.permissions import IsRootOnly
-from dms.events import broadcast_event
-from users.services.backup_service import BackupService
-from dies.contracts import BACKUP_CREATE_ACTION, BACKUP_DELETE_ACTION, BACKUP_UPDATE_EVENT, BACKUP_UPLOAD_ACTION
-from django.utils import timezone
-import os
+from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
 from django.http import StreamingHttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
 from rest_framework import serializers
+
+from users.models import User, UserSession, UserActivityLog
+from users.serializers import LoginSerializer, ChangePasswordSerializer
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -51,9 +49,6 @@ class LoginView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        import redis
-        from django.conf import settings
-
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
@@ -188,29 +183,6 @@ class LoginView(APIView):
         return response
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsRootOnly]
-    pagination_class = None
-
-
-
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        return Response({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'role': user.role,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-        })
-
-
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -234,7 +206,6 @@ class ChangePasswordView(APIView):
         user.set_password(serializer.validated_data['new_password'])
         user.save()
 
-        from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token_str = str(refresh)
@@ -245,7 +216,6 @@ class ChangePasswordView(APIView):
             "refresh": refresh_token_str,
         }, status=status.HTTP_200_OK)
         
-        from django.conf import settings
         response.set_cookie(
             key='dms_access_token',
             value=access_token,
@@ -294,10 +264,6 @@ class SSETicketView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        import uuid
-        import redis
-        from django.conf import settings
-        
         ticket = str(uuid.uuid4())
         try:
             redis_url = settings.CACHES['default']['LOCATION']
@@ -308,166 +274,6 @@ class SSETicketView(APIView):
             return Response({"detail": f"Failed to generate SSE ticket: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class BackupViewSet(viewsets.ViewSet):
-    permission_classes = [IsRootOnly]
-    serializer_class = BackupSerializer
-
-    @extend_schema(
-        responses=inline_serializer(
-            name='BackupListItem',
-            many=True,
-            fields={
-                'filename': serializers.CharField(),
-                'size_kb': serializers.FloatField(),
-                'created_at': serializers.DateTimeField(),
-            },
-        )
-    )
-    def list(self, request):
-        try:
-            backups = BackupService.list_backups()
-            for b in backups:
-                b['created_at'] = timezone.make_aware(timezone.datetime.fromtimestamp(b['created_at'])).isoformat()
-            return Response(backups)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @extend_schema(
-        responses={
-            202: inline_serializer(
-                name='BackupCreateResponse',
-                fields={
-                    'status': serializers.CharField(),
-                    'task_id': serializers.CharField(),
-                },
-            )
-        },
-    )
-    def create(self, request):
-        try:
-            from users.tasks import create_backup_task
-            task = create_backup_task.delay()
-            return Response({
-                'status': 'pending',
-                'task_id': task.id
-            }, status=status.HTTP_202_ACCEPTED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=['post'])
-    @extend_schema(
-        request=BackupFilenameSerializer,
-        responses={202: inline_serializer(name='BackupRestoreResponse', fields={'status': serializers.CharField(), 'task_id': serializers.CharField()})},
-    )
-    def restore(self, request):
-        filename = request.data.get('filename')
-        if not filename:
-            return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            filepath = BackupService.validate_filepath(filename)
-            if not os.path.exists(filepath):
-                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            from users.tasks import restore_backup_task
-            request_meta = {
-                'HTTP_AUTHORIZATION': request.META.get('HTTP_AUTHORIZATION')
-            }
-            task = restore_backup_task.delay(filepath, filename, request.user.id, request_meta)
-            
-            return Response({
-                'status': 'pending',
-                'task_id': task.id
-            }, status=status.HTTP_202_ACCEPTED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=['post'])
-    @extend_schema(
-        request=BackupFilenameSerializer,
-        responses={200: inline_serializer(name='BackupDeleteResponse', fields={'status': serializers.CharField()})},
-    )
-    def delete_backup(self, request):
-        filename = request.data.get('filename')
-        if not filename:
-            return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            filepath = BackupService.validate_filepath(filename)
-            if not os.path.exists(filepath):
-                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
-            os.remove(filepath)
-            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_DELETE_ACTION, 'filename': filename})
-            return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=['get'])
-    @extend_schema(
-        parameters=[OpenApiParameter('filename', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True)],
-        responses={200: OpenApiResponse(description='Backup dump file')},
-    )
-    def download_backup(self, request):
-        from django.http import FileResponse
-        
-        filename = request.query_params.get('filename')
-        if not filename:
-            return Response({'error': 'Filename is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            filepath = BackupService.validate_filepath(filename)
-            if not os.path.exists(filepath):
-                return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
-            response = FileResponse(
-                open(filepath, 'rb'),
-                as_attachment=True,
-                filename=filename,
-                content_type='application/octet-stream'
-            )
-            response.block_size = 8192
-            return response
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=['post'])
-    @extend_schema(
-        request={'multipart/form-data': BackupUploadSerializer},
-        responses={
-            201: inline_serializer(
-                name='BackupUploadResponse',
-                fields={
-                    'status': serializers.CharField(),
-                    'filename': serializers.CharField(),
-                    'size_kb': serializers.FloatField(),
-                },
-            )
-        },
-    )
-    def upload_backup(self, request):
-        file_obj = request.FILES.get('file')
-        if not file_obj:
-            return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        filename = file_obj.name
-        if not filename.endswith('.dump'):
-            return Response({'error': 'Only .dump files are allowed'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            filepath = BackupService.validate_filepath(filename)
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-            with open(filepath, 'wb+') as destination:
-                for chunk in file_obj.chunks():
-                    destination.write(chunk)
-            
-            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_UPLOAD_ACTION, 'filename': filename})
-            return Response({
-                'status': 'uploaded',
-                'filename': filename,
-                'size_kb': round(os.path.getsize(filepath) / 1024, 2)
-            }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class EventStreamView(APIView):
     permission_classes = [AllowAny]
@@ -486,7 +292,6 @@ class EventStreamView(APIView):
         if not token:
             return Response({'error': 'Authentication token is required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
         try:
             validated_token = AccessToken(token)
         except Exception:
@@ -530,8 +335,6 @@ class HealthCheckView(APIView):
     )
     def get(self, request, *args, **kwargs):
         from django.db import connection
-        from django.conf import settings
-        import redis
 
         status_data = {
             "status": "healthy",
@@ -582,7 +385,6 @@ class VerifyTokenView(APIView):
     )
     def post(self, request, *args, **kwargs):
         internal_key = request.headers.get('X-Internal-Key')
-        from django.conf import settings
         if not internal_key or internal_key != settings.INTERNAL_API_SECRET:
             return Response({"detail": "Forbidden: Invalid internal verification key."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -605,9 +407,7 @@ class LogoutView(APIView):
         responses={200: OpenApiResponse(description="Logged out successfully")},
     )
     def post(self, request, *args, **kwargs):
-        import hashlib
         from django.core.cache import cache
-        from django.conf import settings
         
         user = request.user
         token_str = None
@@ -641,53 +441,6 @@ class LogoutView(APIView):
         return response
 
 
-class UserActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = UserActivityLog.objects.all()
-    serializer_class = UserActivityLogSerializer
-    permission_classes = [IsRootOnly]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        username = self.request.query_params.get('username')
-        action = self.request.query_params.get('action')
-        if username:
-            queryset = queryset.filter(username__icontains=username)
-        if action:
-            queryset = queryset.filter(action=action)
-        return queryset
-
-
-class UserSessionViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsRootOnly]
-    http_method_names = ['get', 'delete']
-
-    def get_queryset(self):
-        from users.models import UserSession
-        return UserSession.objects.all().select_related('user').order_by('-last_seen')
-
-    def get_serializer_class(self):
-        from users.serializers import UserSessionSerializer
-        return UserSessionSerializer
-
-    def perform_destroy(self, instance):
-        from django.core.cache import cache
-        cache_key = f"user_session_{instance.token_hash}"
-        cache.delete(cache_key)
-        
-        from users.models import UserActivityLog
-        UserActivityLog.objects.create(
-            user=instance.user,
-            username=instance.user.username,
-            action='SESSION_EXPIRED',
-            ip_address=instance.ip_address,
-            device=f"Forced terminate by admin ({self.request.user.username})"
-        )
-        
-        instance.delete()
-
-
-from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
-
 class TokenRefreshView(SimpleJWTTokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.data.get('refresh')
@@ -706,10 +459,6 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
         if response.status_code == 200:
             access_token = response.data.get('access')
             if access_token:
-                import hashlib
-                from rest_framework_simplejwt.tokens import RefreshToken
-                from users.models import UserSession
-                
                 try:
                     ref_obj = RefreshToken(refresh_token)
                     user_id = ref_obj['user_id']
@@ -739,12 +488,10 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                             'created_at': session.created_at.isoformat(),
                             'last_seen': session.last_seen.isoformat(),
                         }
-                        from django.conf import settings
                         cache.set(new_cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
                 except Exception:
                     pass
 
-                from django.conf import settings
                 response.set_cookie(
                     key='dms_access_token',
                     value=access_token,
@@ -755,7 +502,6 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                 )
             new_refresh = response.data.get('refresh')
             if new_refresh:
-                from django.conf import settings
                 response.set_cookie(
                     key='dms_refresh_token',
                     value=new_refresh,
@@ -765,5 +511,3 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                     max_age=24 * 3600
                 )
         return response
-
-

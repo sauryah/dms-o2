@@ -48,7 +48,6 @@ class UserSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"current_password": "Incorrect current password."})
         return attrs
 
-
     def validate_role(self, value):
         if value == 'ROOT':
             if self.instance and self.instance.role == 'ROOT':
@@ -74,38 +73,6 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-
-
-class ChangePasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-
-    def validate_new_password(self, value):
-        from django.contrib.auth.password_validation import validate_password
-        from django.core.exceptions import ValidationError
-        try:
-            validate_password(value)
-        except ValidationError as e:
-            raise serializers.ValidationError(list(e.messages))
-        return value
-
-
-class BackupSerializer(serializers.Serializer):
-    filename = serializers.CharField()
-    size_kb = serializers.FloatField(required=False)
-    created_at = serializers.DateTimeField(required=False)
-
-
-class BackupFilenameSerializer(serializers.Serializer):
-    filename = serializers.CharField()
-
-
-class BackupUploadSerializer(serializers.Serializer):
-    file = serializers.FileField()
-
 
 class UserActivityLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,4 +89,3 @@ class UserSessionSerializer(serializers.ModelSerializer):
         from users.models import UserSession
         model = UserSession
         fields = ['id', 'username', 'role', 'created_at', 'last_seen', 'ip_address', 'device']
-
