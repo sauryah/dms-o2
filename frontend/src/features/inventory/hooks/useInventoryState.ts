@@ -17,7 +17,7 @@ export function useInventoryState() {
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5000)
+  const [pageSize, setPageSize] = useState(100000)
   
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
