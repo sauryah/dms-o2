@@ -17,8 +17,8 @@ export function useInventoryState() {
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100000)
-  
+  const [pageSize, setPageSize] = useState(100)
+
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
   const debouncedQ = useDebounce(q, 300)
@@ -33,6 +33,14 @@ export function useInventoryState() {
   const [widthMax, setWidthMax] = useState(searchParams.get('width_max') || '')
   const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
   const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
+
+  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const isSearchActive = useMemo(() => {
+    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
   
   const [showFilters, setShowFilters] = useState(!!(
     searchParams.get('die_type') || 
@@ -50,7 +58,7 @@ export function useInventoryState() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, selectedNode?.type, selectedNode?.id])
 
   const [sortField, setSortField] = useState<string>('relevance')
   const [sortOrder, setSortOrder] = useState<string>('asc')
@@ -80,7 +88,23 @@ export function useInventoryState() {
 
   // React Query Fetcher
   const { data: searchData, isLoading, error } = useQuery({
-    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, String(page), String(pageSize)],
+    queryKey: [
+      'dies',
+      debouncedQ,
+      dieType,
+      statusVal,
+      casing,
+      sizeMin,
+      sizeMax,
+      widthMin,
+      widthMax,
+      thickMin,
+      thickMax,
+      String(page),
+      String(pageSize),
+      selectedNode?.type || '',
+      selectedNode?.id || ''
+    ],
     queryFn: ({ signal }: { signal: AbortSignal }) => {
       let url = '/api/go/search'
       const params = new URLSearchParams()
@@ -96,6 +120,17 @@ export function useInventoryState() {
       if (widthMax) params.append('width_max', widthMax)
       if (thickMin) params.append('thick_min', thickMin)
       if (thickMax) params.append('thick_max', thickMax)
+
+      if (!isSearchActive && selectedNode) {
+        if (selectedNode.type === 'machine') {
+          params.append('machine_id', String(selectedNode.id))
+        } else if (selectedNode.type === 'set') {
+          params.append('set_id', String(selectedNode.id))
+        } else if (selectedNode.type === 'unassigned') {
+          params.append('unassigned', 'true')
+        }
+      }
+
       params.append('limit', String(pageSize))
       params.append('offset', String((page - 1) * pageSize))
       
@@ -170,23 +205,17 @@ export function useInventoryState() {
     createDieMutation.mutate(payload)
   }
 
-  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-
-  const isSearchActive = useMemo(() => {
-    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
-  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+  // Removed duplicate state declarations (moved to top of hook)
 
   useEffect(() => {
     if (isSearchActive) {
       setSelectedNode({ type: 'search' })
-    } else {
+    } else if (selectedNode?.type === 'search') {
       setSelectedNode(null)
     }
-  }, [isSearchActive])
+  }, [isSearchActive, selectedNode])
 
-  const { unassignedDies, machinesWithData } = useMemo(() => {
+  const { unassignedDies, machinesWithData, unassignedCount } = useMemo(() => {
     const diesBySet: Record<string | number, any[]> = {}
     const unassignedDies: any[] = []
     
@@ -217,29 +246,33 @@ export function useInventoryState() {
         const setDies = diesBySet[set.id] || []
         return {
           ...set,
-          dies: setDies
+          dies: setDies,
+          die_count: set.die_count || 0
         }
       })
 
       return {
         ...machine,
         sets: machineSets,
-        totalDies: machineSets.reduce((sum: number, s: any) => sum + s.dies.length, 0)
+        totalDies: machineSets.reduce((sum: number, s: any) => sum + (s.die_count || 0), 0)
       }
     })
 
-    return { unassignedDies, machinesWithData }
-  }, [dies, machinesList, setsList])
+    const totalAssignedCount = (setsList || []).reduce((sum: number, s: any) => sum + (s.die_count || 0), 0)
+    const unassignedCount = Math.max(0, totalCount - totalAssignedCount)
+
+    return { unassignedDies, machinesWithData, unassignedCount }
+  }, [dies, machinesList, setsList, totalCount])
 
   useEffect(() => {
     if (!selectedNode && !isSearchActive) {
       if (machinesWithData && machinesWithData.length > 0) {
         setSelectedNode({ type: 'machine', id: machinesWithData[0].id })
-      } else if (unassignedDies && unassignedDies.length > 0) {
+      } else if (unassignedCount > 0) {
         setSelectedNode({ type: 'unassigned' })
       }
     }
-  }, [machinesWithData, unassignedDies, selectedNode, isSearchActive])
+  }, [machinesWithData, unassignedCount, selectedNode, isSearchActive])
 
   const activeView = useMemo(() => {
     if (isSearchActive && (!selectedNode || selectedNode.type === 'search')) {
@@ -422,7 +455,7 @@ export function useInventoryState() {
     isSidebarOpen,
     setIsSidebarOpen,
     isSearchActive,
-    unassignedDies,
+    unassignedCount,
     machinesWithData,
     activeView,
     selectedMachine,

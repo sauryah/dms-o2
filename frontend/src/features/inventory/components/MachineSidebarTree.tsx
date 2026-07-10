@@ -22,9 +22,8 @@ export interface MachineSidebarTreeProps {
   isSidebarCollapsed: boolean;
   selectedNode: { type: string; id?: any; machineId?: any } | null;
   setSelectedNode: (node: { type: string; id?: any; machineId?: any } | null) => void;
-  machinesList: any[] | undefined;
-  setsList: any[] | undefined;
-  dies: any[];
+  machinesWithData: any[];
+  unassignedCount: number;
   isSearchActive: boolean;
   canCreate: boolean;
   activeDragType: string | null;
@@ -41,9 +40,8 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
       isSidebarCollapsed,
       selectedNode,
       setSelectedNode,
-      machinesList,
-      setsList,
-      dies,
+      machinesWithData,
+      unassignedCount,
       isSearchActive,
       canCreate,
       activeDragType,
@@ -60,52 +58,6 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
     const [expandedSets, setExpandedSets] = useState<Record<string | number, boolean>>({})
     const [expandedUnassigned, setExpandedUnassigned] = useState(true)
     const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: any } | null>(null)
-
-    // Memoized grouping of dies into tree data structure
-    const { unassignedDies, machinesWithData } = useMemo(() => {
-      const diesBySet: Record<string | number, any[]> = {}
-      const unassignedDies: any[] = []
-      
-      dies?.forEach((die: any) => {
-        if (die.current_set) {
-          if (!diesBySet[die.current_set]) {
-            diesBySet[die.current_set] = []
-          }
-          diesBySet[die.current_set].push(die)
-        } else {
-          unassignedDies.push(die)
-        }
-      })
-
-      const setsByMachine: Record<string | number, any[]> = {}
-      setsList?.forEach((set: any) => {
-        if (set.machine) {
-          if (!setsByMachine[set.machine]) {
-            setsByMachine[set.machine] = []
-          }
-          setsByMachine[set.machine].push(set)
-        }
-      })
-
-      const machinesWithData = (machinesList || []).map((machine: any) => {
-        const setsForMachine = setsByMachine[machine.id] || []
-        const machineSets = setsForMachine.map((set: any) => {
-          const setDies = diesBySet[set.id] || []
-          return {
-            ...set,
-            dies: setDies
-          }
-        }).filter((set: any) => showEmptyNodes || set.dies.length > 0)
-
-        return {
-          ...machine,
-          sets: machineSets,
-          totalDies: machineSets.reduce((sum: number, s: any) => sum + s.dies.length, 0)
-        }
-      }).filter((m: any) => showEmptyNodes || m.totalDies > 0)
-
-      return { unassignedDies, machinesWithData }
-    }, [dies, machinesList, setsList, showEmptyNodes])
 
     // Filtered machines list for the tree navigation search
     const filteredMachines = useMemo(() => {
@@ -363,10 +315,10 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                                   <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-505'}`} />
                                   <span className="text-xs font-medium truncate flex-1">{set.name}</span>
                                   <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-955 border border-slate-800 shrink-0">
-                                    {activeCount > 0 && (
+                                    {set.die_count > 0 && (
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
                                     )}
-                                    {set.dies.length}
+                                    {set.die_count}
                                   </span>
                                 </div>
                               </div>
@@ -381,7 +333,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
             </div>
 
             {/* Unassigned / Standalone Dies Node */}
-            {unassignedDies.length > 0 && (
+            {unassignedCount > 0 && (
               <div className="pt-4 border-t border-slate-800/60 mt-4">
                 {(() => {
                   const isUnassignedDragOver = dragOverNode?.type === 'unassigned'
@@ -403,7 +355,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-505'}`} />
                       <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
                       <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
-                        {unassignedDies.length}
+                        {unassignedCount}
                       </span>
                     </div>
                   )

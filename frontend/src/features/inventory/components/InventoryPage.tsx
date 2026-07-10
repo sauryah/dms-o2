@@ -63,7 +63,7 @@ export function InventoryPage() {
     isSidebarOpen,
     setIsSidebarOpen,
     isSearchActive,
-    unassignedDies,
+    unassignedCount,
     machinesWithData,
     activeView,
     selectedMachine,
@@ -107,9 +107,8 @@ export function InventoryPage() {
         isSidebarCollapsed={isSidebarCollapsed}
         selectedNode={selectedNode}
         setSelectedNode={setSelectedNode}
-        machinesList={machinesWithData}
-        setsList={setsList}
-        dies={dies}
+        machinesWithData={machinesWithData}
+        unassignedCount={unassignedCount}
         isSearchActive={isSearchActive}
         canCreate={canCreate}
         activeDragType={activeDragType}
@@ -387,7 +386,7 @@ export function InventoryPage() {
 
               {activeView === 'unassigned' && (
                 <UnassignedView
-                  unassignedDies={unassignedDies}
+                  unassignedDies={activeDiesList}
                   viewMode={viewMode}
                   activeDiesList={activeDiesList}
                   canCreate={canCreate}
@@ -395,6 +394,10 @@ export function InventoryPage() {
                   handleDragStartDie={handleDragStartDie}
                   handleDragEndDie={handleDragEndDie}
                   moveDieLocationMutation={moveDieLocationMutation}
+                  totalCount={totalCount}
+                  page={page}
+                  setPage={setPage}
+                  pageSize={pageSize}
                 />
               )}
             </div>
