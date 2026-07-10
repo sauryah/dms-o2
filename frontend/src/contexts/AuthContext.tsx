@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
+let consecutiveRefreshFailures = 0
+
 interface AuthContextValue {
   token: string | null
   refreshToken: string | null
@@ -10,6 +12,9 @@ interface AuthContextValue {
   logout: () => void
   setToken: React.Dispatch<React.SetStateAction<string | null>>
   setRefreshToken: React.Dispatch<React.SetStateAction<string | null>>
+  handleRefreshFailure: () => number
+  shouldBlockRefresh: () => boolean
+  resetRefreshFailures: () => void
 }
 
 const AuthContext = createContext<AuthContextValue>(null as any)
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userId])
 
   const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number) => {
+    consecutiveRefreshFailures = 0
     setToken(newToken)
     setRefreshToken(refresh)
     setRole(userRole)
@@ -73,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    consecutiveRefreshFailures = 0
     if (token) {
       fetch('/api/v1/auth/logout/', {
         method: 'POST',
@@ -88,11 +95,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(null)
   }
 
+  const handleRefreshFailure = () => {
+    consecutiveRefreshFailures++
+    if (consecutiveRefreshFailures >= 2) {
+      logout()
+      window.location.hash = '/login'
+    }
+    return consecutiveRefreshFailures
+  }
+
+  const shouldBlockRefresh = () => {
+    return consecutiveRefreshFailures >= 2
+  }
+
+  const resetRefreshFailures = () => {
+    consecutiveRefreshFailures = 0
+  }
+
   return (
-    <AuthContext.Provider value={{ token, refreshToken, role, username, userId, login, logout, setToken, setRefreshToken }}>
+    <AuthContext.Provider value={{
+      token,
+      refreshToken,
+      role,
+      username,
+      userId,
+      login,
+      logout,
+      setToken,
+      setRefreshToken,
+      handleRefreshFailure,
+      shouldBlockRefresh,
+      resetRefreshFailures
+    }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => useContext(AuthContext)
+

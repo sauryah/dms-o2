@@ -333,38 +333,31 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
-        request=None,
         responses={
-            201: inline_serializer(
+            202: inline_serializer(
                 name='BackupCreateResponse',
                 fields={
                     'status': serializers.CharField(),
-                    'filename': serializers.CharField(),
-                    'size_kb': serializers.FloatField(),
+                    'task_id': serializers.CharField(),
                 },
             )
         },
     )
     def create(self, request):
         try:
-            import os
-            from django.utils import timezone
-            filename = BackupService.create_backup()
-            filepath = BackupService.validate_filepath(filename)
-
-            broadcast_event(BACKUP_UPDATE_EVENT, {'action': BACKUP_CREATE_ACTION, 'filename': filename})
+            from users.tasks import create_backup_task
+            task = create_backup_task.delay()
             return Response({
-                'status': 'success',
-                'filename': filename,
-                'size_kb': round(os.path.getsize(filepath) / 1024, 2)
-            }, status=status.HTTP_201_CREATED)
+                'status': 'pending',
+                'task_id': task.id
+            }, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
     @extend_schema(
         request=BackupFilenameSerializer,
-        responses={200: inline_serializer(name='BackupRestoreResponse', fields={'status': serializers.CharField()})},
+        responses={202: inline_serializer(name='BackupRestoreResponse', fields={'status': serializers.CharField(), 'task_id': serializers.CharField()})},
     )
     def restore(self, request):
         filename = request.data.get('filename')
@@ -376,9 +369,16 @@ class BackupViewSet(viewsets.ViewSet):
             if not os.path.exists(filepath):
                 return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            BackupService.restore_backup(filepath, filename, request.user, request.META)
+            from users.tasks import restore_backup_task
+            request_meta = {
+                'HTTP_AUTHORIZATION': request.META.get('HTTP_AUTHORIZATION')
+            }
+            task = restore_backup_task.delay(filepath, filename, request.user.id, request_meta)
             
-            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+            return Response({
+                'status': 'pending',
+                'task_id': task.id
+            }, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

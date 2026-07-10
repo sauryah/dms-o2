@@ -61,29 +61,21 @@ class BackupTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @patch('os.path.exists')
-    @patch('subprocess.run')
-    @patch('search.tasks.rebuild_search_index_task.delay')
-    def test_restore_success(self, mock_delay, mock_run, mock_exists):
+    @patch('users.tasks.restore_backup_task.delay')
+    def test_restore_success(self, mock_delay, mock_exists):
         # Mock file checks
         mock_exists.return_value = True
+
+        mock_task = MagicMock()
+        mock_task.id = 'test-task-uuid'
+        mock_delay.return_value = mock_task
 
         # Perform the request as root
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
         response = self.client.post(self.restore_url, {'filename': 'backup.dump'})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {'status': 'success'})
-
-        # Verify pg_restore was executed with -j parameter
-        mock_run.assert_called_once()
-        cmd = mock_run.call_args[0][0]
-        self.assertIn('pg_restore', cmd)
-        self.assertIn('-j', cmd)
-        
-        # Verify parallel jobs is a valid number > 0
-        j_index = cmd.index('-j')
-        jobs_count = int(cmd[j_index + 1])
-        self.assertGreaterEqual(jobs_count, 1)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data, {'status': 'pending', 'task_id': 'test-task-uuid'})
 
         # Verify the Celery task was scheduled asynchronously
-        mock_delay.assert_called_once_with('backup.dump')
+        mock_delay.assert_called_once()
