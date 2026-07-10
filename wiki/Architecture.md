@@ -351,8 +351,20 @@ To prevent query degradation and database bloating as operational logs grow over
 
 ---
 
-## 5. See Also
+## 5. Inventory Scaling Constraints & Limits
+
+To deliver high performance and low-latency rendering, the DMS React frontend uses a client-side grouping architecture for the Inventory Explorer sidebar tree and machine detail views:
+- **Client-Side Grouping**: The frontend fetches active inventory records using a single paginated API request `/api/go/search` and then dynamically parses and groups them into their respective machines and sets in memory.
+- **Maximum Page Size (`100,000`)**: To ensure all dies in the facility are represented in the explorer tree (rather than just the first few), the default `pageSize` state in [useInventoryState.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/inventory/hooks/useInventoryState.ts#L20) is set to `100000`.
+- **Scaling Recommendations**:
+  - *Below 100,000 dies*: Performance remains sub-millisecond due to the virtualized grid renderer (`react-window`).
+  - *Beyond 100,000 dies*: If the facility scales past this threshold, increase the `pageSize` default state value inside [useInventoryState.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/inventory/hooks/useInventoryState.ts) accordingly, or refactor the sidebar tree to fetch counts dynamically from a dedicated backend metrics/grouping endpoint.
+
+---
+
+## 6. See Also
 
 *   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
 *   [PROJECT.md](file:///home/sahil/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
 *   [MASTER.md](file:///home/sahil/Projects/dms-o2/design-system/die-management-system/MASTER.md) - Styling rules, dark mode palettes, and typography specifications.
+
