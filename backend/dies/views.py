@@ -296,23 +296,32 @@ class ImportDiesView(APIView):
             temp_path = temp_file.name
 
         try:
-            result = ImportService.import_dies(temp_path, ext, request.user, dry_run=dry_run)
+            import redis
+            import json
+            from django.conf import settings
+            from dies.tasks import import_dies_task
+
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            initial_status = {
+                "status": "importing",
+                "progress": 0,
+                "total": 100,
+                "filename": file_obj.name,
+                "dry_run": dry_run
+            }
+            r.set('import_status', json.dumps(initial_status))
+
+            import_dies_task.delay(temp_path, ext, request.user.username, file_obj.name, dry_run=dry_run)
             
-            if not dry_run:
-                ImportLog.objects.create(
-                    imported_by=request.user,
-                    filename=file_obj.name,
-                    created_count=result.get('created', 0),
-                    updated_count=result.get('updated', 0),
-                    skipped_count=result.get('skipped', 0),
-                    error_count=len(result.get('errors', [])),
-                    errors_json=result.get('errors', [])
-                )
-                
-            return Response(result, status=status.HTTP_200_OK)
-        finally:
+            return Response({
+                "detail": "Import started in background",
+                "status": "importing"
+            }, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+            return Response({"error": f"Failed to start import task: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')

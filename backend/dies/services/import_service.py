@@ -163,7 +163,7 @@ class ImportService:
             return die.id, is_created
 
     @staticmethod
-    def import_dies(file_path: str, file_ext: str, user, dry_run: bool = False) -> dict:
+    def import_dies(file_path: str, file_ext: str, user, dry_run: bool = False, progress_callback = None) -> dict:
         # Associate user with current thread for DieHistory tracking
         _thread_locals.user = user
         _thread_locals.skip_single_sync = True
@@ -198,7 +198,8 @@ class ImportService:
                     sets_by_name[name_lower] = []
                 sets_by_name[name_lower].append(s)
 
-            for line_num, row_data in rows:
+            total_rows = len(rows)
+            for idx, (line_num, row_data) in enumerate(rows):
                 try:
                     with transaction.atomic():
                         die_id, is_created = ImportService._process_row(row_data, sets_by_id, sets_by_name)
@@ -229,6 +230,12 @@ class ImportService:
                         'field': field_name,
                         'error': err_msg
                     })
+
+                if progress_callback:
+                    try:
+                        progress_callback(idx + 1, total_rows)
+                    except Exception as pe:
+                        logger.error(f"Error in progress callback: {pe}")
 
             if successful_die_ids and not dry_run:
                 SearchService.sync_dies_batch(successful_die_ids)
