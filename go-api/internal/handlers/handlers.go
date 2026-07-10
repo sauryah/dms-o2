@@ -21,8 +21,8 @@ import (
 
 type Database interface {
 	GetStats(ctx context.Context) (map[string]int, int, error)
-	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, error)
-	QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error)
+	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error)
+	QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error)
 	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
 	GetCount(ctx context.Context) (int, error)
 	IsUserActive(ctx context.Context, userID int) (bool, error)
@@ -201,6 +201,9 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	widthMax := r.URL.Query().Get("width_max")
 	thickMin := r.URL.Query().Get("thick_min")
 	thickMax := r.URL.Query().Get("thick_max")
+	machineID := r.URL.Query().Get("machine_id")
+	setID := r.URL.Query().Get("set_id")
+	unassigned := r.URL.Query().Get("unassigned")
 
 	limitStr := r.URL.Query().Get("limit")
 	limit := 150
@@ -229,9 +232,10 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d:%d",
+	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d:%d",
 		q, dieType, statusVal, location, casing,
-		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset,
+		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax,
+		machineID, setID, unassigned, limit, offset,
 	)
 
 	// Try to fetch from Redis
@@ -250,13 +254,13 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	if q == "" {
 		// 1. Direct database query
-		dies, err = h.db.QueryPostgresDirectly(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		dies, err = h.db.QueryPostgresDirectly(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 		if err == nil {
-			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 		}
 	} else {
 		// 2. Query Meilisearch first, then database
-		dies, total, err = h.QueryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		dies, total, err = h.QueryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 	}
 
 	if err != nil {
@@ -355,7 +359,7 @@ func scoreDie(die database.DieRepresentation, q string) int {
 	return 50
 }
 
-func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]database.DieRepresentation, int, error) {
+func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, int, error) {
 	slog.Info("Received search query", "q", q)
 
 	// Build Meilisearch filters
@@ -459,7 +463,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		combined = meiliDies
 	} else {
 		// Fallback to Postgres direct query only if Meilisearch search failed
-		postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+		postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 		if err != nil {
 			slog.Error("Postgres direct query fallback error", "error", err)
 		} else {

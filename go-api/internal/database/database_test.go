@@ -10,7 +10,7 @@ import (
 
 func TestBuildQueryPostgresDirectly(t *testing.T) {
 	// Test empty parameters
-	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if !strings.Contains(query, "SELECT") {
 		t.Errorf("expected SELECT query, got: %s", query)
 	}
@@ -19,7 +19,7 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 	}
 
 	// Test filters
-	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Rack A", "Steel", "1.5", "5.0", "", "", "", "", 10, 0)
+	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Rack A", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", 10, 0)
 	
 	if !strings.Contains(query, "ILIKE $1") {
 		t.Errorf("expected search query parameter placeholder $1, got: %s", query)
@@ -49,7 +49,7 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 }
 
 func TestBuildQueryPostgresDirectlyCount(t *testing.T) {
-	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "", "10.0", "50.0", "1.0", "5.0")
+	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "", "10.0", "50.0", "1.0", "5.0", "", "", "")
 	if !strings.Contains(query, "COUNT(*)") {
 		t.Errorf("expected COUNT query, got: %s", query)
 	}

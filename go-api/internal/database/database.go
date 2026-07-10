@@ -99,7 +99,7 @@ func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error
 	return isActive, nil
 }
 
-func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) (string, []interface{}) {
+func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -195,13 +195,27 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin
 		argCounter++
 	}
 
+	if machineID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND m.id = $%d", argCounter))
+		args = append(args, machineID)
+		argCounter++
+	}
+	if setID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND s.id = $%d", argCounter))
+		args = append(args, setID)
+		argCounter++
+	}
+	if unassigned == "true" {
+		sqlParts = append(sqlParts, "AND d.current_set_id IS NULL")
+	}
+
 	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d OFFSET %d", limit, offset))
 
 	return strings.Join(sqlParts, "\n"), args
 }
 
-func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string, limit, offset int) ([]DieRepresentation, error) {
-	query, args := BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, limit, offset)
+func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]DieRepresentation, error) {
+	query, args := BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -211,7 +225,7 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 	return scanDies(rows)
 }
 
-func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (string, []interface{}) {
+func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -301,11 +315,25 @@ func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, si
 		argCounter++
 	}
 
+	if machineID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND m.id = $%d", argCounter))
+		args = append(args, machineID)
+		argCounter++
+	}
+	if setID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND s.id = $%d", argCounter))
+		args = append(args, setID)
+		argCounter++
+	}
+	if unassigned == "true" {
+		sqlParts = append(sqlParts, "AND d.current_set_id IS NULL")
+	}
+
 	return strings.Join(sqlParts, "\n"), args
 }
 
-func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) (int, error) {
-	query, args := BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+	query, args := BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 	var count int
 	err := db.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
