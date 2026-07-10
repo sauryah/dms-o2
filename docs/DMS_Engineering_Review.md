@@ -461,30 +461,30 @@ The DMS is a well-engineered internal tool with architectural decisions that pun
 
 ## Top 25 Recommended Improvements (Highest to Lowest Priority)
 
-| Rank | Improvement | Category | Why It's #N |
-|---|---|---|---|
-| 1 | Replace Vite dev server with Nginx multi-stage production build | DevOps | Highest operational risk; smallest effort to fix |
-| 2 | Fix SSE JWT exposure — implement short-lived ticket exchange | Security | JWT in URL logs is an active security vulnerability |
-| 3 | Add Go service unit tests (scoreDie, auth, cache, SQL builders) | Testing | Highest-traffic path with zero tests |
-| 4 | Build History UI — browse, filter, export DieHistory | Feature | Data is collected; making it visible unlocks audit value immediately |
-| 5 | Add Wear Alert Engine — threshold-based notifications per die type | Feature | The core business value of the system; currently entirely absent |
-| 6 | Replace free-text location field with structured Rack/Shelf model | Architecture | Eliminates silent data loss from regex mismatch; enables rack configuration |
-| 7 | Add Dry-Run Import Mode — preview diff before committing | Feature | Prevents bulk data accidents; highest risk user operation |
-| 8 | Add Import Template Download button | Feature | 2-day fix that eliminates the top import support friction |
-| 9 | Add Operator role (4th RBAC tier — can relocate but not CRUD) | Feature | Enables floor operators to use the system without Admin rights |
-| 10 | Normalize duplicate die statuses (SCRAPPED vs SCRAP) | Database | Data integrity bug; splits stats and search results |
-| 11 | Add index on DieHistory.changed_by_id and standalone timestamp index | Database | Required for performant history queries as the table grows |
-| 12 | Add remote backup destination (S3/SFTP) option | DevOps | Local-only backup is a single point of failure |
-| 13 | Add login rate limiting (5 attempts/minute/IP on /api/auth/login/) | Security | Brute-force protection on the only unauthenticated endpoint |
-| 14 | Build Wear Trend Charts (time-series dimension visualization per die) | Feature | Makes DieHistory visible and actionable for engineers |
-| 15 | Add Dashboard Maintenance Queue widget | Feature | Shifts users from reactive to proactive die management |
-| 16 | Refactor OneToOneField → ForeignKey for multi-device session support | Architecture | Removes the biggest adoption barrier for floor operators |
-| 17 | Add mobile card view fallback for inventory table (< 768px) | UI/UX | Shop floor tablets are the primary use case; tool must work on them |
-| 18 | Add configurable tolerance limits per die type (move out of hardcode) | Feature | Different die families and customers have different tolerances |
-| 19 | Stream backup downloads via StreamingHttpResponse | API | Prevents memory spikes and timeouts on large backup files |
-| 20 | Add Machine/Set change history (extend audit logging to all entities) | Feature | Complete audit trail; required for full ISO compliance |
-| 21 | Expose /api/docs/ (drf-spectacular) behind Root auth in production | API | Self-documenting API is already generated; just needs enabling |
-| 22 | Add restore progress SSE stream and post-restore index-status endpoint | UX | Removes the "is the system ready?" uncertainty after a restore |
-| 23 | Add startup entropy validation for all secret environment variables | Security | Prevents accidental weak-credential deployments |
-| 24 | Add LDAP / Active Directory SSO integration | Feature | Factory IT standard; reduces credential sprawl and support overhead |
-| 25 | Implement AI Wear Prediction using DieHistory time-series data | AI | Highest-impact AI feature; leverages already-collected history data |
+| Rank | Improvement | Category | Status | Why It's #N |
+|---|---|---|---|---|
+| 1 | Replace Vite dev server with Nginx multi-stage production build | DevOps | **Resolved** | Highest operational risk; smallest effort to fix |
+| 2 | Fix SSE JWT exposure — implement short-lived ticket exchange | Security | **Resolved** | JWT in URL logs is an active security vulnerability |
+| 3 | Add Go service unit tests (scoreDie, auth, cache, SQL builders) | Testing | **Resolved** | Highest-traffic path with zero tests |
+| 4 | Build History UI — browse, filter, export DieHistory | Feature | **Resolved** | Data is collected; making it visible unlocks audit value immediately |
+| 5 | Add Wear Alert Engine — threshold-based notifications per die type | Feature | *Open* | The core business value of the system; currently entirely absent |
+| 6 | Replace free-text location field with structured Rack/Shelf model | Architecture | **Resolved** | Eliminates silent data loss from regex mismatch; enables rack configuration |
+| 7 | Add Dry-Run Import Mode — preview diff before committing | Feature | **Resolved** | Prevents bulk data accidents; highest risk user operation |
+| 8 | Add Import Template Download button | Feature | *Open* | 2-day fix that eliminates the top import support friction |
+| 9 | Add Operator role (4th RBAC tier — can relocate but not CRUD) | Feature | **Resolved** | Enables floor operators to use the system without Admin rights |
+| 10 | Normalize duplicate die statuses (SCRAPPED vs SCRAP) | Database | **Resolved** | Data integrity bug; splits stats and search results |
+| 11 | Add index on DieHistory.changed_by_id and standalone timestamp index | Database | **Resolved** | Required for performant history queries as the table grows |
+| 12 | Add remote backup destination (S3/SFTP) option | DevOps | *Open* | Local-only backup is a single point of failure |
+| 13 | Add login rate limiting (5 attempts/minute/IP on /api/auth/login/) | Security | **Resolved** | Brute-force protection on the only unauthenticated endpoint |
+| 14 | Build Wear Trend Charts (time-series dimension visualization per die) | Feature | **Resolved** | Makes DieHistory visible and actionable for engineers |
+| 15 | Add Dashboard Maintenance Queue widget | Feature | *Open* | Shifts users from reactive to proactive die management |
+| 16 | Refactor OneToOneField → ForeignKey for multi-device session support | Architecture | **Resolved** | Removes the biggest adoption barrier for floor operators |
+| 17 | Add mobile card view fallback for inventory table (< 768px) | UI/UX | **Resolved** | Shop floor tablets are the primary use case; tool must work on them |
+| 18 | Add configurable tolerance limits per die type (move out of hardcode) | Feature | *Open* | Different die families and customers have different tolerances |
+| 19 | Stream backup downloads via StreamingHttpResponse | API | **Resolved** | Prevents memory spikes and timeouts on large backup files |
+| 20 | Add Machine/Set change history (extend audit logging to all entities) | Feature | *Open* | Complete audit trail; required for full ISO compliance |
+| 21 | Expose /api/docs/ (drf-spectacular) behind Root auth in production | API | **Resolved** | Self-documenting API is already generated; just needs enabling |
+| 22 | Add restore progress SSE stream and post-restore index-status endpoint | UX | *Open* | Removes the "is the system ready?" uncertainty after a restore |
+| 23 | Add startup entropy validation for all secret environment variables | Security | **Resolved** | Prevents accidental weak-credential deployments |
+| 24 | Add LDAP / Active Directory SSO integration | Feature | *Open* | Factory IT standard; reduces credential sprawl and support overhead |
+| 25 | Implement AI Wear Prediction using DieHistory time-series data | AI | *Open* | Highest-impact AI feature; leverages already-collected history data |

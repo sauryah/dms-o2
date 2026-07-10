@@ -120,6 +120,13 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-10 · refactor: decompose InventoryPage and implement security audit recommendations (v1.4.0)
+- Decomposed monolithic `InventoryPage.tsx` into custom React state hook (`useInventoryState.ts`) and layout sub-views (`InventorySubViews.tsx`) to simplify frontend code structure.
+- Hardened JWT authentication by implementing HTTPOnly cookie storage (`dms_access_token` and `dms_refresh_token`) to mitigate token vulnerability to XSS.
+- Integrated `X-Internal-Key` validation using `INTERNAL_API_SECRET` to secure the internal token validation checks between the Go API and Django services.
+- Overhauled simple JWT token refresh handlers to automatically keep UserSession models, local cookies, and Redis cache entries synchronized.
+- Resolved and stabilized all unit test failures across Django (backend), Vitest (frontend), and added Go handlers fallback tests.
+
 ### 2026-07-08 · feat: implement real-time search indexing progress bar for bulk spreadsheet imports (Phase 20)
 - Modified `sync_dies_batch_task` in `backend/search/tasks.py` to upload document batches in chunks of 100, track the sync percentage, and write intermediate progress status to Redis.
 - Updated `frontend/src/App.tsx` to automatically trigger `checkIndexStatus()` whenever a real-time SSE ticket event is received, starting/stopping index progress bar rendering and polling seamlessly.
