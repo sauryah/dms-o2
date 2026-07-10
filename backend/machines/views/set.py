@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 from machines.models import Set
 from machines.serializers import SetSerializer
@@ -19,7 +20,7 @@ class SetViewSet(viewsets.ModelViewSet):
     **Permissions:** ADMIN or ROOT user only
     **Authentication:** Required (JWT Bearer token)
     """
-    queryset = Set.objects.select_related('machine__category').all()
+    queryset = Set.objects.select_related('machine__category').annotate(die_count=Count('die')).all()
     serializer_class = SetSerializer
     permission_classes = [IsAdminOrRoot]
     pagination_class = None
@@ -36,4 +37,3 @@ class SetViewSet(viewsets.ModelViewSet):
             count = len(e.protected_objects)
             detail_msg = f"Cannot delete Set '{instance.name}' because it has {count} active dies assigned to it. Reassign or delete the dies first."
             return Response({"detail": detail_msg}, status=status.HTTP_400_BAD_REQUEST)
-
