@@ -8,15 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+---
+
+## [1.4.0] - 2026-07-10
+
 ### Added
 - Standard community files: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`.
 - Issue templates for bug reports and feature requests.
 - Pull request template.
+- Cookie-based JWT authentication fallback utilizing HTTPOnly cookies (`dms_access_token` and `dms_refresh_token`).
+- Internal token verification security via `X-Internal-Key` and `INTERNAL_API_SECRET` checking between the Go search service and Django.
+- Fallback unit test coverage for Go API handlers.
 
 ### Changed
 - Replaced the proprietary license with the open-source MIT License.
 - Updated absolute references in documentation to point to local workspace paths.
 - Refactored `README.md`, `PROJECT.md`, `MASTER.md`, and `docs/ARCHITECTURE.md` to be concise, professional, and beginner-friendly.
+- Refactored and decomposed the monolithic frontend `InventoryPage.tsx` into a custom state hook (`useInventoryState.ts`) and separate sub-components (`InventorySubViews.tsx`).
+- Hardened token refresh logic to automatically sync active user sessions and clear outdated Redis cache keys.
+
+### Fixed
+- Stabilized and resolved all backend Django and frontend Vitest unit test failures.
+- Fixed cookie cleanup during logout operations.
+
 
 ---
 
