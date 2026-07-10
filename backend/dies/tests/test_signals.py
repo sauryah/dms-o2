@@ -52,8 +52,8 @@ class DieSignalTests(TestCase):
 
         history = DieHistory.objects.filter(die=die, field_name="current_set_id").first()
         self.assertIsNotNone(history)
-        self.assertEqual(history.old_value, str(self.set_a.id))
-        self.assertEqual(history.new_value, str(self.set_b.id))
+        self.assertEqual(history.old_value, self.set_a.name)
+        self.assertEqual(history.new_value, self.set_b.name)
 
     def test_change_die_location_creates_history(self):
         die = Die.objects.create(

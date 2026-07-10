@@ -23,6 +23,7 @@ type Config struct {
 	SessionAbsoluteTimeoutHours string
 	DjangoAPIURL                string
 	SearchCacheTTLSeconds       int
+	InternalAPISecret           string
 }
 
 func Load() (*Config, error) {
@@ -102,6 +103,11 @@ func Load() (*Config, error) {
 		djangoAPIURL = "http://django:8000"
 	}
 
+	internalAPISecret := os.Getenv("INTERNAL_API_SECRET")
+	if internalAPISecret == "" {
+		internalAPISecret = "dms_internal_secret_default_key_998"
+	}
+
 	searchCacheTTLStr := os.Getenv("SEARCH_CACHE_TTL_SECONDS")
 	searchCacheTTL := 10
 	if searchCacheTTLStr != "" {
@@ -126,6 +132,7 @@ func Load() (*Config, error) {
 		SessionAbsoluteTimeoutHours: sessionAbs,
 		DjangoAPIURL:                djangoAPIURL,
 		SearchCacheTTLSeconds:       searchCacheTTL,
+		InternalAPISecret:           internalAPISecret,
 	}, nil
 }
 

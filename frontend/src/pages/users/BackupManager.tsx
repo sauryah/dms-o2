@@ -76,7 +76,7 @@ export function BackupManager() {
 
   const handleDownloadBackup = async (filename: string) => {
     try {
-      const res = await fetch(`/api/backups/download_backup/?filename=${encodeURIComponent(filename)}`, {
+      const res = await fetch(`/api/v1/backups/download_backup/?filename=${encodeURIComponent(filename)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

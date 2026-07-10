@@ -32,7 +32,13 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 				if len(parts) == 2 && parts[0] == "Bearer" {
 					tokenStr = parts[1]
 				}
-			} else {
+			}
+			if tokenStr == "" {
+				if cookie, err := r.Cookie("dms_access_token"); err == nil {
+					tokenStr = cookie.Value
+				}
+			}
+			if tokenStr == "" {
 				tokenStr = r.URL.Query().Get("token")
 			}
 
@@ -94,6 +100,7 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 				return
 			}
 			req.Header.Set("Authorization", "Bearer "+tokenStr)
+			req.Header.Set("X-Internal-Key", cfg.InternalAPISecret)
 
 			client := &http.Client{
 				Timeout: 5 * time.Second,

@@ -43,8 +43,11 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || 
       url.pathname.includes('@vite') || 
       url.pathname.includes('/api/auth/login') ||
+      url.pathname.includes('/api/v1/auth/login') ||
       url.pathname.includes('/api/auth/logout') ||
-      url.pathname.includes('/api/backups')) {
+      url.pathname.includes('/api/v1/auth/logout') ||
+      url.pathname.includes('/api/backups') ||
+      url.pathname.includes('/api/v1/backups')) {
     return;
   }
 

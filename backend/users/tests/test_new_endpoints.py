@@ -83,7 +83,11 @@ class NewEndpointsTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
         # Authenticated
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
+        from django.conf import settings
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_token}',
+            HTTP_X_INTERNAL_KEY=settings.INTERNAL_API_SECRET
+        )
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['valid'], True)

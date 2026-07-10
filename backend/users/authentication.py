@@ -6,19 +6,33 @@ from users.middleware import _thread_locals
 
 class CustomJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        auth_res = super().authenticate(request)
-        if auth_res is None:
-            return None
-        
-        user, validated_token = auth_res
-        
-        # Get raw token string
         header = self.get_header(request)
-        raw_token = self.get_raw_token(header)
-        if raw_token is None:
+        token_str = None
+        validated_token = None
+        user = None
+
+        if header:
+            raw_token = self.get_raw_token(header)
+            if raw_token is not None:
+                token_str = raw_token.decode('utf-8') if isinstance(raw_token, bytes) else str(raw_token)
+                try:
+                    validated_token = self.get_validated_token(token_str)
+                    user = self.get_user(validated_token)
+                except Exception:
+                    token_str = None
+
+        if not token_str:
+            token_str = request.COOKIES.get('dms_access_token')
+            if token_str:
+                try:
+                    validated_token = self.get_validated_token(token_str)
+                    user = self.get_user(validated_token)
+                except Exception:
+                    token_str = None
+
+        if not token_str:
             return None
-            
-        token_str = raw_token.decode('utf-8') if isinstance(raw_token, bytes) else str(raw_token)
+
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
         
         from django.utils import timezone

@@ -16,6 +16,8 @@ export function useInventoryState() {
   const { showToast } = useToast()
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(100)
   
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
@@ -46,6 +48,10 @@ export function useInventoryState() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const hasActiveFilter = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
 
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
   const [sortField, setSortField] = useState<string>('relevance')
   const [sortOrder, setSortOrder] = useState<string>('asc')
 
@@ -74,7 +80,7 @@ export function useInventoryState() {
 
   // React Query Fetcher
   const { data: searchData, isLoading, error } = useQuery({
-    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, '10000'],
+    queryKey: ['dies', debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, String(page), String(pageSize)],
     queryFn: ({ signal }: { signal: AbortSignal }) => {
       let url = '/api/go/search'
       const params = new URLSearchParams()
@@ -90,7 +96,8 @@ export function useInventoryState() {
       if (widthMax) params.append('width_max', widthMax)
       if (thickMin) params.append('thick_min', thickMin)
       if (thickMax) params.append('thick_max', thickMax)
-      params.append('limit', '10000')
+      params.append('limit', String(pageSize))
+      params.append('offset', String((page - 1) * pageSize))
       
       if (params.toString()) {
         url += `?${params.toString()}`
@@ -434,6 +441,10 @@ export function useInventoryState() {
     createDieMutation,
     moveDieLocationMutation,
     reallocateDieMutation,
-    reallocateSetMutation
+    reallocateSetMutation,
+    page,
+    setPage,
+    pageSize,
+    setPageSize
   }
 }

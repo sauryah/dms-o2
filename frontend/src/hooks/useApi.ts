@@ -14,7 +14,7 @@ export const useApi = () => {
     const currentRefresh = refreshTokenRef.current
     if (!currentRefresh) return null
     try {
-      const res = await fetch('/api/auth/refresh/', {
+      const res = await fetch('/api/v1/auth/refresh/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: currentRefresh })
@@ -38,12 +38,17 @@ export const useApi = () => {
       headers['Authorization'] = `Bearer ${tokenRef.current}`
     }
 
+    let targetUrl = url
+    if (url.startsWith('/api/') && !url.startsWith('/api/go/') && !url.startsWith('/api/events/')) {
+      targetUrl = '/api/v1/' + url.substring(5)
+    }
+
     const maxRetries = 3
     let lastError: Error | null = null
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const res = await fetch(url, { ...options, headers })
+        const res = await fetch(targetUrl, { ...options, headers })
 
         if (res.status === 401) {
           const newToken = await refreshAccessToken()

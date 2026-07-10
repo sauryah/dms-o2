@@ -16,7 +16,7 @@ class User(AbstractUser):
 
 class UserSession(models.Model):
     user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    token_hash = models.CharField(max_length=64)
+    token_hash = models.CharField(max_length=64, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen  = models.DateTimeField(auto_now=True)
     ip_address = models.GenericIPAddressField(null=True)
@@ -42,6 +42,10 @@ class UserActivityLog(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['username']),
+        ]
 
     def __str__(self):
         return f"{self.username} - {self.action} at {self.timestamp}"

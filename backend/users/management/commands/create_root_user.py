@@ -11,13 +11,11 @@ class Command(BaseCommand):
 
         try:
             user = User.objects.get(username=username)
-            user.set_password(password)
-            user.email = 'root@dms.local'
             user.role = 'ROOT'
             user.is_superuser = True
             user.is_staff = True
             user.save()
-            self.stdout.write(self.style.SUCCESS(f"User '{username}' already exists. Updated password and role settings."))
+            self.stdout.write(self.style.SUCCESS(f"User '{username}' already exists. Ensured role and privileges (password was not overwritten)."))
         except User.DoesNotExist:
             self.stdout.write(f"Creating root user '{username}'...")
             user = User.objects.create_superuser(

@@ -23,6 +23,9 @@ interface SearchViewProps extends ViewProps {
   sortField: string
   sortOrder: string
   handleSort: (field: string) => void
+  page: number
+  setPage: React.Dispatch<React.SetStateAction<number>>
+  pageSize: number
 }
 
 export function SearchView({
@@ -37,7 +40,10 @@ export function SearchView({
   handleSort,
   handleDragStartDie,
   handleDragEndDie,
-  moveDieLocationMutation
+  moveDieLocationMutation,
+  page,
+  setPage,
+  pageSize
 }: SearchViewProps) {
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -99,6 +105,51 @@ export function SearchView({
                   sortOrder={sortOrder}
                   onSort={handleSort}
                 />
+              </div>
+            )}
+            {totalCount > pageSize && (
+              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4">
+                <div className="text-xs text-slate-400">
+                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} entries
+                </div>
+                <div className="flex items-center space-x-2 bg-slate-955 p-1 rounded-xl border border-slate-800/40 shadow-inner">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-50 disabled:hover:text-slate-400 transition"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.ceil(totalCount / pageSize) }).map((_, i) => {
+                    const pageNum = i + 1
+                    if (pageNum === 1 || pageNum === Math.ceil(totalCount / pageSize) || Math.abs(pageNum - page) <= 1) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          className={`w-8 h-8 rounded-lg text-xs font-extrabold transition ${
+                            page === pageNum
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'border border-slate-800 bg-slate-900 text-slate-455 hover:text-white'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    }
+                    if (pageNum === 2 || pageNum === Math.ceil(totalCount / pageSize) - 1) {
+                      return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+                    }
+                    return null
+                  })}
+                  <button
+                    onClick={() => setPage(p => Math.min(Math.ceil(totalCount / pageSize), p + 1))}
+                    disabled={page === Math.ceil(totalCount / pageSize)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-50 disabled:hover:text-slate-400 transition"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -29,6 +29,18 @@ class AuthTests(APITestCase):
             role='REGULAR'
         )
 
+        # Clear rate-limiter keys in Redis and Django Cache to avoid 429 too many requests in consecutive test runs
+        from django.core.cache import cache
+        cache.clear()
+        import redis
+        from django.conf import settings
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            r.delete('login_attempts:admin_test', 'login_attempts:regular_test', 'login_attempts:root_test')
+        except Exception:
+            pass
+
         # URLs
         self.login_url = reverse('login')
         self.dies_list_url = reverse('die-list')
@@ -300,6 +312,8 @@ class AuthTests(APITestCase):
             
             # Reset/clear lockout counter simulating 5 mins pass
             r.delete(attempts_key)
+            from django.core.cache import cache
+            cache.clear()
             
             # Login works
             response = self.client.post(self.login_url, {
@@ -374,7 +388,11 @@ class AuthTests(APITestCase):
         token = login_res.data['token']
         
         # 3. Test with valid token
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        from django.conf import settings
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+            HTTP_X_INTERNAL_KEY=settings.INTERNAL_API_SECRET
+        )
         response = self.client.post(verify_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['valid'])
@@ -448,6 +466,19 @@ class UserActivityLogTests(APITestCase):
         self.logout_url = reverse('logout')
         self.activity_logs_url = '/api/activity-logs/'
         self.dies_list_url = reverse('die-list')
+
+        # Clear rate-limiter keys in Redis to avoid 429 too many requests in consecutive test runs
+        # Clear rate-limiter keys in Redis and Django Cache to avoid 429 too many requests in consecutive test runs
+        from django.core.cache import cache
+        cache.clear()
+        import redis
+        from django.conf import settings
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            r.delete('login_attempts:regular_test_audit', 'login_attempts:root_test_audit')
+        except Exception:
+            pass
 
     def test_login_logout_creates_activity_logs(self):
         # 1. Login success

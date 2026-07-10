@@ -82,7 +82,10 @@ export function InventoryPage() {
     createDieMutation,
     moveDieLocationMutation,
     reallocateDieMutation,
-    reallocateSetMutation
+    reallocateSetMutation,
+    page,
+    setPage,
+    pageSize
   } = useInventoryState()
 
   return (
@@ -349,6 +352,9 @@ export function InventoryPage() {
                   handleDragStartDie={handleDragStartDie}
                   handleDragEndDie={handleDragEndDie}
                   moveDieLocationMutation={moveDieLocationMutation}
+                  page={page}
+                  setPage={setPage}
+                  pageSize={pageSize}
                 />
               )}
 

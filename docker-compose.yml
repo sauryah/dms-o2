@@ -108,7 +108,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: celery -A dms worker -l info --concurrency=2
+    command: celery -A dms worker -l info --concurrency=4
     volumes:
       - ./backend:/app
     environment:

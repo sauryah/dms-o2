@@ -36,7 +36,7 @@ export function ImportPage() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
-      const res = await fetch('/api/import/template/', {
+      const res = await fetch('/api/v1/import/template/', {
         method: 'GET',
         headers
       })

@@ -12,6 +12,10 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-development-se
 
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
+if not DEBUG and (not SECRET_KEY or SECRET_KEY == 'django-insecure-development-secret-key-12345'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY is not configured or is set to insecure default in production.")
+
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 # Application definition
@@ -176,6 +180,7 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS = config('SESSION_ABSOLUTE_TIMEOUT_HOURS', defaul
 # Meilisearch configuration
 MEILI_HOST = config('MEILI_HOST', default='http://meilisearch:7700')
 MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
+INTERNAL_API_SECRET = config('INTERNAL_API_SECRET', default='dms_internal_secret_default_key_998')
 
 # Custom user model with role (will implement in users app)
 AUTH_USER_MODEL = 'users.User'

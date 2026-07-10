@@ -139,8 +139,12 @@ class LoginView(APIView):
         existing_count = existing_sessions.count()
         if existing_count >= session_max:
             to_delete_count = existing_count - session_max + 1
-            oldest_ids = list(existing_sessions.values_list('id', flat=True)[:to_delete_count])
-            UserSession.objects.filter(id__in=oldest_ids).delete()
+            oldest_sessions = list(existing_sessions[:to_delete_count])
+            from django.core.cache import cache as django_cache
+            for old_sess in oldest_sessions:
+                cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
+                django_cache.delete(cache_key)
+                old_sess.delete()
 
         # Create new user session
         UserSession.objects.create(
@@ -159,11 +163,29 @@ class LoginView(APIView):
             device=request.META.get('HTTP_USER_AGENT', '')[:255]
         )
 
-        return Response({
+        response = Response({
             'token': token_str,
             'refresh': refresh_token_str,
             'role': user.role
         }, status=status.HTTP_200_OK)
+        
+        response.set_cookie(
+            key='dms_access_token',
+            value=token_str,
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+            max_age=12 * 3600
+        )
+        response.set_cookie(
+            key='dms_refresh_token',
+            value=refresh_token_str,
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+            max_age=24 * 3600
+        )
+        return response
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -217,11 +239,30 @@ class ChangePasswordView(APIView):
         access_token = str(refresh.access_token)
         refresh_token_str = str(refresh)
 
-        return Response({
+        response = Response({
             "detail": "Password changed successfully.",
             "token": access_token,
             "refresh": refresh_token_str,
         }, status=status.HTTP_200_OK)
+        
+        from django.conf import settings
+        response.set_cookie(
+            key='dms_access_token',
+            value=access_token,
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+            max_age=12 * 3600
+        )
+        response.set_cookie(
+            key='dms_refresh_token',
+            value=refresh_token_str,
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+            max_age=24 * 3600
+        )
+        return response
 
 
 class KeepAliveView(APIView):
@@ -540,6 +581,11 @@ class VerifyTokenView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        internal_key = request.headers.get('X-Internal-Key')
+        from django.conf import settings
+        if not internal_key or internal_key != settings.INTERNAL_API_SECRET:
+            return Response({"detail": "Forbidden: Invalid internal verification key."}, status=status.HTTP_403_FORBIDDEN)
+
         return Response({
             "valid": True,
             "user_id": request.user.id,
@@ -564,9 +610,14 @@ class LogoutView(APIView):
         from django.conf import settings
         
         user = request.user
+        token_str = None
         header = request.META.get('HTTP_AUTHORIZATION')
         if header and header.startswith('Bearer '):
             token_str = header.split(' ')[1]
+        else:
+            token_str = request.COOKIES.get('dms_access_token')
+
+        if token_str:
             token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
             
             # Delete UserSession
@@ -584,7 +635,10 @@ class LogoutView(APIView):
             device=request.META.get('HTTP_USER_AGENT', '')[:255]
         )
 
-        return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        response.delete_cookie('dms_access_token')
+        response.delete_cookie('dms_refresh_token')
+        return response
 
 
 class UserActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
@@ -630,5 +684,86 @@ class UserSessionViewSet(viewsets.ModelViewSet):
         )
         
         instance.delete()
+
+
+from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
+
+class TokenRefreshView(SimpleJWTTokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            refresh_token = request.COOKIES.get('dms_refresh_token')
+            if refresh_token:
+                if hasattr(request.data, '_mutable'):
+                    original_mutable = request.data._mutable
+                    request.data._mutable = True
+                    request.data['refresh'] = refresh_token
+                    request.data._mutable = original_mutable
+                else:
+                    request.data['refresh'] = refresh_token
+
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            access_token = response.data.get('access')
+            if access_token:
+                import hashlib
+                from rest_framework_simplejwt.tokens import RefreshToken
+                from users.models import UserSession
+                
+                try:
+                    ref_obj = RefreshToken(refresh_token)
+                    user_id = ref_obj['user_id']
+                    new_hash = hashlib.sha256(access_token.encode('utf-8')).hexdigest()
+                    
+                    old_access = request.COOKIES.get('dms_access_token')
+                    session = None
+                    if old_access:
+                        old_hash = hashlib.sha256(old_access.encode('utf-8')).hexdigest()
+                        session = UserSession.objects.filter(user_id=user_id, token_hash=old_hash).first()
+                        
+                    if not session:
+                        session = UserSession.objects.filter(user_id=user_id).order_by('-last_seen').first()
+                        
+                    if session:
+                        from django.core.cache import cache
+                        old_cache_key = f"user_session:{user_id}:{session.token_hash}"
+                        cache.delete(old_cache_key)
+                        
+                        session.token_hash = new_hash
+                        session.save()
+                        
+                        new_cache_key = f"user_session:{user_id}:{new_hash}"
+                        cache_data = {
+                            'ip_address': session.ip_address,
+                            'device': session.device,
+                            'created_at': session.created_at.isoformat(),
+                            'last_seen': session.last_seen.isoformat(),
+                        }
+                        from django.conf import settings
+                        cache.set(new_cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
+                except Exception:
+                    pass
+
+                from django.conf import settings
+                response.set_cookie(
+                    key='dms_access_token',
+                    value=access_token,
+                    httponly=True,
+                    samesite='Lax',
+                    secure=not settings.DEBUG,
+                    max_age=12 * 3600
+                )
+            new_refresh = response.data.get('refresh')
+            if new_refresh:
+                from django.conf import settings
+                response.set_cookie(
+                    key='dms_refresh_token',
+                    value=new_refresh,
+                    httponly=True,
+                    samesite='Lax',
+                    secure=not settings.DEBUG,
+                    max_age=24 * 3600
+                )
+        return response
 
 

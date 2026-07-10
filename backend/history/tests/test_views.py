@@ -19,6 +19,18 @@ class MachineHistoryApiTests(APITestCase):
         self.login_url = reverse('login')
         self.machine_history_url = reverse('machine-history')
         
+        # Clear rate-limiter keys in Redis and Django Cache to avoid 429 too many requests in consecutive test runs
+        from django.core.cache import cache
+        cache.clear()
+        import redis
+        from django.conf import settings
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            r.delete('login_attempts:admin_hist', 'login_attempts:regular_hist')
+        except Exception:
+            pass
+        
         # Create some MachineHistory entries
         self.hist1 = MachineHistory.objects.create(
             entity_type='MACHINE',
