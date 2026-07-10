@@ -11,6 +11,10 @@ class Migration(migrations.Migration):
     dependencies = [
     ]
 
+    replaces = [
+        ('machines', '0002_rack'),
+    ]
+
     operations = [
         migrations.CreateModel(
             name='MachineCategory',

@@ -16,6 +16,14 @@ class Migration(migrations.Migration):
         ('auth', '0012_alter_user_first_name_max_length'),
     ]
 
+    replaces = [
+        ('users', '0002_usersession'),
+        ('users', '0003_alter_user_role'),
+        ('users', '0004_alter_usersession_user'),
+        ('users', '0005_useractivitylog'),
+        ('users', '0006_alter_usersession_token_hash_and_more'),
+    ]
+
     operations = [
         migrations.CreateModel(
             name='User',
