@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench, ArrowLeft } from 'lucide-react'
+import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench, ArrowLeft, TrendingUp, TrendingDown, ShieldCheck, AlertTriangle, AlertCircle, Gauge, Clock } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
@@ -231,24 +231,132 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
   );
 }
 
-function WearPredictionSection({ dieId }: { dieId: string }) {
+function WearPredictionSection({ die }: { die: any }) {
+  const dieId = die.die_id
   const { request } = useApi()
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['wearPrediction', dieId],
     queryFn: () => request(`/api/dies/${dieId}/wear-prediction/`)
   })
 
+  const getMiniChartData = () => {
+    if (!die || !die.history) return [];
+
+    const isRound = die.die_type === 'ROUND';
+    const sortedHistory = [...die.history].sort(
+      (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const points: any[] = [];
+
+    if (isRound) {
+      let currentVal = parseFloat(die.punched_size || '0');
+      const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
+      
+      points.push({
+        timestamp: new Date(creationDate).getTime(),
+        date: new Date(creationDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        wear: 0,
+      });
+
+      sortedHistory.forEach((h: any) => {
+        if (h.field_name === 'current_size') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) {
+            points.push({
+              timestamp: new Date(h.timestamp).getTime(),
+              date: new Date(h.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+              wear: Math.abs(val - currentVal),
+            });
+          }
+        }
+      });
+
+      const finalVal = parseFloat(die.current_size || '0');
+      const finalWear = Math.abs(finalVal - currentVal);
+      const lastPoint = points[points.length - 1];
+      if (!lastPoint || lastPoint.wear !== finalWear) {
+        points.push({
+          timestamp: new Date(die.updated_at || new Date().toISOString()).getTime(),
+          date: new Date(die.updated_at || new Date().toISOString()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          wear: finalWear,
+        });
+      }
+    } else {
+      let punchedW = parseFloat(die.punched_width || '0');
+      let punchedT = parseFloat(die.punched_thickness || '0');
+      const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
+      
+      points.push({
+        timestamp: new Date(creationDate).getTime(),
+        date: new Date(creationDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        wear: 0,
+      });
+
+      let currentW = punchedW;
+      let currentT = punchedT;
+      
+      sortedHistory.forEach((h: any) => {
+        if (h.field_name === 'current_width') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) currentW = val;
+        } else if (h.field_name === 'current_thickness') {
+          const val = parseFloat(h.new_value);
+          if (!isNaN(val)) currentT = val;
+        }
+        
+        if (h.field_name === 'current_width' || h.field_name === 'current_thickness') {
+          const wearW = Math.abs(currentW - punchedW);
+          const wearT = Math.abs(currentT - punchedT);
+          points.push({
+            timestamp: new Date(h.timestamp).getTime(),
+            date: new Date(h.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+            wear: Math.max(wearW, wearT),
+          });
+        }
+      });
+
+      const finalW = parseFloat(die.current_width || '0');
+      const finalT = parseFloat(die.current_thickness || '0');
+      const finalWear = Math.max(Math.abs(finalW - punchedW), Math.abs(finalT - punchedT));
+      const lastPoint = points[points.length - 1];
+      if (!lastPoint || lastPoint.wear !== finalWear) {
+        points.push({
+          timestamp: new Date(die.updated_at || new Date().toISOString()).getTime(),
+          date: new Date(die.updated_at || new Date().toISOString()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          wear: finalWear,
+        });
+      }
+    }
+
+    // Deduplicate by date
+    const uniquePoints: any[] = [];
+    const seenDates = new Set();
+    for (let i = points.length - 1; i >= 0; i--) {
+      const p = points[i];
+      if (!seenDates.has(p.date)) {
+        uniquePoints.unshift(p);
+        seenDates.add(p.date);
+      }
+    }
+
+    return uniquePoints;
+  };
+
   if (isLoading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="bg-[#070d19] border border-slate-800 rounded-2xl p-12 mb-8 flex justify-center items-center shadow-2xl">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Loading Predictive Models...</span>
+        </div>
       </div>
     )
   }
 
   if (error || !prediction) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 text-slate-500 text-sm">
+      <div className="bg-[#070d19] border border-slate-800 rounded-2xl p-8 mb-8 text-slate-500 text-sm shadow-2xl">
         Unable to load wear prediction analysis.
       </div>
     )
@@ -259,134 +367,578 @@ function WearPredictionSection({ dieId }: { dieId: string }) {
   const alertBadgeColor = (level: string) => {
     switch (level) {
       case 'CRITICAL':
-        return 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.1)]'
+        return {
+          bg: 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.15)]',
+          label: 'CRITICAL',
+          icon: AlertCircle
+        }
       case 'WARNING':
-        return 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.1)]'
+        return {
+          bg: 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+          label: 'WARNING',
+          icon: AlertTriangle
+        }
       default:
-        return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.1)]'
+        return {
+          bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]',
+          label: 'GOOD',
+          icon: ShieldCheck
+        }
     }
   }
 
+  const status = alertBadgeColor(alert_level)
+  const StatusIcon = status.icon
+
+  const dims = Object.values(dimensions)
+  const maxWear = dims.length > 0 ? Math.max(...dims.map((d: any) => d.total_wear)) : 0
+
+  const kpis = [
+    {
+      label: 'Remaining Life',
+      value: `${(100 - overall_wear_percentage).toFixed(1)}%`,
+      icon: Gauge,
+      description: 'Estimated wear margin before service limit.',
+      iconColor: alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400',
+    },
+    {
+      label: 'Wear Progress',
+      value: `${overall_wear_percentage.toFixed(1)}%`,
+      icon: TrendingUp,
+      description: 'Current status relative to total allowed wear.',
+      iconColor: alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400',
+    },
+    {
+      label: 'Current Wear',
+      value: `${maxWear.toFixed(3)} mm`,
+      icon: Ruler,
+      description: 'Maximum measured deviation from nominal.',
+      iconColor: 'text-blue-400',
+    },
+    {
+      label: 'Predicted Recut',
+      value: overall_remaining_days !== null ? `${Math.round(overall_remaining_days)} Days` : 'Calibrating...',
+      icon: Calendar,
+      description: overall_remaining_days !== null ? 'Forecasted time before recut is required.' : 'Accumulating historical readings.',
+      iconColor: overall_remaining_days !== null && overall_remaining_days < 7 ? 'text-rose-400' : overall_remaining_days !== null && overall_remaining_days < 30 ? 'text-amber-400' : 'text-emerald-400',
+    }
+  ]
+
+  const getRecommendationDetails = (level: string) => {
+    switch (level) {
+      case 'CRITICAL':
+        return {
+          title: 'Immediate Recut Mandatory',
+          message: 'Severe wear detected. Dimensional tolerance limits exceeded. Stop production immediately to prevent defects.',
+          action: 'Perform immediate recutting / polishing. Reset tool alignment.',
+          nextInspection: '0 kg throughput or 0 operating hours (Immediate Action)',
+          borderColor: 'border-l-rose-500',
+          bgColor: 'bg-rose-500/5',
+          iconColor: 'text-rose-400',
+          icon: AlertCircle,
+        };
+      case 'WARNING':
+        return {
+          title: 'Schedule Maintenance Soon',
+          message: 'Significant wear detected. The die is approaching its calibration limits. Plan maintenance window shortly.',
+          action: 'Schedule inspection, clean die elements, prepare for recutting.',
+          nextInspection: '1,000 kg throughput or 8 operating hours',
+          borderColor: 'border-l-amber-500',
+          bgColor: 'bg-amber-500/5',
+          iconColor: 'text-amber-400',
+          icon: AlertTriangle,
+        };
+      default:
+        return {
+          title: 'The die is operating within acceptable tolerance.',
+          message: 'No corrective action is required. Continue production.',
+          action: 'Routine status logs check. No mechanical adjustment needed.',
+          nextInspection: '5,000 kg throughput or 30 operating hours',
+          borderColor: 'border-l-emerald-500',
+          bgColor: 'bg-emerald-500/5',
+          iconColor: 'text-emerald-400',
+          icon: ShieldCheck,
+        };
+    }
+  }
+
+  const recommendation = getRecommendationDetails(alert_level)
+  const RecIcon = recommendation.icon
+
+  const historyPoints = getMiniChartData()
+
+  const renderHistoryChart = () => {
+    const points = historyPoints
+    const isRound = die.die_type === 'ROUND'
+    const limit = isRound ? 0.05 : 0.1
+
+    if (points.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-32 text-slate-500 italic text-xs">
+          No dimension history recorded yet.
+        </div>
+      )
+    }
+
+    const width = 380
+    const height = 130
+    const paddingLeft = 35
+    const paddingRight = 45
+    const paddingTop = 15
+    const paddingBottom = 20
+
+    const chartWidth = width - paddingLeft - paddingRight
+    const chartHeight = height - paddingTop - paddingBottom
+
+    const timestamps = points.map(p => p.timestamp)
+    const minTime = Math.min(...timestamps)
+    
+    let maxTime = Math.max(...timestamps)
+    let projectedTime = maxTime
+    let hasProjection = false
+
+    if (overall_remaining_days !== null && overall_remaining_days > 0) {
+      projectedTime = maxTime + overall_remaining_days * 86400 * 1000
+      hasProjection = true
+    }
+
+    const timeRange = projectedTime - minTime
+    const yMaxVal = limit * 1.15
+
+    const getX = (time: number) => {
+      if (timeRange === 0) return paddingLeft + chartWidth / 2
+      return paddingLeft + ((time - minTime) / timeRange) * chartWidth
+    }
+
+    const getY = (val: number) => {
+      return paddingTop + chartHeight - (val / yMaxVal) * chartHeight
+    }
+
+    const historyCoords = points.map(p => ({
+      x: getX(p.timestamp),
+      y: getY(p.wear),
+      date: p.date,
+      wear: p.wear
+    }))
+
+    const pathD = historyCoords.length > 0
+      ? `M ${historyCoords.map(c => `${c.x},${c.y}`).join(' L ')}`
+      : ''
+
+    let projectionCoord = null
+    if (hasProjection && historyCoords.length > 0) {
+      projectionCoord = {
+        x: getX(projectedTime),
+        y: getY(limit),
+      }
+    }
+
+    const projectionPathD = projectionCoord && historyCoords.length > 0
+      ? `M ${historyCoords[historyCoords.length - 1].x},${historyCoords[historyCoords.length - 1].y} L ${projectionCoord.x},${projectionCoord.y}`
+      : ''
+
+    const limitY = getY(limit)
+
+    return (
+      <div className="relative">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
+          {/* Critical limit line */}
+          <line 
+            x1={paddingLeft} 
+            y1={limitY} 
+            x2={width - paddingRight} 
+            y2={limitY} 
+            stroke="#ef4444" 
+            strokeWidth="1.5"
+            strokeDasharray="3 3"
+            className="opacity-75"
+          />
+          <text 
+            x={width - paddingRight + 5} 
+            y={limitY + 3} 
+            fill="#f87171" 
+            fontSize="8"
+            className="font-bold uppercase tracking-wider font-sans"
+          >
+            Limit ({limit}mm)
+          </text>
+
+          {/* Grid line at 0 */}
+          <line 
+            x1={paddingLeft} 
+            y1={getY(0)} 
+            x2={width - paddingRight} 
+            y2={getY(0)} 
+            stroke="#1e293b" 
+            strokeWidth="1"
+          />
+
+          {/* Solid History Path */}
+          {pathD && (
+            <path 
+              d={pathD} 
+              fill="none" 
+              stroke="#3b82f6" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+          )}
+
+          {/* Dashed Projection Path */}
+          {projectionPathD && (
+            <path 
+              d={projectionPathD} 
+              fill="none" 
+              stroke="#ef4444" 
+              strokeWidth="2" 
+              strokeDasharray="4 4"
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+          )}
+
+          {/* Historical points */}
+          {historyCoords.map((c, idx) => {
+            const isLast = idx === historyCoords.length - 1
+            return (
+              <g key={idx} className="group">
+                <circle 
+                  cx={c.x} 
+                  cy={c.y} 
+                  r={isLast ? "4" : "3"} 
+                  fill="#070d19" 
+                  stroke={isLast ? "#ef4444" : "#3b82f6"} 
+                  strokeWidth="2" 
+                />
+                <title>{`Date: ${c.date}\nWear: ${c.wear.toFixed(4)} mm`}</title>
+              </g>
+            )
+          })}
+
+          {/* Projected point */}
+          {projectionCoord && (
+            <g>
+              <circle 
+                cx={projectionCoord.x} 
+                cy={projectionCoord.y} 
+                r="4" 
+                fill="#ef4444" 
+                stroke="#070d19" 
+                strokeWidth="1.5" 
+              />
+              <title>{`Projected Recut Limit reached\nin ${Math.round(overall_remaining_days || 0)} days`}</title>
+            </g>
+          )}
+
+          {/* Y Axis Labels */}
+          <text 
+            x={paddingLeft - 6} 
+            y={limitY + 3} 
+            fill="#94a3b8" 
+            fontSize="8" 
+            textAnchor="end"
+            className="font-mono font-bold"
+          >
+            {limit.toFixed(2)}
+          </text>
+          <text 
+            x={paddingLeft - 6} 
+            y={getY(0) + 3} 
+            fill="#94a3b8" 
+            fontSize="8" 
+            textAnchor="end"
+            className="font-mono font-bold"
+          >
+            0.00
+          </text>
+
+          {/* X Axis Labels */}
+          {points.length > 0 && (
+            <text 
+              x={paddingLeft} 
+              y={height - 5} 
+              fill="#64748b" 
+              fontSize="8" 
+              textAnchor="start"
+              className="font-semibold font-sans"
+            >
+              {points[0].date}
+            </text>
+          )}
+          {projectionCoord && (
+            <text 
+              x={projectionCoord.x} 
+              y={height - 5} 
+              fill="#ef4444" 
+              fontSize="8" 
+              textAnchor="end"
+              className="font-bold font-mono"
+            >
+              +{Math.round(overall_remaining_days || 0)}d Proj
+            </text>
+          )}
+        </svg>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 mt-3 text-[10px] text-slate-400 font-semibold font-sans">
+          <div className="flex items-center gap-1.5">
+            <span className="h-1.5 w-4 bg-blue-500 rounded-sm" />
+            <span>Wear History</span>
+          </div>
+          {hasProjection && (
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-4 border-t-2 border-dashed border-rose-500" />
+              <span className="text-rose-400">RUL Projection</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className="h-1.5 w-4 border-t-2 border-dashed border-red-500/60" />
+            <span className="text-red-400/80">Critical Limit</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="bg-[#070d19] border border-slate-800 rounded-2xl shadow-2xl p-8 mb-8">
+      {/* 1. HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-800/40 mb-8">
         <div>
-          <h3 className="text-lg font-bold text-white">Preventative Wear Prediction</h3>
-          <p className="text-slate-400 text-xs mt-1">
-            Predictive calibration model analyzing dimensional changes against design safety tolerances.
+          <h3 className="text-2xl font-bold tracking-tight text-white font-heading">
+            Preventive Wear Prediction
+          </h3>
+          <p className="text-slate-400 text-sm mt-1">
+            Predictive calibration model analyzing dimensional wear against design tolerances.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500 font-medium">Alert Level:</span>
-          <span className={`px-3 py-1 text-xs font-bold rounded-xl border uppercase tracking-wide ${alertBadgeColor(alert_level)}`}>
-            {alert_level}
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">RUL Status:</span>
+          <span className={`flex items-center gap-2 px-4 py-2 text-xs font-black rounded-lg border uppercase tracking-wider transition-all duration-300 ${status.bg}`}>
+            <StatusIcon className="h-4 w-4" />
+            {status.label}
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-        {/* Left column: Metrics progress bar & RUL */}
-        <div className="md:col-span-7 space-y-6">
-          <div>
-            <div className="flex justify-between items-baseline mb-2">
-              <span className="text-sm text-slate-300 font-bold">Overall Wear Progress</span>
-              <span className={`text-base font-extrabold ${
-                alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'
-              }`}>
-                {overall_wear_percentage.toFixed(1)}% of safety limit
-              </span>
+      {/* 2. PRIMARY KPI SECTION */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {kpis.map((kpi, index) => {
+          const Icon = kpi.icon
+          return (
+            <div 
+              key={index} 
+              className="bg-[#0b1428] hover:bg-[#0e1b38] border border-slate-800/40 rounded-xl p-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider font-sans">{kpi.label}</span>
+                <Icon className={`h-4.5 w-4.5 ${kpi.iconColor} group-hover:scale-110 transition-transform duration-300`} />
+              </div>
+              <div className="text-3xl font-extrabold tracking-tight text-white font-heading my-1 font-mono">
+                {kpi.value}
+              </div>
+              <p className="text-[11px] text-slate-500 leading-normal mt-2 font-sans">
+                {kpi.description}
+              </p>
             </div>
+          )
+        })}
+      </div>
+
+      {/* TWO COLUMN GRID FOR VISUALIZATION, ANALYSIS, RECOMMENDATION & HISTORY */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: 3. WEAR VISUALIZATION & 5. RECOMMENDATION PANEL */}
+        <div className="lg:col-span-7 space-y-8">
+          {/* 3. WEAR VISUALIZATION */}
+          <div className="bg-[#0b1428]/40 border border-slate-800/40 rounded-xl p-6">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5 flex items-center gap-2 font-sans">
+              <Activity className="h-4 w-4 text-blue-400" />
+              Horizontal Wear Calibration Gauge
+            </h4>
             
-            <div className="w-full bg-slate-950 rounded-full h-3.5 border border-slate-850 p-0.5 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  alert_level === 'CRITICAL' 
-                    ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.3)]' 
-                    : alert_level === 'WARNING'
-                    ? 'bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
-                    : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                }`}
-                style={{ width: `${overall_wear_percentage}%` }}
-              />
+            <div className="relative pt-6 pb-2">
+              <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 font-sans">
+                <span className="text-emerald-500/80">Safe Range (0-70%)</span>
+                <span className="text-amber-500/80">Warning (70-90%)</span>
+                <span className="text-rose-500/80">Critical (90-100%)</span>
+              </div>
+              
+              <div className="relative h-4 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-850 p-0.5">
+                {/* Segments background */}
+                <div className="absolute inset-y-0.5 left-0.5 right-0.5 flex rounded-md overflow-hidden opacity-10">
+                  <div className="w-[70%] bg-emerald-500"></div>
+                  <div className="w-[20%] bg-amber-500"></div>
+                  <div className="w-[10%] bg-rose-500"></div>
+                </div>
+                
+                {/* Gauge fill */}
+                <div 
+                  className="h-full rounded-md transition-all duration-700 ease-out"
+                  style={{
+                    width: `${overall_wear_percentage}%`,
+                    background: alert_level === 'CRITICAL' 
+                      ? 'linear-gradient(90deg, rgba(239,68,68,0.4) 0%, rgba(239,68,68,1) 100%)'
+                      : alert_level === 'WARNING'
+                      ? 'linear-gradient(90deg, rgba(245,158,11,0.4) 0%, rgba(245,158,11,1) 100%)'
+                      : 'linear-gradient(90deg, rgba(16,185,129,0.4) 0%, rgba(16,185,129,1) 100%)',
+                    boxShadow: alert_level === 'CRITICAL'
+                      ? '0 0 12px rgba(239,68,68,0.5)'
+                      : alert_level === 'WARNING'
+                      ? '0 0 12px rgba(245,158,11,0.5)'
+                      : '0 0 12px rgba(16,185,129,0.5)'
+                  }}
+                />
+              </div>
+
+              {/* Ticks and indicator cursor */}
+              <div className="relative w-full h-8 mt-2">
+                <div className="absolute inset-x-0 top-0 flex justify-between px-1 text-[9px] text-slate-500 font-mono font-bold">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>70%</span>
+                  <span>90%</span>
+                  <span>100%</span>
+                </div>
+                
+                {/* Pointer indicator */}
+                <div 
+                  className="absolute top-1.5 transition-all duration-700 ease-out -ml-3.5 flex flex-col items-center"
+                  style={{ left: `${overall_wear_percentage}%` }}
+                >
+                  <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-white"></div>
+                  <span className="bg-white text-slate-950 text-[10px] font-black px-2 py-0.5 rounded shadow-lg mt-1 font-mono">
+                    {overall_wear_percentage.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4.5">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block mb-1">
-                Predicted Remaining Life
-              </span>
-              {overall_remaining_days !== null ? (
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-black ${
-                    overall_remaining_days < 7 ? 'text-rose-400' : overall_remaining_days < 30 ? 'text-amber-400' : 'text-emerald-400'
-                  }`}>
-                    {Math.round(overall_remaining_days)}
+          {/* 5. RECOMMENDATION PANEL */}
+          <div className={`border-l-4 ${recommendation.borderColor} ${recommendation.bgColor} rounded-r-xl p-6 transition-all duration-300 shadow-sm`}>
+            <div className="flex items-start gap-4">
+              <div className={`p-2.5 bg-[#070d19] rounded-lg shrink-0 border border-slate-800/60 ${recommendation.iconColor}`}>
+                <RecIcon className="h-6 w-6" />
+              </div>
+              <div className="space-y-3 flex-1">
+                <div className="flex justify-between items-start">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-sans">
+                    Operational Recommendation
+                  </h4>
+                  <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${recommendation.iconColor} bg-slate-950/40 border border-current/10 font-sans`}>
+                    {alert_level}
                   </span>
-                  <span className="text-xs text-slate-400 font-semibold">days</span>
                 </div>
-              ) : (
-                <span className="text-sm font-semibold text-slate-400 italic">
-                  Calibrating...
-                </span>
-              )}
-            </div>
-
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4.5">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block mb-1">
-                Action Recommendation
-              </span>
-              <span className={`text-xs font-bold block ${
-                alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'
-              }`}>
-                {alert_level === 'CRITICAL' 
-                  ? '⚠️ IMMEDIATE RECUT MANDATORY' 
-                  : alert_level === 'WARNING' 
-                  ? '⚡ Schedule maintenance soon' 
-                  : '✓ Standard operation OK'}
-              </span>
+                <p className="text-base font-bold text-white leading-relaxed font-sans">
+                  {recommendation.title}
+                </p>
+                <p className="text-sm font-medium text-slate-355 leading-relaxed font-sans">
+                  {recommendation.message}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800/40 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1 font-sans">
+                      Action Steps
+                    </span>
+                    <span className="text-slate-300 font-medium font-sans">
+                      {recommendation.action}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1 font-sans">
+                      Next Inspection Threshold
+                    </span>
+                    <span className="text-slate-300 font-semibold font-mono">
+                      {recommendation.nextInspection}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right column: Dimensional drill down */}
-        <div className="md:col-span-5 bg-slate-950/40 border border-slate-850 rounded-2xl p-5 space-y-4">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-850 pb-2">
-            Dimensional Analysis
-          </h4>
-          
-          {Object.entries(dimensions).map(([dimName, dimData]: [string, any]) => (
-            <div key={dimName} className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-300 capitalize">{dimName}</span>
-                <span className="text-slate-400 font-mono">
-                  {dimData.current_value.toFixed(3)} mm / {dimData.initial_value.toFixed(3)} mm
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                  <div 
-                    className={`h-full rounded-full ${
-                      dimData.wear_percentage >= 90.0 
-                        ? 'bg-rose-500' 
-                        : dimData.wear_percentage >= 70.0 
-                        ? 'bg-amber-500' 
-                        : 'bg-blue-500'
-                    }`}
-                    style={{ width: `${dimData.wear_percentage}%` }}
-                  />
-                </div>
-                <span className="text-[10px] font-mono text-slate-400 w-8 text-right shrink-0">
-                  {dimData.wear_percentage.toFixed(0)}%
-                </span>
-              </div>
-              {dimData.wear_rate_per_day > 0 && (
-                <p className="text-[10px] text-slate-500">
-                  Wear rate: <span className="font-mono text-slate-400">{(dimData.wear_rate_per_day * 1000).toFixed(2)} µm/day</span>
-                </p>
-              )}
+        {/* Right Column: 4. DIMENSIONAL ANALYSIS & 6. WEAR HISTORY */}
+        <div className="lg:col-span-5 space-y-8">
+          {/* 4. DIMENSIONAL ANALYSIS */}
+          <div className="bg-[#0b1428]/40 border border-slate-800/40 rounded-xl p-6">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5 flex items-center gap-2 font-sans">
+              <Ruler className="h-4 w-4 text-blue-400" />
+              Dimensional Tolerances & Wear
+            </h4>
+            
+            <div className="space-y-6">
+              {Object.entries(dimensions).map(([dimName, dimData]: [string, any]) => {
+                const displayTitle = dimName === 'size' ? 'Outer Diameter (Size)' : dimName === 'width' ? 'Ribbon Width' : 'Ribbon Thickness'
+                const isLimitExceeded = dimData.wear_percentage >= 100
+                const isWarning = dimData.wear_percentage >= 70 && dimData.wear_percentage < 100
+                
+                return (
+                  <div key={dimName} className="space-y-4">
+                    {/* Title & Status */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-300 tracking-wider uppercase font-sans">{displayTitle}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${isLimitExceeded ? 'bg-red-500 animate-ping' : isWarning ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${isLimitExceeded ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-emerald-400'} font-sans`}>
+                          {isLimitExceeded ? 'Exceeded' : isWarning ? 'Warning' : 'Normal'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Values Layout */}
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider font-sans">Measured</span>
+                        <span className="text-base font-mono font-bold text-white mt-0.5">{dimData.current_value.toFixed(4)}<span className="text-[10px] text-slate-400 ml-0.5 font-sans font-normal">mm</span></span>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider font-sans">Nominal</span>
+                        <span className="text-base font-mono font-bold text-slate-400 mt-0.5">{dimData.initial_value.toFixed(4)}<span className="text-[10px] text-slate-500 ml-0.5 font-sans font-normal">mm</span></span>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider font-sans">Difference</span>
+                        <span className={`text-base font-mono font-bold mt-0.5 ${isLimitExceeded ? 'text-rose-400' : isWarning ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {dimData.total_wear.toFixed(4)}<span className="text-[10px] ml-0.5 font-sans font-normal">mm</span>
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider font-sans">Tolerance</span>
+                        <span className="text-base font-mono font-bold text-slate-400 mt-0.5">±{dimData.tolerance_limit.toFixed(3)}<span className="text-[10px] text-slate-500 ml-0.5 font-sans font-normal">mm</span></span>
+                      </div>
+                    </div>
+
+                    {/* Mini Gauge bar */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex-1 bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-850 p-0.5">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isLimitExceeded ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min(100, dimData.wear_percentage)}%` }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-400 font-bold shrink-0">{dimData.wear_percentage.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          ))}
+          </div>
+
+          {/* 6. WEAR HISTORY */}
+          <div className="bg-[#0b1428]/40 border border-slate-800/40 rounded-xl p-6">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5 flex items-center gap-2 font-sans">
+              <Clock className="h-4 w-4 text-blue-400" />
+              Wear History & RUL Projection
+            </h4>
+            
+            {renderHistoryChart()}
+          </div>
         </div>
       </div>
     </div>
@@ -1329,13 +1881,7 @@ export function DieDetailPage() {
       </div>
 
       {/* Wear Prediction Section */}
-      <WearPredictionSection dieId={die.die_id} />
-
-      {/* Wear Trend Chart */}
-      <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
-        <h3 className="text-lg font-bold text-white mb-6">Dimension Wear Trend</h3>
-        <DimensionWearChart data={getChartData()} dieType={die.die_type} />
-      </div>
+      <WearPredictionSection die={die} />
 
       {/* Maintenance Logs */}
       <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
