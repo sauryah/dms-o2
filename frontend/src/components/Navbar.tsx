@@ -166,51 +166,53 @@ export function Navbar() {
                   </button>
                   
                   {showToolsDropdown && (
-                    <div className="absolute left-0 mt-1.5 w-60 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <div className="p-1.5 space-y-0.5">
-                        <Link
-                          to="/calculator"
-                          onClick={() => setShowToolsDropdown(false)}
-                          className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
-                        >
-                          <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                          <div className="flex flex-col">
-                            <span className="font-semibold">Sizing Calculator</span>
-                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
+                    <div className="absolute left-0 pt-2 w-60 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+                        <div className="p-1.5 space-y-0.5">
+                          <Link
+                            to="/calculator"
+                            onClick={() => setShowToolsDropdown(false)}
+                            className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
+                          >
+                            <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="font-semibold">Sizing Calculator</span>
+                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
+                            </div>
+                          </Link>
+                          
+                          <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
+                            <TrendingDown className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="flex items-center gap-1.5 font-semibold text-slate-400">
+                                Die Wear Estimator
+                                <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Forecast remaining die life</span>
+                            </div>
                           </div>
-                        </Link>
-                        
-                        <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                          <TrendingDown className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                          <div className="flex flex-col">
-                            <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                              Die Wear Estimator
-                              <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Forecast remaining die life</span>
-                          </div>
-                        </div>
 
-                        <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                          <Sliders className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                          <div className="flex flex-col">
-                            <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                              Sequence Optimizer
-                              <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Determine optimal drafts</span>
+                          <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
+                            <Sliders className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="flex items-center gap-1.5 font-semibold text-slate-400">
+                                Sequence Optimizer
+                                <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Determine optimal drafts</span>
+                            </div>
                           </div>
+                          
+                          <div className="border-t border-slate-800/50 my-1" />
+                          
+                          <Link
+                            to="/tools"
+                            onClick={() => setShowToolsDropdown(false)}
+                            className="block text-center text-[10px] font-bold text-blue-400 hover:text-blue-300 py-1.5 hover:bg-slate-800/20 rounded-lg transition-colors uppercase tracking-wider"
+                          >
+                            View All Tools
+                          </Link>
                         </div>
-                        
-                        <div className="border-t border-slate-800/50 my-1" />
-                        
-                        <Link
-                          to="/tools"
-                          onClick={() => setShowToolsDropdown(false)}
-                          className="block text-center text-[10px] font-bold text-blue-400 hover:text-blue-300 py-1.5 hover:bg-slate-800/20 rounded-lg transition-colors uppercase tracking-wider"
-                        >
-                          View All Tools
-                        </Link>
                       </div>
                     </div>
                   )}
