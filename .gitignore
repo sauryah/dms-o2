@@ -48,5 +48,7 @@ go-api/server
 # Backups
 backups/
 
+# Temporary files
+backend/tmp/
 
 

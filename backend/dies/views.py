@@ -290,7 +290,11 @@ class ImportDiesView(APIView):
 
         dry_run = request.query_params.get('dry_run', '').lower() == 'true'
 
-        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+        from django.conf import settings
+        tmp_dir = os.path.join(settings.BASE_DIR, 'tmp')
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False, dir=tmp_dir) as temp_file:
             for chunk in file_obj.chunks():
                 temp_file.write(chunk)
             temp_path = temp_file.name
