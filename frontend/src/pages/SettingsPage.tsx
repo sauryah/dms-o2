@@ -6,7 +6,7 @@ import { useApi } from '../hooks/useApi'
 
 export function SettingsPage() {
   const { request } = useApi()
-  const { username, role, login } = useAuth()
+  const { username, role, login, isAuthorizedForTools } = useAuth()
   const navigate = useNavigate()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -47,7 +47,7 @@ export function SettingsPage() {
           new_password: newPassword,
         }),
       })
-      login(data.token, data.refresh || '', role || '', username || '')
+      login(data.token, data.refresh || '', role || '', username || '', undefined, isAuthorizedForTools)
       setSuccess('Password changed successfully.')
       setCurrentPassword('')
       setNewPassword('')

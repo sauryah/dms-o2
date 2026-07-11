@@ -7,7 +7,7 @@ import { useNotifications } from '../contexts/NotificationContext'
 import { useApi } from '../hooks/useApi'
 
 export function Navbar() {
-  const { username, role, logout } = useAuth()
+  const { username, role, logout, isAuthorizedForTools } = useAuth()
   const { notifications, unreadCount, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
   const location = useLocation()
@@ -146,74 +146,76 @@ export function Navbar() {
                 Audit History
               </NavLink>
               {/* Tools Dropdown */}
-              <div 
-                className="relative" 
-                ref={toolsDropdownRef}
-                onMouseEnter={() => setShowToolsDropdown(true)}
-                onMouseLeave={() => setShowToolsDropdown(false)}
-              >
-                <button
-                  onClick={() => setShowToolsDropdown(!showToolsDropdown)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent flex items-center gap-1 cursor-pointer select-none focus:outline-none ${
-                    location.pathname.startsWith('/tools') || location.pathname === '/calculator'
-                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
-                  }`}
+              {isAuthorizedForTools && (
+                <div 
+                  className="relative" 
+                  ref={toolsDropdownRef}
+                  onMouseEnter={() => setShowToolsDropdown(true)}
+                  onMouseLeave={() => setShowToolsDropdown(false)}
                 >
-                  <span>Tools</span>
-                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showToolsDropdown ? 'rotate-180' : 'rotate-0'}`} />
-                </button>
-                
-                {showToolsDropdown && (
-                  <div className="absolute left-0 mt-1.5 w-60 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                    <div className="p-1.5 space-y-0.5">
-                      <Link
-                        to="/calculator"
-                        onClick={() => setShowToolsDropdown(false)}
-                        className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
-                      >
-                        <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Sizing Calculator</span>
-                          <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
+                  <button
+                    onClick={() => setShowToolsDropdown(!showToolsDropdown)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent flex items-center gap-1 cursor-pointer select-none focus:outline-none ${
+                      location.pathname.startsWith('/tools') || location.pathname === '/calculator'
+                        ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                    }`}
+                  >
+                    <span>Tools</span>
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showToolsDropdown ? 'rotate-180' : 'rotate-0'}`} />
+                  </button>
+                  
+                  {showToolsDropdown && (
+                    <div className="absolute left-0 mt-1.5 w-60 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="p-1.5 space-y-0.5">
+                        <Link
+                          to="/calculator"
+                          onClick={() => setShowToolsDropdown(false)}
+                          className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
+                        >
+                          <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Sizing Calculator</span>
+                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
+                          </div>
+                        </Link>
+                        
+                        <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
+                          <TrendingDown className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1.5 font-semibold text-slate-400">
+                              Die Wear Estimator
+                              <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Forecast remaining die life</span>
+                          </div>
                         </div>
-                      </Link>
-                      
-                      <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                        <TrendingDown className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                            Die Wear Estimator
-                            <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-normal mt-0.5">Forecast remaining die life</span>
-                        </div>
-                      </div>
 
-                      <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                        <Sliders className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                            Sequence Optimizer
-                            <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-normal mt-0.5">Determine optimal drafts</span>
+                        <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
+                          <Sliders className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1.5 font-semibold text-slate-400">
+                              Sequence Optimizer
+                              <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-normal mt-0.5">Determine optimal drafts</span>
+                          </div>
                         </div>
+                        
+                        <div className="border-t border-slate-800/50 my-1" />
+                        
+                        <Link
+                          to="/tools"
+                          onClick={() => setShowToolsDropdown(false)}
+                          className="block text-center text-[10px] font-bold text-blue-400 hover:text-blue-300 py-1.5 hover:bg-slate-800/20 rounded-lg transition-colors uppercase tracking-wider"
+                        >
+                          View All Tools
+                        </Link>
                       </div>
-                      
-                      <div className="border-t border-slate-800/50 my-1" />
-                      
-                      <Link
-                        to="/tools"
-                        onClick={() => setShowToolsDropdown(false)}
-                        className="block text-center text-[10px] font-bold text-blue-400 hover:text-blue-300 py-1.5 hover:bg-slate-800/20 rounded-lg transition-colors uppercase tracking-wider"
-                      >
-                        View All Tools
-                      </Link>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
               {(role === 'ROOT' || role === 'ADMIN') && (
                 <NavLink 
                   to="/import" 
@@ -404,39 +406,41 @@ export function Navbar() {
           >
             Audit History
           </Link>
-          <div className="px-3.5 py-2">
-            <Link 
-              to="/tools" 
-              className="text-slate-300 hover:text-white text-base font-semibold block hover:bg-slate-900 transition-colors rounded-xl px-1.5 py-2.5"
-              onClick={() => setIsOpen(false)}
-            >
-              Tools
-            </Link>
-            <div className="space-y-1.5 pl-3 mt-1.5 border-l border-slate-850">
+          {isAuthorizedForTools && (
+            <div className="px-3.5 py-2">
               <Link 
-                to="/calculator" 
-                className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
+                to="/tools" 
+                className="text-slate-300 hover:text-white text-base font-semibold block hover:bg-slate-900 transition-colors rounded-xl px-1.5 py-2.5"
                 onClick={() => setIsOpen(false)}
               >
-                <Calculator className="h-4 w-4 text-blue-500" />
-                <span>Sizing Calculator</span>
+                Tools
               </Link>
-              <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
-                <TrendingDown className="h-4 w-4 text-slate-650" />
-                <span className="flex items-center gap-1.5">
-                  Die Wear Estimator
-                  <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
-                <Sliders className="h-4 w-4 text-slate-650" />
-                <span className="flex items-center gap-1.5">
-                  Sequence Optimizer
-                  <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
-                </span>
+              <div className="space-y-1.5 pl-3 mt-1.5 border-l border-slate-850">
+                <Link 
+                  to="/calculator" 
+                  className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Calculator className="h-4 w-4 text-blue-500" />
+                  <span>Sizing Calculator</span>
+                </Link>
+                <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
+                  <TrendingDown className="h-4 w-4 text-slate-650" />
+                  <span className="flex items-center gap-1.5">
+                    Die Wear Estimator
+                    <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
+                  <Sliders className="h-4 w-4 text-slate-650" />
+                  <span className="flex items-center gap-1.5">
+                    Sequence Optimizer
+                    <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Link 
               to="/import" 

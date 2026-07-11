@@ -23,6 +23,7 @@ export function UserManager() {
   const [lastNameInput, setLastNameInput] = useState('')
   const [roleInput, setRoleInput] = useState('REGULAR')
   const [isActiveInput, setIsActiveInput] = useState(true)
+  const [isAuthorizedForToolsInput, setIsAuthorizedForToolsInput] = useState(false)
   
   const [formError, setFormError] = useState<string | null>(null)
   const [userToDelete, setUserToDelete] = useState<any>(null)
@@ -104,6 +105,7 @@ export function UserManager() {
     setLastNameInput('')
     setRoleInput('REGULAR')
     setIsActiveInput(true)
+    setIsAuthorizedForToolsInput(false)
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -118,6 +120,7 @@ export function UserManager() {
     setLastNameInput(user.last_name || '')
     setRoleInput(user.role)
     setIsActiveInput(user.is_active)
+    setIsAuthorizedForToolsInput(user.is_authorized_for_tools || false)
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -138,7 +141,8 @@ export function UserManager() {
       first_name: firstNameInput,
       last_name: lastNameInput,
       role: roleInput,
-      is_active: isActiveInput
+      is_active: isActiveInput,
+      is_authorized_for_tools: isAuthorizedForToolsInput
     }
 
     if (editingUser) {
@@ -206,6 +210,7 @@ export function UserManager() {
                   <th className="py-4.5 px-6 hidden md:table-cell">Email</th>
                   <th className="py-4.5 px-6">Role</th>
                   <th className="py-4.5 px-6">Status</th>
+                  <th className="py-4.5 px-6">Tools Access</th>
                   <th className="py-4.5 px-6 text-right">Actions</th>
                 </tr>
               </thead>
@@ -244,6 +249,15 @@ export function UserManager() {
                             {user.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                          user.role === 'ROOT' || user.is_authorized_for_tools
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                        }`}>
+                          {user.role === 'ROOT' || user.is_authorized_for_tools ? 'Authorized' : 'Unauthorized'}
+                        </span>
                       </td>
                       <td className="py-4 px-6 text-right space-x-2">
                         <button 
@@ -402,6 +416,20 @@ export function UserManager() {
                 />
                 <label htmlFor="user-active-checkbox-manager" className="text-sm font-semibold text-slate-300 cursor-pointer">
                   Is Account Active
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-1">
+                <input 
+                  type="checkbox"
+                  id="user-tools-authorized-checkbox"
+                  checked={roleInput === 'ROOT' || isAuthorizedForToolsInput}
+                  onChange={(e) => setIsAuthorizedForToolsInput(e.target.checked)}
+                  disabled={roleInput === 'ROOT'}
+                  className="h-4.5 w-4.5 bg-slate-955 border border-slate-800 rounded focus:ring-0 text-blue-500 disabled:opacity-50"
+                />
+                <label htmlFor="user-tools-authorized-checkbox" className="text-sm font-semibold text-slate-300 cursor-pointer">
+                  Authorized for Sizing Tools
                 </label>
               </div>
 

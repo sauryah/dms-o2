@@ -8,7 +8,8 @@ interface AuthContextValue {
   role: string | null
   username: string | null
   userId: number | null
-  login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number) => void
+  isAuthorizedForTools: boolean
+  login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean) => void
   logout: () => void
   setToken: React.Dispatch<React.SetStateAction<string | null>>
   setRefreshToken: React.Dispatch<React.SetStateAction<string | null>>
@@ -27,6 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<number | null>(() => {
     const stored = localStorage.getItem('dms_user_id')
     return stored ? parseInt(stored, 10) : null
+  })
+  const [isAuthorizedForTools, setIsAuthorizedForTools] = useState<boolean>(() => {
+    return localStorage.getItem('dms_authorized_for_tools') === 'true'
   })
 
   useEffect(() => {
@@ -69,13 +73,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userId])
 
-  const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number) => {
+  useEffect(() => {
+    localStorage.setItem('dms_authorized_for_tools', String(isAuthorizedForTools))
+  }, [isAuthorizedForTools])
+
+  const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean) => {
     consecutiveRefreshFailures = 0
     setToken(newToken)
     setRefreshToken(refresh)
     setRole(userRole)
     setUsername(userN)
     if (id !== undefined) setUserId(id)
+    if (authorizedForTools !== undefined) {
+      setIsAuthorizedForTools(authorizedForTools)
+    } else {
+      setIsAuthorizedForTools(userRole === 'ROOT')
+    }
   }
 
   const logout = () => {
@@ -93,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null)
     setUsername(null)
     setUserId(null)
+    setIsAuthorizedForTools(false)
+    localStorage.removeItem('dms_authorized_for_tools')
   }
 
   const handleRefreshFailure = () => {
@@ -119,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role,
       username,
       userId,
+      isAuthorizedForTools: role === 'ROOT' || isAuthorizedForTools,
       login,
       logout,
       setToken,

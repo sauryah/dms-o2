@@ -329,14 +329,14 @@ function AppContent() {
             } />
             <Route path="/calculator" element={
               <ErrorBoundary>
-                <ProtectedRoute>
+                <ProtectedRoute requireToolAuth>
                   <CalculatorPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
             <Route path="/tools" element={
               <ErrorBoundary>
-                <ProtectedRoute>
+                <ProtectedRoute requireToolAuth>
                   <ToolsPage />
                 </ProtectedRoute>
               </ErrorBoundary>
@@ -352,16 +352,21 @@ function AppContent() {
 interface ProtectedRouteProps {
   children: React.ReactElement
   allowedRoles?: string[]
+  requireToolAuth?: boolean
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { token, role } = useAuth()
+export function ProtectedRoute({ children, allowedRoles, requireToolAuth }: ProtectedRouteProps) {
+  const { token, role, isAuthorizedForTools } = useAuth()
 
   if (!token) {
     return <Navigate to="/login" replace />
   }
 
   if (allowedRoles && (!role || !allowedRoles.includes(role))) {
+    return <Navigate to="/" replace />
+  }
+
+  if (requireToolAuth && !isAuthorizedForTools) {
     return <Navigate to="/" replace />
   }
 
