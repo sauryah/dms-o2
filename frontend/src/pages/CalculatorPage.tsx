@@ -28,6 +28,21 @@ export function CalculatorPage() {
   const [roundTargetRed, setRoundTargetRed] = useState<string>('20.0')
   const [roundTargetElong, setRoundTargetElong] = useState<string>('25.0')
 
+  // Material Yield Safety variables
+  const [materialType, setMaterialType] = useState<'copper_soft' | 'copper_hard' | 'aluminum' | 'steel_low' | 'custom'>('copper_soft')
+  const [customLimit, setCustomLimit] = useState<string>('30.0')
+
+  const getMaterialLimit = () => {
+    switch (materialType) {
+      case 'copper_soft': return 30.0
+      case 'copper_hard': return 20.0
+      case 'aluminum': return 25.0
+      case 'steel_low': return 22.0
+      case 'custom': return parseFloat(customLimit) || 30.0
+      default: return 30.0
+    }
+  }
+
   // Tab 2: Sequence State
   const [seqStart, setSeqStart] = useState<string>('8.00')
   const [seqEnd, setSeqEnd] = useState<string>('2.50')
@@ -255,6 +270,53 @@ export function CalculatorPage() {
               <Zap className="h-3.5 w-3.5 text-amber-500" />
               <span>V1.4.0</span>
             </div>
+          </div>
+        </div>
+
+        {/* Global Material Selection & Draw Safety Limits */}
+        <div className="bg-[#0D1325] border border-[#1b253b] rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-6 animate-fadeIn">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2">
+              <Sliders className="h-4 w-4 text-blue-500" />
+              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading">
+                Stock Material Configuration
+              </span>
+            </div>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              Select your raw wire/strip material to configure single-pass draft safety limits and calculate potential yield thresholds.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0 w-full md:w-auto">
+            <div className="flex-1 sm:flex-none">
+              <select
+                value={materialType}
+                onChange={(e) => setMaterialType(e.target.value as any)}
+                className="w-full sm:w-64 bg-[#050816] border border-[#1b253b] rounded-xl px-4 py-3 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none cursor-pointer"
+              >
+                <option value="copper_soft">Copper (Soft/Annealed) — Max 30%</option>
+                <option value="copper_hard">Copper (Hard-Drawn) — Max 20%</option>
+                <option value="aluminum">Aluminum (EC Grade) — Max 25%</option>
+                <option value="steel_low">Low-Carbon Steel — Max 22%</option>
+                <option value="custom">Custom Limit...</option>
+              </select>
+            </div>
+
+            {materialType === 'custom' && (
+              <div className="relative rounded-xl shadow-sm w-full sm:w-32 animate-in slide-in-from-left-2 duration-150">
+                <input 
+                  type="number" 
+                  step="0.1" 
+                  value={customLimit}
+                  onChange={(e) => setCustomLimit(e.target.value)}
+                  placeholder="Limit %"
+                  className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3 py-3 pr-10 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none"
+                />
+                <div className="absolute right-2 top-2 px-1.5 py-0.5 bg-[#121A2F] border border-[#2b3a61]/40 rounded text-slate-400 text-[10px] font-mono font-bold shadow-inner">
+                  %
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -684,6 +746,37 @@ export function CalculatorPage() {
                         })()}
                       </div>
 
+                      {/* Material Yield Verification Message */}
+                      {(() => {
+                        const limit = getMaterialLimit()
+                        const isUnsafe = roundResults.reduction > limit
+                        return (
+                          <div className="animate-fadeIn">
+                            {isUnsafe ? (
+                              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-start gap-3 text-rose-400 shadow-inner">
+                                <Info className="h-5 w-5 shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="text-xs font-bold block uppercase tracking-wider">Warning: Material Yield Limit Exceeded</span>
+                                  <p className="text-[11px] text-rose-350 leading-normal mt-1">
+                                    Calculated area reduction (<span className="font-mono font-bold">{roundResults.reduction.toFixed(2)}%</span>) exceeds the safe limit of <span className="font-mono font-bold">{limit}%</span> for the selected stock material. High risk of tensile wire breakage, line slippage, or heat damage.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 flex items-start gap-3 text-emerald-400 shadow-inner">
+                                <Info className="h-5 w-5 shrink-0 mt-0.5 text-emerald-555" />
+                                <div>
+                                  <span className="text-xs font-bold block uppercase tracking-wider text-emerald-350">Draft Sizing Verified</span>
+                                  <p className="text-[11px] text-emerald-300 leading-normal mt-1">
+                                    Sizing is within safe limits for drawing (<span className="font-mono font-bold">{roundResults.reduction.toFixed(2)}%</span> vs <span className="font-mono font-bold">{limit}%</span> max limit). Physical flow velocity is optimized.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
+
                       {/* KPI Metric Readouts */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {/* KPI 1: outlet size */}
@@ -951,10 +1044,13 @@ export function CalculatorPage() {
                               const startArea = Math.PI * Math.pow(parseFloat(seqStart) / 2, 2)
                               const cumulativeRed = ((startArea - currentArea) / startArea) * 100
 
+                              const limit = getMaterialLimit()
+                              const isStepUnsafe = step.reduction > limit
+
                               return (
-                                <tr key={step.draft} className="hover:bg-[#121A2F]/40 transition-colors duration-150 group">
+                                <tr key={step.draft} className={`transition-colors duration-150 group ${isStepUnsafe ? 'bg-rose-950/15 hover:bg-rose-950/25 border-l-2 border-l-rose-500' : 'hover:bg-[#121A2F]/40'}`}>
                                   <td className="p-3">
-                                    <span className="w-5.5 h-5.5 rounded bg-[#121A2F] border border-[#2b3a61]/65 text-[9px] font-bold text-slate-350 flex items-center justify-center group-hover:border-purple-500/40 group-hover:text-purple-400 transition-colors shadow-inner">
+                                    <span className={`w-5.5 h-5.5 rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${isStepUnsafe ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-355 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
                                       #{step.draft}
                                     </span>
                                   </td>
@@ -974,9 +1070,18 @@ export function CalculatorPage() {
                                   <td className="p-3 text-right text-indigo-400">
                                     {step.drawingRatio.toFixed(3)}
                                   </td>
-                                  <td className="p-3 text-right text-blue-400">
-                                    {step.reduction.toFixed(1)}%
-                                  </td>
+                                  {(() => {
+                                    const limit = getMaterialLimit()
+                                    const isStepUnsafe = step.reduction > limit
+                                    return (
+                                      <td className={`p-3 text-right ${isStepUnsafe ? 'text-rose-400 font-bold' : 'text-blue-400'}`}>
+                                        <div className="flex items-center justify-end gap-1.5">
+                                          {isStepUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
+                                          <span>{step.reduction.toFixed(1)}%</span>
+                                        </div>
+                                      </td>
+                                    )
+                                  })()}
                                   <td className="p-3 text-right text-purple-450">
                                     +{step.elongation.toFixed(1)}%
                                   </td>
@@ -1268,6 +1373,37 @@ export function CalculatorPage() {
                           )
                         })()}
                       </div>
+
+                      {/* Material Yield Verification Message */}
+                      {(() => {
+                        const limit = getMaterialLimit()
+                        const isUnsafe = flatResults.reduction > limit
+                        return (
+                          <div className="animate-fadeIn">
+                            {isUnsafe ? (
+                              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-start gap-3 text-rose-400 shadow-inner">
+                                <Info className="h-5 w-5 shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="text-xs font-bold block uppercase tracking-wider">Warning: Material Yield Limit Exceeded</span>
+                                  <p className="text-[11px] text-rose-350 leading-normal mt-1">
+                                    Calculated area reduction (<span className="font-mono font-bold">{flatResults.reduction.toFixed(2)}%</span>) exceeds the safe limit of <span className="font-mono font-bold">{limit}%</span> for the selected stock material. High risk of strip fracturing or roll deformation.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 flex items-start gap-3 text-emerald-400 shadow-inner">
+                                <Info className="h-5 w-5 shrink-0 mt-0.5 text-emerald-555" />
+                                <div>
+                                  <span className="text-xs font-bold block uppercase tracking-wider text-emerald-350">Draft Sizing Verified</span>
+                                  <p className="text-[11px] text-emerald-300 leading-normal mt-1">
+                                    Sizing is within safe limits for flat drawing (<span className="font-mono font-bold">{flatResults.reduction.toFixed(2)}%</span> vs <span className="font-mono font-bold">{limit}%</span> max limit). Aspect ratio profile is stable.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
 
                       {/* KPI Metric Readouts */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
