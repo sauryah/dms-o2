@@ -137,6 +137,14 @@ func (h *Handler) HandleImportStatus(w http.ResponseWriter, r *http.Request) {
 	if h.cache.Enabled() {
 		statusJSON, err := h.cache.Get(r.Context(), "import_status")
 		if err == nil {
+			var statusData struct {
+				Status string `json:"status"`
+			}
+			if errUnmarshal := json.Unmarshal(statusJSON, &statusData); errUnmarshal == nil {
+				if statusData.Status == "ready" || statusData.Status == "error" {
+					_ = h.cache.Delete(r.Context(), "import_status")
+				}
+			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(statusJSON)
 			return
