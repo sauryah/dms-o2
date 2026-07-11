@@ -231,6 +231,168 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
   );
 }
 
+function WearPredictionSection({ dieId }: { dieId: string }) {
+  const { request } = useApi()
+  const { data: prediction, isLoading, error } = useQuery({
+    queryKey: ['wearPrediction', dieId],
+    queryFn: () => request(`/api/dies/${dieId}/wear-prediction/`)
+  })
+
+  if (isLoading) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (error || !prediction) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 text-slate-500 text-sm">
+        Unable to load wear prediction analysis.
+      </div>
+    )
+  }
+
+  const { alert_level, overall_wear_percentage, overall_remaining_days, dimensions } = prediction
+
+  const alertBadgeColor = (level: string) => {
+    switch (level) {
+      case 'CRITICAL':
+        return 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.1)]'
+      case 'WARNING':
+        return 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.1)]'
+      default:
+        return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.1)]'
+    }
+  }
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-white">Preventative Wear Prediction</h3>
+          <p className="text-slate-400 text-xs mt-1">
+            Predictive calibration model analyzing dimensional changes against design safety tolerances.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-500 font-medium">Alert Level:</span>
+          <span className={`px-3 py-1 text-xs font-bold rounded-xl border uppercase tracking-wide ${alertBadgeColor(alert_level)}`}>
+            {alert_level}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+        {/* Left column: Metrics progress bar & RUL */}
+        <div className="md:col-span-7 space-y-6">
+          <div>
+            <div className="flex justify-between items-baseline mb-2">
+              <span className="text-sm text-slate-300 font-bold">Overall Wear Progress</span>
+              <span className={`text-base font-extrabold ${
+                alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {overall_wear_percentage.toFixed(1)}% of safety limit
+              </span>
+            </div>
+            
+            <div className="w-full bg-slate-950 rounded-full h-3.5 border border-slate-850 p-0.5 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  alert_level === 'CRITICAL' 
+                    ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.3)]' 
+                    : alert_level === 'WARNING'
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                    : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                }`}
+                style={{ width: `${overall_wear_percentage}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4.5">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block mb-1">
+                Predicted Remaining Life
+              </span>
+              {overall_remaining_days !== null ? (
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-2xl font-black ${
+                    overall_remaining_days < 7 ? 'text-rose-400' : overall_remaining_days < 30 ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {Math.round(overall_remaining_days)}
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">days</span>
+                </div>
+              ) : (
+                <span className="text-sm font-semibold text-slate-400 italic">
+                  Calibrating...
+                </span>
+              )}
+            </div>
+
+            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4.5">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block mb-1">
+                Action Recommendation
+              </span>
+              <span className={`text-xs font-bold block ${
+                alert_level === 'CRITICAL' ? 'text-rose-400' : alert_level === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {alert_level === 'CRITICAL' 
+                  ? '⚠️ IMMEDIATE RECUT MANDATORY' 
+                  : alert_level === 'WARNING' 
+                  ? '⚡ Schedule maintenance soon' 
+                  : '✓ Standard operation OK'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column: Dimensional drill down */}
+        <div className="md:col-span-5 bg-slate-950/40 border border-slate-850 rounded-2xl p-5 space-y-4">
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-850 pb-2">
+            Dimensional Analysis
+          </h4>
+          
+          {Object.entries(dimensions).map(([dimName, dimData]: [string, any]) => (
+            <div key={dimName} className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-slate-300 capitalize">{dimName}</span>
+                <span className="text-slate-400 font-mono">
+                  {dimData.current_value.toFixed(3)} mm / {dimData.initial_value.toFixed(3)} mm
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                  <div 
+                    className={`h-full rounded-full ${
+                      dimData.wear_percentage >= 90.0 
+                        ? 'bg-rose-500' 
+                        : dimData.wear_percentage >= 70.0 
+                        ? 'bg-amber-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${dimData.wear_percentage}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 w-8 text-right shrink-0">
+                  {dimData.wear_percentage.toFixed(0)}%
+                </span>
+              </div>
+              {dimData.wear_rate_per_day > 0 && (
+                <p className="text-[10px] text-slate-500">
+                  Wear rate: <span className="font-mono text-slate-400">{(dimData.wear_rate_per_day * 1000).toFixed(2)} µm/day</span>
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boolean }) {
   const { request } = useApi()
   const queryClient = useQueryClient()
@@ -1165,6 +1327,9 @@ export function DieDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Wear Prediction Section */}
+      <WearPredictionSection dieId={die.die_id} />
 
       {/* Wear Trend Chart */}
       <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">

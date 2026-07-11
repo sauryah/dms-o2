@@ -221,6 +221,184 @@ class DieViewSet(viewsets.ModelViewSet):
             
         return Response({"detail": "Die recut successfully."}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'], url_path='wear-prediction')
+    def wear_prediction(self, request, die_id=None):
+        die = self.get_object()
+        from django.utils import timezone
+        from history.models import DieHistory
+        
+        analysis = {}
+        
+        # Helper to calculate prediction for a single dimension
+        def predict_dimension(history_entries, punched_val, current_val, tolerance_limit):
+            punched_val = float(punched_val)
+            current_val = float(current_val)
+            tolerance_limit = float(tolerance_limit)
+            
+            # Build list of measurement points: (timestamp, value)
+            points = []
+            
+            # If we have history, get the earliest timestamp
+            earliest_time = die.created_at or timezone.now()
+            
+            if history_entries.exists():
+                first_entry = list(history_entries)[0]  # ordered by timestamp asc
+                earliest_time = first_entry.timestamp
+                # If first entry had an old value, we can use that as the starting point
+                try:
+                    start_val = float(first_entry.old_value)
+                except ValueError:
+                    start_val = punched_val
+                
+                points.append((earliest_time, start_val))
+                
+                for entry in history_entries:
+                    try:
+                        points.append((entry.timestamp, float(entry.new_value)))
+                    except ValueError:
+                        continue
+            else:
+                # Fallback if no history exists yet
+                points.append((earliest_time, punched_val))
+            
+            # Append current state
+            points.append((timezone.now(), current_val))
+            
+            # Sort by timestamp
+            points.sort(key=lambda x: x[0])
+            
+            # Filter duplicate timestamps
+            unique_points = []
+            seen_times = set()
+            for t, v in points:
+                if t not in seen_times:
+                    unique_points.append((t, v))
+                    seen_times.add(t)
+            
+            total_wear = abs(current_val - punched_val)
+            wear_percentage = min(100.0, (total_wear / tolerance_limit) * 100.0)
+            
+            wear_rate = 0.0
+            remaining_days = None
+            rate_calculated = False
+            
+            # We need at least two distinct points in time with some days elapsed
+            if len(unique_points) >= 2:
+                t0, v0 = unique_points[0]
+                t_last, v_last = unique_points[-1]
+                
+                days_elapsed = (t_last - t0).total_seconds() / 86400.0
+                if days_elapsed > 0.01:  # at least some time has elapsed
+                    # Wear is progressive, so we assume positive delta. If it wears down or up, we take the absolute rate
+                    wear_delta = abs(v_last - v0)
+                    wear_rate = wear_delta / days_elapsed
+                    rate_calculated = True
+                    
+                    if wear_rate > 0:
+                        remaining_wear = max(0.0, tolerance_limit - total_wear)
+                        remaining_days = remaining_wear / wear_rate
+            
+            return {
+                "initial_value": punched_val,
+                "current_value": current_val,
+                "tolerance_limit": tolerance_limit,
+                "total_wear": total_wear,
+                "wear_percentage": wear_percentage,
+                "wear_rate_per_day": wear_rate if rate_calculated else None,
+                "remaining_days": remaining_days,
+                "measurements_count": len(unique_points),
+            }
+
+        # Query history once
+        history_qs = DieHistory.objects.filter(die=die).order_by('timestamp')
+        
+        if die.die_type == 'ROUND':
+            if not hasattr(die, 'rounddie') or not die.rounddie:
+                return Response({"detail": "Round die details not found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            history_size = history_qs.filter(field_name='current_size')
+            size_pred = predict_dimension(
+                history_size, 
+                die.rounddie.punched_size, 
+                die.rounddie.current_size, 
+                0.05
+            )
+            
+            # Determine alert level
+            alert_level = 'GOOD'
+            if size_pred['wear_percentage'] >= 90.0 or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 7):
+                alert_level = 'CRITICAL'
+            elif size_pred['wear_percentage'] >= 70.0 or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 30):
+                alert_level = 'WARNING'
+                
+            analysis = {
+                "die_id": die.die_id,
+                "die_type": die.die_type,
+                "alert_level": alert_level,
+                "overall_wear_percentage": size_pred['wear_percentage'],
+                "overall_remaining_days": size_pred['remaining_days'],
+                "dimensions": {
+                    "size": size_pred
+                }
+            }
+            
+        elif die.die_type == 'FLAT':
+            if not hasattr(die, 'flatdie') or not die.flatdie:
+                return Response({"detail": "Flat die details not found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            history_width = history_qs.filter(field_name='current_width')
+            width_pred = predict_dimension(
+                history_width, 
+                die.flatdie.punched_width, 
+                die.flatdie.current_width, 
+                0.1
+            )
+            
+            history_thick = history_qs.filter(field_name='current_thickness')
+            thick_pred = predict_dimension(
+                history_thick, 
+                die.flatdie.punched_thickness, 
+                die.flatdie.current_thickness, 
+                0.1
+            )
+            
+            # Overall wear is the worst of the two dimensions
+            overall_wear_pct = max(width_pred['wear_percentage'], thick_pred['wear_percentage'])
+            
+            # Overall remaining days is the shortest of the two dimensions
+            overall_rem_days = None
+            if width_pred['remaining_days'] is not None and thick_pred['remaining_days'] is not None:
+                overall_rem_days = min(width_pred['remaining_days'], thick_pred['remaining_days'])
+            elif width_pred['remaining_days'] is not None:
+                overall_rem_days = width_pred['remaining_days']
+            elif thick_pred['remaining_days'] is not None:
+                overall_rem_days = thick_pred['remaining_days']
+                
+            # Determine alert level
+            alert_level = 'GOOD'
+            if overall_wear_pct >= 90.0 or (overall_rem_days is not None and overall_rem_days < 7):
+                alert_level = 'CRITICAL'
+            elif overall_wear_pct >= 70.0 or (overall_rem_days is not None and overall_rem_days < 30):
+                alert_level = 'WARNING'
+                
+            analysis = {
+                "die_id": die.die_id,
+                "die_type": die.die_type,
+                "alert_level": alert_level,
+                "overall_wear_percentage": overall_wear_pct,
+                "overall_remaining_days": overall_rem_days,
+                "dimensions": {
+                    "width": width_pred,
+                    "thickness": thick_pred
+                }
+            }
+        else:
+            return Response({"detail": "Unsupported die type."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(analysis)
+
+
+
 
 import tempfile
 import os
