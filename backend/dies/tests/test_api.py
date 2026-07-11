@@ -209,3 +209,32 @@ class DieAPITests(APITestCase):
         data = {'location': 'Rack Z'}
         response = self.client.patch(url_detail, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_detail_actions_with_slashed_die_id(self):
+        # Create a die with a slash in die_id
+        slashed_die = Die.objects.create(
+            die_id="IWD-AL-1/1-01",
+            die_type="ROUND",
+            casing="25x10",
+            status="AVAILABLE",
+            location="Rack A",
+        )
+        RoundDie.objects.create(
+            die=slashed_die,
+            punched_size=Decimal("1.600"),
+            current_size=Decimal("1.600")
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
+        
+        # Test wear prediction detail action
+        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'IWD-AL-1/1-01'})
+        response = self.client.get(url_wp)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['die_id'], 'IWD-AL-1/1-01')
+
+        # Test maintenance logs detail action
+        url_ml = reverse('die-maintenance-logs', kwargs={'die_id': 'IWD-AL-1/1-01'})
+        response = self.client.get(url_ml)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+

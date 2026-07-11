@@ -46,7 +46,7 @@ class DieViewSet(viewsets.ModelViewSet):
     """
     queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine', 'rack')
     lookup_field = 'die_id'
-    lookup_value_regex = '[^?#]+'
+    lookup_value_regex = r'(?:(?!/wear-prediction(?:/|$)|/maintenance-logs(?:/|$)|/recut(?:/|$))[^?#])+'
     permission_classes = [IsAdminOrRootOrOperatorRelocate]
 
     def get_serializer_class(self):
