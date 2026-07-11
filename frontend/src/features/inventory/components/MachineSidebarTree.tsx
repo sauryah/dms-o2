@@ -23,6 +23,7 @@ export interface MachineSidebarTreeProps {
   selectedNode: { type: string; id?: any; machineId?: any } | null;
   setSelectedNode: (node: { type: string; id?: any; machineId?: any } | null) => void;
   machinesWithData: any[];
+  dies: any[];
   unassignedCount: number;
   isSearchActive: boolean;
   canCreate: boolean;
@@ -41,6 +42,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
       selectedNode,
       setSelectedNode,
       machinesWithData,
+      dies,
       unassignedCount,
       isSearchActive,
       canCreate,

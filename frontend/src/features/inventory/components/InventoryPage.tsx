@@ -44,6 +44,7 @@ export function InventoryPage() {
     hasActiveFilter,
     sortField,
     sortOrder,
+    setSortOrder,
     handleSort,
     setsList,
     createError,
@@ -108,6 +109,7 @@ export function InventoryPage() {
         selectedNode={selectedNode}
         setSelectedNode={setSelectedNode}
         machinesWithData={machinesWithData}
+        dies={dies}
         unassignedCount={unassignedCount}
         isSearchActive={isSearchActive}
         canCreate={canCreate}
