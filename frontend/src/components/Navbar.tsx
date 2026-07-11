@@ -139,6 +139,18 @@ export function Navbar() {
               >
                 Audit History
               </NavLink>
+              <NavLink 
+                to="/calculator" 
+                className={({ isActive }) => 
+                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                    isActive 
+                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                  }`
+                }
+              >
+                Sizing Calculator
+              </NavLink>
               {(role === 'ROOT' || role === 'ADMIN') && (
                 <NavLink 
                   to="/import" 
@@ -328,6 +340,13 @@ export function Navbar() {
             onClick={() => setIsOpen(false)}
           >
             Audit History
+          </Link>
+          <Link 
+            to="/calculator" 
+            className="block text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl text-base font-semibold hover:bg-slate-900 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Sizing Calculator
           </Link>
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Link 

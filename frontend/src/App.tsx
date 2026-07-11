@@ -20,6 +20,7 @@ const UsersPage = React.lazy(() => import('./pages/UsersPage').then(m => ({ defa
 const HistoryPage = React.lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
 
 const queryClient = new QueryClient()
 
@@ -324,6 +325,13 @@ function AppContent() {
               <ProtectedRoute>
                 <SettingsPage />
               </ProtectedRoute>
+            } />
+            <Route path="/calculator" element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <CalculatorPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
             } />
           </Routes>
         </Suspense>
