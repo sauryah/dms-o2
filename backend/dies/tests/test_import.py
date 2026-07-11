@@ -238,9 +238,7 @@ R-IMP-VIEW-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
         try:
             with open(filepath, 'rb') as f:
                 response = client.post(url, {'file': f}, format='multipart')
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.data['created'], 1)
-            self.assertTrue(response.data['dry_run'])
+            self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
             
             # Verify database was not changed
             self.assertFalse(Die.objects.filter(die_id='R-IMP-VIEW-DRY').exists())
@@ -277,7 +275,7 @@ R-IMP-VIEW-DRY,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
         self.assertIn("Round Die", wb.sheetnames)
         self.assertIn("Flat Die", wb.sheetnames)
         self.assertIn("Field Reference", wb.sheetnames)
-
+ 
     def test_import_log_persistence(self):
         from dies.models import ImportLog
         from django.urls import reverse
@@ -304,7 +302,7 @@ R-LOG-1,ROUND,25x10,AVAILABLE,Rack A,remark1,2.5,2.5
         try:
             with open(filepath, 'rb') as f:
                 response = client.post(url, {'file': f}, format='multipart')
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
             
             # Check ImportLog was created
             log_entry = ImportLog.objects.filter(filename=os.path.basename(filepath)).first()

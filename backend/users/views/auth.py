@@ -161,7 +161,8 @@ class LoginView(APIView):
         response = Response({
             'token': token_str,
             'refresh': refresh_token_str,
-            'role': user.role
+            'role': user.role,
+            'is_authorized_for_tools': user.is_authorized_for_tools
         }, status=status.HTTP_200_OK)
         
         response.set_cookie(
@@ -391,7 +392,8 @@ class VerifyTokenView(APIView):
         return Response({
             "valid": True,
             "user_id": request.user.id,
-            "role": request.user.role
+            "role": request.user.role,
+            "is_authorized_for_tools": request.user.is_authorized_for_tools
         }, status=status.HTTP_200_OK)
 
     @extend_schema(exclude=True)

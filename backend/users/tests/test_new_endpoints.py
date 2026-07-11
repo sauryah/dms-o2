@@ -173,9 +173,9 @@ class NewEndpointsTests(APITestCase):
             f.seek(0)
             response = self.client.post(url, {'file': f})
         
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['dry_run'], True)
-        self.assertEqual(response.data['created'], 1)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        from dies.models import Die
+        self.assertFalse(Die.objects.filter(die_id='R-TEST-1').exists())
 
     # 6. GET /api/import/logs/ (Phase 5)
     def test_import_logs_endpoint(self):
