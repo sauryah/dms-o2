@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Layers, LogOut, LogIn, X, Menu, Bell, Settings } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -13,6 +13,17 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const queryClient = useQueryClient()
+  const notificationRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   const { request } = useApi()
 
   const prefetchDashboard = () => {
@@ -194,7 +205,7 @@ export function Navbar() {
             )}
 
             {username && (
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => {
                     setShowNotifications(!showNotifications)
@@ -214,9 +225,7 @@ export function Navbar() {
                 </button>
 
                 {showNotifications && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                    <div className="absolute right-0 mt-2.5 w-80 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 mt-2.5 w-80 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/80">
                         <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                           <Bell className="h-4 w-4 text-blue-500" />
@@ -268,7 +277,6 @@ export function Navbar() {
                         )}
                       </div>
                     </div>
-                  </>
                 )}
               </div>
             )}
