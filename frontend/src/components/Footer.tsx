@@ -15,7 +15,7 @@ export function Footer() {
               <span className="text-slate-700">•</span>
               <span>Die Management System</span>
               <span className="text-slate-700">•</span>
-              <span className="font-mono text-[10px] text-slate-500 bg-slate-900/50 border border-slate-800 px-1.5 py-0.5 rounded">v1.2.0</span>
+              <span className="font-mono text-[10px] text-slate-500 bg-slate-900/50 border border-slate-800 px-1.5 py-0.5 rounded">v1.4.0</span>
             </div>
             <div className="flex items-center space-x-4">
               <span>
