@@ -18,6 +18,7 @@ An industrial-grade, high-performance Local Area Network (LAN) platform for trac
 * [Key Features](#-key-features)
 * [Tech Stack](#-tech-stack)
 * [Installation & Quick Start](#-installation--quick-start)
+* [🐳 Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
 * [Usage Guide](#-usage-guide)
 * [Configuration](#-configuration)
 * [Project Structure](#-project-structure)
@@ -138,6 +139,26 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 *   **Django Admin Console**: [http://localhost/admin/](http://localhost/admin/)
 *   **REST API Root**: [http://localhost/api/](http://localhost/api/)
 *   **Default Root Credentials**: Username: `root` | Password: `root123` (Configured in `.env`)
+
+---
+
+## 🐳 Deploy with Docker (No Source Code)
+
+Don't want to clone the repo? Deploy DMS instantly using **pre-built Docker images**:
+
+```bash
+mkdir dms && cd dms
+curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/docker-compose.ghcr.yml
+curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/.env.example
+cp .env.example .env   # ← edit passwords & keys!
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+The app will be live at **http://localhost** in ~30 seconds.
+
+Images are available on **Docker Hub** (`sauryah/dms-backend`, `sauryah/dms-frontend`, `sauryah/dms-go-api`) and **GitHub Container Registry**.
+
+> 📖 **Full guide**: [DOCKER.md](DOCKER.md) — configuration, version pinning, backups, troubleshooting, and more.
 
 ---
 
