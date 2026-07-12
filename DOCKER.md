@@ -72,7 +72,7 @@ Open the generated `.env` file in your favorite text editor (e.g., VS Code, Note
 
 > [!CAUTION]
 > **You MUST change these values before running in production:**
-> 
+>
 > * `POSTGRES_PASSWORD` — Use a strong, random password.
 > * `ROOT_PASSWORD` — Initial admin panel password.
 > * `DJANGO_SECRET_KEY` — Generate a secure key:
