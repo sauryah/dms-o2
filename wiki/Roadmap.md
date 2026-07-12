@@ -143,7 +143,7 @@ graph TD
 - Verified rate limiting configurations on proxy (Traefik) and application levels.
 - Verified the functionally complete frontend History Explorer UI.
 
-### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15)
+### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15) (v1.6.0)
 - Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
 - Added `docker-compose.ghcr.yml` for quick, source-free deployment.
 - Established comprehensive legal, branding, and safety policies: `LICENSE-COMMERCIAL.md`, `COPYRIGHT.md`, and `TRADEMARK.md`.
