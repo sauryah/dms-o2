@@ -42,4 +42,4 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## 5. Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at `conduct@sauryah.github.io` *(Placeholder — replace with actual contact address)*. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at `sauryah@zohomail.in`. All complaints will be reviewed and investigated promptly and fairly.

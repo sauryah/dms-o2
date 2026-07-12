@@ -20,7 +20,7 @@ Security updates are actively backported only to the latest major/minor stable r
 Please **do not** open public GitHub issues or forum posts for suspected security vulnerabilities. Instead, report them privately using one of the following methods:
 
 1. **GitHub Private Vulnerability Reporting:** Go to the repository's **Security** tab, click **Vulnerability reporting**, and select **Report a vulnerability**.
-2. **Email Disclosure:** Send a secure email to `security@sauryah.github.io` *(Placeholder — replace with actual security contact email)*.
+2. **Email Disclosure:** Send a secure email to `sauryah@zohomail.in`.
 
 ### Information to Include:
 * A detailed description of the vulnerability and its potential impact.

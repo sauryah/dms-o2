@@ -47,5 +47,5 @@ Commercial License holders gain access to dedicated support options, including:
 To inquire about commercial licensing terms, custom quotes, or enterprise agreement templates, please contact:
 
 * **Licensing Contact:** Sahil Pradhan
-* **Email:** licensing@sauryah.github.io *(Placeholder — replace with actual corporate licensing email)*
+* **Email:** sauryah@zohomail.in
 * **Repository:** [github.com/sauryah/dms-o2](https://github.com/sauryah/dms-o2)
