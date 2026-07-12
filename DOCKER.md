@@ -19,31 +19,69 @@ Deploy DMS-O2 anywhere using pre-built Docker images — **no source code requir
 
 ### 1. Download the compose file and environment template
 
+Choose the commands for your operating system to set up your directory and download the configuration files:
+
+#### Linux & macOS (Bash/Zsh)
 ```bash
-# Create a directory for DMS
+# Create and enter the directory
 mkdir dms && cd dms
 
-# Download the distribution compose file
+# Download configuration files
 curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/docker-compose.ghcr.yml
-
-# Download the environment template
 curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/.env.example
-```
 
-### 2. Configure your environment
-
-```bash
+# Create the environment file
 cp .env.example .env
 ```
 
+#### Windows (PowerShell)
+```powershell
+# Create and enter the directory
+New-Item -ItemType Directory -Path dms
+Set-Location dms
+
+# Download configuration files
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/sauryah/dms-o2/main/docker-compose.ghcr.yml" -OutFile "docker-compose.ghcr.yml"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/sauryah/dms-o2/main/.env.example" -OutFile ".env.example"
+
+# Create the environment file
+Copy-Item .env.example .env
+```
+
+#### Windows (Command Prompt / cmd.exe)
+```cmd
+:: Create and enter the directory
+mkdir dms && cd dms
+
+:: Download configuration files
+curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/docker-compose.ghcr.yml
+curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/.env.example
+
+:: Create the environment file
+copy .env.example .env
+```
+
+---
+
+### 2. Configure your environment
+
+Open the generated `.env` file in your favorite text editor (e.g., VS Code, Notepad, Vim) and customize the keys.
+
 > [!CAUTION]
 > **You MUST change these values before running in production:**
-> - `POSTGRES_PASSWORD` — use a strong, random password
-> - `DJANGO_SECRET_KEY` — generate with `python -c "import secrets; print(secrets.token_urlsafe(64))"`
-> - `ROOT_PASSWORD` — initial admin password
-> - `MEILI_MASTER_KEY` — generate with `openssl rand -base64 32`
+> *   `POSTGRES_PASSWORD` — Use a strong, random password.
+> *   `ROOT_PASSWORD` — Initial admin panel password.
+> *   `DJANGO_SECRET_KEY` — Generate a secure key:
+>     *   **Cross-platform (Python):** `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+> *   `MEILI_MASTER_KEY` — Generate a secure key:
+>     *   **Linux/macOS:** `openssl rand -base64 32`
+>     *   **Windows (PowerShell):** `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 } -As Byte))`
+
+---
 
 ### 3. Start the application
+
+Run this command from inside your `dms` directory:
 
 ```bash
 docker compose -f docker-compose.ghcr.yml up -d
