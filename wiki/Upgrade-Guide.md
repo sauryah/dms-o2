@@ -1,46 +1,78 @@
-# Upgrade Guide — DMS v1.4.0
+# Upgrade Guide — DMS v1.6.0
 
-This guide outlines the step-by-step instructions for upgrading the Die Management System (DMS) deployment to **v1.4.0**.
+This guide outlines the step-by-step instructions for upgrading your Die Management System (DMS) deployment to **v1.6.0**.
 
 > [!IMPORTANT]
-> This release includes a database schema migration affecting `UserSession` models. Ensure you backup your database before proceeding.
+> **Backup Notice:** This release introduces the distributable Docker image model and optimizes database connection handling. Please back up your PostgreSQL database using the `./dms-backup.sh backup` tool before performing any upgrade tasks.
 
 ---
 
-## 1. Pull Latest Release
-Navigate to the root of your workspace and pull the release tags/commits:
+## Upgrade Method 1: Using Pre-Built Docker Images (Recommended)
+
+Beginning with v1.6.0, you no longer need to clone the source code on your production host. You can deploy and upgrade using pre-built images fetched directly from GitHub Container Registry (GHCR).
+
+### 1. Download Configuration Files
+Navigate to your deployment directory (e.g., `dms`) and download the updated compose file:
+```bash
+curl -LO https://raw.githubusercontent.com/sauryah/dms-o2/main/docker-compose.ghcr.yml
+```
+
+### 2. Update Environment Configuration
+Ensure your `.env` contains all required variables defined in the latest `.env.example`.
+To pin your deployment to v1.6.0, add the following line to your `.env` file:
+```env
+DMS_VERSION=1.6.0
+```
+
+### 3. Stop Legacy Containers
+If you are running the source-built container stack, stop it first:
+```bash
+docker compose down
+```
+
+### 4. Deploy v1.6.0
+Launch the new stack. Database migrations will run automatically on startup:
+```bash
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+---
+
+## Upgrade Method 2: Building from Source (Standard Git Flow)
+
+If your deployment relies on building images from source code, follow this standard Git-based workflow:
+
+### 1. Pull the v1.6.0 Tag
 ```bash
 git fetch --tags
-git checkout tags/v1.4.0
+git checkout tags/v1.6.0
 ```
 
-## 2. Apply Database Migrations
-Run Django database migrations to update the session models (altering token hash and related indexes):
+### 2. Apply Database Migrations
+Run the Django migrations to update database indices and cache schemas:
 ```bash
-docker-compose exec backend python manage.py migrate
+docker compose exec django python manage.py migrate
 ```
 
-## 3. Rebuild and Restart Services
-Rebuild the container configurations to incorporate frontend package updates, HTTPOnly cookie authentication setups, and the internal key secret checks:
+### 3. Rebuild and Restart Components
+Rebuild the container configurations to incorporate frontend bundle updates and Go search API optimization:
 ```bash
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
-## 4. Post-Deployment Verification
-Verify that both unit and E2E test suites are passing perfectly in the upgraded environment:
+---
 
-### Django Backend Tests
+## 5. Post-Deployment Verification
+
+Verify that your upgraded container stack is fully operational:
+
+### Check Service Health
 ```bash
-docker-compose exec backend python manage.py test
+docker compose -f docker-compose.ghcr.yml ps
 ```
 
-### Go Search API Tests
+### Force Sync Search Indexes
 ```bash
-cd go-api && go test ./...
-```
-
-### React Frontend Tests
-```bash
-cd frontend && npm run test
+docker compose -f docker-compose.ghcr.yml exec django python manage.py sync_search
 ```

@@ -5,4 +5,4 @@ Welcome to the internal engineering documentation for the **Die Management Syste
 ## 📖 Navigation
 * **[[Architecture]]**: Learn about the hybrid Django/Go backend, database schemas, Meilisearch caching layer, real-time SSE event loop, and complete endpoint maps.
 * **[[Roadmap]]**: View the data models, role-based access control matrix, core business rules, and chronological development log.
-* **[[Upgrade-Guide]]**: Read the step-by-step instructions for deploying and validating the latest **v1.4.0** release.
+* **[[Upgrade-Guide]]**: Read the step-by-step instructions for deploying and validating the latest **v1.6.0** release.

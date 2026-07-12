@@ -143,6 +143,14 @@ graph TD
 - Verified rate limiting configurations on proxy (Traefik) and application levels.
 - Verified the functionally complete frontend History Explorer UI.
 
+### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15)
+- Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
+- Added `docker-compose.ghcr.yml` for quick, source-free deployment.
+- Established comprehensive legal, branding, and safety policies: `LICENSE-COMMERCIAL.md`, `COPYRIGHT.md`, and `TRADEMARK.md`.
+- Refactored `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, and `CONTRIBUTING.md` to enterprise open-source standards.
+- Corrected all placeholder contacts to `sauryah@zohomail.in`.
+- Resolved all `markdownlint` warnings across the repository documents.
+
 ### 2026-07-03 · feat: implement API rate limiting and support combined multi-faceted query search parameters (Phase 14)
 - Configured REST framework API rate limiting (throttling) for anonymous and authenticated user endpoints.
 - Re-architected search parameters processing to execute combined queries (text query and custom numeric range filters) simultaneously.
