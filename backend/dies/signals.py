@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
-from users.middleware import get_current_user, get_current_ip
+from users.middleware import get_current_user, get_current_ip, _thread_locals
 from dies.services.search_service import SearchService
 from dies.contracts import DIE_SAVE_ACTION
 
@@ -51,6 +51,8 @@ def log_die_changes(sender, instance, **kwargs):
 
     if not instance.pk:
         return
+    if getattr(_thread_locals, 'skip_single_sync', False):
+        return
     old_values = Die.objects.filter(pk=instance.pk).values(*DIE_WATCH_FIELDS).first()
     if not old_values:
         return
@@ -95,6 +97,8 @@ def log_die_changes(sender, instance, **kwargs):
 def log_round_size_change(sender, instance, **kwargs):
     if not instance.pk:
         return
+    if getattr(_thread_locals, 'skip_single_sync', False):
+        return
     old_vals = RoundDie.objects.filter(pk=instance.pk).values('current_size', 'punched_size').first()
     if not old_vals:
         return
@@ -118,6 +122,8 @@ def log_round_size_change(sender, instance, **kwargs):
 @receiver(pre_save, sender=FlatDie)
 def log_flat_changes(sender, instance, **kwargs):
     if not instance.pk:
+        return
+    if getattr(_thread_locals, 'skip_single_sync', False):
         return
     old_values = FlatDie.objects.filter(pk=instance.pk).values('current_width', 'current_thickness', 'punched_width', 'punched_thickness', 'radius').first()
     if not old_values:

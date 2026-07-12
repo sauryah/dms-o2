@@ -57,7 +57,7 @@ class UserSessionViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         from django.core.cache import cache
-        cache_key = f"user_session_{instance.token_hash}"
+        cache_key = f"user_session:{instance.user.id}:{instance.token_hash}"
         cache.delete(cache_key)
         
         UserActivityLog.objects.create(

@@ -134,6 +134,13 @@ func (h *Handler) HandleIndexStatus(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleImportStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	roleVal := r.Context().Value(auth.RoleContextKey)
+	role, _ := roleVal.(string)
+	if role != "ADMIN" && role != "ROOT" {
+		writeProblemDetails(w, r, "Forbidden", http.StatusForbidden, "Only ADMIN or ROOT users are authorized to view import status")
+		return
+	}
+
 	if h.cache.Enabled() {
 		statusJSON, err := h.cache.Get(r.Context(), "import_status")
 		if err == nil {
@@ -547,47 +554,33 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 }
 
 func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
-	var finalUserID int
-	userID := r.Context().Value(auth.UserContextKey)
-	if userID != nil {
-		// Existing token-based auth
-		// TODO: token parameter is deprecated, use ticket exchange instead
-		var ok bool
-		finalUserID, ok = userID.(int)
-		if !ok {
-			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid user ID format in session context")
-			return
-		}
-	} else {
-		// Try ticket-based auth
-		ticket := r.URL.Query().Get("ticket")
-		if ticket == "" {
-			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Authentication token or ticket is required")
-			return
-		}
-
-		ticketKey := fmt.Sprintf("sse_ticket:%s", ticket)
-		userIdBytes, err := h.cache.Get(r.Context(), ticketKey)
-		if err != nil {
-			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid or expired ticket")
-			return
-		}
-
-		idVal, err := strconv.Atoi(string(userIdBytes))
-		if err != nil {
-			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid user ID in ticket data")
-			return
-		}
-
-		isActive, err := h.db.IsUserActive(r.Context(), idVal)
-		if err != nil || !isActive {
-			writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "User account is inactive or not found")
-			return
-		}
-
-		_ = h.cache.Delete(r.Context(), ticketKey)
-		finalUserID = idVal
+	ticket := r.URL.Query().Get("ticket")
+	if ticket == "" {
+		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Authentication ticket is required")
+		return
 	}
+
+	ticketKey := fmt.Sprintf("sse_ticket:%s", ticket)
+	userIdBytes, err := h.cache.Get(r.Context(), ticketKey)
+	if err != nil {
+		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid or expired ticket")
+		return
+	}
+
+	idVal, err := strconv.Atoi(string(userIdBytes))
+	if err != nil {
+		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "Invalid user ID in ticket data")
+		return
+	}
+
+	isActive, err := h.db.IsUserActive(r.Context(), idVal)
+	if err != nil || !isActive {
+		writeProblemDetails(w, r, "Unauthorized", http.StatusUnauthorized, "User account is inactive or not found")
+		return
+	}
+
+	_ = h.cache.Delete(r.Context(), ticketKey)
+	finalUserID := idVal
 
 	slog.Info("SSE connection authenticated", "user_id", finalUserID)
 

@@ -38,9 +38,7 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 					tokenStr = cookie.Value
 				}
 			}
-			if tokenStr == "" {
-				tokenStr = r.URL.Query().Get("token")
-			}
+
 
 			if tokenStr == "" {
 				// No token provided; allow guest access (AllowAny equivalent)

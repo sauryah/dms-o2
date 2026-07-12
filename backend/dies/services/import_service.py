@@ -213,6 +213,7 @@ class ImportService:
                         else:
                             successful_die_ids.append(die_id)
                 except Exception as e:
+                    skipped += 1
                     logger.error(
                         f"Failed to import row {line_num} due to error: {str(e)}",
                         exc_info=True,

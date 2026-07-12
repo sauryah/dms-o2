@@ -123,6 +123,8 @@ class BackupService:
                 current_session = UserSession.objects.get(user=request_user, token_hash=token_hash)
                 current_session_data = {
                     'user_id': current_session.user_id,
+                    'username': request_user.username,
+                    'role': request_user.role,
                     'token_hash': current_session.token_hash,
                     'ip_address': current_session.ip_address,
                     'device': current_session.device
@@ -135,6 +137,13 @@ class BackupService:
         except subprocess.CalledProcessError as e:
             raise Exception(f"pg_restore failed: {e.stderr or e}")
 
+        # Apply database migrations to ensure restored database schema matches current codebase models
+        try:
+            from django.core.management import call_command
+            call_command('migrate', noinput=True)
+        except Exception:
+            pass
+
         # Evict all restored sessions to prevent unauthorized reuse of restored sessions
         try:
             from django.contrib.sessions.models import Session
@@ -146,12 +155,20 @@ class BackupService:
         # Restore the restorer's session so they stay logged in
         if current_session_data:
             try:
-                UserSession.objects.create(
-                    user_id=current_session_data['user_id'],
-                    token_hash=current_session_data['token_hash'],
-                    ip_address=current_session_data['ip_address'],
-                    device=current_session_data['device']
-                )
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                restored_user = User.objects.filter(
+                    id=current_session_data['user_id'],
+                    username=current_session_data['username'],
+                    role=current_session_data['role']
+                ).first()
+                if restored_user:
+                    UserSession.objects.create(
+                        user_id=restored_user.id,
+                        token_hash=current_session_data['token_hash'],
+                        ip_address=current_session_data['ip_address'],
+                        device=current_session_data['device']
+                    )
             except Exception:
                 pass
 
