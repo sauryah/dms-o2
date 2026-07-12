@@ -1,0 +1,308 @@
+# =============================================================================
+# DMS-O2 — Distributable Docker Compose (pre-built images from GHCR)
+# =============================================================================
+# Usage:
+#   1. Copy .env.example to .env and configure
+#   2. docker compose -f docker-compose.ghcr.yml up -d
+#
+# Pin a version:  DMS_VERSION=1.0.0 docker compose -f docker-compose.ghcr.yml up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    command: >
+      postgres
+      -c lock_timeout=30000
+      -c idle_in_transaction_session_timeout=300000
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Redis (Celery broker + Go API cache)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Meilisearch (full-text search engine)
+  # ---------------------------------------------------------------------------
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    restart: unless-stopped
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - MEILI_ENV=production
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Django — Database Migrations (run once, then exit)
+  # ---------------------------------------------------------------------------
+  migrate:
+    image: ghcr.io/sauryah/dms-o2/backend:${DMS_VERSION:-latest}
+    command: python manage.py migrate --noinput
+    restart: "no"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - ROOT_USERNAME=${ROOT_USERNAME}
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
+      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Django — API Server (Gunicorn)
+  # ---------------------------------------------------------------------------
+  django:
+    image: ghcr.io/sauryah/dms-o2/backend:${DMS_VERSION:-latest}
+    restart: unless-stopped
+    command: gunicorn dms.wsgi:application --bind 0.0.0.0:8000
+    stop_grace_period: 2m
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - ROOT_USERNAME=${ROOT_USERNAME}
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
+      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.rule=PathPrefix(`/api`) || PathPrefix(`/admin`)"
+      - "traefik.http.routers.django.entrypoints=web"
+      - "traefik.http.routers.django.priority=50"
+      - "traefik.http.services.django.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
+      - "traefik.http.routers.django.middlewares=api-ratelimit,api-compress"
+      - "traefik.http.middlewares.api-compress.compress=true"
+      # Dedicated login route rate limiting
+      - "traefik.http.routers.django-login.rule=Path(`/api/auth/login/`)"
+      - "traefik.http.routers.django-login.entrypoints=web"
+      - "traefik.http.routers.django-login.priority=60"
+      - "traefik.http.routers.django-login.middlewares=login-ratelimit,api-compress"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.average=5"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.login-ratelimit.ratelimit.burst=10"
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker (background tasks)
+  # ---------------------------------------------------------------------------
+  worker:
+    image: ghcr.io/sauryah/dms-o2/backend:${DMS_VERSION:-latest}
+    restart: unless-stopped
+    command: celery -A dms worker -l info --concurrency=2
+    stop_grace_period: 2m
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - ROOT_USERNAME=${ROOT_USERNAME}
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
+      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A dms inspect ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Go API (high-performance search & SSE endpoints)
+  # ---------------------------------------------------------------------------
+  go-api:
+    image: ghcr.io/sauryah/dms-o2/go-api:${DMS_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - MEILI_SEARCH_KEY=${MEILI_SEARCH_KEY}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/go/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`) || PathPrefix(`/api/events`)"
+      - "traefik.http.routers.go-api.entrypoints=web"
+      - "traefik.http.routers.go-api.priority=100"
+      - "traefik.http.services.go-api.loadbalancer.server.port=8080"
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Nginx serving React SPA)
+  # ---------------------------------------------------------------------------
+  frontend:
+    image: ghcr.io/sauryah/dms-o2/frontend:${DMS_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      django:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.frontend-compress.compress=true"
+      - "traefik.http.routers.frontend.middlewares=frontend-compress"
+
+  # ---------------------------------------------------------------------------
+  # Traefik (reverse proxy / edge router)
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      django:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Automated Backups (daily at 2 AM via cron)
+  # ---------------------------------------------------------------------------
+  backup:
+    image: postgres:18-alpine
+    restart: always
+    volumes:
+      - dms_backups:/backups
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-365}
+    entrypoint: |
+      sh -c '
+      echo "export PATH=\"$$PATH\"" > /env.sh
+      echo "export POSTGRES_DB=\"$$POSTGRES_DB\"" >> /env.sh
+      echo "export POSTGRES_USER=\"$$POSTGRES_USER\"" >> /env.sh
+      echo "export POSTGRES_PASSWORD=\"$$POSTGRES_PASSWORD\"" >> /env.sh
+      echo "export POSTGRES_HOST=\"$$POSTGRES_HOST\"" >> /env.sh
+      echo "export POSTGRES_PORT=\"$$POSTGRES_PORT\"" >> /env.sh
+      echo "export HISTORY_RETENTION_DAYS=\"$$HISTORY_RETENTION_DAYS\"" >> /env.sh
+      chmod +x /env.sh
+
+      # Create backup script inline
+      cat > /usr/local/bin/backup.sh << "SCRIPT"
+      #!/bin/sh
+      . /env.sh
+      TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+      BACKUP_FILE="/backups/${POSTGRES_DB}_${TIMESTAMP}.sql.gz"
+      echo "[$(date)] Starting backup..."
+      pg_dump -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$BACKUP_FILE"
+      if [ $? -eq 0 ]; then
+        echo "[$(date)] Backup completed: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+      else
+        echo "[$(date)] Backup FAILED"
+        exit 1
+      fi
+      # Keep only last 30 backups
+      ls -t /backups/*.sql.gz 2>/dev/null | tail -n +31 | xargs rm -f 2>/dev/null
+      SCRIPT
+      chmod +x /usr/local/bin/backup.sh
+
+      echo "0 2 * * * . /env.sh; /usr/local/bin/backup.sh >> /proc/1/fd/1 2>&1" > /etc/crontabs/root
+      echo ">>> Starting crond in background..."
+      crond -f -l 2
+      '
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  meili_data:
+  dms_backups:

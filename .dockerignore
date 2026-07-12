@@ -1,0 +1,17 @@
+.git
+.github
+.vscode
+*.md
+LICENSE
+backups/
+docs/
+wiki/
+design-system/
+*.ps1
+*.sh
+test_script3.py
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
