@@ -14,30 +14,30 @@ An industrial-grade, high-performance Local Area Network (LAN) platform for trac
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
-* [Overview & Architecture](#-overview--architecture)
-* [Key Features](#-key-features)
-* [Tech Stack](#-tech-stack)
-* [Quick Start](#-quick-start)
-* [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
-* [Configuration Reference](#⚙-configuration)
-* [Project Structure](#-project-structure)
-* [Usage Guide](#-usage-guide)
-* [Deployment & Upgrades](#-deployment--upgrades)
-* [Backup & Recovery](#-backup--recovery)
-* [Security](#-security)
-* [Roadmap](#-roadmap)
-* [FAQ](#❓-faq)
-* [Troubleshooting](#⚠-troubleshooting)
-* [Licensing & Compliance](#-licensing--compliance)
-* [Contributing](#-contributing)
-* [Support](#-support)
-* [Credits](#-credits)
+* [Overview & Architecture](#overview--architecture)
+* [Key Features](#key-features)
+* [Tech Stack](#tech-stack)
+* [Quick Start](#quick-start)
+* [Deploy with Docker (No Source Code)](#deploy-with-docker-no-source-code)
+* [Configuration](#configuration)
+* [Project Structure](#project-structure)
+* [Usage Guide](#usage-guide)
+* [Deployment & Upgrades](#deployment--upgrades)
+* [Backup & Recovery](#backup--recovery)
+* [Security](#security)
+* [Roadmap](#roadmap)
+* [FAQ](#faq)
+* [Troubleshooting](#troubleshooting)
+* [Licensing & Compliance](#licensing--compliance)
+* [Contributing](#contributing)
+* [Support](#support)
+* [Credits](#credits)
 
 ---
 
-## 💡 Overview & Architecture
+## Overview & Architecture
 
 DMS-O2 is built as a microservice-oriented application optimized to deliver sub-millisecond read latency over local area networks (LAN). It uses a hybrid query execution design: fuzzy text searches are routed to Meilisearch, and numeric range queries run directly on PostgreSQL.
 
@@ -63,7 +63,7 @@ graph TD
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Precision Die Modeling**: Custom tracking for **Round dies** (casing, current size, original size) and **Flat dies** (width, thickness, corner radius).
 * **Interactive CAD Highlighting**: Bidirectional vector highlight syncing. Hovering over dimensions in tables glows the corresponding blueprint SVG node, and vice versa.
@@ -79,7 +79,7 @@ graph TD
 
 ---
 
-## 💻 Tech Stack
+## Tech Stack
 
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -93,7 +93,7 @@ graph TD
 
 ---
 
-## 🏁 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -160,7 +160,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ---
 
-## 🐳 Deploy with Docker (No Source Code)
+## Deploy with Docker (No Source Code)
 
 You can deploy DMS-O2 instantly using **pre-built Docker images** without cloning this repository:
 
@@ -176,7 +176,7 @@ For detailed deployment instructions, including Windows PowerShell/Command Promp
 
 ---
 
-## ⚙ Configuration
+## Configuration
 
 System variables are managed inside the `.env` file located in the project root.
 
@@ -195,11 +195,11 @@ System variables are managed inside the `.env` file located in the project root.
 | `ROOT_USERNAME` | `root` | Superuser username |
 | `ROOT_PASSWORD` | `root123` | Default administrator password |
 | `SESSION_IDLE_TIMEOUT_MINUTES` | `30` | Minutes before idle session expires |
-| `SESSION_ABSOLUTE_TIMEOUT_HOURS`| `12` | Absolute hours before user is forced to log in again |
+| `SESSION_ABSOLUTE_TIMEOUT_HOURS` | `12` | Absolute hours before user is forced to log in again |
 
 ---
 
-## 📋 Project Structure
+## Project Structure
 
 ```text
 dms-o2/
@@ -229,7 +229,7 @@ dms-o2/
 
 ---
 
-## 🛠 Usage Guide
+## Usage Guide
 
 ### Common Container Tasks
 
@@ -273,7 +273,7 @@ Within the main navigation search bar, the UI supports:
 
 ---
 
-## 🚀 Deployment & Upgrades
+## Deployment & Upgrades
 
 Production-optimized assets use a high-concurrency setup:
 
@@ -293,7 +293,7 @@ This script pulls updates, verifies configuration files, builds changed containe
 
 ---
 
-## 💾 Backup & Recovery
+## Backup & Recovery
 
 A scheduled database container performs compressed dumps nightly at **2:00 AM** and persists them to the host folder `./backups/` with a **14-day retention cycle**.
 
@@ -321,13 +321,13 @@ A scheduled database container performs compressed dumps nightly at **2:00 AM** 
 
 ---
 
-## 🔒 Security
+## Security
 
 DMS-O2 is maintained with security as a priority. If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting and private communication channels.
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 The current priorities and roadmap items for DMS-O2 include:
 
@@ -338,7 +338,7 @@ The current priorities and roadmap items for DMS-O2 include:
 
 ---
 
-## ❓ FAQ
+## FAQ
 
 ### How is concurrent session eviction handled?
 
@@ -358,7 +358,7 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 
 ---
 
-## ⚠️ Troubleshooting
+## Troubleshooting
 
 | Symptoms | Cause | Solution |
 | :--- | :--- | :--- |
@@ -371,7 +371,7 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 
 ---
 
-## 📄 Licensing & Compliance
+## Licensing & Compliance
 
 DMS-O2 is a dual-licensed project designed to offer flexibility for both open-source development and proprietary commercial use:
 
@@ -385,18 +385,18 @@ For detailed intellectual property and branding rules, see:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup instructions, testing workflows, and information on our Contributor License Agreement (CLA) that permits dual-licensing of your changes.
 
 ---
 
-## 🙋 Support
+## Support
 
 For deployment support, bug reports, and customization help, check our [Support Guide](SUPPORT.md) to choose the best community or commercial support channel.
 
 ---
 
-## 👥 Credits
+## Credits
 
 Developed for industrial manufacturing shop floors by Sahil Pradhan.
