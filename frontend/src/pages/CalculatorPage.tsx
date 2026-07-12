@@ -554,6 +554,9 @@ export function CalculatorPage() {
               <p className="text-slate-400 text-[11px] leading-relaxed">
                 Derived from <strong>Sachs' slab model</strong> of plastic flow. The term <span className="text-slate-300">σ_y·ln(A₁/A₂)</span> represents the ideal homogenous work of plastic deformation. The multiplier <span className="text-slate-300">(1 + μ·cot(α))</span> corrects for frictional shear resistance along the die-wire contact interface at half-angle <span className="font-mono">α</span> under friction <span className="font-mono">μ</span>.
               </p>
+              <div className="mt-3 border-t border-[#1b253b]/60 pt-2 text-[10.5px] text-amber-200/70 italic leading-relaxed">
+                <strong>Kid-Friendly Analogy:</strong> Think of it like squeezing playdough through a funnel! The clay's hardness is the material strength, the change in funnel size is the squeezing work, and how sticky the funnel walls are adds drag. Sachs' method slices this squeezing process into thin imaginary slabs to calculate the total force needed.
+              </div>
             </div>
           </div>
         )}
