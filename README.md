@@ -14,18 +14,19 @@ An industrial-grade, high-performance Local Area Network (LAN) platform for trac
 ---
 
 ## 📖 Table of Contents
+
 * [Overview & Architecture](#-overview--architecture)
 * [Key Features](#-key-features)
 * [Tech Stack](#-tech-stack)
 * [Installation & Quick Start](#-installation--quick-start)
-* [🐳 Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
+* [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
 * [Usage Guide](#-usage-guide)
 * [Configuration](#-configuration)
 * [Project Structure](#-project-structure)
 * [Deployment & Upgrades](#-deployment--upgrades)
 * [Backup & Recovery](#-backup--recovery)
 * [Contributing](#-contributing)
-* [License](#-license)
+* [License & Commercial Licensing](#-license--commercial-licensing)
 * [Credits](#-credits)
 * [FAQ](#-faq)
 * [Troubleshooting](#-troubleshooting)
@@ -60,17 +61,17 @@ graph TD
 
 ## 🚀 Key Features
 
-*   **Precision Die Modeling**: Custom tracking for **Round dies** (casing, current size, original size) and **Flat dies** (width, thickness, corner radius).
-*   **Interactive CAD Highlighting**: Bidirectional vector highlight syncing. Hovering over dimensions in tables glows the corresponding blueprint SVG node, and vice versa.
-*   **Visual Storage Rack Map**: Drag-and-drop grid interface representing physical warehouse racks for quick inventory relocation.
-*   **Fuzzy & Parametric Search**: Blazing-fast lookup leveraging the Go search microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
-*   **Granular Role-Based Access Control (RBAC)**:
-    *   *Unauthenticated/Operator*: Read-only search, view metrics, and browse inventory.
-    *   *Admin*: Full CRUD on dies/machines/sets, and bulk spreadsheet imports.
-    *   *Root*: User administration, database backup/restore operations, and system configuration.
-*   **Immutable Auditing**: Database triggers and Django pre-save signals capture all modifications to die status, location, and dimensions.
-*   **Session Management**: Concurrent session control with immediate eviction of previous logins upon new sign-ins.
-*   **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
+* **Precision Die Modeling**: Custom tracking for **Round dies** (casing, current size, original size) and **Flat dies** (width, thickness, corner radius).
+* **Interactive CAD Highlighting**: Bidirectional vector highlight syncing. Hovering over dimensions in tables glows the corresponding blueprint SVG node, and vice versa.
+* **Visual Storage Rack Map**: Drag-and-drop grid interface representing physical warehouse racks for quick inventory relocation.
+* **Fuzzy & Parametric Search**: Blazing-fast lookup leveraging the Go search microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
+* **Granular Role-Based Access Control (RBAC)**:
+  * *Unauthenticated/Operator*: Read-only search, view metrics, and browse inventory.
+  * *Admin*: Full CRUD on dies/machines/sets, and bulk spreadsheet imports.
+  * *Root*: User administration, database backup/restore operations, and system configuration.
+* **Immutable Auditing**: Database triggers and Django pre-save signals capture all modifications to die status, location, and dimensions.
+* **Session Management**: Concurrent session control with immediate eviction of previous logins upon new sign-ins.
+* **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
 
 ---
 
@@ -91,20 +92,24 @@ graph TD
 ## 🏁 Installation & Quick Start
 
 ### Prerequisites
-*   **Docker** & **Docker Compose** (V2+)
-*   **Node.js** (v18+) & **npm** (only required for local developer running)
-*   **Python 3.11** (only required for local Django execution)
+
+* **Docker** & **Docker Compose** (V2+)
+* **Node.js** (v18+) & **npm** (only required for local developer running)
+* **Python 3.11** (only required for local Django execution)
 
 ### Automated Setup
+
 The system provides a automated installer that copies settings, builds containers, seeds database structures, and runs search index updates.
 
 #### Linux & macOS
+
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
 #### Windows (PowerShell)
+
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ./setup.ps1
@@ -115,30 +120,39 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 > On completion, the setup scripts output your LAN IP address (e.g., `http://192.168.1.15`). Any device on the same local network can access the frontend dashboard directly.
 
 ### Manual Setup (Alternative)
-1.  **Environment Settings**:
-    ```bash
-    cp .env.example .env
-    ```
-2.  **Start Services**:
-    ```bash
-    docker compose up -d --build
-    ```
-3.  **Run Database Migrations & Seeds**:
-    ```bash
-    docker compose exec django python manage.py migrate
-    docker compose exec django python manage.py create_root_user
-    ```
-4.  **Sync Search Indexes**:
-    Execute the index synchronization CLI tool:
-    ```bash
-    docker compose exec django python manage.py sync_search
-    ```
+
+1. **Environment Settings**:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Start Services**:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Run Database Migrations & Seeds**:
+
+   ```bash
+   docker compose exec django python manage.py migrate
+   docker compose exec django python manage.py create_root_user
+   ```
+
+4. **Sync Search Indexes**:
+   Execute the index synchronization CLI tool:
+
+   ```bash
+   docker compose exec django python manage.py sync_search
+   ```
 
 ### Access Interfaces
-*   **Frontend SPA**: [http://localhost](http://localhost)
-*   **Django Admin Console**: [http://localhost/admin/](http://localhost/admin/)
-*   **REST API Root**: [http://localhost/api/](http://localhost/api/)
-*   **Default Root Credentials**: Username: `root` | Password: `root123` (Configured in `.env`)
+
+* **Frontend SPA**: [http://localhost](http://localhost)
+* **Django Admin Console**: [http://localhost/admin/](http://localhost/admin/)
+* **REST API Root**: [http://localhost/api/](http://localhost/api/)
+* **Default Root Credentials**: Username: `root` | Password: `root123` (Configured in `.env`)
 
 ---
 
@@ -154,7 +168,7 @@ cp .env.example .env   # ← edit passwords & keys!
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-The app will be live at **http://localhost** in ~30 seconds.
+The app will be live at `http://localhost` in ~30 seconds.
 
 Images are available on **Docker Hub** (`sauryah/dms-backend`, `sauryah/dms-frontend`, `sauryah/dms-go-api`) and **GitHub Container Registry**.
 
@@ -162,9 +176,9 @@ Images are available on **Docker Hub** (`sauryah/dms-backend`, `sauryah/dms-fron
 
 ---
 
-## ⚙️ Configuration
+## ⚙ Configuration
 
-System variables are managed inside the [.env](file:///home/sahil/Projects/dms-o2/.env) file located in the project root.
+System variables are managed inside the `.env` file located in the project root.
 
 > [!WARNING]
 > Ensure all secret keys and passwords are changed in production environments. Never commit `.env` to git repositories.
@@ -181,13 +195,13 @@ System variables are managed inside the [.env](file:///home/sahil/Projects/dms-o
 | `ROOT_USERNAME` | `root` | Superuser username |
 | `ROOT_PASSWORD` | `root123` | Default administrator password |
 | `SESSION_IDLE_TIMEOUT_MINUTES` | `30` | Minutes before idle session expires |
-| `SESSION_ABSOLUTE_TIMEOUT_HOURS`| `12` | Absolute hours before user is forced to log in again |
+| `SESSION_ABSOLUTE_TIMEOUT_HOURS` | `12` | Absolute hours before user is forced to log in again |
 
 ---
 
 ## 📋 Project Structure
 
-```
+```text
 dms-o2/
 ├── .github/workflows/         # CI/CD Deployment configurations
 ├── backend/                   # Django Backend Service
@@ -210,55 +224,71 @@ dms-o2/
 └── dms-backup.sh              # Database backup and restore script
 ```
 
-*   Detailed Architecture specs can be found in [docs/ARCHITECTURE.md](file:///home/sahil/Projects/dms-o2/docs/ARCHITECTURE.md).
-*   Visual UI styling guidelines are located in [design-system/die-management-system/MASTER.md](file:///home/sahil/Projects/dms-o2/design-system/die-management-system/MASTER.md).
+* Detailed Architecture specs can be found in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+* Visual UI styling guidelines are located in [design-system/die-management-system/MASTER.md](design-system/die-management-system/MASTER.md).
 
 ---
 
-## 🛠️ Usage Guide
+## 🛠 Usage Guide
 
 ### Common Container Tasks
-*   **Start the container stack**:
-    ```bash
-    docker compose up -d
-    ```
-*   **Stop the stack (without deleting data)**:
-    ```bash
-    docker compose stop
-    ```
-*   **Bring the stack down (cleans containers and networks)**:
-    ```bash
-    docker compose down
-    ```
-*   **View container logs**:
-    ```bash
-    docker compose logs -f
-    ```
-*   **Database Interactive CLI**:
-    ```bash
-    docker compose exec db psql -U dms_user -d dms
-    ```
+
+* **Start the container stack**:
+
+  ```bash
+  docker compose up -d
+  ```
+
+* **Stop the stack (without deleting data)**:
+
+  ```bash
+  docker compose stop
+  ```
+
+* **Bring the stack down (cleans containers and networks)**:
+
+  ```bash
+  docker compose down
+  ```
+
+* **View container logs**:
+
+  ```bash
+  docker compose logs -f
+  ```
+
+* **Database Interactive CLI**:
+
+  ```bash
+  docker compose exec db psql -U dms_user -d dms
+  ```
 
 ### Keyboard Navigation
+
 Within the main navigation search bar, the UI supports:
-*   `ArrowDown` / `ArrowUp` to traverse list results.
-*   `Tab` / `Shift+Tab` to focus fields.
-*   `Enter` to select highlighted inventory records.
+
+* `ArrowDown` / `ArrowUp` to traverse list results.
+* `Tab` / `Shift+Tab` to focus fields.
+* `Enter` to select highlighted inventory records.
 
 ---
 
 ## 🚀 Deployment & Upgrades
 
 Production-optimized assets use a high-concurrency setup:
-1.  **Nginx**: Serves compiled React assets with Gzip compression.
-2.  **Gunicorn**: Serves the Django backend WSGI server.
-3.  **Go Endpoint**: Bypasses Django entirely for high-speed read operations on `/api/go/*`.
+
+1. **Nginx**: Serves compiled React assets with Gzip compression.
+2. **Gunicorn**: Serves the Django backend WSGI server.
+3. **Go Endpoint**: Bypasses Django entirely for high-speed read operations on `/api/go/*`.
 
 ### Production Deployment Script
+
 To deploy upgrades without downtime, use the integrated deployment automation script:
+
 ```bash
 ./deploy.sh
 ```
+
 This script pulls updates, verifies configuration files, builds changed containers, runs SQL migrations, and clears legacy docker caches.
 
 ---
@@ -268,25 +298,32 @@ This script pulls updates, verifies configuration files, builds changed containe
 A scheduled database container performs compressed dumps nightly at **2:00 AM** and persists them to the host folder `./backups/` with a **14-day retention cycle**.
 
 ### Command Utility (`dms-backup.sh`)
-*   **Create a manual backup**:
-    ```bash
-    ./dms-backup.sh backup
-    ```
-*   **List all local backups**:
-    ```bash
-    ./dms-backup.sh list
-    ```
-*   **Restore the database**:
-    ```bash
-    ./dms-backup.sh restore <backup_filename.dump>
-    ```
-    *Note: Restoring a database will overwrite current records and trigger an automatic rebuild of Meilisearch search indexes.*
+
+* **Create a manual backup**:
+
+  ```bash
+  ./dms-backup.sh backup
+  ```
+
+* **List all local backups**:
+
+  ```bash
+  ./dms-backup.sh list
+  ```
+
+* **Restore the database**:
+
+  ```bash
+  ./dms-backup.sh restore <backup_filename.dump>
+  ```
+
+  *Note: Restoring a database will overwrite current records and trigger an automatic rebuild of Meilisearch search indexes.*
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please review [CONTRIBUTING.md](file:///home/sahil/Projects/dms-o2/CONTRIBUTING.md) for local development setup, testing workflows, and PR processes.
+Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, testing workflows, and PR processes.
 
 ---
 
@@ -307,21 +344,25 @@ Developed for industrial manufacturing shop floors by Sahil Pradhan.
 
 ## ❓ FAQ
 
-#### How is concurrent session eviction handled?
+### How is concurrent session eviction handled?
+
 DMS enforces a single active session policy. When a user signs in from a different terminal or browser session, the previous session is immediately invalidated (returning `401 Unauthorized` on old requests).
 
-#### How do I re-sync search indexes manually?
+### How do I re-sync search indexes manually?
+
 If database records and Meilisearch indexes are out of sync, trigger a full re-index run:
+
 ```bash
 docker compose exec django python manage.py sync_search
 ```
 
-#### Can unauthenticated users move dies?
+### Can unauthenticated users move dies?
+
 No. Moving dies, adding new records, or editing states requires **Admin** or **Root** permissions. Unauthenticated users are strictly limited to search and view actions.
 
 ---
 
-## ⚠️ Troubleshooting
+## ⚠ Troubleshooting
 
 | Symptoms | Cause | Solution |
 | :--- | :--- | :--- |
@@ -329,7 +370,5 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **Port conflict on 80/443** | Another server (Nginx/Apache) is running on the host | Disable host server: `sudo systemctl stop nginx`, or change port bindings in `docker-compose.yml`. |
 | **Write/Compile permission denied** | Root-owned files left in mounting volume | Run cleanup command: `docker compose exec frontend rm -rf dist` and restart. |
 | **401 Unauthorized loops** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
-| **Dies missing from sidebar tree / showing 0 count** | Database has scaled beyond the default pagination limit | The explorer sidebar groups dies loaded in the current page (default: `100,000` dies). If your facility grows beyond 100,000 dies, increase the default `pageSize` state variable in `frontend/src/features/inventory/hooks/useInventoryState.ts` and rebuild the frontend: `docker compose up -d --build frontend`. |
-| **Cannot connect/access from phone or external device** | 1. Host IP not allowed in Django.<br>2. Windows Network Category is Public.<br>3. Firewall blocking Docker Backend. | **1.** Add the laptop's network IP address or `*` to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart containers.<br>**2.** On Windows, set your network profile to **Private** in admin PowerShell: `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private`. <br>**3.** Update Docker's inbound rules to apply to all profiles: `Get-NetFirewallRule -DisplayName "Docker Desktop Backend" \| Set-NetFirewallRule -Profile Any`. |
-
-
+| **Dies missing from sidebar tree / showing 0 count** | Database has scaled beyond the default pagination limit | Increase the default `pageSize` state variable in `frontend/src/features/inventory/hooks/useInventoryState.ts` and rebuild the frontend: `docker compose up -d --build frontend`. |
+| **Cannot connect/access from phone or external device** | Host IP not allowed in Django, Windows Network Category is Public, or Firewall blocking Docker Backend. | Add the laptop's network IP address or `*` to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart containers. On Windows, set your network profile to **Private** in admin PowerShell: `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private`. Update Docker's inbound rules to apply to all profiles. |
