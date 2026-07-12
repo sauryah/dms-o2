@@ -120,6 +120,14 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15) (v1.6.0)
+- Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
+- Added `docker-compose.ghcr.yml` for quick, source-free deployment.
+- Established comprehensive legal, branding, and safety policies: `LICENSE-COMMERCIAL.md`, `COPYRIGHT.md`, and `TRADEMARK.md`.
+- Refactored `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, and `CONTRIBUTING.md` to enterprise open-source standards.
+- Corrected all placeholder contacts to `sauryah@zohomail.in`.
+- Resolved all `markdownlint` warnings across the repository documents.
+
 ### 2026-07-10 · refactor: decompose InventoryPage and implement security audit recommendations (v1.4.0)
 - Decomposed monolithic `InventoryPage.tsx` into custom React state hook (`useInventoryState.ts`) and layout sub-views (`InventorySubViews.tsx`) to simplify frontend code structure.
 - Hardened JWT authentication by implementing HTTPOnly cookie storage (`dms_access_token` and `dms_refresh_token`) to mitigate token vulnerability to XSS.
@@ -142,14 +150,6 @@ graph TD
 - Implemented "Recut" action button and form modal on the frontend `DieDetailPage` to re-bore worn dies and reset punched/current sizes.
 - Verified rate limiting configurations on proxy (Traefik) and application levels.
 - Verified the functionally complete frontend History Explorer UI.
-
-### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15) (v1.6.0)
-- Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
-- Added `docker-compose.ghcr.yml` for quick, source-free deployment.
-- Established comprehensive legal, branding, and safety policies: `LICENSE-COMMERCIAL.md`, `COPYRIGHT.md`, and `TRADEMARK.md`.
-- Refactored `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, and `CONTRIBUTING.md` to enterprise open-source standards.
-- Corrected all placeholder contacts to `sauryah@zohomail.in`.
-- Resolved all `markdownlint` warnings across the repository documents.
 
 ### 2026-07-03 · feat: implement API rate limiting and support combined multi-faceted query search parameters (Phase 14)
 - Configured REST framework API rate limiting (throttling) for anonymous and authenticated user endpoints.
