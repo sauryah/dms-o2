@@ -21,16 +21,16 @@ An industrial-grade, high-performance Local Area Network (LAN) platform for trac
 * [Tech Stack](#-tech-stack)
 * [Quick Start](#-quick-start)
 * [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
-* [Configuration Reference](#-configuration-reference)
+* [Configuration Reference](#⚙-configuration)
 * [Project Structure](#-project-structure)
 * [Usage Guide](#-usage-guide)
 * [Deployment & Upgrades](#-deployment--upgrades)
 * [Backup & Recovery](#-backup--recovery)
 * [Security](#-security)
 * [Roadmap](#-roadmap)
-* [FAQ](#-faq)
-* [Troubleshooting](#-troubleshooting)
-* [Licensing](#-licensing)
+* [FAQ](#❓-faq)
+* [Troubleshooting](#⚠-troubleshooting)
+* [Licensing & Compliance](#-licensing--compliance)
 * [Contributing](#-contributing)
 * [Support](#-support)
 * [Credits](#-credits)
@@ -96,20 +96,24 @@ graph TD
 ## 🏁 Quick Start
 
 ### Prerequisites
+
 * **Docker** & **Docker Compose** (V2+)
 * **Node.js** (v18+) & **npm** (only required for local developer running)
 * **Python 3.11** (only required for local Django execution)
 
 ### Automated Setup
+
 The system provides an automated installer that copies settings, builds containers, seeds database structures, and runs search index updates.
 
 #### Linux & macOS
+
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
 #### Windows (PowerShell)
+
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ./setup.ps1
@@ -120,26 +124,35 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 > On completion, the setup scripts output your LAN IP address (e.g., `http://192.168.1.15`). Any device on the same local network can access the frontend dashboard directly.
 
 ### Manual Setup (Alternative)
+
 1. **Environment Settings**:
+
    ```bash
    cp .env.example .env
    ```
+
 2. **Start Services**:
+
    ```bash
    docker compose up -d --build
    ```
+
 3. **Run Database Migrations & Seeds**:
+
    ```bash
    docker compose exec django python manage.py migrate
    docker compose exec django python manage.py create_root_user
    ```
+
 4. **Sync Search Indexes**:
    Execute the index synchronization CLI tool:
+
    ```bash
    docker compose exec django python manage.py sync_search
    ```
 
 ### Access Interfaces
+
 * **Frontend SPA**: [http://localhost](http://localhost)
 * **Django Admin Console**: [http://localhost/admin/](http://localhost/admin/)
 * **REST API Root**: [http://localhost/api/](http://localhost/api/)
@@ -163,7 +176,7 @@ For detailed deployment instructions, including Windows PowerShell/Command Promp
 
 ---
 
-## ⚙️ Configuration Reference
+## ⚙ Configuration
 
 System variables are managed inside the `.env` file located in the project root.
 
@@ -219,29 +232,41 @@ dms-o2/
 ## 🛠 Usage Guide
 
 ### Common Container Tasks
+
 * **Start the container stack**:
+
   ```bash
   docker compose up -d
   ```
+
 * **Stop the stack (without deleting data)**:
+
   ```bash
   docker compose stop
   ```
+
 * **Bring the stack down (cleans containers and networks)**:
+
   ```bash
   docker compose down
   ```
+
 * **View container logs**:
+
   ```bash
   docker compose logs -f
   ```
+
 * **Database Interactive CLI**:
+
   ```bash
   docker compose exec db psql -U dms_user -d dms
   ```
 
 ### Keyboard Navigation
+
 Within the main navigation search bar, the UI supports:
+
 * `ArrowDown` / `ArrowUp` to traverse list results.
 * `Tab` / `Shift+Tab` to focus fields.
 * `Enter` to select highlighted inventory records.
@@ -251,15 +276,19 @@ Within the main navigation search bar, the UI supports:
 ## 🚀 Deployment & Upgrades
 
 Production-optimized assets use a high-concurrency setup:
+
 1. **Nginx**: Serves compiled React assets with Gzip compression.
 2. **Gunicorn**: Serves the Django backend WSGI server.
 3. **Go Endpoint**: Bypasses Django entirely for high-speed read operations on `/api/go/*`.
 
 ### Production Deployment Script
+
 To deploy upgrades without downtime, use the integrated deployment automation script:
+
 ```bash
 ./deploy.sh
 ```
+
 This script pulls updates, verifies configuration files, builds changed containers, runs SQL migrations, and clears legacy docker caches.
 
 ---
@@ -269,18 +298,25 @@ This script pulls updates, verifies configuration files, builds changed containe
 A scheduled database container performs compressed dumps nightly at **2:00 AM** and persists them to the host folder `./backups/` with a **14-day retention cycle**.
 
 ### Command Utility (`dms-backup.sh`)
+
 * **Create a manual backup**:
+
   ```bash
   ./dms-backup.sh backup
   ```
+
 * **List all local backups**:
+
   ```bash
   ./dms-backup.sh list
   ```
+
 * **Restore the database**:
+
   ```bash
   ./dms-backup.sh restore <backup_filename.dump>
   ```
+
   *Note: Restoring a database will overwrite current records and trigger an automatic rebuild of Meilisearch search indexes.*
 
 ---
@@ -294,6 +330,7 @@ DMS-O2 is maintained with security as a priority. If you identify a security iss
 ## 🗺️ Roadmap
 
 The current priorities and roadmap items for DMS-O2 include:
+
 * **CAD Engine Extensions:** Direct import support for DWG/DXF dimensional schematics.
 * **Expanded Analytics:** Graphical historical wear trends and predictive cycle life tracking.
 * **Multi-Warehouse Syncing:** Inter-facility inventory transfers with audit chain validation.
@@ -304,15 +341,19 @@ The current priorities and roadmap items for DMS-O2 include:
 ## ❓ FAQ
 
 ### How is concurrent session eviction handled?
+
 DMS enforces a single active session policy. When a user signs in from a different terminal or browser session, the previous session is immediately invalidated (returning `401 Unauthorized` on old requests).
 
 ### How do I re-sync search indexes manually?
+
 If database records and Meilisearch indexes are out of sync, trigger a full re-index run:
+
 ```bash
 docker compose exec django python manage.py sync_search
 ```
 
 ### Can unauthenticated users move dies?
+
 No. Moving dies, adding new records, or editing states requires **Admin** or **Root** permissions. Unauthenticated users are strictly limited to search and view actions.
 
 ---
@@ -338,6 +379,7 @@ DMS-O2 is a dual-licensed project designed to offer flexibility for both open-so
 2. **Commercial License**: If your organization has policies against AGPL software, or you wish to make proprietary modifications without disclosing your source code, you must obtain a commercial license. Review details in [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) or contact the maintainers.
 
 For detailed intellectual property and branding rules, see:
+
 * **Copyright Details:** [COPYRIGHT.md](COPYRIGHT.md)
 * **Trademark Guidelines:** [TRADEMARK.md](TRADEMARK.md)
 
