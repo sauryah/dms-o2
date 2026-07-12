@@ -52,6 +52,7 @@ export function CalculatorPage() {
   const [seqStart, setSeqStart] = useState<string>('8.00')
   const [seqEnd, setSeqEnd] = useState<string>('2.50')
   const [seqReduction, setSeqReduction] = useState<string>('20.0')
+  const [seqOptMode, setSeqOptMode] = useState<'constant' | 'graduated'>('constant')
 
   // Tab 3: Flat Die State
   const [flatInWidth, setFlatInWidth] = useState<string>('20.00')
@@ -140,11 +141,12 @@ export function CalculatorPage() {
 
     const steps = []
     let currentDia = start
-    const targetRedMultiplier = 1 - avgRed / 100
     let safetyCounter = 0
+    let currentRed = seqOptMode === 'graduated' ? Math.min(avgRed * 1.25, 30.0) : avgRed
 
     while (currentDia > end && safetyCounter < 50) {
       safetyCounter++
+      const targetRedMultiplier = 1 - currentRed / 100
       const nextArea = (Math.PI * Math.pow(currentDia / 2, 2)) * targetRedMultiplier
       const nextDia = 2 * Math.sqrt(nextArea / Math.PI)
 
@@ -168,11 +170,14 @@ export function CalculatorPage() {
           draft: steps.length + 1,
           inlet: currentDia,
           outlet: nextDia,
-          reduction: avgRed,
+          reduction: currentRed,
           elongation: (1 / targetRedMultiplier - 1) * 100,
           drawingRatio: 1 / targetRedMultiplier
         })
         currentDia = nextDia
+        if (seqOptMode === 'graduated') {
+          currentRed = Math.max(currentRed * 0.88, 8.0)
+        }
       }
     }
 
@@ -1290,6 +1295,42 @@ export function CalculatorPage() {
                     </div>
                     <span className="text-[10px] text-slate-500 mt-1.5 block">
                       Target draft limit per die. High alloy/carbon steel drawings often use lower passes (10%-15%) to minimize fatigue.
+                    </span>
+                  </div>
+
+                  {/* Sequence Optimization Mode */}
+                  <div>
+                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-2">
+                      Pass Optimization Mode
+                    </label>
+                    <div className="bg-[#050816] border border-[#1b253b] rounded-xl p-1 flex gap-1 shadow-inner">
+                      <button
+                        type="button"
+                        onClick={() => setSeqOptMode('constant')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-premium ${
+                          seqOptMode === 'constant'
+                            ? 'bg-[#121A2F] text-purple-400 border border-[#2b3a61]/65 shadow-md'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Constant Draft
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSeqOptMode('graduated')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-premium ${
+                          seqOptMode === 'graduated'
+                            ? 'bg-[#121A2F] text-purple-400 border border-[#2b3a61]/65 shadow-md'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Graduated (Optimized)
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1.5 block">
+                      {seqOptMode === 'constant'
+                        ? 'Reduction per pass remains constant. Ideal for uniform materials.'
+                        : 'Gradually reduces draft as wire work-hardens, preventing high-stress wire breakage.'}
                     </span>
                   </div>
                 </div>
