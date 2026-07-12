@@ -484,12 +484,9 @@ export function CalculatorPage() {
               </div>
             </div>
           </div>
-        </div>
-
-
-        {/* Formula Reference Panel */}
+        </div>        {/* Formula Reference Panel */}
         {showFormulaInfo && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4 animate-fadeIn">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 animate-fadeIn">
             {/* Formula 1: Area Reduction */}
             <div className="bg-[#0D1325] border border-[#1b253b]/80 rounded-xl p-5 relative overflow-hidden group hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.06)] transition-premium">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
@@ -497,7 +494,7 @@ export function CalculatorPage() {
                 <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
                   <TrendingDown className="h-5 w-5" />
                 </div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-350">Draft Area Reduction (R)</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-355">Draft Area Reduction (R)</h4>
               </div>
               <div className="bg-[#121A2F]/65 border border-[#2b3a61]/30 p-2.5 rounded font-mono text-xs text-blue-300 mb-3 flex items-center justify-between shadow-inner">
                 <span>R = ((A₁ - A₂) / A₁) × 100%</span>
@@ -538,6 +535,24 @@ export function CalculatorPage() {
               </div>
               <p className="text-slate-400 text-xs leading-relaxed">
                 Specifies deformation intensity. It dictates the speed multiplier (<span className="font-mono text-[10px]">v₂/v₁</span>) at the outlet, dictating capstan speed adjustments.
+              </p>
+            </div>
+
+            {/* Formula 4: Drawing Force & Stress (Sachs' Slab Method) */}
+            <div className="bg-[#0D1325] border border-[#1b253b]/80 rounded-xl p-5 relative overflow-hidden group hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.06)] transition-premium">
+              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-355">Drawing Force & Stress</h4>
+              </div>
+              <div className="bg-[#121A2F]/65 border border-[#2b3a61]/30 p-2.5 rounded font-mono text-[10px] text-amber-300 mb-3 flex flex-col gap-1 shadow-inner">
+                <div className="font-semibold">σ_d = σ_y × ln(A₁/A₂) × (1 + μ·cot(α))</div>
+                <div className="border-t border-[#2b3a61]/30 pt-1.5 font-semibold">Force (F) = A₂ × σ_d</div>
+              </div>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Derived from <strong>Sachs' slab model</strong> of plastic flow. The term <span className="text-slate-300">σ_y·ln(A₁/A₂)</span> represents the ideal homogenous work of plastic deformation. The multiplier <span className="text-slate-300">(1 + μ·cot(α))</span> corrects for frictional shear resistance along the die-wire contact interface at half-angle <span className="font-mono">α</span> under friction <span className="font-mono">μ</span>.
               </p>
             </div>
           </div>
