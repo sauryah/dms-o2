@@ -12,9 +12,15 @@
 
 An industrial-grade, high-performance Local Area Network (LAN) platform for tracking, inventory management, and auditing of manufacturing dies. Designed for low latency, high concurrency shop floor operations, and offline resilience.
 
+## Screenshot
+
+![DMS dashboard screenshot](docs/assets/dms-screenshot.png)
+
 ---
 
 ## Table of Contents
+
+* [Screenshot](#screenshot)
 
 * [Overview & Architecture](#overview--architecture)
 * [Key Features](#key-features)
