@@ -41,39 +41,43 @@ export function ImportPage() {
     errors: any[]
   } | null>(null)
 
-  const checkStatus = async () => {
+  const checkStatus = async (onMount = false) => {
     try {
       const status = await request('/api/go/import-status')
       if (status.status === 'importing') {
         setImportStatus(status)
       } else if (status.status === 'ready') {
-        const result = status.result
-        if (status.dry_run) {
-          setDryRunResult({
-            created: result.created,
-            updated: result.updated,
-            skipped: result.skipped,
-            errors: result.errors || []
-          })
-          setShowPreviewModal(true)
-        } else {
-          setImportResult({
-            created: result.created,
-            updated: result.updated,
-            skipped: result.skipped,
-            errors: result.errors || []
-          })
-          setStatusMsg({
-            type: 'success',
-            text: `Import complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
-          })
+        if (!onMount) {
+          const result = status.result
+          if (status.dry_run) {
+            setDryRunResult({
+              created: result.created,
+              updated: result.updated,
+              skipped: result.skipped,
+              errors: result.errors || []
+            })
+            setShowPreviewModal(true)
+          } else {
+            setImportResult({
+              created: result.created,
+              updated: result.updated,
+              skipped: result.skipped,
+              errors: result.errors || []
+            })
+            setStatusMsg({
+              type: 'success',
+              text: `Import complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
+            })
+          }
         }
         setImportStatus(null)
       } else if (status.status === 'error') {
-        setStatusMsg({
-          type: 'error',
-          text: status.message || 'Import failed.'
-        })
+        if (!onMount) {
+          setStatusMsg({
+            type: 'error',
+            text: status.message || 'Import failed.'
+          })
+        }
         setImportStatus(null)
       } else {
         setImportStatus(null)
@@ -84,12 +88,12 @@ export function ImportPage() {
   }
 
   useEffect(() => {
-    checkStatus()
+    checkStatus(true)
   }, [])
 
   useEffect(() => {
     if (importStatus?.status === 'importing') {
-      const interval = setInterval(checkStatus, 1000)
+      const interval = setInterval(() => checkStatus(false), 1000)
       return () => clearInterval(interval)
     }
   }, [importStatus?.status])

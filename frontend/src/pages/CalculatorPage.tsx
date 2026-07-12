@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useApi } from '../hooks/useApi'
 import { 
   Calculator, 
   Ruler, 
@@ -19,6 +21,9 @@ import {
 } from 'lucide-react'
 
 export function CalculatorPage() {
+  const { request } = useApi()
+  const navigate = useNavigate()
+
   const [activeTab, setActiveTab] = useState<'round' | 'sequence' | 'flat'>('round')
 
   // Tab 1: Round Die State
@@ -223,6 +228,86 @@ export function CalculatorPage() {
   const sequenceResults = getSequenceResults()
   const flatResults = getFlatResults()
 
+  // New Physics variables
+  const [drawSpeed, setDrawSpeed] = useState<string>('2.0')
+  const [dieAngle, setDieAngle] = useState<string>('7.0')
+  const [yieldStrength, setYieldStrength] = useState<string>('70')
+  const [uts, setUts] = useState<string>('220')
+
+  // New Die Matching variables
+  const [matchingDies, setMatchingDies] = useState<Record<number, any[]>>({})
+  const [loadingDies, setLoadingDies] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    if (materialType === 'copper_soft') {
+      setYieldStrength('70')
+      setUts('220')
+    } else if (materialType === 'copper_hard') {
+      setYieldStrength('250')
+      setUts('400')
+    } else if (materialType === 'aluminum') {
+      setYieldStrength('80')
+      setUts('160')
+    } else if (materialType === 'steel_low') {
+      setYieldStrength('250')
+      setUts('450')
+    }
+  }, [materialType])
+
+  const findMatchingDies = async (passNo: number, targetSize: number) => {
+    setLoadingDies(prev => ({ ...prev, [passNo]: true }))
+    try {
+      const sizeMin = (targetSize - 0.05).toFixed(3)
+      const sizeMax = (targetSize + 0.05).toFixed(3)
+      const res = await request(`/api/go/search?die_type=ROUND&size_min=${sizeMin}&size_max=${sizeMax}&limit=3`)
+      setMatchingDies(prev => ({ ...prev, [passNo]: res.results || [] }))
+    } catch (err) {
+      console.error('Failed to fetch matching dies', err)
+    } finally {
+      setLoadingDies(prev => ({ ...prev, [passNo]: false }))
+    }
+  };
+
+  const findMatchingFlatDies = async (passNo: number, width: number, thickness: number) => {
+    setLoadingDies(prev => ({ ...prev, [passNo]: true }))
+    try {
+      const widthMin = (width - 0.1).toFixed(3)
+      const widthMax = (width + 0.1).toFixed(3)
+      const thickMin = (thickness - 0.05).toFixed(3)
+      const thickMax = (thickness + 0.05).toFixed(3)
+      const res = await request(`/api/go/search?die_type=FLAT&width_min=${widthMin}&width_max=${widthMax}&thick_min=${thickMin}&thick_max=${thickMax}&limit=3`)
+      setMatchingDies(prev => ({ ...prev, [passNo]: res.results || [] }))
+    } catch (err) {
+      console.error('Failed to fetch matching flat dies', err)
+    } finally {
+      setLoadingDies(prev => ({ ...prev, [passNo]: false }))
+    }
+  };
+
+  const exportSequenceCSV = () => {
+    if (!sequenceResults) return
+    let csvContent = 'data:text/csv;charset=utf-8,'
+    csvContent += 'Pass,Inlet Diameter (mm),Outlet Diameter (mm),Drawing Ratio,Draft Reduction (%),Elongation (%),Drawing Force (N),Drawing Stress (MPa),Power (kW)\n'
+    sequenceResults.steps.forEach(step => {
+      const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
+      const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
+      const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
+      const mu = 0.07
+      const sigmaD = parseFloat(yieldStrength) * Math.log(stepInArea / stepOutArea) * (1 + mu / Math.tan(alphaRad))
+      const forceN = stepOutArea * sigmaD
+      const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+      
+      csvContent += `${step.draft},${step.inlet.toFixed(3)},${step.outlet.toFixed(3)},${step.drawingRatio.toFixed(3)},${step.reduction.toFixed(1)},${step.elongation.toFixed(1)},${forceN.toFixed(1)},${sigmaD.toFixed(1)},${powerKw.toFixed(2)}\n`
+    })
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', `sizing_sequence_${materialType}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="min-h-screen bg-[#050816] text-slate-105 font-sans selection:bg-blue-500/30 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
@@ -319,6 +404,88 @@ export function CalculatorPage() {
             )}
           </div>
         </div>
+
+        {/* Physics and Power Configuration Panel */}
+        <div className="bg-[#0D1325] border border-[#1b253b] rounded-2xl p-5 shadow-xl space-y-4 animate-fadeIn">
+          <div className="flex items-center gap-2 border-b border-[#1b253b] pb-3">
+            <Zap className="h-4 w-4 text-amber-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading">
+              Physics & Power Calculations Settings
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Drawing Speed (v)
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <input 
+                  type="number" 
+                  step="0.1" 
+                  value={drawSpeed}
+                  onChange={(e) => setDrawSpeed(e.target.value)}
+                  className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3.5 py-2.5 pr-14 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none"
+                />
+                <div className="absolute right-2 top-2 px-1.5 py-0.5 bg-[#121A2F] border border-[#2b3a61]/40 rounded text-slate-400 text-[9px] font-mono shadow-inner">
+                  m/s
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Die Half-Angle (α)
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <input 
+                  type="number" 
+                  step="0.5" 
+                  value={dieAngle}
+                  onChange={(e) => setDieAngle(e.target.value)}
+                  className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3.5 py-2.5 pr-10 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none"
+                />
+                <div className="absolute right-2 top-2 px-1.5 py-0.5 bg-[#121A2F] border border-[#2b3a61]/40 rounded text-slate-400 text-[9px] font-mono shadow-inner">
+                  °
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Yield Strength (σ_y)
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <input 
+                  type="number" 
+                  value={yieldStrength}
+                  onChange={(e) => setYieldStrength(e.target.value)}
+                  className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3.5 py-2.5 pr-14 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none"
+                />
+                <div className="absolute right-2 top-2 px-1.5 py-0.5 bg-[#121A2F] border border-[#2b3a61]/40 rounded text-slate-400 text-[9px] font-mono shadow-inner">
+                  MPa
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                UTS (Strength limit)
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <input 
+                  type="number" 
+                  value={uts}
+                  onChange={(e) => setUts(e.target.value)}
+                  className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3.5 py-2.5 pr-14 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none"
+                />
+                <div className="absolute right-2 top-2 px-1.5 py-0.5 bg-[#121A2F] border border-[#2b3a61]/40 rounded text-slate-400 text-[9px] font-mono shadow-inner">
+                  MPa
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Formula Reference Panel */}
         {showFormulaInfo && (
@@ -864,6 +1031,80 @@ export function CalculatorPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Round Drawing Physics & Die Match Card */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div className="bg-[#121A2F]/90 border border-[#1b253b] p-5 rounded-xl space-y-3 shadow-inner">
+                          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-1.5">
+                            <Zap className="h-4 w-4 text-amber-500" />
+                            Mechanical Tension & Power
+                          </h4>
+                          {(() => {
+                            const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
+                            const mu = 0.07
+                            const sigmaD = parseFloat(yieldStrength) * Math.log(roundResults.inArea / roundResults.outArea) * (1 + mu / Math.tan(alphaRad))
+                            const forceN = roundResults.outArea * sigmaD
+                            const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                            const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
+
+                            return (
+                              <div className="space-y-2.5 font-mono text-xs text-slate-300">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Force:</span>
+                                  <span className="font-bold text-white">{forceN.toFixed(0)} N</span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Stress:</span>
+                                  <span className={`font-bold ${isStressUnsafe ? 'text-rose-400' : 'text-indigo-400'}`}>
+                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(High Tension)'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Power Required:</span>
+                                  <span className="font-bold text-emerald-400">{powerKw.toFixed(2)} kW</span>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+
+                        <div className="bg-[#121A2F]/90 border border-[#1b253b] p-5 rounded-xl space-y-3 shadow-inner">
+                          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-1.5">
+                            <Table className="h-4 w-4 text-blue-500" />
+                            Matched Round Dies in Inventory
+                          </h4>
+                          
+                          {matchingDies[888] ? (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {matchingDies[888].length > 0 ? (
+                                matchingDies[888].map(die => (
+                                  <a
+                                    key={die.die_id}
+                                    href={`#/dies/${die.die_id}`}
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition ${
+                                      die.status === 'AVAILABLE'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                                    }`}
+                                  >
+                                    {die.die_id} ({parseFloat(die.current_size).toFixed(3)}mm)
+                                  </a>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-500 font-mono">No matching round dies in inventory</span>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => findMatchingDies(888, roundResults.outlet)}
+                              disabled={loadingDies[888]}
+                              className="w-full py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold rounded-xl border border-blue-600/30 transition flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              {loadingDies[888] ? 'Searching...' : 'Scan Inventory for Matching Dies'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-20 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
@@ -976,7 +1217,16 @@ export function CalculatorPage() {
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
                     Sizing Sequence telemetry
                   </h3>
-                  <span className="text-[10px] font-mono text-slate-500">MATRIX // MULTI_PASS</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={exportSequenceCSV}
+                      className="px-3 py-1 bg-purple-600/90 hover:bg-purple-500 text-white text-[10px] font-bold rounded-lg transition duration-200 flex items-center gap-1 shadow"
+                    >
+                      <Table className="h-3.5 w-3.5" />
+                      Export CSV
+                    </button>
+                    <span className="text-[10px] font-mono text-slate-500">MATRIX // MULTI_PASS</span>
+                  </div>
                 </div>
 
                 {sequenceResults && sequenceResults.steps.length > 0 ? (
@@ -1022,87 +1272,182 @@ export function CalculatorPage() {
                     </div>
 
                     {/* Sizing sequence list */}
-                    <div className="border border-[#1b253b] rounded-xl overflow-hidden shadow-inner">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-[#121A2F] border-b border-[#1b253b] text-slate-400 font-heading">
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Pass</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Inlet Dia</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-center">Flow</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Outlet Dia</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Drawing Ratio</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Draft Red.</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Elongation</th>
-                              <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Cumulative Red.</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#1b253b]/50 font-mono text-xs text-slate-200">
-                            {sequenceResults.steps.map((step) => {
-                              // Calculate cumulative reduction at this pass
-                              const currentArea = Math.PI * Math.pow(step.outlet / 2, 2)
-                              const startArea = Math.PI * Math.pow(parseFloat(seqStart) / 2, 2)
-                              const cumulativeRed = ((startArea - currentArea) / startArea) * 100
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      <div className="lg:col-span-8 border border-[#1b253b] rounded-xl overflow-hidden shadow-inner">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-[#121A2F] border-b border-[#1b253b] text-slate-400 font-heading">
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Pass</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Inlet Dia</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-center">Flow</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Outlet Dia</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Draft Red.</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Tension (N)</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Stress (MPa)</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Power (kW)</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Matched Die</th>
+                                <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Cum. Red.</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#1b253b]/50 font-mono text-xs text-slate-200">
+                              {sequenceResults.steps.map((step) => {
+                                // Calculate cumulative reduction at this pass
+                                const currentArea = Math.PI * Math.pow(step.outlet / 2, 2)
+                                const startArea = Math.PI * Math.pow(parseFloat(seqStart) / 2, 2)
+                                const cumulativeRed = ((startArea - currentArea) / startArea) * 100
 
-                              const limit = getMaterialLimit()
-                              const isStepUnsafe = step.reduction > limit
+                                const limit = getMaterialLimit()
+                                const isStepUnsafe = step.reduction > limit
 
-                              return (
-                                <tr key={step.draft} className={`transition-colors duration-150 group ${isStepUnsafe ? 'bg-rose-950/15 hover:bg-rose-950/25 border-l-2 border-l-rose-500' : 'hover:bg-[#121A2F]/40'}`}>
-                                  <td className="p-3">
-                                    <span className={`w-5.5 h-5.5 rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${isStepUnsafe ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-355 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
-                                      #{step.draft}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-slate-300">
-                                    {step.inlet.toFixed(3)}
-                                    <span className="text-[9px] text-slate-500 ml-1">mm</span>
-                                  </td>
-                                  <td className="p-3 text-center">
-                                    <div className="inline-flex items-center justify-center w-5.5 h-5.5 rounded bg-[#050816] border border-[#1b253b] shadow-inner">
-                                      <ArrowRight className="h-3 w-3 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-premium" />
-                                    </div>
-                                  </td>
-                                  <td className="p-3 font-bold text-white">
-                                    {step.outlet.toFixed(3)}
-                                    <span className="text-[9px] text-slate-400 ml-1 font-normal">mm</span>
-                                  </td>
-                                  <td className="p-3 text-right text-indigo-400">
-                                    {step.drawingRatio.toFixed(3)}
-                                  </td>
-                                  {(() => {
-                                    const limit = getMaterialLimit()
-                                    const isStepUnsafe = step.reduction > limit
-                                    return (
-                                      <td className={`p-3 text-right ${isStepUnsafe ? 'text-rose-400 font-bold' : 'text-blue-400'}`}>
-                                        <div className="flex items-center justify-end gap-1.5">
-                                          {isStepUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
-                                          <span>{step.reduction.toFixed(1)}%</span>
-                                        </div>
-                                      </td>
-                                    )
-                                  })()}
-                                  <td className="p-3 text-right text-purple-450">
-                                    +{step.elongation.toFixed(1)}%
-                                  </td>
-                                  <td className="p-3 text-right">
-                                    <div className="flex items-center justify-end gap-2.5">
-                                      <div className="bg-[#050816] h-2 w-16 rounded-full overflow-hidden border border-[#1b253b] relative shadow-inner">
-                                        <div
-                                          className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300"
-                                          style={{ width: `${cumulativeRed}%` }}
-                                        />
-                                      </div>
-                                      <span className="font-semibold text-slate-300 text-[10px] tracking-tight">
-                                        {cumulativeRed.toFixed(1)}%
+                                // Calculate Physics values
+                                const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
+                                const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
+                                const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
+                                const mu = 0.07
+                                const sigmaD = parseFloat(yieldStrength) * Math.log(stepInArea / stepOutArea) * (1 + mu / Math.tan(alphaRad))
+                                const forceN = stepOutArea * sigmaD
+                                const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                                const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
+
+                                return (
+                                  <tr key={step.draft} className={`transition-colors duration-150 group ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950/15 hover:bg-rose-950/25 border-l-2 border-l-rose-500' : 'hover:bg-[#121A2F]/40'}`}>
+                                    <td className="p-3">
+                                      <span className={`w-5.5 h-5.5 rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-355 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
+                                        #{step.draft}
                                       </span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
+                                    </td>
+                                    <td className="p-3 text-slate-300">
+                                      {step.inlet.toFixed(3)}
+                                      <span className="text-[9px] text-slate-500 ml-1">mm</span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <div className="inline-flex items-center justify-center w-5.5 h-5.5 rounded bg-[#050816] border border-[#1b253b] shadow-inner">
+                                        <ArrowRight className="h-3 w-3 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-premium" />
+                                      </div>
+                                    </td>
+                                    <td className="p-3 font-bold text-white">
+                                      {step.outlet.toFixed(3)}
+                                      <span className="text-[9px] text-slate-400 ml-1 font-normal">mm</span>
+                                    </td>
+                                    <td className={`p-3 text-right ${isStepUnsafe ? 'text-rose-400 font-bold' : 'text-blue-400'}`}>
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        {isStepUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
+                                        <span>{step.reduction.toFixed(1)}%</span>
+                                      </div>
+                                    </td>
+                                    <td className="p-3 text-right text-indigo-300">
+                                      {forceN.toFixed(0)} <span className="text-[9px] text-slate-500">N</span>
+                                    </td>
+                                    <td className={`p-3 text-right ${isStressUnsafe ? 'text-rose-450 font-bold' : 'text-indigo-400'}`}>
+                                      <div className="flex items-center justify-end gap-1">
+                                        {isStressUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
+                                        <span>{sigmaD.toFixed(1)} <span className="text-[9px] text-slate-500 font-normal">MPa</span></span>
+                                      </div>
+                                    </td>
+                                    <td className="p-3 text-right text-emerald-400 font-semibold">
+                                      {powerKw.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">kW</span>
+                                    </td>
+                                    <td className="p-3">
+                                      {matchingDies[step.draft] ? (
+                                        <div className="flex flex-col gap-1">
+                                          {matchingDies[step.draft].length > 0 ? (
+                                            matchingDies[step.draft].map(die => (
+                                              <a
+                                                key={die.die_id}
+                                                href={`#/dies/${die.die_id}`}
+                                                className={`inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border transition ${
+                                                  die.status === 'AVAILABLE'
+                                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                                                    : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                                                }`}
+                                              >
+                                                {die.die_id} ({parseFloat(die.current_size).toFixed(3)}mm)
+                                              </a>
+                                            ))
+                                          ) : (
+                                            <span className="text-[10px] text-slate-500 font-mono">No matching dies</span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => findMatchingDies(step.draft, step.outlet)}
+                                          disabled={loadingDies[step.draft]}
+                                          className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-[10px] font-bold rounded border border-blue-600/30 transition flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                          {loadingDies[step.draft] ? 'Searching...' : 'Find Die'}
+                                        </button>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      <div className="flex items-center justify-end gap-2.5">
+                                        <div className="bg-[#050816] h-2 w-16 rounded-full overflow-hidden border border-[#1b253b] relative shadow-inner">
+                                          <div
+                                            className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300"
+                                            style={{ width: `${cumulativeRed}%` }}
+                                          />
+                                        </div>
+                                        <span className="font-semibold text-slate-300 text-[10px] tracking-tight">
+                                          {cumulativeRed.toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* SVG Visualizer on the right */}
+                      <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#121A2F] border border-[#1b253b] p-5 rounded-xl space-y-4 shadow-inner animate-fadeIn">
+                          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-2">
+                            <Maximize2 className="h-4 w-4 text-blue-500" />
+                            Draft Reduction Visualizer
+                          </h4>
+                          <div className="flex items-center justify-center bg-[#050816] rounded-lg p-6 border border-[#1b253b]/60 relative overflow-hidden">
+                            <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-[0_0_12px_rgba(59,130,246,0.15)]">
+                              <defs>
+                                <pattern id="svg-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1b253b" strokeWidth="0.5" strokeOpacity="0.5" />
+                                </pattern>
+                              </defs>
+                              <rect width="100%" height="100%" fill="url(#svg-grid)" />
+                              
+                              {/* Draw outer circle (start diameter) */}
+                              <circle cx="100" cy="100" r={80} fill="none" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                              
+                              {/* Draw circles for each step */}
+                              {sequenceResults.steps.map((step, idx) => {
+                                const maxDia = parseFloat(seqStart)
+                                const currentRadius = (step.outlet / maxDia) * 80
+                                const isLast = idx === sequenceResults.steps.length - 1
+                                
+                                return (
+                                  <circle
+                                    key={step.draft}
+                                    cx="100"
+                                    cy="100"
+                                    r={currentRadius}
+                                    fill={isLast ? 'rgba(59,130,246,0.15)' : 'none'}
+                                    stroke={isLast ? '#3b82f6' : `rgba(168, 85, 247, ${0.3 + (idx / sequenceResults.steps.length) * 0.7})`}
+                                    strokeWidth={isLast ? 2 : 1}
+                                    className="transition-all duration-500 ease-in-out"
+                                  />
+                                )
+                              })}
+                              
+                              {/* Core center point */}
+                              <circle cx="100" cy="100" r="2" fill="#3b82f6" />
+                            </svg>
+                            
+                            <div className="absolute bottom-2 right-2 text-[9px] font-mono text-slate-500">
+                              SCALE: 1px = {(parseFloat(seqStart) / 160).toFixed(4)} mm
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1481,6 +1826,80 @@ export function CalculatorPage() {
                               {flatResults.aspectOut.toFixed(2)}:1
                             </span>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Flat Drawing Physics & Die Match Card */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div className="bg-[#121A2F]/90 border border-[#1b253b] p-5 rounded-xl space-y-3 shadow-inner">
+                          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-1.5">
+                            <Zap className="h-4 w-4 text-amber-500" />
+                            Mechanical Tension & Power
+                          </h4>
+                          {(() => {
+                            const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
+                            const mu = 0.07
+                            const sigmaD = parseFloat(yieldStrength) * Math.log(flatResults.inArea / flatResults.outArea) * (1 + mu / Math.tan(alphaRad))
+                            const forceN = flatResults.outArea * sigmaD
+                            const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                            const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
+
+                            return (
+                              <div className="space-y-2.5 font-mono text-xs text-slate-300">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Force:</span>
+                                  <span className="font-bold text-white">{forceN.toFixed(0)} N</span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Stress:</span>
+                                  <span className={`font-bold ${isStressUnsafe ? 'text-rose-400' : 'text-indigo-400'}`}>
+                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(High Tension)'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Power Required:</span>
+                                  <span className="font-bold text-emerald-400">{powerKw.toFixed(2)} kW</span>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+
+                        <div className="bg-[#121A2F]/90 border border-[#1b253b] p-5 rounded-xl space-y-3 shadow-inner">
+                          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-1.5">
+                            <Table className="h-4 w-4 text-blue-500" />
+                            Matched Flat Dies in Inventory
+                          </h4>
+                          
+                          {matchingDies[999] ? (
+                            <div className="flex flex-wrap gap-2 pt-1 font-mono">
+                              {matchingDies[999].length > 0 ? (
+                                matchingDies[999].map(die => (
+                                  <a
+                                    key={die.die_id}
+                                    href={`#/dies/${die.die_id}`}
+                                    className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition ${
+                                      die.status === 'AVAILABLE'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                                    }`}
+                                  >
+                                    {die.die_id} ({parseFloat(die.width || 0).toFixed(2)}x{parseFloat(die.thickness || 0).toFixed(2)}mm)
+                                  </a>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-500 font-mono">No matching flat dies in inventory</span>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => findMatchingFlatDies(999, parseFloat(flatOutWidth), parseFloat(flatOutThick))}
+                              disabled={loadingDies[999]}
+                              className="w-full py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold rounded-xl border border-blue-600/30 transition flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              {loadingDies[999] ? 'Searching...' : 'Scan Inventory for Matching Dies'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </>
