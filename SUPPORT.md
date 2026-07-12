@@ -1,38 +1,39 @@
 # Support Guide
 
-We want to ensure you have a smooth experience using the Die Management System (DMS). Here is how you can get support:
+This document outlines the support channels available for DMS-O2. Whether you are an open-source user or an enterprise customer, choose the appropriate support channel below.
 
 ---
 
-## 📖 Troubleshooting First
+## 1. Documentation & Self-Help
 
-Before reaching out, check the following resources:
-1.  **Troubleshooting Table**: Review the common issues listed in the [README.md](README.md#️-troubleshooting-guide).
-2.  **Architecture Specifications**: Review the [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) to understand backend endpoints, Go Search logic, and Redis caching behaviors.
+Before opening a support request, please consult the available documentation:
 
----
-
-## 🙋 Open a Github Issue
-
-If you encounter a bug or need help:
-*   Search current [Issues](https://github.com/your-username/dms/issues) to see if it has already been reported.
-*   If not, open a new Issue using the appropriate bug template.
-*   **Be Descriptive**: Include logs, environment configuration, database versions, and steps to reproduce.
+* **Architecture Specifications:** See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for data flows, API layouts, and cache invalidation strategies.
+* **Docker Deployment Guide:** See [DOCKER.md](DOCKER.md) for multi-OS production setups, backup cron configurations, and quick starts.
+* **Troubleshooting Guide:** Check the [README.md Troubleshooting section](README.md#-troubleshooting) for common issues and fixes.
 
 ---
 
-## ⚙️ Direct Admin Actions
+## 2. Community Support
 
-If services or indices fall out of sync:
-*   **Search Indices**: Sync Meilisearch by running:
-    ```bash
-    docker compose exec django python manage.py sync_search
-    ```
-*   **Prune Idle Sessions**: Force prune idle sessions by running:
-    ```bash
-    docker compose exec django python manage.py expire_sessions
-    ```
-*   **Restore Database**: Revert to a stable state using the backup script:
-    ```bash
-    ./dms-backup.sh restore <backup_name>.dump
-    ```
+For open-source deployments, support is community-driven:
+
+* **GitHub Discussions:** Ask questions, share ideas, and showcase integrations.
+* **GitHub Issues:** Search existing issues or open a new one if you have identified a verified bug. 
+  * *Note: When reporting bugs, please provide logs, container outputs, and reproducible environment configurations.*
+
+---
+
+## 3. Commercial & Enterprise Support
+
+If your organization requires guaranteed uptime, SLAs, or hands-on assistance, commercial support is available:
+
+### Supported Services
+* **Uptime SLAs:** Guaranteed response times for production-down incidents.
+* **Custom Customizations:** Specialized assistance with custom CAD vector node mappings, active directory integration, or shop floor hardware API connectors.
+* **Migration Support:** Assistance migrating legacy spreadsheets and databases into DMS-O2.
+
+### Contact Information
+For commercial support inquiries, custom SLAs, or consulting quotes:
+* **Email:** support@sauryah.github.io *(Placeholder — replace with corporate support address)*
+* **Commercial Details:** Review our [Commercial Licensing Guide](LICENSE-COMMERCIAL.md) for more details.

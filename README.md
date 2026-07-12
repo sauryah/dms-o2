@@ -1,15 +1,16 @@
-# DMS
+# DMS-O2
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](backend)
-[![Go Version](https://img.shields.io/badge/go-1.21-blue.svg)](go-api)
-[![React Version](https://img.shields.io/badge/react-18-blue.svg)](frontend)
+[![GitHub Release](https://img.shields.io/github/v/release/sauryah/dms-o2?style=flat-square)](https://github.com/sauryah/dms-o2/releases)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=flat-square)](LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/sauryah/dms-backend?style=flat-square)](https://hub.docker.com/r/sauryah/dms-backend)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/sauryah/dms-o2/docker-publish.yml?branch=main&style=flat-square)](https://github.com/sauryah/dms-o2/actions)
+[![Python Version](https://img.shields.io/badge/Python-3.11-blue.svg?style=flat-square&logo=python)](backend)
+[![Go Version](https://img.shields.io/badge/Go-1.22-blue.svg?style=flat-square&logo=go)](go-api)
+[![React Version](https://img.shields.io/badge/React-18-blue.svg?style=flat-square&logo=react)](frontend)
+[![GitHub Stars](https://img.shields.io/github/stars/sauryah/dms-o2?style=flat-square)](https://github.com/sauryah/dms-o2/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/sauryah/dms-o2?style=flat-square)](https://github.com/sauryah/dms-o2/network/members)
 
 An industrial-grade, high-performance Local Area Network (LAN) platform for tracking, inventory management, and auditing of manufacturing dies. Designed for low latency, high concurrency shop floor operations, and offline resilience.
-
-## Screenshot
-
-![DMS dashboard screenshot](docs/assets/dms-screenshot.png)
 
 ---
 
@@ -18,24 +19,27 @@ An industrial-grade, high-performance Local Area Network (LAN) platform for trac
 * [Overview & Architecture](#-overview--architecture)
 * [Key Features](#-key-features)
 * [Tech Stack](#-tech-stack)
-* [Installation & Quick Start](#-installation--quick-start)
+* [Quick Start](#-quick-start)
 * [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
-* [Usage Guide](#-usage-guide)
-* [Configuration](#-configuration)
+* [Configuration Reference](#-configuration-reference)
 * [Project Structure](#-project-structure)
+* [Usage Guide](#-usage-guide)
 * [Deployment & Upgrades](#-deployment--upgrades)
 * [Backup & Recovery](#-backup--recovery)
-* [Contributing](#-contributing)
-* [License & Commercial Licensing](#-license--commercial-licensing)
-* [Credits](#-credits)
+* [Security](#-security)
+* [Roadmap](#-roadmap)
 * [FAQ](#-faq)
 * [Troubleshooting](#-troubleshooting)
+* [Licensing](#-licensing)
+* [Contributing](#-contributing)
+* [Support](#-support)
+* [Credits](#-credits)
 
 ---
 
 ## 💡 Overview & Architecture
 
-DMS is built as a microservice-oriented application optimized to deliver sub-millisecond read latency over local area networks (LAN). It uses a hybrid query execution design: fuzzy text searches are routed to Meilisearch, and numeric range queries run directly on PostgreSQL.
+DMS-O2 is built as a microservice-oriented application optimized to deliver sub-millisecond read latency over local area networks (LAN). It uses a hybrid query execution design: fuzzy text searches are routed to Meilisearch, and numeric range queries run directly on PostgreSQL.
 
 ```mermaid
 graph TD
@@ -81,7 +85,7 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **Frontend** | React, Vite, Vanilla CSS | React 18, Vite | Single Page Application |
 | **Backend API** | Python, Django, DRF | Python 3.11, Django 4.2 | Relational API, RBAC, Core logic |
-| **Search API** | Go (Golang) | 1.21 / 1.22 | High-performance read-only queries |
+| **Search API** | Go (Golang) | 1.22 | High-performance read-only queries |
 | **Databases** | PostgreSQL, Meilisearch | Postgres 18, Meili v1.7 | Relational storage & Fuzzy text index |
 | **Caching** | Redis | 7 (Alpine) | Search query result cache |
 | **Ingress/Proxy** | Traefik | v3 | Ingress, Routing, and TLS termination |
@@ -89,27 +93,23 @@ graph TD
 
 ---
 
-## 🏁 Installation & Quick Start
+## 🏁 Quick Start
 
 ### Prerequisites
-
 * **Docker** & **Docker Compose** (V2+)
 * **Node.js** (v18+) & **npm** (only required for local developer running)
 * **Python 3.11** (only required for local Django execution)
 
 ### Automated Setup
-
-The system provides a automated installer that copies settings, builds containers, seeds database structures, and runs search index updates.
+The system provides an automated installer that copies settings, builds containers, seeds database structures, and runs search index updates.
 
 #### Linux & macOS
-
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
 #### Windows (PowerShell)
-
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ./setup.ps1
@@ -120,35 +120,26 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 > On completion, the setup scripts output your LAN IP address (e.g., `http://192.168.1.15`). Any device on the same local network can access the frontend dashboard directly.
 
 ### Manual Setup (Alternative)
-
 1. **Environment Settings**:
-
    ```bash
    cp .env.example .env
    ```
-
 2. **Start Services**:
-
    ```bash
    docker compose up -d --build
    ```
-
 3. **Run Database Migrations & Seeds**:
-
    ```bash
    docker compose exec django python manage.py migrate
    docker compose exec django python manage.py create_root_user
    ```
-
 4. **Sync Search Indexes**:
    Execute the index synchronization CLI tool:
-
    ```bash
    docker compose exec django python manage.py sync_search
    ```
 
 ### Access Interfaces
-
 * **Frontend SPA**: [http://localhost](http://localhost)
 * **Django Admin Console**: [http://localhost/admin/](http://localhost/admin/)
 * **REST API Root**: [http://localhost/api/](http://localhost/api/)
@@ -158,7 +149,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## 🐳 Deploy with Docker (No Source Code)
 
-Don't want to clone the repo? Deploy DMS instantly using **pre-built Docker images**:
+You can deploy DMS-O2 instantly using **pre-built Docker images** without cloning this repository:
 
 ```bash
 mkdir dms && cd dms
@@ -168,15 +159,11 @@ cp .env.example .env   # ← edit passwords & keys!
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-The app will be live at `http://localhost` in ~30 seconds.
-
-Images are available on **Docker Hub** (`sauryah/dms-backend`, `sauryah/dms-frontend`, `sauryah/dms-go-api`) and **GitHub Container Registry**.
-
-> 📖 **Full guide**: [DOCKER.md](DOCKER.md) — configuration, version pinning, backups, troubleshooting, and more.
+For detailed deployment instructions, including Windows PowerShell/Command Prompt scripts, automated backups, and version pinning, see the [Docker Deployment Guide](DOCKER.md).
 
 ---
 
-## ⚙ Configuration
+## ⚙️ Configuration Reference
 
 System variables are managed inside the `.env` file located in the project root.
 
@@ -195,7 +182,7 @@ System variables are managed inside the `.env` file located in the project root.
 | `ROOT_USERNAME` | `root` | Superuser username |
 | `ROOT_PASSWORD` | `root123` | Default administrator password |
 | `SESSION_IDLE_TIMEOUT_MINUTES` | `30` | Minutes before idle session expires |
-| `SESSION_ABSOLUTE_TIMEOUT_HOURS` | `12` | Absolute hours before user is forced to log in again |
+| `SESSION_ABSOLUTE_TIMEOUT_HOURS`| `12` | Absolute hours before user is forced to log in again |
 
 ---
 
@@ -232,41 +219,29 @@ dms-o2/
 ## 🛠 Usage Guide
 
 ### Common Container Tasks
-
 * **Start the container stack**:
-
   ```bash
   docker compose up -d
   ```
-
 * **Stop the stack (without deleting data)**:
-
   ```bash
   docker compose stop
   ```
-
 * **Bring the stack down (cleans containers and networks)**:
-
   ```bash
   docker compose down
   ```
-
 * **View container logs**:
-
   ```bash
   docker compose logs -f
   ```
-
 * **Database Interactive CLI**:
-
   ```bash
   docker compose exec db psql -U dms_user -d dms
   ```
 
 ### Keyboard Navigation
-
 Within the main navigation search bar, the UI supports:
-
 * `ArrowDown` / `ArrowUp` to traverse list results.
 * `Tab` / `Shift+Tab` to focus fields.
 * `Enter` to select highlighted inventory records.
@@ -276,19 +251,15 @@ Within the main navigation search bar, the UI supports:
 ## 🚀 Deployment & Upgrades
 
 Production-optimized assets use a high-concurrency setup:
-
 1. **Nginx**: Serves compiled React assets with Gzip compression.
 2. **Gunicorn**: Serves the Django backend WSGI server.
 3. **Go Endpoint**: Bypasses Django entirely for high-speed read operations on `/api/go/*`.
 
 ### Production Deployment Script
-
 To deploy upgrades without downtime, use the integrated deployment automation script:
-
 ```bash
 ./deploy.sh
 ```
-
 This script pulls updates, verifies configuration files, builds changed containers, runs SQL migrations, and clears legacy docker caches.
 
 ---
@@ -298,71 +269,55 @@ This script pulls updates, verifies configuration files, builds changed containe
 A scheduled database container performs compressed dumps nightly at **2:00 AM** and persists them to the host folder `./backups/` with a **14-day retention cycle**.
 
 ### Command Utility (`dms-backup.sh`)
-
 * **Create a manual backup**:
-
   ```bash
   ./dms-backup.sh backup
   ```
-
 * **List all local backups**:
-
   ```bash
   ./dms-backup.sh list
   ```
-
 * **Restore the database**:
-
   ```bash
   ./dms-backup.sh restore <backup_filename.dump>
   ```
-
   *Note: Restoring a database will overwrite current records and trigger an automatic rebuild of Meilisearch search indexes.*
 
 ---
 
-## 🤝 Contributing
+## 🔒 Security
 
-Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, testing workflows, and PR processes.
-
----
-
-## 📄 License & Commercial Licensing
-
-DMS is dual-licensed under the following terms:
-
-1. **Open Source**: DMS is licensed under the strong copyleft [GNU AGPL v3](LICENSE) license. Anyone can use, modify, and distribute this software for free, provided that all modifications and backend source codes are also made open source under the AGPL (even when run as a network service).
-2. **Commercial License**: If you wish to use DMS in a commercial/proprietary environment without being bound by the copyleft obligations of the AGPL (e.g., keeping your custom modifications or factory configurations private), please contact the author to acquire a commercial license.
+DMS-O2 is maintained with security as a priority. If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting and private communication channels.
 
 ---
 
-## 👥 Credits
+## 🗺️ Roadmap
 
-Developed for industrial manufacturing shop floors by Sahil Pradhan.
+The current priorities and roadmap items for DMS-O2 include:
+* **CAD Engine Extensions:** Direct import support for DWG/DXF dimensional schematics.
+* **Expanded Analytics:** Graphical historical wear trends and predictive cycle life tracking.
+* **Multi-Warehouse Syncing:** Inter-facility inventory transfers with audit chain validation.
+* **ScyllaDB Migration:** Evaluation of high-throughput timeseries storage for die history logs.
 
 ---
 
 ## ❓ FAQ
 
 ### How is concurrent session eviction handled?
-
 DMS enforces a single active session policy. When a user signs in from a different terminal or browser session, the previous session is immediately invalidated (returning `401 Unauthorized` on old requests).
 
 ### How do I re-sync search indexes manually?
-
 If database records and Meilisearch indexes are out of sync, trigger a full re-index run:
-
 ```bash
 docker compose exec django python manage.py sync_search
 ```
 
 ### Can unauthenticated users move dies?
-
 No. Moving dies, adding new records, or editing states requires **Admin** or **Root** permissions. Unauthenticated users are strictly limited to search and view actions.
 
 ---
 
-## ⚠ Troubleshooting
+## ⚠️ Troubleshooting
 
 | Symptoms | Cause | Solution |
 | :--- | :--- | :--- |
@@ -372,3 +327,34 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **401 Unauthorized loops** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
 | **Dies missing from sidebar tree / showing 0 count** | Database has scaled beyond the default pagination limit | Increase the default `pageSize` state variable in `frontend/src/features/inventory/hooks/useInventoryState.ts` and rebuild the frontend: `docker compose up -d --build frontend`. |
 | **Cannot connect/access from phone or external device** | Host IP not allowed in Django, Windows Network Category is Public, or Firewall blocking Docker Backend. | Add the laptop's network IP address or `*` to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart containers. On Windows, set your network profile to **Private** in admin PowerShell: `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private`. Update Docker's inbound rules to apply to all profiles. |
+
+---
+
+## 📄 Licensing & Compliance
+
+DMS-O2 is a dual-licensed project designed to offer flexibility for both open-source development and proprietary commercial use:
+
+1. **Open Source (GNU AGPL-3.0)**: Free to run, copy, modify, and distribute. However, if you modify the software and host it over a network, you **must make your modifications publicly available** under the AGPL-3.0. Review the full terms in the [LICENSE](LICENSE) file.
+2. **Commercial License**: If your organization has policies against AGPL software, or you wish to make proprietary modifications without disclosing your source code, you must obtain a commercial license. Review details in [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) or contact the maintainers.
+
+For detailed intellectual property and branding rules, see:
+* **Copyright Details:** [COPYRIGHT.md](COPYRIGHT.md)
+* **Trademark Guidelines:** [TRADEMARK.md](TRADEMARK.md)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup instructions, testing workflows, and information on our Contributor License Agreement (CLA) that permits dual-licensing of your changes.
+
+---
+
+## 🙋 Support
+
+For deployment support, bug reports, and customization help, check our [Support Guide](SUPPORT.md) to choose the best community or commercial support channel.
+
+---
+
+## 👥 Credits
+
+Developed for industrial manufacturing shop floors by Sahil Pradhan.
