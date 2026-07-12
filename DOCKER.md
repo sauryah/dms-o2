@@ -7,7 +7,7 @@ Deploy DMS-O2 anywhere using pre-built Docker images — **no source code requir
 ## Prerequisites
 
 | Requirement | Minimum |
-|-------------|---------|
+| :--- | :--- |
 | Docker Engine | 24+ |
 | Docker Compose | V2 (included with Docker Desktop) |
 | RAM | 2 GB |
@@ -22,6 +22,7 @@ Deploy DMS-O2 anywhere using pre-built Docker images — **no source code requir
 Choose the commands for your operating system to set up your directory and download the configuration files:
 
 #### Linux & macOS (Bash/Zsh)
+
 ```bash
 # Create and enter the directory
 mkdir dms && cd dms
@@ -35,6 +36,7 @@ cp .env.example .env
 ```
 
 #### Windows (PowerShell)
+
 ```powershell
 # Create and enter the directory
 New-Item -ItemType Directory -Path dms
@@ -49,6 +51,7 @@ Copy-Item .env.example .env
 ```
 
 #### Windows (Command Prompt / cmd.exe)
+
 ```cmd
 :: Create and enter the directory
 mkdir dms && cd dms
@@ -69,13 +72,13 @@ Open the generated `.env` file in your favorite text editor (e.g., VS Code, Note
 
 > [!CAUTION]
 > **You MUST change these values before running in production:**
-> *   `POSTGRES_PASSWORD` — Use a strong, random password.
-> *   `ROOT_PASSWORD` — Initial admin panel password.
-> *   `DJANGO_SECRET_KEY` — Generate a secure key:
->     *   **Cross-platform (Python):** `python -c "import secrets; print(secrets.token_urlsafe(64))"`
-> *   `MEILI_MASTER_KEY` — Generate a secure key:
->     *   **Linux/macOS:** `openssl rand -base64 32`
->     *   **Windows (PowerShell):** `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 } -As Byte))`
+> * `POSTGRES_PASSWORD` — Use a strong, random password.
+> * `ROOT_PASSWORD` — Initial admin panel password.
+> * `DJANGO_SECRET_KEY` — Generate a secure key:
+>   * **Cross-platform (Python):** `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+> * `MEILI_MASTER_KEY` — Generate a secure key:
+>   * **Linux/macOS:** `openssl rand -base64 32`
+>   * **Windows (PowerShell):** `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 } -As Byte))`
 
 ---
 
@@ -87,7 +90,7 @@ Run this command from inside your `dms` directory:
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-The application will be available at **http://localhost** once all services are healthy (usually ~30 seconds).
+The application will be available at **[http://localhost](http://localhost)** once all services are healthy (usually ~30 seconds).
 
 ---
 
@@ -132,7 +135,7 @@ graph TB
 ## Available Images
 
 | Component | Docker Hub | GHCR | Description |
-|-----------|-----------|------|-------------|
+| :--- | :--- | :--- | :--- |
 | Backend | `sauryah/dms-backend` | `ghcr.io/sauryah/dms-o2/backend` | Django API + Celery worker |
 | Frontend | `sauryah/dms-frontend` | `ghcr.io/sauryah/dms-o2/frontend` | React SPA served via Nginx |
 | Go API | `sauryah/dms-go-api` | `ghcr.io/sauryah/dms-o2/go-api` | High-performance search & SSE |
@@ -144,7 +147,7 @@ All images are built for **linux/amd64** and **linux/arm64**.
 ## Configuration Reference
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| :--- | :--- | :--- |
 | `POSTGRES_DB` | `dms` | Database name |
 | `POSTGRES_USER` | `dms_user` | Database username |
 | `POSTGRES_PASSWORD` | *(change me)* | Database password |
@@ -195,14 +198,14 @@ docker image prune -f
 
 ---
 
-## Backup & Restore
+## Backup & Recovery
 
 ### Automatic Backups
 
 A built-in backup service runs **daily at 2:00 AM** (server time), creating compressed database dumps in a Docker volume (`dms_backups`).
 
-- Backups are stored as `dms_YYYYMMDD_HHMMSS.sql.gz`
-- Only the **last 30 backups** are retained automatically
+* Backups are stored as `dms_YYYYMMDD_HHMMSS.sql.gz`
+* Only the **last 30 backups** are retained automatically
 
 ### Manual Backup
 
@@ -246,6 +249,7 @@ netstat -ano | findstr :80
 ```
 
 Or change the Traefik port in the compose file:
+
 ```yaml
 traefik:
   ports:
@@ -301,7 +305,7 @@ image: sauryah/dms-backend:${DMS_VERSION:-latest}
 ```
 
 | Service | GHCR (default) | Docker Hub |
-|---------|----------------|------------|
+| :--- | :--- | :--- |
 | backend | `ghcr.io/sauryah/dms-o2/backend` | `sauryah/dms-backend` |
 | frontend | `ghcr.io/sauryah/dms-o2/frontend` | `sauryah/dms-frontend` |
 | go-api | `ghcr.io/sauryah/dms-o2/go-api` | `sauryah/dms-go-api` |
