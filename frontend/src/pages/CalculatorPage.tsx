@@ -486,7 +486,8 @@ export function CalculatorPage() {
           </div>
         </div>        {/* Formula Reference Panel */}
         {showFormulaInfo && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 animate-fadeIn">
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 animate-fadeIn">
             {/* Formula 1: Area Reduction */}
             <div className="bg-[#0D1325] border border-[#1b253b]/80 rounded-xl p-5 relative overflow-hidden group hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.06)] transition-premium">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
@@ -559,7 +560,72 @@ export function CalculatorPage() {
               </div>
             </div>
           </div>
-        )}
+
+          {/* Variable Nomenclature & Legend */}
+          <div className="mt-6 bg-[#0D1325] border border-[#1b253b]/85 rounded-xl p-5 shadow-xl space-y-4 animate-fadeIn">
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading border-b border-[#1b253b] pb-2 flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-blue-400" />
+              Nomenclature & Variable Glossary
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs font-mono">
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-blue-400 font-bold">A₁ / A₂</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  Inlet (Starting) and Outlet (Finished) cross-sectional areas of the wire/strip in <strong>mm²</strong>.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-cyan-400 font-bold">L₁ / L₂</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  Starting and finished lengths of the wire in <strong>meters</strong> (conserved via volume: A₁L₁ = A₂L₂).
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-emerald-400 font-bold">v₁ / v₂</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  Wire speed entering (v₁) and leaving (v₂) the die in <strong>m/s</strong>. v₂ increases as the wire gets thinner.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-amber-400 font-bold">σ_d (Drawing Stress)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  The internal pull stress in <strong>MPa</strong>. Must be lower than the yield strength to prevent wire breaking.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-amber-400 font-bold">σ_y (Yield Strength)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  The plastic deformation threshold in <strong>MPa</strong>. The stress where metal begins to permanently stretch/flow.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-purple-400 font-bold">μ (Friction Coefficient)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  Dimensionless value representing stickiness/resistance between wire and die walls. Standard is <strong>0.07</strong>.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-purple-400 font-bold">α (Die Half-Angle)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  Half of the total entry cone angle in <strong>degrees</strong>. Dictates the steepness of the funnel taper.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-rose-400 font-bold">F (Drawing Force / Tension)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  The total force in <strong>Newtons (N)</strong> required to pull the wire. Calculated as: F = A₂ × σ_d.
+                </div>
+              </div>
+              <div className="space-y-1 bg-[#121A2F]/50 border border-[#2b3a61]/25 p-3 rounded-lg">
+                <div className="text-indigo-400 font-bold">λ (Drawing Ratio / Elongation Factor)</div>
+                <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                  The ratio of area reduction and speed increase (A₁/A₂ or v₂/v₁). Shows how much longer/faster the wire becomes.
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
         {/* Tab Selection Segmented Control */}
         <div className="bg-[#0D1325] border border-[#1b253b]/85 rounded-xl p-1 flex flex-col sm:flex-row gap-1 max-w-3xl mx-auto shadow-inner">
