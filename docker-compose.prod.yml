@@ -101,6 +101,7 @@ services:
     command: celery -A dms worker -l info --concurrency=2
     volumes:
       - ./backend:/app
+      - ./backups:/backups
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -235,8 +236,16 @@ services:
       - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-365}
     entrypoint: |
       sh -c '
-      echo "0 2 * * * /scripts/backup_db.sh" > /etc/crontabs/root
-      echo "0 3 * * * /scripts/prune_history.sh >> /proc/1/fd/1 2>&1" >> /etc/crontabs/root
+      echo "export PATH=\"$$PATH\"" > /env.sh
+      echo "export POSTGRES_DB=\"$$POSTGRES_DB\"" >> /env.sh
+      echo "export POSTGRES_USER=\"$$POSTGRES_USER\"" >> /env.sh
+      echo "export POSTGRES_PASSWORD=\"$$POSTGRES_PASSWORD\"" >> /env.sh
+      echo "export POSTGRES_HOST=\"$$POSTGRES_HOST\"" >> /env.sh
+      echo "export POSTGRES_PORT=\"$$POSTGRES_PORT\"" >> /env.sh
+      echo "export HISTORY_RETENTION_DAYS=\"$$HISTORY_RETENTION_DAYS\"" >> /env.sh
+      chmod +x /env.sh
+      echo "0 2 * * * . /env.sh; /scripts/backup_db.sh >> /proc/1/fd/1 2>&1" > /etc/crontabs/root
+      echo "0 3 * * * . /env.sh; /scripts/prune_history.sh >> /proc/1/fd/1 2>&1" >> /etc/crontabs/root
       echo ">>> Starting crond in background..."
       crond -f -l 2
       '
