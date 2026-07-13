@@ -324,11 +324,10 @@ export function CreateDieModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="form-rack" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Storage Rack <span className="text-rose-500">*</span>
+                  Storage Rack
                 </label>
                 <select 
                   id="form-rack"
-                  required
                   value={rack}
                   disabled={isSubmitting}
                   onChange={(e) => handleFieldChange('rack', e.target.value, setRack)}
@@ -345,13 +344,12 @@ export function CreateDieModal({
 
               <div>
                 <label htmlFor="form-shelf" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Shelf Number <span className="text-rose-500">*</span>
+                  Shelf Number
                 </label>
                 <input 
                   id="form-shelf"
                   type="number" 
                   min="1"
-                  required
                   disabled={isSubmitting}
                   value={shelf}
                   onChange={(e) => handleFieldChange('shelf', e.target.value, setShelf)}
@@ -363,7 +361,7 @@ export function CreateDieModal({
               </div>
             </div>
             {getFieldError('location') && (
-              <p className="text-xxs text-rose-400 mt-1.5 font-medium">Please select a valid Rack and Shelf number</p>
+              <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('location')}</p>
             )}
 
             <div>
