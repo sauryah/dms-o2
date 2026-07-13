@@ -8,6 +8,7 @@ import { useApi } from '../../../hooks/useApi'
 import { DieBlueprint } from './CadRenderer'
 import { Timeline } from './Timeline'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
+import { SearchableSelect } from '../../../components/SearchableSelect'
 
 interface ChartPoint {
   date: string;
@@ -1638,16 +1639,17 @@ export function DieDetailPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
-                  <select 
+                  <SearchableSelect
                     value={currentSetId}
-                    onChange={(e) => setCurrentSetId(e.target.value)}
+                    onChange={(val) => setCurrentSetId(String(val))}
+                    options={setsList?.map((s: any) => ({
+                      value: s.id,
+                      label: `${s.name} (${s.machine_name || 'No Machine'})`
+                    })) || []}
+                    placeholder="Select set to assign..."
+                    emptyLabel="— Unassigned —"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">— Unassigned —</option>
-                    {setsList?.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.machine_name})</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {die.die_type === 'ROUND' ? (

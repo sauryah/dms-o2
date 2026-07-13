@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '../../../hooks/useApi'
 import { validateDieCreate } from '../../../types/validation'
+import { SearchableSelect } from '../../../components/SearchableSelect'
 
 interface CreateDieModalProps {
   isOpen: boolean
@@ -369,18 +370,19 @@ export function CreateDieModal({
               <label htmlFor="form-set" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Assign to Production Set
               </label>
-              <select 
+              <SearchableSelect
                 id="form-set"
                 value={currentSet}
                 disabled={isSubmitting}
-                onChange={(e) => handleFieldChange('current_set', e.target.value, setCurrentSet)}
-                className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring cursor-pointer"
-              >
-                <option value="">— Unassigned / Standalone —</option>
-                {setsList?.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.machine_name || 'No Machine'})</option>
-                ))}
-              </select>
+                onChange={(val) => handleFieldChange('current_set', String(val), setCurrentSet)}
+                options={setsList?.map((s: any) => ({
+                  value: s.id,
+                  label: `${s.name} (${s.machine_name || 'No Machine'})`
+                })) || []}
+                placeholder="Select set to assign..."
+                emptyLabel="— Unassigned / Standalone —"
+                className="glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-200 focus-ring"
+              />
             </div>
           </div>
 
