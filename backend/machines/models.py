@@ -16,9 +16,11 @@ class Machine(models.Model):
 class Set(models.Model):
     machine = models.ForeignKey(Machine, on_delete=models.PROTECT)
     name = models.CharField(max_length=100)
+    order = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ['machine', 'name']
+        ordering = ['order', 'name']
 
     def __str__(self):
         return f"{self.machine.name} - {self.name}"

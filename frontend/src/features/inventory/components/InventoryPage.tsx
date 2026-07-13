@@ -84,6 +84,7 @@ export function InventoryPage() {
     moveDieLocationMutation,
     reallocateDieMutation,
     reallocateSetMutation,
+    reorderSetsMutation,
     page,
     setPage,
     pageSize
@@ -117,6 +118,7 @@ export function InventoryPage() {
         setActiveDragType={setActiveDragType}
         onReallocateDie={(dieId, setId) => reallocateDieMutation.mutate({ dieId, setId })}
         onReallocateSet={(setId, machineId) => reallocateSetMutation.mutate({ setId, machineId })}
+        onReorderSets={(machineId, orderedSetIds) => reorderSetsMutation.mutate({ machineId, orderedSetIds })}
       />
 
       {/* RIGHT PANEL - Content Area */}

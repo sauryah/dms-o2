@@ -31,6 +31,7 @@ export interface MachineSidebarTreeProps {
   setActiveDragType: (type: string | null) => void;
   onReallocateDie: (dieId: any, setId: any) => void;
   onReallocateSet: (setId: any, machineId: any) => void;
+  onReorderSets: (machineId: any, orderedSetIds: any[]) => void;
 }
 
 export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSidebarTreeProps>(
@@ -50,6 +51,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
       setActiveDragType,
       onReallocateDie,
       onReallocateSet,
+      onReorderSets,
     },
     ref
   ) => {
@@ -122,7 +124,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
       }
     }, [canCreate, onReallocateSet, setActiveDragType])
 
-    const handleDropOnSet = useCallback((e: React.DragEvent, setId: any) => {
+    const handleDropOnSet = useCallback((e: React.DragEvent, targetSetId: any, targetMachineId: any) => {
       e.preventDefault()
       setDragOverNode(null)
       setActiveDragType(null)
@@ -131,12 +133,34 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
         const data = JSON.parse(e.dataTransfer.getData('application/json'))
         if (data.type === 'die') {
           const { id: dieId } = data
-          onReallocateDie(dieId, setId)
+          onReallocateDie(dieId, targetSetId)
+        } else if (data.type === 'set') {
+          const { id: draggedSetId, currentMachineId } = data
+          if (Number(draggedSetId) === Number(targetSetId)) return
+          
+          const targetMachine = machinesWithData.find((m: any) => Number(m.id) === Number(targetMachineId))
+          if (targetMachine) {
+            const currentSets = targetMachine.sets || []
+            let orderedSetIds = currentSets.map((s: any) => s.id)
+            
+            // Remove the dragged set ID if it is already in this machine
+            orderedSetIds = orderedSetIds.filter((id: any) => Number(id) !== Number(draggedSetId))
+            
+            // Insert it before the target set
+            const targetIndex = orderedSetIds.indexOf(targetSetId)
+            if (targetIndex !== -1) {
+              orderedSetIds.splice(targetIndex, 0, draggedSetId)
+            } else {
+              orderedSetIds.push(draggedSetId)
+            }
+            
+            onReorderSets(targetMachineId, orderedSetIds)
+          }
         }
       } catch (err) {
         console.error(err)
       }
-    }, [canCreate, onReallocateDie, setActiveDragType])
+    }, [canCreate, onReallocateDie, onReorderSets, machinesWithData, setActiveDragType])
 
     const handleDropOnUnassigned = useCallback((e: React.DragEvent) => {
       e.preventDefault()
@@ -300,10 +324,10 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                                     setActiveDragType(null);
                                     setDragOverNode(null);
                                   }}
-                                  onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                                  onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
+                                  onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') e.preventDefault(); } : undefined}
+                                  onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
                                   onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
-                                  onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id) : undefined}
+                                  onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id, machine.id) : undefined}
                                   className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
                                     canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                                   } ${

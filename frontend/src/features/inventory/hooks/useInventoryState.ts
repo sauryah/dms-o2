@@ -187,7 +187,8 @@ export function useInventoryState() {
     createDieMutation,
     moveDieLocationMutation,
     reallocateDieMutation,
-    reallocateSetMutation
+    reallocateSetMutation,
+    reorderSetsMutation
   } = useInventoryMutations(setIsCreateOpen, setCreateError)
 
   const [activeDragType, setActiveDragType] = useState<string | null>(null)
@@ -475,6 +476,7 @@ export function useInventoryState() {
     moveDieLocationMutation,
     reallocateDieMutation,
     reallocateSetMutation,
+    reorderSetsMutation,
     page,
     setPage,
     pageSize,

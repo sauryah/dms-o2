@@ -7,4 +7,4 @@ class SetSerializer(serializers.ModelSerializer):
     die_count = serializers.IntegerField(read_only=True, default=0)
     class Meta:
         model = Set
-        fields = ['id', 'machine', 'machine_name', 'category_name', 'name', 'die_count']
+        fields = ['id', 'machine', 'machine_name', 'category_name', 'name', 'die_count', 'order']

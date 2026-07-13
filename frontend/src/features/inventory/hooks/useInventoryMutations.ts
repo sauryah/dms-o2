@@ -408,10 +408,67 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
     }
   })
 
+  // Mutation for reordering sets in a machine
+  const reorderSetsMutation = useMutation({
+    mutationFn: ({ machineId, orderedSetIds }: { machineId: any, orderedSetIds: any[] }) => request('/api/sets/reorder/', {
+      method: 'POST',
+      body: JSON.stringify({ machine_id: machineId, ordered_set_ids: orderedSetIds })
+    }),
+    onMutate: async ({ machineId, orderedSetIds }) => {
+      await queryClient.cancelQueries({ queryKey: ['machinesList'] })
+      await queryClient.cancelQueries({ queryKey: ['setsDropdownList'] })
+
+      const previousMachines = queryClient.getQueryData(['machinesList'])
+      const previousSets = queryClient.getQueryData(['setsDropdownList'])
+
+      // Optimistically update the UI order
+      if (previousMachines) {
+        queryClient.setQueryData(['machinesList'], (old: any) => {
+          if (!Array.isArray(old)) return old
+          return old.map((machine: any) => {
+            if (Number(machine.id) === Number(machineId)) {
+              const sets = machine.sets || []
+              const sortedSets = [...sets].sort((a, b) => {
+                const indexA = orderedSetIds.indexOf(a.id)
+                const indexB = orderedSetIds.indexOf(b.id)
+                if (indexA === -1) return 1
+                if (indexB === -1) return -1
+                return indexA - indexB
+              })
+              return {
+                ...machine,
+                sets: sortedSets
+              }
+            }
+            return machine
+          })
+        })
+      }
+
+      return { previousMachines, previousSets }
+    },
+    onError: (err: any, variables: any, context: any) => {
+      if (context) {
+        if (context.previousMachines !== undefined) {
+          queryClient.setQueryData(['machinesList'], context.previousMachines)
+        }
+        if (context.previousSets !== undefined) {
+          queryClient.setQueryData(['setsDropdownList'], context.previousSets)
+        }
+      }
+      showToast(`Failed to reorder sets: ${err.message}`, 'error')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+    }
+  })
+
   return {
     createDieMutation,
     moveDieLocationMutation,
     reallocateDieMutation,
-    reallocateSetMutation
+    reallocateSetMutation,
+    reorderSetsMutation
   }
 }
