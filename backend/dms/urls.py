@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
-from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView
+from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet
 from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView, TokenRefreshView
 from history.views import DieHistoryListView, MachineHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
@@ -19,6 +19,8 @@ router.register('machines', MachineViewSet, basename='machine')
 router.register('sets', SetViewSet, basename='set')
 router.register('backups', BackupViewSet, basename='backup')
 router.register('racks', RackViewSet, basename='rack')
+router.register('tolerances', DieToleranceViewSet, basename='tolerance')
+router.register('wear-alerts', WearAlertViewSet, basename='wear-alert')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

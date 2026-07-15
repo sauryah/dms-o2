@@ -81,3 +81,109 @@ R-SERV-1,ROUND,25x10,AVAILABLE,Rack D,rem,1.5,1.5
             self.assertEqual(die.rounddie.current_size, Decimal('1.5'))
         finally:
             os.remove(temp_file_path)
+
+
+from dies.models import FlatDie, DieTolerance, WearAlert
+from dies.services.wear_alert_service import WearAlertService
+
+class WearAlertServiceTests(TestCase):
+    def setUp(self):
+        # Create standard test dies
+        self.round_die = Die.objects.create(
+            die_id='TEST-R-100',
+            die_type='ROUND',
+            casing='Round Casing'
+        )
+        self.r_detail = RoundDie.objects.create(
+            die=self.round_die,
+            punched_size=Decimal('10.000'),
+            current_size=Decimal('10.000')
+        )
+        
+        self.flat_die = Die.objects.create(
+            die_id='TEST-F-100',
+            die_type='FLAT',
+            casing='Flat Casing'
+        )
+        self.f_detail = FlatDie.objects.create(
+            die=self.flat_die,
+            punched_width=Decimal('50.000'),
+            current_width=Decimal('50.000'),
+            punched_thickness=Decimal('5.000'),
+            current_thickness=Decimal('5.000'),
+            radius=Decimal('0.500')
+        )
+
+    def test_default_tolerances_creation(self):
+        # Retrieve tolerance when none exists
+        tol = WearAlertService.get_or_create_default_tolerance('ROUND')
+        self.assertEqual(tol.max_wear_mm, Decimal('0.050'))
+        self.assertEqual(tol.warning_percentage, 70)
+        self.assertEqual(tol.critical_percentage, 90)
+
+    def test_no_alert_for_normal_wear(self):
+        # Under normal size, no alerts should be logged
+        WearAlertService.check_wear_alerts(self.round_die)
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die).count(), 0)
+
+    def test_warning_alert_triggered(self):
+        # Round default tolerance is 0.050mm. 70% threshold is 0.035mm.
+        # Set wear to 0.040mm (10.040 - 10.000)
+        self.r_detail.current_size = Decimal('10.040')
+        self.r_detail.save()
+        
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=False).count(), 1)
+        alert = WearAlert.objects.get(die=self.round_die, is_resolved=False)
+        self.assertEqual(alert.alert_level, 'WARNING')
+
+    def test_critical_alert_triggered(self):
+        # Set wear to 0.048mm (10.048 - 10.000) -> 96% of 0.050mm (Critical)
+        self.r_detail.current_size = Decimal('10.048')
+        self.r_detail.save()
+        
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=False).count(), 1)
+        alert = WearAlert.objects.get(die=self.round_die, is_resolved=False)
+        self.assertEqual(alert.alert_level, 'CRITICAL')
+
+    def test_alert_escalation_and_resolution(self):
+        # 1. Trigger Warning
+        self.r_detail.current_size = Decimal('10.040')
+        self.r_detail.save()
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=False).count(), 1)
+        
+        # 2. Trigger Critical (should resolve Warning and create Critical)
+        self.r_detail.current_size = Decimal('10.048')
+        self.r_detail.save()
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=False).count(), 1)
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=True).count(), 1)
+        active = WearAlert.objects.get(die=self.round_die, is_resolved=False)
+        self.assertEqual(active.alert_level, 'CRITICAL')
+        
+        # 3. Resolve (recut size reset to nominal)
+        self.r_detail.current_size = Decimal('10.000')
+        self.r_detail.save()
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=False).count(), 0)
+        self.assertEqual(WearAlert.objects.filter(die=self.round_die, is_resolved=True).count(), 2)
+
+    def test_custom_tolerance_db_config(self):
+        # Configure custom tolerance for Flat dies: max_wear = 0.200mm, warning at 50% (0.100mm)
+        DieTolerance.objects.update_or_create(
+            die_type='FLAT',
+            defaults={
+                'max_wear_mm': Decimal('0.200'),
+                'warning_percentage': 50,
+                'critical_percentage': 80
+            }
+        )
+        
+        # 1. Set wear below warning threshold (wear = 0.080mm)
+        self.f_detail.current_width = Decimal('50.080')
+        self.f_detail.save()
+        self.assertEqual(WearAlert.objects.filter(die=self.flat_die).count(), 0)
+        
+        # 2. Set wear to warning (wear = 0.120mm -> 60%)
+        self.f_detail.current_width = Decimal('50.120')
+        self.f_detail.save()
+        self.assertEqual(WearAlert.objects.filter(die=self.flat_die, is_resolved=False).count(), 1)
+        alert = WearAlert.objects.get(die=self.flat_die, is_resolved=False)
+        self.assertEqual(alert.alert_level, 'WARNING')

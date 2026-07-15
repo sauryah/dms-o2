@@ -238,3 +238,71 @@ class DieAPITests(APITestCase):
         response = self.client.get(url_ml)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+
+from dies.models import DieTolerance, WearAlert
+
+class TolerancesAndAlertsAPITests(APITestCase):
+    def setUp(self):
+        self.root_user = User.objects.create_superuser(
+            username='rootuser_api',
+            password='password123',
+            email='root_api@dms.local',
+            role='ROOT'
+        )
+        self.root_token = str(AccessToken.for_user(self.root_user))
+        UserSession.objects.create(
+            user=self.root_user,
+            token_hash=hashlib.sha256(self.root_token.encode('utf-8')).hexdigest()
+        )
+
+        self.round_die = Die.objects.create(
+            die_id="R-TEST-ALERT",
+            die_type="ROUND",
+            casing="25x10",
+            status="AVAILABLE",
+            location="Rack A",
+        )
+        self.rd_details = RoundDie.objects.create(
+            die=self.round_die,
+            punched_size=Decimal("10.000"),
+            current_size=Decimal("10.000")
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
+
+    def test_list_tolerances(self):
+        url = reverse('tolerance-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(response.data['results']) >= 0)
+
+    def test_create_and_update_tolerance(self):
+        # Ensure ROUND tolerance object exists
+        tol, created = DieTolerance.objects.get_or_create(
+            die_type='ROUND',
+            defaults={'max_wear_mm': Decimal('0.050'), 'warning_percentage': 70, 'critical_percentage': 90}
+        )
+        
+        url_detail = reverse('tolerance-detail', kwargs={'pk': tol.pk})
+        data = {
+            'die_type': 'ROUND',
+            'max_wear_mm': '0.075',
+            'warning_percentage': 60,
+            'critical_percentage': 85
+        }
+        response = self.client.put(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['max_wear_mm'], '0.075')
+        self.assertEqual(response.data['warning_percentage'], 60)
+
+    def test_wear_alert_api(self):
+        # Trigger an alert via save signal
+        self.rd_details.current_size = Decimal('10.040')
+        self.rd_details.save()
+
+        url = reverse('wear-alert-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['alert_level'], 'WARNING')
+

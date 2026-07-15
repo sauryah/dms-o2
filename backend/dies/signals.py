@@ -148,6 +148,12 @@ def log_flat_changes(sender, instance, **kwargs):
 
 def _sync_die_from_related(instance):
     die = instance if isinstance(instance, Die) else instance.die
+    try:
+        from dies.services.wear_alert_service import WearAlertService
+        WearAlertService.check_wear_alerts(die)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to check wear alerts in post-save signal: {e}")
     SearchService.queue_die_sync(die.id)
     SearchService.queue_die_broadcast(die.die_id, DIE_SAVE_ACTION)
 

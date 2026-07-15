@@ -91,3 +91,33 @@ class ImportLog(models.Model):
 
     def __str__(self):
         return f"ImportLog: {self.filename} by {self.imported_by} at {self.imported_at}"
+
+
+class DieTolerance(models.Model):
+    die_type = models.CharField(max_length=10, choices=DIE_TYPE_CHOICES, unique=True)
+    max_wear_mm = models.DecimalField(max_digits=5, decimal_places=3, default=0.050)
+    warning_percentage = models.IntegerField(default=70) # Alert at 70% wear
+    critical_percentage = models.IntegerField(default=90) # Alert at 90% wear
+
+    def __str__(self):
+        return f"Tolerance for {self.die_type}: Max {self.max_wear_mm}mm"
+
+
+class WearAlert(models.Model):
+    ALERT_LEVEL_CHOICES = (
+        ('WARNING', 'Warning'),
+        ('CRITICAL', 'Critical'),
+    )
+    die = models.ForeignKey(Die, on_delete=models.CASCADE, related_name='wear_alerts')
+    alert_level = models.CharField(max_length=15, choices=ALERT_LEVEL_CHOICES)
+    message = models.TextField()
+    is_resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        status = "Resolved" if self.is_resolved else "Active"
+        return f"WearAlert [{status}] - {self.die.die_id} ({self.alert_level})"

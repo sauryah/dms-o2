@@ -6,10 +6,11 @@ from django.utils.decorators import method_decorator
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from dies.models import Die, ImportLog, MaintenanceLog
+from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert
 from dies.serializers import (
     DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
-    serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer
+    serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer,
+    DieToleranceSerializer, WearAlertSerializer
 )
 from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate
 from search.meili import client as meili_client, INDEX_NAME
@@ -312,6 +313,12 @@ class DieViewSet(viewsets.ModelViewSet):
         # Query history once
         history_qs = DieHistory.objects.filter(die=die).order_by('timestamp')
         
+        from dies.services.wear_alert_service import WearAlertService
+        tolerance = WearAlertService.get_or_create_default_tolerance(die.die_type)
+        tolerance_limit = float(tolerance.max_wear_mm)
+        warning_pct = float(tolerance.warning_percentage)
+        critical_pct = float(tolerance.critical_percentage)
+
         if die.die_type == 'ROUND':
             if not hasattr(die, 'rounddie') or not die.rounddie:
                 return Response({"detail": "Round die details not found."}, status=status.HTTP_400_BAD_REQUEST)
@@ -321,14 +328,14 @@ class DieViewSet(viewsets.ModelViewSet):
                 history_size, 
                 die.rounddie.punched_size, 
                 die.rounddie.current_size, 
-                0.05
+                tolerance_limit
             )
             
             # Determine alert level
             alert_level = 'GOOD'
-            if size_pred['wear_percentage'] >= 90.0 or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 7):
+            if size_pred['wear_percentage'] >= critical_pct or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 7):
                 alert_level = 'CRITICAL'
-            elif size_pred['wear_percentage'] >= 70.0 or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 30):
+            elif size_pred['wear_percentage'] >= warning_pct or (size_pred['remaining_days'] is not None and size_pred['remaining_days'] < 30):
                 alert_level = 'WARNING'
                 
             analysis = {
@@ -351,7 +358,7 @@ class DieViewSet(viewsets.ModelViewSet):
                 history_width, 
                 die.flatdie.punched_width, 
                 die.flatdie.current_width, 
-                0.1
+                tolerance_limit
             )
             
             history_thick = history_qs.filter(field_name='current_thickness')
@@ -359,7 +366,7 @@ class DieViewSet(viewsets.ModelViewSet):
                 history_thick, 
                 die.flatdie.punched_thickness, 
                 die.flatdie.current_thickness, 
-                0.1
+                tolerance_limit
             )
             
             # Overall wear is the worst of the two dimensions
@@ -376,9 +383,9 @@ class DieViewSet(viewsets.ModelViewSet):
                 
             # Determine alert level
             alert_level = 'GOOD'
-            if overall_wear_pct >= 90.0 or (overall_rem_days is not None and overall_rem_days < 7):
+            if overall_wear_pct >= critical_pct or (overall_rem_days is not None and overall_rem_days < 7):
                 alert_level = 'CRITICAL'
-            elif overall_wear_pct >= 70.0 or (overall_rem_days is not None and overall_rem_days < 30):
+            elif overall_wear_pct >= warning_pct or (overall_rem_days is not None and overall_rem_days < 30):
                 alert_level = 'WARNING'
                 
             analysis = {
@@ -608,3 +615,25 @@ class ImportLogsView(APIView):
         result_page = paginator.paginate_queryset(logs, request, view=self)
         serializer = ImportLogSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+class DieToleranceViewSet(viewsets.ModelViewSet):
+    queryset = DieTolerance.objects.all()
+    serializer_class = DieToleranceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class WearAlertViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = WearAlert.objects.select_related('die').all()
+    serializer_class = WearAlertSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        is_resolved = self.request.query_params.get('is_resolved')
+        if is_resolved is not None:
+            qs = qs.filter(is_resolved=is_resolved.lower() == 'true')
+        die_id = self.request.query_params.get('die_id')
+        if die_id is not None:
+            qs = qs.filter(die__die_id=die_id)
+        return qs

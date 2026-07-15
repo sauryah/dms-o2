@@ -1,5 +1,5 @@
 from django.contrib import admin
-from dies.models import Die, RoundDie, FlatDie
+from dies.models import Die, RoundDie, FlatDie, DieTolerance, WearAlert
 
 @admin.register(Die)
 class DieAdmin(admin.ModelAdmin):
@@ -17,3 +17,13 @@ class RoundDieAdmin(admin.ModelAdmin):
 class FlatDieAdmin(admin.ModelAdmin):
     list_display  = ['die', 'punched_width', 'current_width', 'punched_thickness', 'current_thickness']
     search_fields = ['die__die_id']
+
+@admin.register(DieTolerance)
+class DieToleranceAdmin(admin.ModelAdmin):
+    list_display = ['die_type', 'max_wear_mm', 'warning_percentage', 'critical_percentage']
+
+@admin.register(WearAlert)
+class WearAlertAdmin(admin.ModelAdmin):
+    list_display = ['die', 'alert_level', 'is_resolved', 'created_at', 'resolved_at']
+    list_filter = ['alert_level', 'is_resolved']
+    search_fields = ['die__die_id', 'message']

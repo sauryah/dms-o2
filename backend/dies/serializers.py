@@ -2,7 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.db import transaction
 from dies.contracts import DIE_STATUSES
-from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog
+from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog, WearAlert, DieTolerance
 from history.models import DieHistory
 
 class DieHistorySerializer(serializers.ModelSerializer):
@@ -16,13 +16,24 @@ class DieHistorySerializer(serializers.ModelSerializer):
     def get_changed_by_username(self, obj):
         return obj.changed_by.username if obj.changed_by else ''
 
+class WearAlertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WearAlert
+        fields = ['id', 'alert_level', 'message', 'is_resolved', 'created_at', 'resolved_at']
+
+class DieToleranceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DieTolerance
+        fields = ['id', 'die_type', 'max_wear_mm', 'warning_percentage', 'critical_percentage']
+
 class DieListSerializer(serializers.ModelSerializer):
     set_name = serializers.SerializerMethodField()
     machine_name = serializers.SerializerMethodField()
+    active_alerts = serializers.SerializerMethodField()
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'active_alerts']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -31,6 +42,11 @@ class DieListSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField)
     def get_machine_name(self, obj):
         return obj.current_set.machine.name if obj.current_set and obj.current_set.machine else ''
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_active_alerts(self, obj):
+        active = obj.wear_alerts.filter(is_resolved=False)
+        return WearAlertSerializer(active, many=True).data
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -48,10 +64,11 @@ class DieDetailSerializer(serializers.ModelSerializer):
     set_name = serializers.SerializerMethodField()
     machine_name = serializers.SerializerMethodField()
     history = DieHistorySerializer(many=True, read_only=True)
+    active_alerts = serializers.SerializerMethodField()
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'active_alerts']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -60,6 +77,11 @@ class DieDetailSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField)
     def get_machine_name(self, obj):
         return obj.current_set.machine.name if obj.current_set and obj.current_set.machine else ''
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_active_alerts(self, obj):
+        active = obj.wear_alerts.filter(is_resolved=False)
+        return WearAlertSerializer(active, many=True).data
         
     def to_representation(self, instance):
         rep = super().to_representation(instance)
