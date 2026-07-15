@@ -10,6 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.5.0] - 2026-07-15
+
+### Added
+- **Wear Alert Engine & Configurable Tolerances**:
+  - Implemented database-driven `DieTolerance` and `WearAlert` models to configure wear limits per die type.
+  - Developed a background validation workflow running automatically via post-save Django signals to calculate reaming size expansion for Round dies and width/thickness expansion for Flat dies.
+  - Exposed tolerance and alert configurations via new ViewSets and REST API endpoints (`/api/v1/tolerances/`, `/api/v1/wear-alerts/`).
+  - Added nested `active_alerts` list details directly to `DieListSerializer` and `DieDetailSerializer`.
+  - Added `WearAlertServiceTests` covering warning triggers, critical limits, escalation, and resolution.
+
+### Fixed
+- **Dashboard Navigation Sidebar Tree bug**:
+  - Resolved structural tree selection bugs in `useInventoryState.ts` by checking search transitions using React `useRef`.
+  - Enabled combined tree selection and search criteria by including `machine_id` and `set_id` filters in the Go API search compilation queries.
+
+---
+
 ## [1.4.0] - 2026-07-10
 
 ### Added

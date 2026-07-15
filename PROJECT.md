@@ -120,6 +120,14 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-15 · feat: implement database-driven Wear Alert Engine and Dashboard navigation fixes (v1.5.0)
+- Implemented database-driven `DieTolerance` and `WearAlert` models to support user-configurable limits per die type.
+- Built a background validation workflow running automatically via Django signals to calculate reaming size expansion for Round dies and width/thickness expansion for Flat dies.
+- Exposed alerts and tolerances via REST API endpoints (`/api/v1/tolerances/`, `/api/v1/wear-alerts/`).
+- Added nested `active_alerts` details directly to `DieListSerializer` and `DieDetailSerializer`.
+- Resolved structural tree selection bugs in `useInventoryState.ts` by using transition refs to isolate active searches.
+- Enabled combined tree selection and search criteria by allowing `machine_id` and `set_id` filters in Go API search queries.
+
 ### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15) (v1.6.0)
 - Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
 - Added `docker-compose.ghcr.yml` for quick, source-free deployment.
