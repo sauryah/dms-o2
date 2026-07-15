@@ -34,7 +34,21 @@ export function useInventoryState() {
   const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
   const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
 
-  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(null)
+  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(() => {
+    const active = !!(
+      searchParams.get('q') || 
+      searchParams.get('die_type') || 
+      searchParams.get('status') || 
+      searchParams.get('casing') || 
+      searchParams.get('size_min') || 
+      searchParams.get('size_max') || 
+      searchParams.get('width_min') || 
+      searchParams.get('width_max') || 
+      searchParams.get('thick_min') || 
+      searchParams.get('thick_max')
+    )
+    return active ? { type: 'search' } : null
+  })
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -121,7 +135,7 @@ export function useInventoryState() {
       if (thickMin) params.append('thick_min', thickMin)
       if (thickMax) params.append('thick_max', thickMax)
 
-      if (!isSearchActive && selectedNode) {
+      if (selectedNode) {
         if (selectedNode.type === 'machine') {
           params.append('machine_id', String(selectedNode.id))
         } else if (selectedNode.type === 'set') {
@@ -208,13 +222,16 @@ export function useInventoryState() {
 
   // Removed duplicate state declarations (moved to top of hook)
 
+  const prevSearchActive = useRef(isSearchActive)
+
   useEffect(() => {
-    if (isSearchActive) {
+    if (isSearchActive && !prevSearchActive.current) {
       setSelectedNode({ type: 'search' })
-    } else if (selectedNode?.type === 'search') {
+    } else if (!isSearchActive && prevSearchActive.current) {
       setSelectedNode(null)
     }
-  }, [isSearchActive, selectedNode])
+    prevSearchActive.current = isSearchActive
+  }, [isSearchActive])
 
   const { unassignedDies, machinesWithData, unassignedCount } = useMemo(() => {
     const diesBySet: Record<string | number, any[]> = {}
