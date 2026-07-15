@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
 
@@ -17,6 +17,115 @@ export function SettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Die Tolerances config state
+  const [tolerances, setTolerances] = useState<any[]>([])
+  const [isLoadingTolerances, setIsLoadingTolerances] = useState(false)
+  const [isSubmittingTolerances, setIsSubmittingTolerances] = useState(false)
+  const [tolError, setTolError] = useState('')
+  const [tolSuccess, setTolSuccess] = useState('')
+
+  const fetchTolerances = async () => {
+    setIsLoadingTolerances(true)
+    setTolError('')
+    try {
+      const data = await request('/api/v1/tolerances/')
+      setTolerances(data.results || [])
+    } catch (err: any) {
+      setTolError('Failed to load tolerance settings.')
+    } finally {
+      setIsLoadingTolerances(false)
+    }
+  }
+
+  useEffect(() => {
+    if (role === 'ADMIN' || role === 'ROOT') {
+      fetchTolerances()
+    }
+  }, [role])
+
+  const getToleranceField = (type: 'ROUND' | 'FLAT', field: 'max_wear_mm' | 'warning_percentage' | 'critical_percentage') => {
+    const existing = tolerances.find(t => t.die_type === type)
+    if (existing) {
+      return existing[field]
+    }
+    if (field === 'max_wear_mm') {
+      return type === 'ROUND' ? '0.050' : '0.100'
+    }
+    if (field === 'warning_percentage') return 70
+    return 90
+  }
+
+  const handleToleranceChange = (type: 'ROUND' | 'FLAT', field: string, value: any) => {
+    setTolerances(prev => {
+      const existingIdx = prev.findIndex(t => t.die_type === type)
+      if (existingIdx !== -1) {
+        const updated = [...prev]
+        updated[existingIdx] = { ...updated[existingIdx], [field]: value }
+        return updated
+      } else {
+        const newItem = {
+          die_type: type,
+          max_wear_mm: type === 'ROUND' ? '0.050' : '0.100',
+          warning_percentage: 70,
+          critical_percentage: 90,
+          [field]: value
+        }
+        return [...prev, newItem]
+      }
+    })
+  }
+
+  const handleSaveTolerances = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setTolError('')
+    setTolSuccess('')
+    setIsSubmittingTolerances(true)
+
+    try {
+      const roundTol = tolerances.find(t => t.die_type === 'ROUND') || {
+        die_type: 'ROUND',
+        max_wear_mm: '0.050',
+        warning_percentage: 70,
+        critical_percentage: 90
+      }
+      const flatTol = tolerances.find(t => t.die_type === 'FLAT') || {
+        die_type: 'FLAT',
+        max_wear_mm: '0.100',
+        warning_percentage: 70,
+        critical_percentage: 90
+      }
+
+      const saveItem = async (item: any) => {
+        const payload = {
+          die_type: item.die_type,
+          max_wear_mm: item.max_wear_mm,
+          warning_percentage: parseInt(item.warning_percentage),
+          critical_percentage: parseInt(item.critical_percentage)
+        }
+        if (item.id) {
+          return await request(`/api/v1/tolerances/${item.id}/`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+          })
+        } else {
+          return await request('/api/v1/tolerances/', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          })
+        }
+      }
+
+      const resRound = await saveItem(roundTol)
+      const resFlat = await saveItem(flatTol)
+      setTolerances([resRound, resFlat])
+      setTolSuccess('Tolerance configurations saved successfully.')
+    } catch (err: any) {
+      setTolError(err.message || 'Failed to save tolerance settings.')
+    } finally {
+      setIsSubmittingTolerances(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,10 +169,10 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-6"
+        className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-2"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -177,6 +286,135 @@ export function SettingsPage() {
           </form>
         </div>
       </div>
+
+      {(role === 'ADMIN' || role === 'ROOT') && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600/10 to-blue-600/10 border-b border-slate-800 px-6 sm:px-8 py-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-600/20 rounded-xl">
+                <Sliders className="h-6 w-6 text-indigo-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Die Tolerance Configurations</h2>
+                <p className="text-sm text-slate-400 mt-0.5">Configure warning and critical wear thresholds per die type</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 sm:px-8 py-6 space-y-6">
+            {isLoadingTolerances ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+              </div>
+            ) : (
+              <form onSubmit={handleSaveTolerances} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Round Dies Section */}
+                  <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-800/60 rounded-xl">
+                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Round Dies</h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Max Wear Limit (mm)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0.001"
+                        value={getToleranceField('ROUND', 'max_wear_mm')}
+                        onChange={(e) => handleToleranceChange('ROUND', 'max_wear_mm', e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Warning Threshold (%)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={getToleranceField('ROUND', 'warning_percentage')}
+                          onChange={(e) => handleToleranceChange('ROUND', 'warning_percentage', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Critical Threshold (%)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={getToleranceField('ROUND', 'critical_percentage')}
+                          onChange={(e) => handleToleranceChange('ROUND', 'critical_percentage', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Flat Dies Section */}
+                  <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-800/60 rounded-xl">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">Flat Dies</h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Max Wear Limit (mm)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0.001"
+                        value={getToleranceField('FLAT', 'max_wear_mm')}
+                        onChange={(e) => handleToleranceChange('FLAT', 'max_wear_mm', e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Warning Threshold (%)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={getToleranceField('FLAT', 'warning_percentage')}
+                          onChange={(e) => handleToleranceChange('FLAT', 'warning_percentage', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Critical Threshold (%)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={getToleranceField('FLAT', 'critical_percentage')}
+                          onChange={(e) => handleToleranceChange('FLAT', 'critical_percentage', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {tolError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-sm text-rose-400">
+                    {tolError}
+                  </div>
+                )}
+
+                {tolSuccess && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    {tolSuccess}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingTolerances}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingTolerances ? 'Saving Configurations...' : 'Save Tolerance Configurations'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

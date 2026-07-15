@@ -620,7 +620,7 @@ class ImportLogsView(APIView):
 class DieToleranceViewSet(viewsets.ModelViewSet):
     queryset = DieTolerance.objects.all()
     serializer_class = DieToleranceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrRoot]
 
 
 class WearAlertViewSet(viewsets.ReadOnlyModelViewSet):

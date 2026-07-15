@@ -306,3 +306,40 @@ class TolerancesAndAlertsAPITests(APITestCase):
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['alert_level'], 'WARNING')
 
+    def test_operator_cannot_update_tolerance(self):
+        # Create an Operator user
+        operator_user = User.objects.create_user(
+            username='operator_user',
+            password='password123',
+            email='operator@dms.local',
+            role='OPERATOR'
+        )
+        operator_token = str(AccessToken.for_user(operator_user))
+        UserSession.objects.create(
+            user=operator_user,
+            token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
+        )
+
+        # Set operator credentials
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
+
+        tol, _ = DieTolerance.objects.get_or_create(
+            die_type='ROUND',
+            defaults={'max_wear_mm': Decimal('0.050'), 'warning_percentage': 70, 'critical_percentage': 90}
+        )
+        url_detail = reverse('tolerance-detail', kwargs={'pk': tol.pk})
+        data = {
+            'die_type': 'ROUND',
+            'max_wear_mm': '0.075',
+            'warning_percentage': 60,
+            'critical_percentage': 85
+        }
+        
+        # Read is allowed
+        response_get = self.client.get(url_detail)
+        self.assertEqual(response_get.status_code, status.HTTP_200_OK)
+
+        # Write is forbidden (403)
+        response_put = self.client.put(url_detail, data)
+        self.assertEqual(response_put.status_code, status.HTTP_403_FORBIDDEN)
+
