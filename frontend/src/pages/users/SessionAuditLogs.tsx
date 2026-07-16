@@ -191,7 +191,7 @@ export function SessionAuditLogs() {
             placeholder="Search by username..."
             value={usernameSearch}
             onChange={handleSearchChange}
-            className="w-full bg-[#03060c] border border-slate-900 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-655 focus:outline-none focus:border-blue-500/85 focus:ring-4 focus:ring-blue-950/20 transition-all"
+            className="w-full bg-[#03060c] border border-slate-900 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/85 focus:ring-4 focus:ring-blue-950/20 transition-all"
           />
         </div>
 
@@ -275,7 +275,7 @@ export function SessionAuditLogs() {
                       </td>
                       <td className="py-3.5 px-5 text-slate-500 text-xs truncate max-w-[240px]" title={`${session.ip_address || '—'} | ${session.device || '—'}`}>
                         <span className="text-slate-400 font-bold block">{session.ip_address || '—'}</span>
-                        <span className="text-xs text-slate-655 block mt-0.5 truncate">{session.device || '—'}</span>
+                        <span className="text-xs text-slate-450 block mt-0.5 truncate">{session.device || '—'}</span>
                       </td>
                     </tr>
                   )

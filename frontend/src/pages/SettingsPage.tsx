@@ -273,7 +273,7 @@ export function SettingsPage() {
                       type={showCurrent ? 'text' : 'password'}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-650 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
                       placeholder="Enter current password"
                     />
                     <button
@@ -295,7 +295,7 @@ export function SettingsPage() {
                       type={showNew ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-655 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
                       placeholder="Enter new password"
                     />
                     <button
@@ -316,7 +316,7 @@ export function SettingsPage() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-655 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                    className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
                     placeholder="Confirm new password"
                   />
                 </div>
