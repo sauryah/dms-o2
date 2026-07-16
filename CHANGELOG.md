@@ -10,6 +10,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.7.0] - 2026-07-16
+
+### Added
+- **Wire Drawing Elongation Calculator**:
+  - Integrated a new precision elongation calculator as an active workbench module.
+  - Added area reduction bar charts and elongation bar charts utilizing `recharts`.
+  - Added interactive results table with cell inline editing, insert die pass, and undo/redo capabilities.
+  - Added automatic die size sequence suggester based on target elongation.
+  - Added target check tolerances and pass consistency rating dashboard widget.
+  - Added Excel (XLSX), CSV, PDF, and clipboard results exporting utilizing `xlsx`, `jspdf`, and `jspdf-autotable`.
+  - Added client-side persistent schedule template savings in localStorage.
+  - Added navigation shortcuts in global Navbar, Engineering Tools Suite hub, and Ctrl+K Command Palette search.
+
+---
+
+## [1.6.0] - 2026-07-12
+
+### Changed
+- **Documentation Updates**:
+  - Replaced placeholder support emails with official project addresses.
+  - Removed emoji headers from README to ensure robust anchor link navigation.
+  - Fixed markdownlint list spacing in DOCKER.md.
+
 ## [1.5.0] - 2026-07-15
 
 ### Added
