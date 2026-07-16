@@ -54,7 +54,7 @@ class MachineHistoryApiTests(APITestCase):
         res = self.client.get(self.machine_history_url)
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_machine_history_regular_user_only_sees_own(self):
+    def test_machine_history_regular_user_is_denied(self):
         # Login as regular user
         res_login = self.client.post(self.login_url, {
             'username': 'regular_hist',
@@ -64,10 +64,7 @@ class MachineHistoryApiTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         
         res = self.client.get(self.machine_history_url)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        # Should only return hist1 because it was changed_by regular_user
-        self.assertEqual(len(res.data['results']), 1)
-        self.assertEqual(res.data['results'][0]['entity_name'], 'Press-01')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_machine_history_admin_sees_all(self):
         # Login as admin user
@@ -82,3 +79,49 @@ class MachineHistoryApiTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         # Should return both hist1 and hist2
         self.assertEqual(len(res.data['results']), 2)
+
+
+from dies.models import Die
+from history.models import DieHistory
+
+class DashboardHistoryApiTests(APITestCase):
+    def setUp(self):
+        self.regular_user = User.objects.create_user(
+            username='regular_dash_hist',
+            password='regular_password_123',
+            role='REGULAR'
+        )
+        self.login_url = reverse('login')
+        self.dashboard_history_url = '/api/history/dashboard/'
+        
+        # Clear cache to ensure test isolation
+        from django.core.cache import cache
+        cache.clear()
+        
+        self.die = Die.objects.create(die_id='R-DASH-1', die_type='ROUND', casing='casing', status='AVAILABLE')
+        self.hist = DieHistory.objects.create(
+            die=self.die,
+            changed_by=self.regular_user,
+            field_name='status',
+            old_value='CLEANING',
+            new_value='AVAILABLE',
+            ip_address='127.0.0.1',
+            note='Sensitive note'
+        )
+
+    def test_dashboard_history_allows_regular_user_and_hides_sensitive_fields(self):
+        # Login as regular user
+        res_login = self.client.post(self.login_url, {
+            'username': 'regular_dash_hist',
+            'password': 'regular_password_123'
+        })
+        token = res_login.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        res = self.client.get(self.dashboard_history_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # Should return history list
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]['die_id'], 'R-DASH-1')
+        self.assertNotIn('ip_address', res.data[0])
+        self.assertNotIn('note', res.data[0])

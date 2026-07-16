@@ -239,11 +239,10 @@ class NewEndpointsTests(APITestCase):
             new_value='AVAILABLE'
         )
         
-        # REGULAR only sees own records
+        # REGULAR is denied access
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.regular_token}')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 0)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         
         # ADMIN sees all records
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
