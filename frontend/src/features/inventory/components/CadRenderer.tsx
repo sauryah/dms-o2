@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { useAuth } from '../../../contexts/AuthContext'
 
 interface DieData {
   die_type: string
@@ -24,6 +25,9 @@ interface DieBlueprintProps {
 
 export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: DieBlueprintProps) {
   if (!die) return null
+
+  const { role } = useAuth()
+  const isRoot = role === 'ROOT'
 
   const isRound = die.die_type === 'ROUND'
   const [viewMode, setViewMode] = useState<'extrusion' | 'cross_section'>('extrusion')
@@ -108,29 +112,31 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
           <span className="text-slate-500 text-[10px] block mt-1 font-mono">Scale Vector CAD Simulation (mm)</span>
         </div>
         <div className="flex items-center gap-3">
-          {/* View Mode Toggle Segmented Control */}
-          <div className="inline-flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-900/80 text-[10px] font-semibold select-none">
-            <button
-              onClick={() => setViewMode('extrusion')}
-              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'extrusion'
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                  : 'text-slate-500 hover:text-slate-350'
+          {/* View Mode Toggle Segmented Control (ROOT ONLY) */}
+          {isRoot && (
+            <div className="inline-flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-900/80 text-[10px] font-semibold select-none">
+              <button
+                onClick={() => setViewMode('extrusion')}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'extrusion'
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
+                    : 'text-slate-500 hover:text-slate-350'
+                }`}
+              >
+                Extrusion 2D
+              </button>
+              <button
+                onClick={() => setViewMode('cross_section')}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'cross_section'
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
+                    : 'text-slate-500 hover:text-slate-350'
               }`}
-            >
-              Extrusion 2D
-            </button>
-            <button
-              onClick={() => setViewMode('cross_section')}
-              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'cross_section'
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                  : 'text-slate-500 hover:text-slate-350'
-              }`}
-            >
-              Cross-Section
-            </button>
-          </div>
+              >
+                Cross-Section
+              </button>
+            </div>
+          )}
 
           <span className="px-2 py-0.5 text-[9px] font-mono font-medium bg-blue-950/20 text-blue-400/80 border border-blue-900/30 rounded-md select-none">
             {die.die_type}
@@ -141,40 +147,42 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
       {/* CAD Viewport container */}
       <div className="flex-1 flex items-center justify-center py-4 relative group">
         
-        {/* Floating Zoom / Pan Controls Overlay */}
-        <div className="absolute right-2 bottom-2 flex flex-col gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity duration-300 z-10 select-none">
-          <button
-            onClick={handleZoomIn}
-            className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
-            title="Zoom In"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={handleZoomOut}
-            className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
-            title="Zoom Out"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={handleZoomReset}
-            className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
-            title="Reset ViewPort"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        {/* Floating Zoom / Pan Controls Overlay (ROOT ONLY) */}
+        {isRoot && (
+          <div className="absolute right-2 bottom-2 flex flex-col gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity duration-300 z-10 select-none">
+            <button
+              onClick={handleZoomIn}
+              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={handleZoomReset}
+              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              title="Reset ViewPort"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {isRound ? (
           <svg 
             className="w-full max-w-[230px] h-[230px] transition-shadow duration-300" 
             viewBox="0 0 200 200"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+            onMouseDown={isRoot ? handleMouseDown : undefined}
+            onMouseMove={isRoot ? handleMouseMove : undefined}
+            onMouseUp={isRoot ? handleMouseUp : undefined}
+            onMouseLeave={isRoot ? handleMouseUp : undefined}
+            style={{ cursor: isRoot ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
           >
             <style>{`
               .blueprint-axis { stroke: rgba(59, 130, 246, 0.08); stroke-width: 0.75; stroke-dasharray: 3 3; }
@@ -426,11 +434,11 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
               <svg 
                 className="w-full max-w-[230px] h-[230px] transition-shadow duration-300" 
                 viewBox="0 0 200 200"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+                onMouseDown={isRoot ? handleMouseDown : undefined}
+                onMouseMove={isRoot ? handleMouseMove : undefined}
+                onMouseUp={isRoot ? handleMouseUp : undefined}
+                onMouseLeave={isRoot ? handleMouseUp : undefined}
+                style={{ cursor: isRoot ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
               >
                 <style>{`
                   .blueprint-axis { stroke: rgba(59, 130, 246, 0.08); stroke-width: 0.75; stroke-dasharray: 3 3; }
