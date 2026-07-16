@@ -10,6 +10,8 @@ export function SettingsPage() {
   const { username, role, login, isAuthorizedForTools } = useAuth()
   const navigate = useNavigate()
 
+  const [activeTab, setActiveTab] = useState<'account' | 'tolerances' | 'backups'>('account')
+
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -170,271 +172,313 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-2"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </button>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-b border-slate-800 px-6 sm:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-600/20 rounded-xl">
-              <KeyRound className="h-6 w-6 text-blue-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Settings</h1>
-              <p className="text-sm text-slate-400 mt-0.5">Change your account password</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-6 sm:px-8 py-6 space-y-6">
-          <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-slate-500 block">Username</span>
-                <span className="text-white font-semibold">{username}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Role</span>
-                <span className="text-white font-semibold">{role}</span>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Current Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrent ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter current password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
-                >
-                  {showCurrent ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showNew ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter new password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNew(!showNew)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
-                >
-                  {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Confirm new password"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-sm text-rose-400">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
-                <Check className="h-4 w-4" />
-                {success}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Changing Password...' : 'Change Password'}
-            </button>
-          </form>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Settings Center Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-900/60">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-200 transition font-mono uppercase tracking-wider cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Exit Settings</span>
+        </button>
+        <div className="text-right">
+          <h1 className="text-lg font-bold text-white tracking-tight">System Configuration Center</h1>
+          <p className="text-[10px] text-slate-500 font-mono mt-0.5 uppercase tracking-wider">Configure wear tolerances, account credentials, and recovery pipelines</p>
         </div>
       </div>
 
-      {(role === 'ADMIN' || role === 'ROOT') && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600/10 to-blue-600/10 border-b border-slate-800 px-6 sm:px-8 py-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-600/20 rounded-xl">
-                <Sliders className="h-6 w-6 text-indigo-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Die Tolerance Configurations</h2>
-                <p className="text-sm text-slate-400 mt-0.5">Configure warning and critical wear thresholds per die type</p>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Sidebar tabbed navigation */}
+        <div className="lg:col-span-3 space-y-2 select-none">
+          <button
+            onClick={() => setActiveTab('account')}
+            className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
+              activeTab === 'account'
+                ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
+                : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-[#070d19]/45'
+            }`}
+          >
+            <KeyRound className="h-4 w-4" />
+            <div>
+              <span className="text-xs block font-bold uppercase tracking-wider">Account Credentials</span>
+              <span className="text-[9px] text-slate-500 block font-normal mt-0.5">Password & identity credentials</span>
             </div>
-          </div>
+          </button>
 
-          <div className="px-6 sm:px-8 py-6 space-y-6">
-            {isLoadingTolerances ? (
-              <div className="flex items-center justify-center py-6">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+          {(role === 'ADMIN' || role === 'ROOT') && (
+            <button
+              onClick={() => setActiveTab('tolerances')}
+              className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
+                activeTab === 'tolerances'
+                  ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
+                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-[#070d19]/45'
+              }`}
+            >
+              <Sliders className="h-4 w-4" />
+              <div>
+                <span className="text-xs block font-bold uppercase tracking-wider">Wear Tolerances</span>
+                <span className="text-[9px] text-slate-500 block font-normal mt-0.5">Alert limits & calibrations</span>
               </div>
-            ) : (
-              <form onSubmit={handleSaveTolerances} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Round Dies Section */}
-                  <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-800/60 rounded-xl">
-                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Round Dies</h3>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Max Wear Limit (mm)</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        min="0.001"
-                        value={getToleranceField('ROUND', 'max_wear_mm')}
-                        onChange={(e) => handleToleranceChange('ROUND', 'max_wear_mm', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Warning Threshold (%)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={getToleranceField('ROUND', 'warning_percentage')}
-                          onChange={(e) => handleToleranceChange('ROUND', 'warning_percentage', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Critical Threshold (%)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={getToleranceField('ROUND', 'critical_percentage')}
-                          onChange={(e) => handleToleranceChange('ROUND', 'critical_percentage', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
+            </button>
+          )}
 
-                  {/* Flat Dies Section */}
-                  <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-800/60 rounded-xl">
-                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">Flat Dies</h3>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Max Wear Limit (mm)</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        min="0.001"
-                        value={getToleranceField('FLAT', 'max_wear_mm')}
-                        onChange={(e) => handleToleranceChange('FLAT', 'max_wear_mm', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Warning Threshold (%)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={getToleranceField('FLAT', 'warning_percentage')}
-                          onChange={(e) => handleToleranceChange('FLAT', 'warning_percentage', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1.5">Critical Threshold (%)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={getToleranceField('FLAT', 'critical_percentage')}
-                          onChange={(e) => handleToleranceChange('FLAT', 'critical_percentage', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
+          {role === 'ROOT' && (
+            <button
+              onClick={() => setActiveTab('backups')}
+              className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
+                activeTab === 'backups'
+                  ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
+                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-[#070d19]/45'
+              }`}
+            >
+              <Database className="h-4 w-4" />
+              <div>
+                <span className="text-xs block font-bold uppercase tracking-wider">Backup & Recovery</span>
+                <span className="text-[9px] text-slate-500 block font-normal mt-0.5">Database dumps & imports</span>
+              </div>
+            </button>
+          )}
+        </div>
+
+        {/* Dynamic settings viewport */}
+        <div className="lg:col-span-9 bg-[#060a13]/85 backdrop-blur-md border border-slate-900 rounded-xl p-6 sm:p-8 shadow-2xl relative min-h-[420px]">
+          
+          {activeTab === 'account' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="pb-4 border-b border-slate-900/60">
+                <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Update Password</h2>
+                <span className="text-slate-500 text-[10px] block mt-1 font-mono">Ensure a strong authentication secret to protect your account session</span>
+              </div>
+
+              {/* Profile metadata panel */}
+              <div className="bg-slate-950/50 border border-slate-900/80 rounded-xl p-4 grid grid-cols-2 gap-4 text-xs font-mono select-none">
+                <div>
+                  <span className="text-slate-500 block uppercase font-bold text-[8px] tracking-wider">Active Operator</span>
+                  <span className="text-[#F8FAFC] font-bold mt-1 block">{username}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block uppercase font-bold text-[8px] tracking-wider">Access Authorization</span>
+                  <span className="text-blue-400 font-bold mt-1 block">{role}</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrent ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-650 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                      placeholder="Enter current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrent(!showCurrent)}
+                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
+                    >
+                      {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
 
-                {tolError && (
-                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-sm text-rose-400">
-                    {tolError}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNew ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-slate-655 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(!showNew)}
+                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
+                    >
+                      {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-655 focus:outline-none focus:border-blue-500/80 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-xs text-rose-400 font-mono">
+                    {error}
                   </div>
                 )}
 
-                {tolSuccess && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
+                {success && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-xs text-emerald-400 flex items-center gap-2 font-mono">
                     <Check className="h-4 w-4" />
-                    {tolSuccess}
+                    {success}
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={isSubmittingTolerances}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-550 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans"
                 >
-                  {isSubmittingTolerances ? 'Saving Configurations...' : 'Save Tolerance Configurations'}
+                  {isSubmitting ? 'Changing Password...' : 'Change Password'}
                 </button>
               </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {role === 'ROOT' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mt-8">
-          <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-b border-slate-800 px-6 sm:px-8 py-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-600/20 rounded-xl">
-                <Database className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Database Backup & Restore</h2>
-                <p className="text-sm text-slate-400 mt-0.5">Manage, trigger, and restore PostgreSQL database dumps</p>
-              </div>
             </div>
-          </div>
-          <div className="px-6 sm:px-8 py-6">
-            <BackupManager />
-          </div>
+          )}
+
+          {activeTab === 'tolerances' && (role === 'ADMIN' || role === 'ROOT') && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="pb-4 border-b border-slate-900/60">
+                <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Die Tolerance Configurations</h2>
+                <span className="text-slate-500 text-[10px] block mt-1 font-mono">Configure maximum wear thresholds and warning limits per die profile type</span>
+              </div>
+
+              {isLoadingTolerances ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+                </div>
+              ) : (
+                <form onSubmit={handleSaveTolerances} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {/* Round Dies Settings Card */}
+                    <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-900 rounded-xl">
+                      <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Round Dies</h3>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Max Wear Limit (mm)</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          value={getToleranceField('ROUND', 'max_wear_mm')}
+                          onChange={(e) => handleToleranceChange('ROUND', 'max_wear_mm', e.target.value)}
+                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Warning (%)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={getToleranceField('ROUND', 'warning_percentage')}
+                            onChange={(e) => handleToleranceChange('ROUND', 'warning_percentage', e.target.value)}
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Critical (%)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={getToleranceField('ROUND', 'critical_percentage')}
+                            onChange={(e) => handleToleranceChange('ROUND', 'critical_percentage', e.target.value)}
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Flat Dies Settings Card */}
+                    <div className="space-y-4 bg-slate-950/40 p-5 border border-slate-900 rounded-xl">
+                      <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Flat Dies</h3>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Max Wear Limit (mm)</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          value={getToleranceField('FLAT', 'max_wear_mm')}
+                          onChange={(e) => handleToleranceChange('FLAT', 'max_wear_mm', e.target.value)}
+                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Warning (%)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={getToleranceField('FLAT', 'warning_percentage')}
+                            onChange={(e) => handleToleranceChange('FLAT', 'warning_percentage', e.target.value)}
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Critical (%)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={getToleranceField('FLAT', 'critical_percentage')}
+                            onChange={(e) => handleToleranceChange('FLAT', 'critical_percentage', e.target.value)}
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {tolError && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 text-xs text-rose-400 font-mono">
+                      {tolError}
+                    </div>
+                  )}
+
+                  {tolSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-xs text-emerald-400 flex items-center gap-2 font-mono">
+                      <Check className="h-4 w-4" />
+                      {tolSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingTolerances}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-550 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans font-bold"
+                  >
+                    {isSubmittingTolerances ? 'Saving Configurations...' : 'Save Tolerance Configurations'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'backups' && role === 'ROOT' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="pb-4 border-b border-slate-900/60">
+                <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Database Backup & Recovery</h2>
+                <span className="text-slate-500 text-[10px] block mt-1 font-mono">Generate PostgreSQL backup archives, upload dumps, or restore physical states</span>
+              </div>
+
+              <BackupManager />
+            </div>
+          )}
+
         </div>
-      )}
+      </div>
     </div>
   )
 }

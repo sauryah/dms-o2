@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, ArrowRight } from 'lucide-react';
+import { Plus, X, MoveHorizontal } from 'lucide-react';
 
 interface DieProgressionProps {
   dies: number[];
@@ -14,163 +14,148 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
   const [hoveredDieIndex, setHoveredDieIndex] = useState<number | null>(null);
   const [hoveredArrowIndex, setHoveredArrowIndex] = useState<number | null>(null);
 
-  const maxDie = dies[0];
-  const minDie = dies[dies.length - 1];
-  const range = maxDie - minDie;
-
-  const getCircleSize = (d: number) => {
-    const minPx = 28;
-    const maxPx = 54;
-    if (range === 0) return (minPx + maxPx) / 2;
-    const ratio = (d - minDie) / range;
-    return minPx + ratio * (maxPx - minPx);
-  };
-
-  const getColor = (d: number) => {
-    if (range === 0) return '#3B82F6';
-    const ratio = (d - minDie) / range;
-    if (ratio > 0.6) return '#3B82F6';
-    if (ratio > 0.3) return '#60A5FA';
-    return '#93C5FD';
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    // Set blank image to let framer-motion or custom styles handle visual drag naturally if needed, 
-    // or just let native preview render.
-  };
-
-  const handleDragEnter = (targetIdx: number) => {
-    if (draggedIndex === null || draggedIndex === targetIdx || !onDiesChange) return;
-    
-    const updated = [...dies];
-    const [movedItem] = updated.splice(draggedIndex, 1);
-    updated.splice(targetIdx, 0, movedItem);
-    
-    setDraggedIndex(targetIdx);
-    onDiesChange(updated);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDeleteDie = (index: number) => {
-    if (!onDiesChange) return;
-    const updated = dies.filter((_, i) => i !== index);
-    onDiesChange(updated);
-  };
-
-  const handleInsertMidDie = (afterIndex: number) => {
-    if (!onDiesChange) return;
-    const midVal = Math.round(((dies[afterIndex] + dies[afterIndex + 1]) / 2) * 1000) / 1000;
-    const updated = [...dies];
-    updated.splice(afterIndex + 1, 0, midVal);
-    onDiesChange(updated);
-  };
+  const getArea = (diameter: number) => Math.PI * Math.pow(diameter / 2, 2);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="wdc-panel bg-[#0B1220]/45 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden"
+      className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-6 relative overflow-hidden shadow-2xl"
     >
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-900/60">
         <div>
-          <h3 className="text-[15px] font-semibold text-[#F8FAFC] m-0">Visual Drafting Path Builder</h3>
-          <span className="text-slate-500 text-[10.5px] block mt-1 font-sans">
-            Drag die nodes to reorder draft sequences. Hover to delete. Click transitions to insert.
+          <h3 className="text-sm font-semibold text-[#F8FAFC] tracking-tight block">Schematic Drafting Pipeline</h3>
+          <span className="text-slate-500 text-[10px] block mt-1 font-mono">
+            Drag to sequence passes • Hover node to delete • Hover taper connector to insert inline die
           </span>
         </div>
-        <span className="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/20 px-2 py-0.5 border border-blue-900/35 rounded-md">
-          {dies.length} passes
+        <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-950/20 px-2 py-0.5 border border-blue-900/30 rounded-md">
+          {dies.length} PASS SCHEDULE
         </span>
       </div>
 
-      <div className="flex items-center justify-start flex-wrap gap-y-6 gap-x-2 py-6 overflow-x-auto min-h-[90px] w-full px-2">
+      <div className="flex items-center justify-start flex-wrap gap-y-6 gap-x-2 py-4 overflow-x-auto w-full px-1">
         <AnimatePresence>
           {dies.map((d, i) => {
-            const size = getCircleSize(d);
-            const color = getColor(d);
             const isDragging = draggedIndex === i;
+            const wireRadiusLeft = 14;
+            
+            // Calculate taper details if there is a next die
+            let areaRedPercent = 0;
+            let wireRadiusRight = wireRadiusLeft;
+            if (i < dies.length - 1) {
+              const areaBef = getArea(d);
+              const areaAft = getArea(dies[i + 1]);
+              areaRedPercent = ((areaBef - areaAft) / areaBef) * 100;
+              // Scale right side wire proportional to reduction
+              wireRadiusRight = Math.max(4, wireRadiusLeft * (dies[i + 1] / d));
+            }
 
             return (
               <React.Fragment key={`${d}-${i}`}>
-                {/* Die Node circle */}
+                {/* Precision CAD Pass Card */}
                 <motion.div
                   layout
                   draggable
-                  onDragStart={(e) => handleDragStart(e, i)}
-                  onDragEnter={() => handleDragEnter(i)}
-                  onDragOver={handleDragOver}
+                  onDragStart={(e) => {
+                    setDraggedIndex(i);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragEnter={() => {
+                    if (draggedIndex === null || draggedIndex === i || !onDiesChange) return;
+                    const updated = [...dies];
+                    const [movedItem] = updated.splice(draggedIndex, 1);
+                    updated.splice(i, 0, movedItem);
+                    setDraggedIndex(i);
+                    onDiesChange(updated);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
                   onDragEnd={() => setDraggedIndex(null)}
                   onMouseEnter={() => setHoveredDieIndex(i)}
                   onMouseLeave={() => setHoveredDieIndex(null)}
-                  className={`relative flex items-center select-none transition-all duration-200 ${
-                    isDragging ? 'opacity-30 scale-95 border-dashed border-2 border-blue-500/50 rounded-full' : ''
+                  className={`relative select-none transition-all duration-200 w-28 h-16 rounded-lg border bg-slate-950/90 flex flex-col justify-between p-2.5 ${
+                    isDragging 
+                      ? 'opacity-25 scale-95 border-dashed border-blue-500/50 shadow-none' 
+                      : 'border-slate-900 hover:border-slate-800 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)]'
                   }`}
                   style={{ cursor: draggedIndex !== null ? 'grabbing' : 'grab' }}
                 >
-                  <div className="flex flex-col items-center gap-2 group relative">
-                    <div
-                      className="rounded-full transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.25)] flex items-center justify-center font-mono font-semibold"
-                      style={{
-                        width: size + 20 + 'px',
-                        height: size + 20 + 'px',
-                        backgroundColor: isDragging ? 'transparent' : `${color}15`,
-                        fontSize: Math.max(9, (size + 15) / 5) + 'px',
-                        minWidth: '38px',
-                        minHeight: '38px',
-                        color: color,
-                        boxShadow: isDragging ? 'none' : `inset 0 0 10px ${color}20`,
-                        border: `1.5px solid ${color}80`,
-                      }}
-                      title={`Pass ${i + 1}: ${d} mm (Drag to reorder)`}
-                    >
-                      <span>{d}</span>
-                    </div>
-                    
-                    <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-slate-350 transition-colors uppercase tracking-wider">
-                      P-{i + 1}
+                  {/* Card Header: Pass Indicator & Drag handle */}
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+                      Pass {i + 1}
                     </span>
-
-                    {/* Delete button (Root / on hover) */}
-                    {hoveredDieIndex === i && dies.length > 1 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteDie(i);
-                        }}
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-lg border border-rose-700/30 transition cursor-pointer"
-                        title="Remove Pass"
-                      >
-                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                      </button>
-                    )}
+                    <MoveHorizontal className="h-3 w-3 text-slate-700 opacity-40 group-hover:opacity-100 transition-opacity" />
                   </div>
+
+                  {/* Card Center: Die diameter size */}
+                  <div className="text-left">
+                    <span className="text-[13px] font-mono font-bold text-[#F8FAFC] block">
+                      Ø {d.toFixed(3)}
+                    </span>
+                    <span className="text-[8px] text-slate-650 font-mono block">diameter (mm)</span>
+                  </div>
+
+                  {/* Hover Delete Action Button */}
+                  {hoveredDieIndex === i && dies.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onDiesChange) onDiesChange(dies.filter((_, idx) => idx !== i));
+                      }}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-950/80 hover:bg-rose-900 text-rose-400 hover:text-rose-200 border border-rose-900/40 flex items-center justify-center shadow-lg transition cursor-pointer"
+                      title="Remove Pass"
+                    >
+                      <X className="w-2.5 h-2.5 stroke-[3]" />
+                    </button>
+                  )}
                 </motion.div>
 
-                {/* Arrow Connector (with hover-to-insert mechanism) */}
+                {/* Cyber Connector showing Tapered Wire & Reduction % */}
                 {i < dies.length - 1 && (
                   <div
                     onMouseEnter={() => setHoveredArrowIndex(i)}
                     onMouseLeave={() => setHoveredArrowIndex(null)}
-                    className="flex items-center justify-center w-8 h-10 relative select-none transition-all duration-200"
+                    className="flex items-center justify-center w-16 h-16 relative select-none transition-all duration-200"
                   >
                     {hoveredArrowIndex === i ? (
                       <button
-                        onClick={() => handleInsertMidDie(i)}
-                        className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-lg border border-emerald-700/30 transition transform hover:scale-110 cursor-pointer absolute z-10 animate-scaleIn"
-                        title={`Insert draft size between ${d} and ${dies[i+1]}`}
+                        onClick={() => {
+                          if (!onDiesChange) return;
+                          const midVal = Math.round(((d + dies[i + 1]) / 2) * 1000) / 1000;
+                          const updated = [...dies];
+                          updated.splice(i + 1, 0, midVal);
+                          onDiesChange(updated);
+                        }}
+                        className="w-5 h-5 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-emerald-450 border border-emerald-900/40 flex items-center justify-center shadow-lg transition transform hover:scale-110 cursor-pointer absolute z-10 animate-scaleIn"
+                        title={`Insert pass size between ${d} and ${dies[i+1]}`}
                       >
-                        <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                        <Plus className="w-3 h-3 stroke-[3]" />
                       </button>
                     ) : (
-                      <svg width="24" height="8" viewBox="0 0 24 8" className="text-slate-800 transition-colors duration-200">
-                        <line x1="0" y1="4" x2="16" y2="4" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
-                        <polygon points="16,1 24,4 16,7" fill="currentColor" opacity="0.25" />
+                      <svg width="60" height="40" className="opacity-75">
+                        <defs>
+                          <linearGradient id={`copper-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#b45309" stopOpacity="0.45" />
+                            <stop offset="100%" stopColor="#d97706" stopOpacity="0.25" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Shaded tapered wire representing physics deformation */}
+                        <path 
+                          d={`M 0 ${20 - wireRadiusLeft} L 60 ${20 - wireRadiusRight} L 60 ${20 + wireRadiusRight} L 0 ${20 + wireRadiusLeft} Z`} 
+                          fill={`url(#copper-grad-${i})`}
+                        />
+                        
+                        {/* Center line with reduction text */}
+                        <line x1="0" y1="20" x2="60" y2="20" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" strokeDasharray="2 2" />
+                        
+                        {/* Display Area Reduction % */}
+                        <rect x="11" y="11" width="38" height="18" rx="3" fill="#04060b" stroke="rgba(30, 41, 59, 0.6)" strokeWidth="0.75" />
+                        <text x="30" y="23" textAnchor="middle" className="fill-emerald-500/80 font-mono text-[9px] font-bold">
+                          -{areaRedPercent.toFixed(1)}%
+                        </text>
                       </svg>
                     )}
                   </div>
