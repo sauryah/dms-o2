@@ -181,6 +181,15 @@ graph TD
 - Added a "Download SVG" button to export the CAD vector graphic file.
 - Wrapped all private pages (Dashboard, Inventory, Details, Machines, History) in `<ProtectedRoute>` to eliminate split-second unauthenticated UI flashes.
 
+### 2026-07-16 · feat: implement granular tool permissions, wire drawing theory hub, and unified monolithic containerization (Release v1.7.1)
+- Implemented backend role-based and tool-specific permissions using a new `authorized_tools` JSONField in the `User` model.
+- Developed granular frontend tool access controls, enabling or disabling access to specific tools (`sizing-calculator`, `wire-drawing-calculator`, `die-wear`, `draw-optimizer`) based on authorization state.
+- Enhanced the user management console (UserManager) with checkbox interfaces to allow administrators to assign specific tools to non-root users.
+- Enforced route-level guards in frontend routing (`ProtectedRoute`) to check user permissions before rendering pages.
+- Integrated an interactive educational "Theory & Fundamentals of Wire Drawing" panel in the Wire Drawing Calculator.
+- Consolidated the deployment stack (React frontend, Go Search API, Django WSGI backend, Celery worker, Nginx) into a single unified Dockerfile and docker-compose configuration.
+- Added physical units to the Results Table and resolved .dockerignore build exclusion bugs.
+
 ### 2026-07-16 · feat: integrate Wire Drawing Elongation Calculator (Phase 13 / Release v1.7.0)
 - Integrated the high-fidelity Wire Drawing Elongation Calculator as a launchable, active Engineering Workbench tool.
 - Implemented core mathematical pass calculations, area reductions, elongation ratios, and drafting suggester algorithms.
