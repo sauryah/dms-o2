@@ -10,6 +10,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.7.1] - 2026-07-16
+
+### Added
+- **Granular User Tool Authorization**:
+  - Implemented backend role-based and tool-specific permissions using a new `authorized_tools` JSONField in the `User` model.
+  - Developed granular frontend tool access controls, enabling or disabling access to specific tools (`sizing-calculator`, `wire-drawing-calculator`, `die-wear`, `draw-optimizer`) based on authorization state.
+  - Enhanced the user management console (UserManager) with checkbox interfaces to allow administrators to assign specific tools to non-root users.
+  - Enforced route-level guards in frontend routing (`ProtectedRoute`) to check user permissions before rendering pages.
+- **Wire Drawing Fundamentals & Theory Panel**:
+  - Integrated an interactive educational "Theory & Fundamentals of Wire Drawing" panel in the Wire Drawing Calculator.
+  - Divided panel into three tabs: Mathematical Formulas (Area, Area Reduction, Elongation, and True Strain), Deformation Physics (Strain Hardening, Constant Volume, Force & Friction), and Best Practices/Limits (Pass Reduction Limits, Elongation Consistency, Semi-die Angle, and Delta Parameter).
+
+### Changed
+- **Unified Monolithic Deployment Structure**:
+  - Introduced a multi-stage Docker build that compiles the React frontend and Go Search API, bundling them together with the Django WSGI backend, Celery worker, and Nginx reverse proxy into a single monolithic production image.
+  - Created a simplified `docker-compose.unified.yml` setup which orchestrates the monolithic app container alongside PostgreSQL, Redis, and Meilisearch, significantly lowering hosting configuration complexity.
+  - Configured Supervisord to manage Gunicorn, Celery, Go API, and Nginx processes in the unified container.
+  - Updated the GitHub publish workflow (`docker-publish.yml`) to build and push a single unified image `dms-app` (and `app` on GHCR) rather than separate microservice images.
+
+### Fixed
+- **Results Table Usability**:
+  - Added physical measurement units (`mm²`) to area column headers (`Area Bef (mm²)`, `Area Aft (mm²)`) in the results table.
+  - Implemented a dedicated color-coded `reductionBadge` warning style for Area Reduction percentage to properly indicate compliance states distinct from elongation percentage.
+- **Docker Build Exclusions**:
+  - Adjusted `.dockerignore` rules to explicitly exclude `entrypoint.sh` from being ignored (via `!entrypoint.sh`), resolving container initialization failures.
+
+---
+
 ## [1.7.0] - 2026-07-16
 
 ### Added
