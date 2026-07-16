@@ -12,7 +12,7 @@ from dies.serializers import (
     serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer,
     DieToleranceSerializer, WearAlertSerializer
 )
-from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate
+from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate, IsAdminOrRootOnly
 from search.meili import client as meili_client, INDEX_NAME
 
 class DieViewSet(viewsets.ModelViewSet):
@@ -224,6 +224,8 @@ class DieViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='wear-prediction')
     def wear_prediction(self, request, die_id=None):
+        if not (request.user and request.user.is_authenticated and (request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser)):
+            return Response({"detail": "You do not have permission to view wear prediction details."}, status=status.HTTP_403_FORBIDDEN)
         die = self.get_object()
         from django.utils import timezone
         from history.models import DieHistory
@@ -626,7 +628,7 @@ class DieToleranceViewSet(viewsets.ModelViewSet):
 class WearAlertViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WearAlert.objects.select_related('die').all()
     serializer_class = WearAlertSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrRootOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()

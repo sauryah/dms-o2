@@ -190,6 +190,11 @@ class DieAPITests(APITestCase):
         response = self.client.delete(url_detail)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+        # 6. Operator cannot access wear prediction
+        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-101'})
+        response = self.client.get(url_wp)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_regular_user_cannot_relocate(self):
         # Create regular user and get token
         regular_user = User.objects.create_user(
@@ -208,6 +213,11 @@ class DieAPITests(APITestCase):
         url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
         data = {'location': 'Rack Z'}
         response = self.client.patch(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Regular user cannot access wear prediction
+        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-101'})
+        response = self.client.get(url_wp)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_detail_actions_with_slashed_die_id(self):
@@ -342,4 +352,25 @@ class TolerancesAndAlertsAPITests(APITestCase):
         # Write is forbidden (403)
         response_put = self.client.put(url_detail, data)
         self.assertEqual(response_put.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_operator_cannot_view_wear_alerts(self):
+        # Create an Operator user
+        operator_user = User.objects.create_user(
+            username='operator_user_alerts',
+            password='password123',
+            email='operator_alerts@dms.local',
+            role='OPERATOR'
+        )
+        operator_token = str(AccessToken.for_user(operator_user))
+        UserSession.objects.create(
+            user=operator_user,
+            token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
+        )
+
+        # Set operator credentials
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
+
+        url = reverse('wear-alert-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 

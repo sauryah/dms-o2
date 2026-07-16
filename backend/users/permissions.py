@@ -75,3 +75,15 @@ class IsAdminOrRootOrOperatorRelocate(permissions.BasePermission):
             
         return False
 
+
+class IsAdminOrRootOnly(permissions.BasePermission):
+    """
+    Permission check: only ROOT or ADMIN users can read or write.
+    """
+    def has_permission(self, request, view):
+        return (
+            request.user and
+            request.user.is_authenticated and
+            (request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser)
+        )
+
