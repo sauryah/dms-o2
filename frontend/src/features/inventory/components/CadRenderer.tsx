@@ -94,7 +94,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
               <circle 
                 cx="100" 
                 cy="100" 
-                r="75" 
+                r="55" 
                 fill="none" 
                 className={`blueprint-outline-secondary transition-all duration-300 ${
                   activeHighlight === 'punched_size' ? 'stroke-indigo-400 stroke-[2.5px] drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : ''
@@ -104,7 +104,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
             <circle 
               cx="100" 
               cy="100" 
-              r={75 * (parseFloat(die.current_size || '0') / parseFloat(die.punched_size || die.current_size || '1'))} 
+              r={55 * (parseFloat(die.current_size || '0') / parseFloat(die.punched_size || die.current_size || '1'))} 
               fill="rgba(59, 130, 246, 0.06)" 
               className="blueprint-outline animate-dash" 
             />
@@ -137,9 +137,9 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
               )}
               aria-label={`Current diameter: ${die.current_size || '—'}mm`}
             >
-              <line x1="25" y1="100" x2="175" y2="100" className="blueprint-dim-line" strokeDasharray="3 3" />
-              <path d="M 25 100 L 32 97 L 32 103 Z" fill="#10b981" />
-              <path d="M 175 100 L 168 97 L 168 103 Z" fill="#10b981" />
+              <line x1="45" y1="100" x2="155" y2="100" className="blueprint-dim-line" strokeDasharray="3 3" />
+              <path d="M 45 100 L 52 97 L 52 103 Z" fill="#10b981" />
+              <path d="M 155 100 L 148 97 L 148 103 Z" fill="#10b981" />
               <rect x="72" y="88" width="56" height="15" rx="3" fill="#030712" />
               <text x="100" y="99" textAnchor="middle" className="blueprint-dim-text">
                 Ø {die.current_size}
@@ -174,9 +174,9 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                 )}
                 aria-label={`Punched diameter: ${die.punched_size || '—'}mm`}
               >
-                <line x1="100" y1="25" x2="145" y2="25" className="blueprint-dim-line" />
-                <circle cx="100" cy="25" r="2" fill="#10b981" />
-                <text x="150" y="28" className="blueprint-dim-text" textAnchor="start">
+                <line x1="100" y1="45" x2="135" y2="45" className="blueprint-dim-line" />
+                <circle cx="100" cy="45" r="2" fill="#10b981" />
+                <text x="140" y="48" className="blueprint-dim-text" textAnchor="start">
                   Punched: Ø {die.punched_size}
                 </text>
               </g>
@@ -191,7 +191,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
             const radius = parseFloat(die.radius || '0')
 
             const maxVal = Math.max(origWidth, origThick)
-            const scale = 130 / maxVal
+            const scale = 90 / maxVal
             const w = width * scale
             const t = thickness * scale
             const ow = origWidth * scale
@@ -277,7 +277,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintP
                   <line x1={x + w} y1={y + t + 5} x2={x + w} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
                   <path d={`M ${x} ${y + t + 15} L ${x + 6} ${y + t + 12} L ${x + 6} ${y + t + 18} Z`} fill="#10b981" />
                   <path d={`M ${x + w} ${y + t + 15} L ${x + w - 6} ${y + t + 12} L ${x + w - 6} ${y + t + 18} Z`} fill="#10b981" />
-                  <rect x="85" y={y + t + 7} width="30" height="14" rx="2" fill="#030712" />
+                  <rect x="75" y={y + t + 7} width="50" height="14" rx="2" fill="#030712" />
                   <text x="100" y={y + t + 17} textAnchor="middle" className="blueprint-dim-text">
                     W: {die.current_width}
                   </text>
