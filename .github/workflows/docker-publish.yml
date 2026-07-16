@@ -76,61 +76,25 @@ jobs:
           echo "📦 Building version: $VERSION"
 
       # ------------------------------------------------------------------
-      # 7. Build & Push — Backend (Django)
+      # 7. Build & Push — Unified App (Monolithic)
       # ------------------------------------------------------------------
-      - name: Build & push backend
+      - name: Build & push unified app
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-backend:${{ steps.version.outputs.VERSION }}
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-backend:latest
-            ${{ env.GHCR_NAMESPACE }}/backend:${{ steps.version.outputs.VERSION }}
-            ${{ env.GHCR_NAMESPACE }}/backend:latest
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+            ${{ env.DOCKERHUB_NAMESPACE }}/dms-app:${{ steps.version.outputs.VERSION }}
+            ${{ env.DOCKERHUB_NAMESPACE }}/dms-app:latest
+            ${{ env.GHCR_NAMESPACE }}/app:${{ steps.version.outputs.VERSION }}
+            ${{ env.GHCR_NAMESPACE }}/app:latest
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
 
       # ------------------------------------------------------------------
-      # 8. Build & Push — Frontend (React + Nginx)
-      # ------------------------------------------------------------------
-      - name: Build & push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile.prod
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-frontend:${{ steps.version.outputs.VERSION }}
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-frontend:latest
-            ${{ env.GHCR_NAMESPACE }}/frontend:${{ steps.version.outputs.VERSION }}
-            ${{ env.GHCR_NAMESPACE }}/frontend:latest
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
-
-      # ------------------------------------------------------------------
-      # 9. Build & Push — Go API
-      # ------------------------------------------------------------------
-      - name: Build & push go-api
-        uses: docker/build-push-action@v6
-        with:
-          context: ./go-api
-          file: ./go-api/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-go-api:${{ steps.version.outputs.VERSION }}
-            ${{ env.DOCKERHUB_NAMESPACE }}/dms-go-api:latest
-            ${{ env.GHCR_NAMESPACE }}/go-api:${{ steps.version.outputs.VERSION }}
-            ${{ env.GHCR_NAMESPACE }}/go-api:latest
-          cache-from: type=gha,scope=go-api
-          cache-to: type=gha,mode=max,scope=go-api
-
-      # ------------------------------------------------------------------
-      # 10. Summary
+      # 8. Summary
       # ------------------------------------------------------------------
       - name: Print image summary
         run: |
@@ -139,6 +103,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Docker Hub | GHCR |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-----------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | \`${{ env.DOCKERHUB_NAMESPACE }}/dms-backend:${VERSION}\` | \`${{ env.GHCR_NAMESPACE }}/backend:${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`${{ env.DOCKERHUB_NAMESPACE }}/dms-frontend:${VERSION}\` | \`${{ env.GHCR_NAMESPACE }}/frontend:${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Go API | \`${{ env.DOCKERHUB_NAMESPACE }}/dms-go-api:${VERSION}\` | \`${{ env.GHCR_NAMESPACE }}/go-api:${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unified App | \`${{ env.DOCKERHUB_NAMESPACE }}/dms-app:${VERSION}\` | \`${{ env.GHCR_NAMESPACE }}/app:${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
