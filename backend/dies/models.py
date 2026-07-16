@@ -14,6 +14,7 @@ class Die(models.Model):
     remarks     = models.TextField(blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
+    version     = models.IntegerField(default=1)
 
     class Meta:
         indexes = [
@@ -121,3 +122,14 @@ class WearAlert(models.Model):
     def __str__(self):
         status = "Resolved" if self.is_resolved else "Active"
         return f"WearAlert [{status}] - {self.die.die_id} ({self.alert_level})"
+
+
+class OutboxTask(models.Model):
+    task_type    = models.CharField(max_length=50)  # e.g., 'SYNC_DIE' or 'DELETE_DIE'
+    payload      = models.JSONField()
+    is_processed = models.BooleanField(default=False)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"OutboxTask {self.task_type} - Processed: {self.is_processed}"

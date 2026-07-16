@@ -315,3 +315,34 @@ def rebuild_search_index_task(self, filename=None):
         )
         retry_delay = 30 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=retry_delay)
+
+
+@shared_task(bind=True, max_retries=5)
+def process_outbox_task(self):
+    """
+    Process pending OutboxTask records and perform actual Meilisearch sync operations.
+    """
+    from dies.models import OutboxTask
+    from django.utils import timezone
+    
+    # Query all unprocessed outbox records ordered by creation time
+    pending_tasks = OutboxTask.objects.filter(is_processed=False).order_by('created_at')
+    
+    logger.info(f"Processing outbox. Found {pending_tasks.count()} pending tasks.")
+    
+    for task in pending_tasks:
+        try:
+            if task.task_type == 'SYNC_DIE':
+                die_db_id = task.payload.get('die_id')
+                # call the task synchronously inside our worker to process it immediately
+                sync_die_task(die_db_id)
+            elif task.task_type == 'DELETE_DIE':
+                die_db_id = task.payload.get('die_id')
+                delete_die_document_task(die_db_id)
+            
+            task.is_processed = True
+            task.processed_at = timezone.now()
+            task.save()
+            logger.info(f"Successfully processed outbox task {task.id} (Type: {task.task_type})")
+        except Exception as exc:
+            logger.error(f"Failed to process outbox task {task.id} (Type: {task.task_type}): {exc}")

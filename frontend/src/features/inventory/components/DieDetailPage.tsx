@@ -1284,7 +1284,8 @@ export function DieDetailPage() {
       rack: rack ? Number(rack) : null,
       shelf: shelf ? Number(shelf) : null,
       remarks,
-      current_set: currentSetId || null
+      current_set: currentSetId || null,
+      version: die?.version
     }
     if (die.die_type === 'ROUND') {
       payload.current_size = currentSize

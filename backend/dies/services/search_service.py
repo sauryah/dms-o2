@@ -22,8 +22,10 @@ class SearchService:
             
             def run_sync():
                 _thread_locals.pending_sync_die_ids.discard(die_id)
-                from search.tasks import sync_die_task
-                sync_die_task.delay(die_id)
+                from dies.models import OutboxTask
+                from search.tasks import process_outbox_task
+                OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
+                process_outbox_task.delay()
                 
             transaction.on_commit(run_sync)
 
@@ -48,8 +50,11 @@ class SearchService:
 
     @staticmethod
     def sync_dies_batch(die_ids):
-        from search.tasks import sync_dies_batch_task
-        sync_dies_batch_task.delay(die_ids)
+        from dies.models import OutboxTask
+        from search.tasks import process_outbox_task
+        for die_id in die_ids:
+            OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
+        process_outbox_task.delay()
 
     @staticmethod
     def broadcast_bulk_import():
@@ -57,7 +62,12 @@ class SearchService:
 
     @staticmethod
     def delete_die_document(die_id):
-        transaction.on_commit(lambda: delete_die_document(die_id))
+        def run_delete():
+            from dies.models import OutboxTask
+            from search.tasks import process_outbox_task
+            OutboxTask.objects.create(task_type='DELETE_DIE', payload={'die_id': die_id})
+            process_outbox_task.delay()
+        transaction.on_commit(run_delete)
 
     @staticmethod
     def broadcast_die_delete(die_id):

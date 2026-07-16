@@ -33,7 +33,7 @@ class DieListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'active_alerts']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'active_alerts', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -68,7 +68,7 @@ class DieDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'active_alerts']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'active_alerts', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -112,7 +112,7 @@ class DieCreateSerializer(serializers.ModelSerializer):
         model = Die
         fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'current_set', 'remarks', 'rack', 'shelf',
                   'punched_size', 'current_size', 'punched_width', 'current_width',
-                  'punched_thickness', 'current_thickness', 'radius']
+                  'punched_thickness', 'current_thickness', 'radius', 'version']
                   
     def to_internal_value(self, data):
         if 'status' in data and data['status']:

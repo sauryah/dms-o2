@@ -607,17 +607,28 @@ func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "event: connected\ndata: {}\n\n")
 	flusher.Flush()
 
+	// Check if we need to backfill missed events for a reconnecting client
+	lastEventIDStr := r.Header.Get("Last-Event-ID")
+	if lastEventIDStr == "" {
+		lastEventIDStr = r.URL.Query().Get("last_event_id")
+	}
+	if lastEventIDStr != "" {
+		if lastID, err := strconv.ParseInt(lastEventIDStr, 10, 64); err == nil {
+			h.eventManager.Backfill(w, flusher, lastID)
+		}
+	}
+
 	// Keep alive ticker
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case msg, ok := <-clientChan:
+		case ev, ok := <-clientChan:
 			if !ok {
 				return
 			}
-			fmt.Fprintf(w, "data: %s\n\n", msg)
+			fmt.Fprintf(w, "id: %d\ndata: %s\n\n", ev.ID, ev.Message)
 			flusher.Flush()
 		case <-ticker.C:
 			fmt.Fprintf(w, ": keepalive\n\n")

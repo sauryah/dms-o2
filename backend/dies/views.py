@@ -57,6 +57,37 @@ class DieViewSet(viewsets.ModelViewSet):
             return DieCreateSerializer
         return DieDetailSerializer
 
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # 1. OPTIMISTIC CONCURRENCY CONTROL (OCC)
+        client_version = request.data.get('version')
+        if client_version is not None:
+            try:
+                client_version = int(client_version)
+            except ValueError:
+                return Response({"detail": "Invalid version format."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if instance.version != client_version:
+                return Response({
+                    "detail": "Concurrency Conflict: This record has been modified by another user. Please refresh and try again.",
+                    "code": "concurrency_conflict"
+                }, status=status.HTTP_409_CONFLICT)
+                
+        # 2. PESSIMISTIC LOCKING
+        locked_instance = Die.objects.select_for_update().get(die_id=instance.die_id)
+        
+        serializer = self.get_serializer(locked_instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        
+        locked_instance.version += 1
+        locked_instance.save(update_fields=['version'])
+        
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
@@ -125,7 +156,7 @@ class DieViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='recut')
     @transaction.atomic
     def recut(self, request, die_id=None):
-        die = self.get_object()
+        die = Die.objects.select_for_update().get(die_id=die_id)
         
         # Check permissions: ADMIN or ROOT only
         if request.user.role not in ['ADMIN', 'ROOT'] and not request.user.is_superuser:

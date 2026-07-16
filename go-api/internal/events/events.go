@@ -1,7 +1,10 @@
 package events
 
 import (
+	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -9,7 +12,12 @@ import (
 	"dms-go-api/internal/config"
 )
 
-type Client chan string
+type Event struct {
+	ID      int64  `json:"id"`
+	Message string `json:"message"`
+}
+
+type Client chan Event
 
 type EventManager struct {
 	clients    map[Client]bool
@@ -17,6 +25,8 @@ type EventManager struct {
 	unregister chan Client
 	broadcast  chan string
 	mu         sync.RWMutex
+	history    []Event
+	nextID     int64
 }
 
 func NewEventManager() *EventManager {
@@ -25,6 +35,8 @@ func NewEventManager() *EventManager {
 		register:   make(chan Client, 64),
 		unregister: make(chan Client, 64),
 		broadcast:  make(chan string, 256),
+		history:    make([]Event, 0, 100),
+		nextID:     1,
 	}
 }
 
@@ -45,10 +57,22 @@ func (m *EventManager) Start() {
 			}
 			m.mu.Unlock()
 		case message := <-m.broadcast:
+			m.mu.Lock()
+			event := Event{
+				ID:      m.nextID,
+				Message: message,
+			}
+			m.nextID++
+			if len(m.history) >= 100 {
+				m.history = m.history[1:]
+			}
+			m.history = append(m.history, event)
+			m.mu.Unlock()
+
 			m.mu.RLock()
 			for client := range m.clients {
 				select {
-				case client <- message:
+				case client <- event:
 				default:
 					log.Println("SSE Client buffer full or blocked. Unregistering client.")
 					go func(c Client) {
@@ -75,6 +99,18 @@ func (m *EventManager) Broadcast(msg string) {
 	default:
 		log.Println("Warning: eventManager broadcast queue full, skipping broadcast.")
 	}
+}
+
+func (m *EventManager) Backfill(w io.Writer, flusher http.Flusher, lastID int64) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, ev := range m.history {
+		if ev.ID > lastID {
+			fmt.Fprintf(w, "id: %d\ndata: %s\n\n", ev.ID, ev.Message)
+		}
+	}
+	flusher.Flush()
 }
 
 func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func()) {
