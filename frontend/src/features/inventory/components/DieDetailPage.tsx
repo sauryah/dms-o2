@@ -1867,6 +1867,7 @@ export function DieDetailPage() {
                   die={die} 
                   activeHighlight={highlightedDim}
                   onHoverDim={setHighlightedDim}
+                  prediction={prediction}
                 />
               </div>
 

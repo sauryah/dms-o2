@@ -1,8 +1,9 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
 import { calculatePassData, calculateStatistics, calculateConsistency } from '../features/wire-drawing-calculator/utils/calculations';
 import Header from '../features/wire-drawing-calculator/components/Header';
+import { DieBlueprint } from '../features/inventory/components/CadRenderer';
 import InputPanel from '../features/wire-drawing-calculator/components/InputPanel';
 import ResultsTable from '../features/wire-drawing-calculator/components/ResultsTable';
 import ElongationChart from '../features/wire-drawing-calculator/components/ElongationChart';
@@ -24,6 +25,7 @@ const DEFAULT_DIES = [
 
 export function WireDrawingCalculatorPage() {
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
+  const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const printRef = useRef<HTMLDivElement>(null);
 
   const passes = calculatePassData(dies);
@@ -66,15 +68,59 @@ export function WireDrawingCalculatorPage() {
 
         {passes.length > 0 && (
           <>
-            <ResultsTable
-              passes={passes}
-              dies={dies}
-              onDiesChange={handleDiesChange}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onUndo={undo}
-              onRedo={redo}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <ResultsTable
+                  passes={passes}
+                  dies={dies}
+                  onDiesChange={handleDiesChange}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onUndo={undo}
+                  onRedo={redo}
+                  selectedPassIdx={selectedPassIdx}
+                  onSelectPass={setSelectedPassIdx}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                {(() => {
+                  const selectedPass = selectedPassIdx !== null && selectedPassIdx < passes.length ? passes[selectedPassIdx] : null;
+                  const simulatedDie = selectedPass ? {
+                    die_type: 'ROUND',
+                    die_id: `PASS-${selectedPass.draft}`,
+                    punched_size: selectedPass.inlet.toString(),
+                    current_size: selectedPass.outlet.toString(),
+                    status: 'RUNNING',
+                    casing: 'Standard Carbide'
+                  } : null;
+
+                  return simulatedDie ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-5 bg-blue-600 rounded-sm" />
+                        <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-heading">Pass CAD Visualizer</h3>
+                      </div>
+                      <DieBlueprint 
+                        die={simulatedDie}
+                        activeHighlight={null}
+                        onHoverDim={() => {}}
+                      />
+                      <div className="bg-[#0b1428]/45 border border-slate-800/40 p-4 rounded-xl text-xs space-y-2">
+                        <h4 className="font-bold text-slate-300 font-sans uppercase tracking-wider text-[10px]">Simulated Pass Operations</h4>
+                        <p className="text-slate-450 leading-relaxed font-sans text-[11px]">
+                          Visualizing the draft progression geometry for **Pass #{selectedPass?.draft}**. 
+                          Click any row in the results table to select that draft, zoom/pan the viewport, or view the internal cross-sectional channel.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#0b1428]/20 border border-slate-800/40 p-6 rounded-xl text-slate-500 text-xs text-center flex items-center justify-center h-[280px]">
+                      Select a pass row in the results table to activate live CAD simulation.
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
 
             <DieProgression dies={dies} />
 

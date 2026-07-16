@@ -14,6 +14,8 @@ interface ResultsTableProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  selectedPassIdx?: number | null;
+  onSelectPass?: (idx: number | null) => void;
 }
 
 function elongationBadge(val: number) {
@@ -32,6 +34,7 @@ function reductionBadge(val: number) {
 
 export default function ResultsTable({
   passes, dies, onDiesChange, canUndo, canRedo, onUndo, onRedo,
+  selectedPassIdx, onSelectPass,
 }: ResultsTableProps) {
   const [editing, setEditing] = useState<{ pass: number; field: 'fromDie' | 'toDie' } | null>(null);
   const [editVal, setEditVal] = useState('');
@@ -110,15 +113,22 @@ export default function ResultsTable({
             </tr>
           </thead>
           <tbody>
-            {passes.map((p) => {
+            {passes.map((p, i) => {
               const isEF = editing?.pass === p.pass && editing.field === 'fromDie';
               const isET = editing?.pass === p.pass && editing.field === 'toDie';
+              const isSelected = selectedPassIdx === i;
               return (
                 <tr
                   key={p.pass}
-                  className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors"
+                  className={`border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer ${
+                    isSelected ? 'bg-blue-600/[0.05] relative' : ''
+                  }`}
+                  onClick={() => onSelectPass?.(i)}
                 >
-                  <td className="px-3 py-2.5 text-[#94A3B8] font-medium">{p.pass}</td>
+                  <td className="px-3 py-2.5 text-[#94A3B8] font-medium relative">
+                    {isSelected && <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500" />}
+                    {p.pass}
+                  </td>
                   {(['fromDie', 'toDie'] as const).map((field) => {
                     const val = field === 'fromDie' ? p.fromDie : p.toDie;
                     const isEdit = field === 'fromDie' ? isEF : isET;
@@ -126,7 +136,12 @@ export default function ResultsTable({
                       <td
                         key={field}
                         className="px-3 py-2.5 text-right font-mono text-[#F8FAFC] cursor-pointer hover:bg-blue-500/[0.06] rounded transition-colors relative group"
-                        onClick={() => { setEditing({ pass: p.pass, field }); setEditVal(String(val)); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectPass?.(i);
+                          setEditing({ pass: p.pass, field });
+                          setEditVal(String(val));
+                        }}
                       >
                         {isEdit ? (
                           <input
