@@ -97,7 +97,7 @@ Authorization: Bearer <your_jwt_access_token>
 | **Import**| `POST` | `/api/import/` | Admin / Root | Spreadsheet CSV/XLSX bulk imports (dry-run supported via `?dry_run=true`) |
 | | `GET` | `/api/import/template/` | Admin / Root | Downloads standard Excel import template spreadsheet |
 | | `GET` | `/api/import/logs/` | Admin / Root | Retrieves paginated history logs of bulk spreadsheet imports |
-| **History**| `GET` | `/api/history/` | Authenticated | Audit Trail log history records (Regular users see own, Admin/Root see all) |
+| **History**| `GET` | `/api/history/` | Admin / Root | Audit Trail log history records (Restricted to Admin/Root roles) |
 | **Internal**| `POST` | `/internal/verify-token/` | Go Service Only | Internal-only token validation route mapping active user role and id |
 
 ---
