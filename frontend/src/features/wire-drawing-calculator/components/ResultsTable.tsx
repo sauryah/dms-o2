@@ -23,6 +23,13 @@ function elongationBadge(val: number) {
   return 'bg-red-500/15 text-red-400 border-red-500/20';
 }
 
+function reductionBadge(val: number) {
+  if (val < 12) return 'bg-blue-500/15 text-blue-400 border-blue-500/20';
+  if (val <= 20) return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20';
+  if (val <= 25) return 'bg-amber-500/15 text-amber-400 border-amber-500/20';
+  return 'bg-red-500/15 text-red-400 border-red-500/20';
+}
+
 export default function ResultsTable({
   passes, dies, onDiesChange, canUndo, canRedo, onUndo, onRedo,
 }: ResultsTableProps) {
@@ -52,7 +59,7 @@ export default function ResultsTable({
     onDiesChange(nd);
   };
 
-  const headers = ['Pass', 'From', 'To', 'Area Bef', 'Area Aft', 'Red %', 'Elong %', 'Ratio'];
+  const headers = ['Pass', 'From', 'To', 'Area Bef (mm²)', 'Area Aft (mm²)', 'Red %', 'Elong %', 'Ratio'];
 
   return (
     <motion.div
@@ -141,7 +148,7 @@ export default function ResultsTable({
                   <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaBefore)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaAfter)}</td>
                   <td className="px-3 py-2.5 text-right">
-                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${elongationBadge(p.areaReduction)}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${reductionBadge(p.areaReduction)}`}>
                       {formatNumber(p.areaReduction)}
                     </span>
                   </td>
