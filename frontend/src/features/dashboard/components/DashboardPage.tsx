@@ -172,6 +172,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const { role } = useAuth()
   const [q, setQ] = useState('')
   const debouncedQ = useDebounce(q, 300)
   const [dieType, setDieType] = useState('')
@@ -701,7 +702,7 @@ function MaintenanceQueue() {
   // Fetch history of status changes
   const { data: historyData, isLoading: isHistoryLoading } = useQuery<any>({
     queryKey: ['statusHistoryList'],
-    queryFn: () => request('/api/history/?field=status&page_size=100')
+    queryFn: () => request('/api/history/dashboard/?field=status&page_size=100')
   })
 
   const maintenanceList = useMemo(() => {
@@ -819,7 +820,7 @@ function RecentActivityFeed() {
 
   const { data: historyData, isLoading } = useQuery<any>({
     queryKey: ['dashboardRecentHistoryList'],
-    queryFn: () => request('/api/history/?page_size=10')
+    queryFn: () => request('/api/history/dashboard/?page_size=10')
   })
 
   const historyItems = Array.isArray(historyData) ? historyData : []

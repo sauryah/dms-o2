@@ -93,18 +93,18 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         category: 'Navigation',
         icon: <Compass className="h-4.5 w-4.5 text-violet-400" />,
         perform: () => { navigate('/machines'); onClose() }
-      },
-      {
+      }
+    ]
+
+    if (role === 'ROOT' || role === 'ADMIN') {
+      list.push({
         id: 'nav-history',
         title: 'Go to Audit History',
         subtitle: 'View detailed system logs and operator audit trails',
         category: 'Navigation',
         icon: <Compass className="h-4.5 w-4.5 text-emerald-400" />,
         perform: () => { navigate('/history'); onClose() }
-      }
-    ]
-
-    if (role === 'ROOT' || role === 'ADMIN') {
+      })
       list.push({
         id: 'nav-import',
         title: 'Go to Bulk Import',

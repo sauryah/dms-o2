@@ -133,18 +133,20 @@ export function Navbar() {
               >
                 Machine Sets
               </NavLink>
-              <NavLink 
-                to="/history" 
-                className={({ isActive }) => 
-                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
-                    isActive 
-                      ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
-                  }`
-                }
-              >
-                Audit History
-              </NavLink>
+              {(role === 'ROOT' || role === 'ADMIN') && (
+                <NavLink 
+                  to="/history" 
+                  className={({ isActive }) => 
+                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent ${
+                      isActive 
+                        ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
+                    }`
+                  }
+                >
+                  Audit History
+                </NavLink>
+              )}
               {/* Tools Dropdown */}
               {isAuthorizedForTools && (
                 <div 
@@ -413,13 +415,15 @@ export function Navbar() {
           >
             Machine Sets
           </Link>
-          <Link 
-            to="/history" 
-            className="block text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl text-base font-semibold hover:bg-slate-900 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            Audit History
-          </Link>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Link 
+              to="/history" 
+              className="block text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl text-base font-semibold hover:bg-slate-900 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Audit History
+            </Link>
+          )}
           {isAuthorizedForTools && (
             <div className="px-3.5 py-2">
               <Link 

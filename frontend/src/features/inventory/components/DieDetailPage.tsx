@@ -1901,9 +1901,11 @@ export function DieDetailPage() {
       </div>
 
       {/* History timeline */}
-      <div className="print:hidden">
-        <Timeline history={die.history} />
-      </div>
+      {(role === 'ROOT' || role === 'ADMIN') && (
+        <div className="print:hidden">
+          <Timeline history={die.history} />
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}

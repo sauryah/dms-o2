@@ -317,7 +317,7 @@ function AppContent() {
             } />
             <Route path="/history" element={
               <ErrorBoundary>
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
                   <HistoryPage />
                 </ProtectedRoute>
               </ErrorBoundary>
