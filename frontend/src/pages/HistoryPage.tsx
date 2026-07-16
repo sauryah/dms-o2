@@ -11,6 +11,8 @@ export function HistoryPage() {
   // Shared Filter States
   const [userInput, setUserInput] = useState('')
   const [fieldInput, setFieldInput] = useState('')
+  const [ipInput, setIpInput] = useState('')
+  const [searchTextInput, setSearchTextInput] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [page, setPage] = useState(1)
@@ -26,18 +28,22 @@ export function HistoryPage() {
   // Debounced filters
   const debouncedUser = useDebounce(userInput, 300)
   const debouncedField = useDebounce(fieldInput, 300)
+  const debouncedIp = useDebounce(ipInput, 300)
+  const debouncedSearchText = useDebounce(searchTextInput, 300)
   const debouncedDieId = useDebounce(dieIdInput, 300)
   const debouncedEntityName = useDebounce(entityNameInput, 300)
 
   // Fetch Die History
   const { data: dieHistoryData, isLoading: isLoadingDies, error: errorDies } = useQuery({
-    queryKey: ['dieHistory', debouncedDieId, debouncedUser, debouncedField, fromDate, toDate, page],
+    queryKey: ['dieHistory', debouncedDieId, debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
     enabled: activeTab === 'dies',
     queryFn: ({ signal }) => {
       const params = new URLSearchParams()
       if (debouncedDieId) params.append('die_id', debouncedDieId)
       if (debouncedUser) params.append('user', debouncedUser)
       if (debouncedField) params.append('field', debouncedField)
+      if (debouncedIp) params.append('ip', debouncedIp)
+      if (debouncedSearchText) params.append('search', debouncedSearchText)
       if (fromDate) params.append('from', fromDate)
       if (toDate) params.append('to', toDate)
       params.append('page', page.toString())
@@ -49,7 +55,7 @@ export function HistoryPage() {
 
   // Fetch Machine History
   const { data: machineHistoryData, isLoading: isLoadingMachines, error: errorMachines } = useQuery({
-    queryKey: ['machineHistory', debouncedEntityName, entityTypeInput, actionInput, debouncedUser, debouncedField, fromDate, toDate, page],
+    queryKey: ['machineHistory', debouncedEntityName, entityTypeInput, actionInput, debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
     enabled: activeTab === 'machines',
     queryFn: ({ signal }) => {
       const params = new URLSearchParams()
@@ -58,6 +64,8 @@ export function HistoryPage() {
       if (actionInput) params.append('action', actionInput)
       if (debouncedUser) params.append('user', debouncedUser)
       if (debouncedField) params.append('field', debouncedField)
+      if (debouncedIp) params.append('ip', debouncedIp)
+      if (debouncedSearchText) params.append('search', debouncedSearchText)
       if (fromDate) params.append('from', fromDate)
       if (toDate) params.append('to', toDate)
       params.append('page', page.toString())
@@ -84,6 +92,8 @@ export function HistoryPage() {
       const params = new URLSearchParams()
       if (debouncedUser) params.append('user', debouncedUser)
       if (debouncedField) params.append('field', debouncedField)
+      if (debouncedIp) params.append('ip', debouncedIp)
+      if (debouncedSearchText) params.append('search', debouncedSearchText)
       if (fromDate) params.append('from', fromDate)
       if (toDate) params.append('to', toDate)
       params.append('page_size', '10000') // fetch all matching up to 10k
@@ -283,6 +293,34 @@ export function HistoryPage() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1">IP Address</label>
+            <div className="relative">
+              <Filter className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="e.g. 192.168..."
+                value={ipInput}
+                onChange={(e) => { setIpInput(e.target.value); setPage(1); }}
+                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1">Search Notes / Values</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search notes or values..."
+                value={searchTextInput}
+                onChange={(e) => { setSearchTextInput(e.target.value); setPage(1); }}
+                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800/60 pt-4">
@@ -342,6 +380,7 @@ export function HistoryPage() {
                       <th className="px-6 py-4.5">New Value</th>
                       <th className="px-6 py-4.5">Changed By</th>
                       <th className="px-6 py-4.5">IP Address</th>
+                      <th className="px-6 py-4.5">Reason / Note</th>
                     </tr>
                   ) : (
                     <tr>
@@ -381,6 +420,9 @@ export function HistoryPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
                           {log.ip_address || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-400 max-w-xs truncate" title={log.note}>
+                          {log.note || '—'}
                         </td>
                       </tr>
                     ))
