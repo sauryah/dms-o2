@@ -9,6 +9,7 @@ wiki/
 design-system/
 *.ps1
 *.sh
+!entrypoint.sh
 test_script3.py
 __pycache__
 *.pyc
