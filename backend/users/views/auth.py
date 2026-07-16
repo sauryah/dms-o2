@@ -163,7 +163,8 @@ class LoginView(APIView):
             'token': token_str,
             'refresh': refresh_token_str,
             'role': user.role,
-            'is_authorized_for_tools': user.is_authorized_for_tools
+            'is_authorized_for_tools': user.is_authorized_for_tools,
+            'authorized_tools': user.authorized_tools
         }, status=status.HTTP_200_OK)
         
         response.set_cookie(
@@ -394,7 +395,8 @@ class VerifyTokenView(APIView):
             "valid": True,
             "user_id": request.user.id,
             "role": request.user.role,
-            "is_authorized_for_tools": request.user.is_authorized_for_tools
+            "is_authorized_for_tools": request.user.is_authorized_for_tools,
+            "authorized_tools": request.user.authorized_tools
         }, status=status.HTTP_200_OK)
 
     @extend_schema(exclude=True)

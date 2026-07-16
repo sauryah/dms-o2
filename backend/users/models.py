@@ -11,6 +11,7 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='REGULAR')
     is_authorized_for_tools = models.BooleanField(default=False)
+    authorized_tools = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f"{self.username} ({self.role})"

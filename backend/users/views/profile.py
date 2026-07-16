@@ -26,6 +26,7 @@ class MeView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'is_authorized_for_tools': user.is_authorized_for_tools,
+            'authorized_tools': user.authorized_tools,
         })
 
 

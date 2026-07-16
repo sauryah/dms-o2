@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'email', 'first_name', 'last_name', 'is_active', 'is_authorized_for_tools', 'password', 'current_password']
+        fields = ['id', 'username', 'role', 'email', 'first_name', 'last_name', 'is_active', 'is_authorized_for_tools', 'authorized_tools', 'password', 'current_password']
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
         }
@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"password": list(e.messages)})
 
         # Only ROOT users can modify roles or authorize users for tools
-        if 'role' in attrs or 'is_authorized_for_tools' in attrs:
+        if 'role' in attrs or 'is_authorized_for_tools' in attrs or 'authorized_tools' in attrs:
             if not request or not request.user or (request.user.role != 'ROOT' and not request.user.is_superuser):
                 raise serializers.ValidationError({"role": "Only ROOT users can modify user roles or authorize users for tools."})
 
