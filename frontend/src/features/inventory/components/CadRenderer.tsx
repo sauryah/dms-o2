@@ -7,6 +7,7 @@ interface DieData {
   die_id: string
   punched_size?: string
   current_size?: string
+  inlet_size?: string
   punched_width?: string
   current_width?: string
   punched_thickness?: string
@@ -318,7 +319,10 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                   {(() => {
                     const currentDia = parseFloat(die.current_size || '1')
                     const punchedDia = parseFloat(die.punched_size || die.current_size || '1.2')
-                    const d = 42 * (currentDia / punchedDia)
+                    const inletDia = die.inlet_size ? parseFloat(die.inlet_size) : punchedDia
+                    const d = die.inlet_size && inletDia > currentDia
+                      ? 52 * (currentDia / inletDia)
+                      : 42 * (currentDia / punchedDia)
                     
                     return (
                       <>

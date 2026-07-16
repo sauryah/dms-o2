@@ -88,8 +88,9 @@ export function WireDrawingCalculatorPage() {
                   const simulatedDie = selectedPass ? {
                     die_type: 'ROUND',
                     die_id: `PASS-${selectedPass.draft}`,
-                    punched_size: selectedPass.fromDie.toString(),
+                    punched_size: selectedPass.toDie.toString(),
                     current_size: selectedPass.toDie.toString(),
+                    inlet_size: selectedPass.fromDie.toString(),
                     status: 'RUNNING',
                     casing: 'Standard Carbide'
                   } : null;
