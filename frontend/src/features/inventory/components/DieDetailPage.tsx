@@ -1118,6 +1118,13 @@ export function DieDetailPage() {
     queryFn: () => request(`/api/dies/${id}/`),
   })
 
+  // Fetch prediction data for CAD rendering tolerance highlights
+  const { data: prediction } = useQuery({
+    queryKey: ['wearPrediction', die?.die_id],
+    queryFn: () => request(`/api/dies/${die?.die_id}/wear-prediction/`),
+    enabled: !!die?.die_id,
+  })
+
   // Populate recut defaults when modal is opened or die changes
   useEffect(() => {
     if (die) {
