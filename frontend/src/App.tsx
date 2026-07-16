@@ -22,6 +22,7 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ defa
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
 const ToolsPage = React.lazy(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
+const WireDrawingCalculatorPage = React.lazy(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 
 const queryClient = new QueryClient()
 
@@ -331,6 +332,13 @@ function AppContent() {
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth>
                   <CalculatorPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/wire-drawing-calculator" element={
+              <ErrorBoundary>
+                <ProtectedRoute requireToolAuth>
+                  <WireDrawingCalculatorPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />

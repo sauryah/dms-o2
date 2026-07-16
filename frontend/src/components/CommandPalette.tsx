@@ -71,6 +71,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         perform: () => { navigate('/'); onClose() }
       },
       {
+        id: 'nav-wire-drawing-calculator',
+        title: 'Go to Wire Drawing Calculator',
+        subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
+        category: 'Navigation',
+        icon: <Compass className="h-4.5 w-4.5 text-indigo-400" />,
+        perform: () => { navigate('/wire-drawing-calculator'); onClose() }
+      },
+      {
         id: 'nav-inventory',
         title: 'Go to Die Inventory',
         subtitle: 'Browse and filter all extrusion dies in the catalog',

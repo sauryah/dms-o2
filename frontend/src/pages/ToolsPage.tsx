@@ -23,6 +23,24 @@ export function ToolsPage() {
       ]
     },
     {
+      id: 'wire-drawing-calculator',
+      title: 'Wire Drawing Elongation Calculator',
+      description: 'Analyze multi-pass wire drawing sequences, evaluate pass area reductions and elongation ratios, verify target parameters, and optimize die schedules.',
+      icon: Calculator,
+      color: 'from-indigo-600/20 to-purple-600/20 border-indigo-500/30 text-indigo-400 shadow-indigo-500/10',
+      active: true,
+      path: '/wire-drawing-calculator',
+      badge: 'Active & Ready',
+      statusIcon: CheckCircle2,
+      statusClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      features: [
+        'Multi-pass sequence calculation',
+        'Area reductions & elongation stats',
+        'Interactive die list editing & undo/redo',
+        'Export reports to PDF, Excel & CSV'
+      ]
+    },
+    {
       id: 'die-wear',
       title: 'Die Wear & Lifespan Estimator',
       description: 'Analyze historically recorded wear patterns, track throughput tonnages, and forecast remaining operation time or volume before recutting is required.',
