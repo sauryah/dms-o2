@@ -58,10 +58,12 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                 <motion.div
                   layout
                   draggable
-                  onDragStart={(e) => {
+                  onDragStart={((e: any) => {
                     setDraggedIndex(i);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
+                    if (e.dataTransfer) {
+                      e.dataTransfer.effectAllowed = 'move';
+                    }
+                  }) as any}
                   onDragEnter={() => {
                     if (draggedIndex === null || draggedIndex === i || !onDiesChange) return;
                     const updated = [...dies];
