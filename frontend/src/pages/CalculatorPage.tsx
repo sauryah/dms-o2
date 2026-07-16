@@ -676,11 +676,23 @@ export function CalculatorPage() {
           {activeTab === 'round' && (
             <>
               {/* Inputs Panel */}
-              <div className="lg:col-span-5 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  document.getElementById('calculation-results')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="lg:col-span-5 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl"
+              >
                 <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
-                    Process Variables
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
+                      Process Variables
+                    </h3>
+                    <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      Live
+                    </span>
+                  </div>
                   <span className="text-[10px] font-mono text-slate-500">TAB_1 // ROUND_DIE</span>
                 </div>
                 
@@ -831,11 +843,19 @@ export function CalculatorPage() {
                       <span className="text-[10px] text-slate-500 mt-1.5 block">Relative extension strain target percentage.</span>
                     </div>
                   )}
+                  
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
+                  >
+                    <Calculator className="h-4.5 w-4.5" />
+                    Calculate & View Results
+                  </button>
                 </div>
-              </div>
+              </form>
 
               {/* Outputs Column */}
-              <div className="lg:col-span-7 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 flex flex-col justify-between shadow-xl min-h-[580px]">
+              <div id="calculation-results" className="lg:col-span-7 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 flex flex-col justify-between shadow-xl min-h-[580px]">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
@@ -1227,11 +1247,23 @@ export function CalculatorPage() {
           {activeTab === 'sequence' && (
             <>
               {/* Inputs Panel */}
-              <div className="lg:col-span-4 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  document.getElementById('sequence-results')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="lg:col-span-4 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl"
+              >
                 <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
-                    Sequence Limits
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
+                      Sequence Limits
+                    </h3>
+                    <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                      Live
+                    </span>
+                  </div>
                   <span className="text-[10px] font-mono text-slate-500">TAB_2 // DIES_SEQUENCE</span>
                 </div>
 
@@ -1333,11 +1365,19 @@ export function CalculatorPage() {
                         : 'Gradually reduces draft as wire work-hardens, preventing high-stress wire breakage.'}
                     </span>
                   </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
+                  >
+                    <Calculator className="h-4.5 w-4.5" />
+                    Generate Pass Sequence
+                  </button>
                 </div>
-              </div>
+              </form>
 
               {/* Sequence Output */}
-              <div className="lg:col-span-8 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 shadow-xl space-y-6">
+              <div id="sequence-results" className="lg:col-span-8 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 shadow-xl space-y-6">
                 <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
                     Sizing Sequence telemetry
@@ -1597,11 +1637,23 @@ export function CalculatorPage() {
           {activeTab === 'flat' && (
             <>
               {/* Inputs Panel */}
-              <div className="lg:col-span-5 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  document.getElementById('flat-results')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="lg:col-span-5 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl"
+              >
                 <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
-                    Flat Profiling Inputs
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
+                      Flat Profiling Inputs
+                    </h3>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live
+                    </span>
+                  </div>
                   <span className="text-[10px] font-mono text-slate-500">TAB_3 // FLAT_STRIP</span>
                 </div>
 
@@ -1691,11 +1743,19 @@ export function CalculatorPage() {
                       </div>
                     </div>
                   </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
+                  >
+                    <Calculator className="h-4.5 w-4.5" />
+                    Calculate Flat Profile
+                  </button>
                 </div>
-              </div>
+              </form>
 
               {/* Outputs Column */}
-              <div className="lg:col-span-7 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 flex flex-col justify-between shadow-xl min-h-[580px]">
+              <div id="flat-results" className="lg:col-span-7 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 flex flex-col justify-between shadow-xl min-h-[580px]">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
