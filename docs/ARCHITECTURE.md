@@ -98,6 +98,8 @@ Authorization: Bearer <your_jwt_access_token>
 | | `GET` | `/api/import/template/` | Admin / Root | Downloads standard Excel import template spreadsheet |
 | | `GET` | `/api/import/logs/` | Admin / Root | Retrieves paginated history logs of bulk spreadsheet imports |
 | **History**| `GET` | `/api/history/` | Admin / Root | Audit Trail log history records (Restricted to Admin/Root roles) |
+| | `GET` | `/api/history/machines/` | Admin / Root | Machine/Set Audit Trail history records |
+| | `GET` | `/api/history/dashboard/` | Authenticated | Cached summary of non-sensitive history (strips IP, notes; cached 60s) |
 | **Internal**| `POST` | `/internal/verify-token/` | Go Service Only | Internal-only token validation route mapping active user role and id |
 
 ---
@@ -342,12 +344,13 @@ ORDER BY query_start ASC;
 
 ---
 
-## 4. Scheduled History Pruning
+## 4. Scheduled History Pruning & Cache Invalidation
 
 To prevent query degradation and database bloating as operational logs grow over time:
-*   **Pruning Job**: A cron job scheduled nightly at **3:00 AM** in the `backup` container executes `scripts/prune_history.sh`.
-*   **Logic**: Connects directly to the PostgreSQL database via `psql` and deletes all `history_diehistory` entries older than `HISTORY_RETENTION_DAYS` (configured via environment variable, default: 365 days).
-*   **Logs**: Outputs the count of deleted records to the container's stdout logs for administrative audit.
+*   **Celery Beat Task**: A daily background task `auto_prune_history` is configured via `CELERY_BEAT_SCHEDULE` to run every 24 hours. It calls the Django management command `prune_history` to delete logs older than the retention threshold.
+*   **Legacy Pruner**: A backup cron job scheduled nightly at **3:00 AM** in the `backup` container executes `scripts/prune_history.sh`.
+*   **Logic**: Deletes all `history_diehistory` entries older than `HISTORY_RETENTION_DAYS` (default: 365 days).
+*   **Cache Invalidation**: Whenever a new `DieHistory` row is saved or deleted, Django signals (`post_save`, `post_delete`) automatically clear the cached `/api/history/dashboard/` queries to keep the Operator dashboard accurate and real-time.
 
 ---
 
