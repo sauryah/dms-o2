@@ -318,3 +318,185 @@ textarea:focus {
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* Wire Drawing Calculator Styles */
+:root {
+  --color-primary: #3B82F6;
+  --color-primary-light: #60A5FA;
+  --color-primary-dark: #2563EB;
+  --color-bg: #0B1220;
+  --color-card: #111827;
+  --color-card-hover: #151D2E;
+  --color-input: #0F172A;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-text: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-muted: #64748B;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-focus: rgba(59, 130, 246, 0.5);
+  --color-glass: rgba(17, 24, 39, 0.6);
+  --color-steel: #1E293B;
+  --color-steel-light: #334155;
+}
+
+.wdc-panel {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wdc-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+}
+
+.wdc-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.wdc-btn:active {
+  transform: scale(0.97);
+}
+
+.wdc-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.wdc-btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+.wdc-btn-primary:hover { background: #4B8EF7; }
+.wdc-btn-primary:active { transform: scale(0.97); }
+
+.wdc-btn-secondary {
+  background: var(--color-steel);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+.wdc-btn-secondary:hover {
+  background: var(--color-steel-light);
+  color: var(--color-text);
+}
+
+.wdc-btn-ghost {
+  background: transparent;
+  color: var(--color-muted);
+  border: 1px solid transparent;
+}
+.wdc-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+.wdc-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.wdc-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.wdc-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-input);
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.wdc-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.wdc-textarea {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-input);
+  color: var(--color-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.02em;
+}
+.wdc-textarea:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.wdc-section-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.wdc-body-text {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.wdc-label {
+  font-size: 14px;
+  color: var(--color-muted);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.wdc-mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.wdc-glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+}
+
+@keyframes wdcFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wdc-animate-in {
+  animation: wdcFadeInUp 0.4s ease-out forwards;
+}
+
