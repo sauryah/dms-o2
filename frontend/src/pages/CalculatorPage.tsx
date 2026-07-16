@@ -238,6 +238,60 @@ export function CalculatorPage() {
   const [dieAngle, setDieAngle] = useState<string>('7.0')
   const [yieldStrength, setYieldStrength] = useState<string>('70')
   const [uts, setUts] = useState<string>('220')
+  const [lubrication, setLubrication] = useState<'hydrodynamic' | 'dry_soap' | 'wet_oil' | 'boundary'>('dry_soap')
+
+  const getFrictionCoefficient = () => {
+    switch (lubrication) {
+      case 'hydrodynamic': return 0.02
+      case 'dry_soap': return 0.04
+      case 'wet_oil': return 0.06
+      case 'boundary': return 0.10
+      default: return 0.04
+    }
+  }
+  const mu = getFrictionCoefficient()
+
+  const getFlowStress = (inArea: number, outArea: number) => {
+    const epsilon = Math.log(inArea / outArea)
+    if (epsilon <= 0) return parseFloat(yieldStrength) || 70
+    
+    let K = 0
+    let n = 0
+    let y0 = parseFloat(yieldStrength) || 70
+    
+    switch (materialType) {
+      case 'copper_soft':
+        K = 315
+        n = 0.54
+        break
+      case 'copper_hard':
+        K = 450
+        n = 0.10
+        break
+      case 'aluminum':
+        K = 180
+        n = 0.20
+        break
+      case 'steel_low':
+        K = 530
+        n = 0.26
+        break
+      case 'custom':
+      default:
+        return y0 + 150 * epsilon
+    }
+    return y0 + (K * Math.pow(epsilon, n)) / (n + 1)
+  }
+
+  const getDrawingStress = (inArea: number, outArea: number, alphaRad: number) => {
+    if (inArea <= outArea || alphaRad <= 0) return 0
+    const epsilon = Math.log(inArea / outArea)
+    const r = (inArea - outArea) / inArea
+    const delta = (alphaRad / r) * (2 - r)
+    const phi = 0.88 + 0.12 * delta
+    const flowStress = getFlowStress(inArea, outArea)
+    return flowStress * (1 + mu / Math.tan(alphaRad)) * epsilon * phi
+  }
 
   // New Die Matching variables
   const [matchingDies, setMatchingDies] = useState<Record<number, any[]>>({})
@@ -297,8 +351,7 @@ export function CalculatorPage() {
       const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
       const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
       const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-      const mu = 0.07
-      const sigmaD = parseFloat(yieldStrength) * Math.log(stepInArea / stepOutArea) * (1 + mu / Math.tan(alphaRad))
+      const sigmaD = getDrawingStress(stepInArea, stepOutArea, alphaRad)
       const forceN = stepOutArea * sigmaD
       const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
       
@@ -418,7 +471,7 @@ export function CalculatorPage() {
               Physics & Power Calculations Settings
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
                 Drawing Speed (v)
@@ -453,6 +506,22 @@ export function CalculatorPage() {
                   °
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
+                Lubrication (μ)
+              </label>
+              <select
+                value={lubrication}
+                onChange={(e) => setLubrication(e.target.value as any)}
+                className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-3 py-2.5 text-white font-mono text-xs focus:border-blue-500/60 focus:outline-none cursor-pointer h-[38px]"
+              >
+                <option value="hydrodynamic">Hydrodynamic (μ=0.02)</option>
+                <option value="dry_soap">Dry Soap (μ=0.04)</option>
+                <option value="wet_oil">Wet Oil (μ=0.06)</option>
+                <option value="boundary">Boundary (μ=0.10)</option>
+              </select>
             </div>
 
             <div>
@@ -1148,13 +1217,16 @@ export function CalculatorPage() {
                             <Zap className="h-4 w-4 text-amber-500" />
                             Mechanical Tension & Power
                           </h4>
-                          {(() => {
+                           {(() => {
                             const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                            const mu = 0.07
-                            const sigmaD = parseFloat(yieldStrength) * Math.log(roundResults.inArea / roundResults.outArea) * (1 + mu / Math.tan(alphaRad))
+                            const sigmaD = getDrawingStress(roundResults.inArea, roundResults.outArea, alphaRad)
                             const forceN = roundResults.outArea * sigmaD
                             const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
                             const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
+                            
+                            const epsilon = Math.log(roundResults.inArea / roundResults.outArea)
+                            const optAlphaRad = Math.sqrt(1.5 * mu * epsilon)
+                            const optAlphaDeg = optAlphaRad * (180 / Math.PI)
 
                             return (
                               <div className="space-y-2.5 font-mono text-xs text-slate-300">
@@ -1165,12 +1237,16 @@ export function CalculatorPage() {
                                 <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
                                   <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Stress:</span>
                                   <span className={`font-bold ${isStressUnsafe ? 'text-rose-400' : 'text-indigo-400'}`}>
-                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(High Tension)'}
+                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(Tension Limit)'}
                                   </span>
                                 </div>
                                 <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
                                   <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Power Required:</span>
                                   <span className="font-bold text-emerald-400">{powerKw.toFixed(2)} kW</span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Optimum Die Angle:</span>
+                                  <span className="font-bold text-cyan-400">{optAlphaDeg.toFixed(1)}° (semi)</span>
                                 </div>
                               </div>
                             )
@@ -1455,7 +1531,7 @@ export function CalculatorPage() {
                                 <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Cum. Red.</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#1b253b]/50 font-mono text-xs text-slate-200">
+<tbody className="divide-y divide-[#1b253b]/50 font-mono text-xs text-slate-200">
                               {sequenceResults.steps.map((step) => {
                                 // Calculate cumulative reduction at this pass
                                 const currentArea = Math.PI * Math.pow(step.outlet / 2, 2)
@@ -1469,8 +1545,7 @@ export function CalculatorPage() {
                                 const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
                                 const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
                                 const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                                const mu = 0.07
-                                const sigmaD = parseFloat(yieldStrength) * Math.log(stepInArea / stepOutArea) * (1 + mu / Math.tan(alphaRad))
+                                const sigmaD = getDrawingStress(stepInArea, stepOutArea, alphaRad)
                                 const forceN = stepOutArea * sigmaD
                                 const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
                                 const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
@@ -2023,11 +2098,14 @@ export function CalculatorPage() {
                           </h4>
                           {(() => {
                             const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                            const mu = 0.07
-                            const sigmaD = parseFloat(yieldStrength) * Math.log(flatResults.inArea / flatResults.outArea) * (1 + mu / Math.tan(alphaRad))
+                            const sigmaD = getDrawingStress(flatResults.inArea, flatResults.outArea, alphaRad)
                             const forceN = flatResults.outArea * sigmaD
                             const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
                             const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
+                            
+                            const epsilon = Math.log(flatResults.inArea / flatResults.outArea)
+                            const optAlphaRad = Math.sqrt(1.5 * mu * epsilon)
+                            const optAlphaDeg = optAlphaRad * (180 / Math.PI)
 
                             return (
                               <div className="space-y-2.5 font-mono text-xs text-slate-300">
@@ -2038,12 +2116,16 @@ export function CalculatorPage() {
                                 <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
                                   <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Drawing Stress:</span>
                                   <span className={`font-bold ${isStressUnsafe ? 'text-rose-400' : 'text-indigo-400'}`}>
-                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(High Tension)'}
+                                    {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(Tension Limit)'}
                                   </span>
                                 </div>
                                 <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
                                   <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Power Required:</span>
                                   <span className="font-bold text-emerald-400">{powerKw.toFixed(2)} kW</span>
+                                </div>
+                                <div className="flex justify-between border-t border-[#1b253b]/55 pt-2">
+                                  <span className="text-slate-400 uppercase text-[9px] font-heading font-bold">Optimum Die Angle:</span>
+                                  <span className="font-bold text-cyan-400">{optAlphaDeg.toFixed(1)}° (semi)</span>
                                 </div>
                               </div>
                             )
