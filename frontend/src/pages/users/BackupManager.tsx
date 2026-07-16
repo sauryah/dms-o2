@@ -131,7 +131,7 @@ export function BackupManager() {
               <Database className="h-4 w-4 text-blue-400" />
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Database Snapshot Tool</h3>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
+            <p className="text-xs text-slate-500 leading-relaxed font-sans">
               Instantly compile and export the current state of the database (dies, inventory metrics, history logs, machines) into a secure PostgreSQL binary archive.
             </p>
           </div>
@@ -151,7 +151,7 @@ export function BackupManager() {
             </button>
 
             {/* Nightly alert banner */}
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#070d19]/60 border border-slate-900 text-[10px] font-sans leading-normal">
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#070d19]/60 border border-slate-900 text-xs font-sans leading-normal">
               <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-slate-350">
@@ -173,7 +173,7 @@ export function BackupManager() {
               <Upload className="h-4 w-4 text-indigo-400" />
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Ingest Dump Archive</h3>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
+            <p className="text-xs text-slate-500 leading-relaxed font-sans">
               Load an offline database backup file (`.dump`) into the server storage to make it available for immediate system restores.
             </p>
           </div>
@@ -194,7 +194,7 @@ export function BackupManager() {
             <span className="text-xs font-bold text-slate-300 block">
               {isUploading ? 'Uploading Archive File...' : 'Click to Upload Backup'}
             </span>
-            <span className="text-[9px] text-slate-550 font-mono mt-1 block uppercase">
+            <span className="text-xs text-slate-550 font-mono mt-1 block uppercase">
               Only accepts `.dump` format
             </span>
             <input 
@@ -217,7 +217,7 @@ export function BackupManager() {
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
             <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Stored Snapshots</h4>
           </div>
-          <span className="text-[9px] text-slate-500 font-mono">
+          <span className="text-xs text-slate-500 font-mono">
             {backups && Array.isArray(backups) ? `${backups.length} archives available` : '0 archives'}
           </span>
         </div>
@@ -234,7 +234,7 @@ export function BackupManager() {
           <div className="text-center py-16 bg-[#04070d]/30 border border-slate-900 rounded-xl p-8 flex flex-col justify-center items-center">
             <Database className="h-8 w-8 text-slate-750 mb-3" />
             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">No backups index found</h5>
-            <p className="text-[10px] text-slate-550 max-w-sm mx-auto">
+            <p className="text-xs text-slate-550 max-w-sm mx-auto">
               No database backup files exist in the `/backups` directory on the server volume.
             </p>
           </div>
@@ -243,7 +243,7 @@ export function BackupManager() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-900 bg-[#040810]/60 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                  <tr className="border-b border-slate-900 bg-[#040810]/60 text-slate-500 text-xs font-bold uppercase tracking-wider">
                     <th className="py-3.5 px-5 font-mono">Backup File</th>
                     <th className="py-3.5 px-5 font-mono">Date Created</th>
                     <th className="py-3.5 px-5 font-mono">Size</th>
@@ -271,7 +271,7 @@ export function BackupManager() {
                         </td>
                         
                         <td className="py-3.5 px-5">
-                          <span className="bg-blue-950/20 text-blue-400 border border-blue-900/30 px-2 py-0.5 rounded text-[10px] font-bold">
+                          <span className="bg-blue-950/20 text-blue-400 border border-blue-900/30 px-2 py-0.5 rounded text-[11px] font-bold">
                             {backup.size_kb >= 1024 
                               ? `${(backup.size_kb / 1024).toFixed(2)} MB` 
                               : `${backup.size_kb.toFixed(1)} KB`}
@@ -294,7 +294,7 @@ export function BackupManager() {
                               setSelectedBackup(backup)
                               setShowRestoreConfirmModal(true)
                             }}
-                            className="bg-emerald-950/20 hover:bg-emerald-900/40 text-emerald-450 border border-emerald-900/30 px-3 py-1.5 rounded text-[10px] font-bold tracking-wider uppercase transition cursor-pointer"
+                            className="bg-emerald-950/20 hover:bg-emerald-900/40 text-emerald-450 border border-emerald-900/30 px-3 py-1.5 rounded text-[11px] font-bold tracking-wider uppercase transition cursor-pointer"
                             title="Restore database to this state"
                           >
                             Restore

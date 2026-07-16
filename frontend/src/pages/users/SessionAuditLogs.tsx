@@ -125,35 +125,35 @@ export function SessionAuditLogs() {
     switch (status) {
       case 'ACTIVE':
         return (
-          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 w-fit">
+          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-xs font-bold uppercase rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 w-fit">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
             <span>Active Now</span>
           </span>
         )
       case 'LOGGED_OUT':
         return (
-          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-slate-500/10 text-slate-400 border border-slate-500/20 w-fit">
+          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-xs font-bold uppercase rounded bg-slate-500/10 text-slate-400 border border-slate-500/20 w-fit">
             <LogOut className="h-3 w-3 text-slate-500" />
             <span>Logged Out</span>
           </span>
         )
       case 'FAILED':
         return (
-          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 w-fit animate-pulse">
+          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-xs font-bold uppercase rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 w-fit animate-pulse">
             <ShieldAlert className="h-3 w-3 text-rose-500" />
             <span>Failed Attempt</span>
           </span>
         )
       case 'EXPIRED':
         return (
-          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 w-fit">
+          <span className="flex items-center space-x-1.5 px-2 py-0.5 text-xs font-bold uppercase rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 w-fit">
             <Clock className="h-3 w-3 text-amber-500" />
             <span>Expired</span>
           </span>
         )
       default:
         return (
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-slate-900 text-slate-500 border border-slate-800 w-fit">
+          <span className="px-2 py-0.5 text-xs font-bold uppercase rounded bg-slate-900 text-slate-500 border border-slate-800 w-fit">
             Closed
           </span>
         )
@@ -239,7 +239,7 @@ export function SessionAuditLogs() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-900 bg-[#040810]/60 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <tr className="border-b border-slate-900 bg-[#040810]/60 text-slate-500 text-xs font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-5 font-mono">User Identity</th>
                   <th className="py-3.5 px-5 font-mono">Session State</th>
                   <th className="py-3.5 px-5 font-mono">Session Start</th>
@@ -273,9 +273,9 @@ export function SessionAuditLogs() {
                       <td className="py-3.5 px-5 text-slate-350 font-bold">
                         {duration}
                       </td>
-                      <td className="py-3.5 px-5 text-slate-500 text-[11px] truncate max-w-[240px]" title={`${session.ip_address || '—'} | ${session.device || '—'}`}>
+                      <td className="py-3.5 px-5 text-slate-500 text-xs truncate max-w-[240px]" title={`${session.ip_address || '—'} | ${session.device || '—'}`}>
                         <span className="text-slate-400 font-bold block">{session.ip_address || '—'}</span>
-                        <span className="text-[10px] text-slate-655 block mt-0.5 truncate">{session.device || '—'}</span>
+                        <span className="text-xs text-slate-655 block mt-0.5 truncate">{session.device || '—'}</span>
                       </td>
                     </tr>
                   )
@@ -287,21 +287,21 @@ export function SessionAuditLogs() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-slate-900 bg-[#040810]/40 font-mono text-xs select-none">
-              <div className="text-slate-500 text-[11px]">
+              <div className="text-slate-500 text-xs">
                 Showing page <span className="font-semibold text-white">{page}</span> of <span className="font-semibold text-white">{totalPages}</span> ({count} entries)
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={() => setPage(p => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 bg-[#03060c] text-slate-300 hover:text-white border border-slate-900 rounded text-[10px] font-bold hover:bg-[#070d19] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  className="px-3 py-1.5 bg-[#03060c] text-slate-300 hover:text-white border border-slate-900 rounded text-xs font-bold hover:bg-[#070d19] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setPage(p => Math.min(p + 1, totalPages))}
                   disabled={page === totalPages}
-                  className="px-3 py-1.5 bg-[#03060c] text-slate-300 hover:text-white border border-slate-900 rounded text-[10px] font-bold hover:bg-[#070d19] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  className="px-3 py-1.5 bg-[#03060c] text-slate-300 hover:text-white border border-slate-900 rounded text-xs font-bold hover:bg-[#070d19] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
                   Next
                 </button>

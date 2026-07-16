@@ -109,12 +109,12 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
       <div className="flex justify-between items-start mb-4 pb-4 border-b border-slate-900/60">
         <div>
           <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight block">Dimensions Blueprint</h2>
-          <span className="text-slate-500 text-[10px] block mt-1 font-mono">Scale Vector CAD Simulation (mm)</span>
+          <span className="text-slate-500 text-xs block mt-1 font-mono">Scale Vector CAD Simulation (mm)</span>
         </div>
         <div className="flex items-center gap-3">
           {/* View Mode Toggle Segmented Control (ROOT ONLY) */}
           {isRoot && (
-            <div className="inline-flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-900/80 text-[10px] font-semibold select-none">
+            <div className="inline-flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-900/80 text-xs font-semibold select-none">
               <button
                 onClick={() => setViewMode('extrusion')}
                 className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
@@ -138,7 +138,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
             </div>
           )}
 
-          <span className="px-2 py-0.5 text-[9px] font-mono font-medium bg-blue-950/20 text-blue-400/80 border border-blue-900/30 rounded-md select-none">
+          <span className="px-2 py-0.5 text-xs font-mono font-medium bg-blue-950/20 text-blue-400/80 border border-blue-900/30 rounded-md select-none">
             {die.die_type}
           </span>
         </div>
@@ -189,7 +189,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
               .blueprint-outline { stroke: #3b82f6; stroke-width: 2; fill: none; }
               .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1.25; stroke-dasharray: 4 2; fill: none; }
               .blueprint-dim-line { stroke: ${dimColor}; stroke-width: 0.85; fill: none; }
-              .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 9px; font-weight: 600; }
+              .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 11px; font-weight: 600; }
               .interactive-dim-group:hover .blueprint-dim-text,
               .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; text-shadow: 0 0 4px ${dimColorHover}60; }
               .interactive-dim-group:hover .blueprint-dim-line,
@@ -445,7 +445,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                   .blueprint-outline { stroke: #3b82f6; stroke-width: 2; fill: none; }
                   .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1.25; stroke-dasharray: 4 2; fill: none; }
                   .blueprint-dim-line { stroke: ${dimColor}; stroke-width: 0.85; fill: none; }
-                  .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 9px; font-weight: 600; }
+                  .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 11px; font-weight: 600; }
                   .interactive-dim-group:hover .blueprint-dim-text,
                   .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; text-shadow: 0 0 4px ${dimColorHover}60; }
                   .interactive-dim-group:hover .blueprint-dim-line,
@@ -689,7 +689,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
       </div>
       
       {/* Footer Meta */}
-      <div className="flex justify-between items-center text-slate-600 text-[8px] font-mono select-none mt-6 pt-3 border-t border-slate-900/60 w-full">
+      <div className="flex justify-between items-center text-slate-600 text-xs font-mono select-none mt-6 pt-3 border-t border-slate-900/60 w-full">
         <span 
           className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
             activeHighlight === 'casing' ? 'text-blue-400 font-bold scale-105' : ''
@@ -760,12 +760,12 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
       {activeTooltip && (
         <div className="absolute inset-x-4 bottom-4 bg-[#03060c]/98 backdrop-blur-md border border-slate-800 rounded-lg p-3 text-xs shadow-2xl z-10 animate-fadeIn">
           <div className="flex justify-between items-start mb-1.5">
-            <h4 className="text-blue-400 font-mono text-[9px] uppercase font-bold tracking-wider">{activeTooltip.title}</h4>
+            <h4 className="text-blue-400 font-mono text-xs uppercase font-bold tracking-wider">{activeTooltip.title}</h4>
             <div className="flex items-center gap-1.5 select-none">
               {activeTooltip.isPinned ? (
-                <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1 py-0.2 rounded font-semibold font-mono border border-blue-500/20">Pinned</span>
+                <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1 py-0.2 rounded font-semibold font-mono border border-blue-500/20">Pinned</span>
               ) : (
-                <span className="text-[8px] bg-slate-900 text-slate-500 px-1 py-0.2 rounded font-semibold font-mono border border-slate-800">Hovering</span>
+                <span className="text-[10px] bg-slate-900 text-slate-500 px-1 py-0.2 rounded font-semibold font-mono border border-slate-800">Hovering</span>
               )}
               <button 
                 onClick={() => setActiveTooltip(null)} 
@@ -776,9 +776,9 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
               </button>
             </div>
           </div>
-          <p className="text-slate-300 font-medium mb-1 leading-relaxed text-[10px]">{activeTooltip.content}</p>
+          <p className="text-slate-300 font-medium mb-1 leading-relaxed text-xs">{activeTooltip.content}</p>
           {activeTooltip.isPinned && (
-            <div className="text-[9.5px] text-slate-500 border-t border-slate-900/60 pt-1.5 mt-1.5 leading-normal animate-slideDown">
+            <div className="text-xs text-slate-500 border-t border-slate-900/60 pt-1.5 mt-1.5 leading-normal animate-slideDown">
               <strong className="text-slate-400">Engineering Note:</strong> {activeTooltip.details}
             </div>
           )}

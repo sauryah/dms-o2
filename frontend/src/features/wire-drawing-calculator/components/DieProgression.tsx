@@ -26,11 +26,11 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-900/60">
         <div>
           <h3 className="text-sm font-semibold text-[#F8FAFC] tracking-tight block">Schematic Drafting Pipeline</h3>
-          <span className="text-slate-500 text-[10px] block mt-1 font-mono">
+          <span className="text-slate-500 text-xs block mt-1 font-mono">
             Drag to sequence passes • Hover node to delete • Hover taper connector to insert inline die
           </span>
         </div>
-        <span className="text-[9px] font-mono font-bold text-blue-400 bg-blue-950/20 px-2 py-0.5 border border-blue-900/30 rounded-md">
+        <span className="text-xs font-mono font-bold text-blue-400 bg-blue-950/20 px-2 py-0.5 border border-blue-900/30 rounded-md">
           {dies.length} PASS SCHEDULE
         </span>
       </div>
@@ -83,7 +83,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                 >
                   {/* Card Header: Pass Indicator & Drag handle */}
                   <div className="flex justify-between items-center w-full">
-                    <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="text-xs font-mono font-bold text-slate-500 uppercase tracking-wider">
                       Pass {i + 1}
                     </span>
                     <MoveHorizontal className="h-3 w-3 text-slate-700 opacity-40 group-hover:opacity-100 transition-opacity" />
@@ -94,7 +94,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                     <span className="text-[13px] font-mono font-bold text-[#F8FAFC] block">
                       Ø {d.toFixed(3)}
                     </span>
-                    <span className="text-[8px] text-slate-650 font-mono block">diameter (mm)</span>
+                    <span className="text-[10px] text-slate-650 font-mono block">diameter (mm)</span>
                   </div>
 
                   {/* Hover Delete Action Button */}
@@ -152,8 +152,8 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                         <line x1="0" y1="20" x2="60" y2="20" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" strokeDasharray="2 2" />
                         
                         {/* Display Area Reduction % */}
-                        <rect x="11" y="11" width="38" height="18" rx="3" fill="#04060b" stroke="rgba(30, 41, 59, 0.6)" strokeWidth="0.75" />
-                        <text x="30" y="23" textAnchor="middle" className="fill-emerald-500/80 font-mono text-[9px] font-bold">
+                        <rect x="9" y="11" width="42" height="18" rx="3" fill="#04060b" stroke="rgba(30, 41, 59, 0.6)" strokeWidth="0.75" />
+                        <text x="30" y="23" textAnchor="middle" className="fill-emerald-500/80 font-mono text-[10.5px] font-bold">
                           -{areaRedPercent.toFixed(1)}%
                         </text>
                       </svg>
