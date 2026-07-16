@@ -15,6 +15,7 @@ import TargetChecker from '../features/wire-drawing-calculator/components/Target
 import DieSuggester from '../features/wire-drawing-calculator/components/DieSuggester';
 import ComparePanel from '../features/wire-drawing-calculator/components/ComparePanel';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
+import TheoryPanel from '../features/wire-drawing-calculator/components/TheoryPanel';
 
 const DEFAULT_DIES = [
   2.490, 2.217, 1.974, 1.757, 1.564, 1.392, 1.239, 1.103, 0.982, 0.874,
@@ -99,6 +100,8 @@ export function WireDrawingCalculatorPage() {
             <ComparePanel currentDies={dies} />
           </>
         )}
+
+        <TheoryPanel />
       </div>
     </div>
   );
