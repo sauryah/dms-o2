@@ -204,6 +204,14 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'auto-prune-history-daily': {
+        'task': 'history.tasks.auto_prune_history',
+        'schedule': 86400.0, # Every 24 hours
+    },
+}
+
 import sys
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv
 CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER

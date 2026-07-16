@@ -54,3 +54,14 @@ class MachineHistory(models.Model):
 
     def __str__(self):
         return f"MachineHistory: {self.entity_type} {self.entity_name} - {self.action}"
+
+
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+
+@receiver(post_save, sender=DieHistory)
+@receiver(post_delete, sender=DieHistory)
+def clear_dashboard_history_cache(sender, instance, **kwargs):
+    cache.delete("dashboard_history_status_cache")
+    cache.delete("dashboard_history_recent_cache")

@@ -1,12 +1,15 @@
 from django.db import transaction
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from history.models import DieHistory
-from history.serializers import AuditDieHistorySerializer
+from history.serializers import AuditDieHistorySerializer, DashboardDieHistorySerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from users.permissions import IsAdminOrRootOnly
+from django.core.cache import cache
 
 class DieHistoryPagination(PageNumberPagination):
     page_size = 50
@@ -15,7 +18,7 @@ class DieHistoryPagination(PageNumberPagination):
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class DieHistoryListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrRootOnly]
     
     @extend_schema(
         parameters=[
@@ -33,10 +36,6 @@ class DieHistoryListView(APIView):
     def get(self, request, *args, **kwargs):
         queryset = DieHistory.objects.all().select_related('die', 'changed_by')
         
-        # Authorization check: regular users only see their own actions
-        if request.user.role not in ['ADMIN', 'ROOT'] and not request.user.is_superuser:
-            queryset = queryset.filter(changed_by=request.user)
-            
         # Optional filters
         die_id = request.query_params.get('die_id')
         if die_id:
@@ -58,6 +57,18 @@ class DieHistoryListView(APIView):
         if to_date:
             queryset = queryset.filter(timestamp__date__lte=to_date)
             
+        ip = request.query_params.get('ip')
+        if ip:
+            queryset = queryset.filter(ip_address__icontains=ip)
+            
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(note__icontains=search) |
+                Q(old_value__icontains=search) |
+                Q(new_value__icontains=search)
+            )
+            
         paginator = DieHistoryPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
         if page is not None:
@@ -78,7 +89,7 @@ class MachineHistoryPagination(PageNumberPagination):
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class MachineHistoryListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrRootOnly]
 
     @extend_schema(
         parameters=[
@@ -97,10 +108,6 @@ class MachineHistoryListView(APIView):
     )
     def get(self, request, *args, **kwargs):
         queryset = MachineHistory.objects.all().select_related('changed_by')
-        
-        # Authorization check: regular users only see their own actions
-        if request.user.role not in ['ADMIN', 'ROOT'] and not request.user.is_superuser:
-            queryset = queryset.filter(changed_by=request.user)
 
         # Optional filters
         entity_type = request.query_params.get('entity_type')
@@ -131,6 +138,17 @@ class MachineHistoryListView(APIView):
         if to_date:
             queryset = queryset.filter(timestamp__date__lte=to_date)
 
+        ip = request.query_params.get('ip')
+        if ip:
+            queryset = queryset.filter(ip_address__icontains=ip)
+
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(old_value__icontains=search) |
+                Q(new_value__icontains=search)
+            )
+
         paginator = MachineHistoryPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
         if page is not None:
@@ -139,4 +157,50 @@ class MachineHistoryListView(APIView):
 
         serializer = AuditMachineHistorySerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class DashboardHistoryListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('field', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by field name'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Items per page'),
+        ],
+        responses={200: DashboardDieHistorySerializer(many=True)},
+        description="Retrieve limited, non-sensitive status changes and recent activities for the dashboard."
+    )
+    def get(self, request, *args, **kwargs):
+        field = request.query_params.get('field', '')
+        page_size = request.query_params.get('page_size', '10')
+        
+        # Validate page size (max 100 for safety)
+        try:
+            limit = min(int(page_size), 100)
+        except ValueError:
+            limit = 10
+
+        # Construct cache key based on query parameters
+        cache_key = f"dashboard_history_{field}_{limit}"
+        
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Query only non-sensitive field history
+        queryset = DieHistory.objects.all().select_related('die', 'changed_by')
+        if field:
+            queryset = queryset.filter(field_name__icontains=field)
+        
+        # Limit to the requested size
+        queryset = queryset[:limit]
+        
+        serializer = DashboardDieHistorySerializer(queryset, many=True)
+        response_data = serializer.data
+        
+        # Cache for 60 seconds (cleared automatically by DieHistory signals)
+        cache.set(cache_key, response_data, 60)
+        
+        return Response(response_data)
 
