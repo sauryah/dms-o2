@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
+import { BackupManager } from './users/BackupManager'
 
 export function SettingsPage() {
   const { request } = useApi()
@@ -412,6 +413,25 @@ export function SettingsPage() {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {role === 'ROOT' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mt-8">
+          <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-b border-slate-800 px-6 sm:px-8 py-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-600/20 rounded-xl">
+                <Database className="h-6 w-6 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Database Backup & Restore</h2>
+                <p className="text-sm text-slate-400 mt-0.5">Manage, trigger, and restore PostgreSQL database dumps</p>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 sm:px-8 py-6">
+            <BackupManager />
           </div>
         </div>
       )}
