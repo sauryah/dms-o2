@@ -122,7 +122,7 @@ export function WireDrawingCalculatorPage() {
               </div>
             </div>
 
-            <DieProgression dies={dies} />
+            <DieProgression dies={dies} onDiesChange={handleDiesChange} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ElongationChart passes={passes} />
