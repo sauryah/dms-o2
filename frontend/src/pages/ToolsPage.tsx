@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Calculator, TrendingDown, Sliders, ArrowRight, CheckCircle2, AlertCircle, Calendar } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export function ToolsPage() {
   const tools = [
@@ -76,6 +77,10 @@ export function ToolsPage() {
     }
   ]
 
+  const { role, authorizedTools } = useAuth()
+  const isRoot = role === 'ROOT'
+  const userTools = authorizedTools || []
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-slate-950 text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Ambient Background Glows */}
@@ -102,16 +107,16 @@ export function ToolsPage() {
           </p>
         </div>
 
-        {/* Tools Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tools.map((tool) => {
             const Icon = tool.icon
             const StatusIcon = tool.statusIcon
+            const hasAccess = isRoot || userTools.includes(tool.id)
             return (
               <div
                 key={tool.id}
                 className={`relative flex flex-col justify-between p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
-                  tool.active
+                  tool.active && hasAccess
                     ? 'bg-slate-900/40 border-slate-800/80 hover:border-blue-500/30 hover:bg-slate-900/60 hover:shadow-[0_0_30px_rgba(59,130,246,0.04)] hover:-translate-y-1.5 group'
                     : 'bg-slate-900/10 border-slate-900/10 border-slate-850 opacity-60'
                 }`}
@@ -122,9 +127,13 @@ export function ToolsPage() {
                     <div className={`p-3 bg-gradient-to-tr ${tool.color} rounded-xl border`}>
                       <Icon className="h-6 w-6" />
                     </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide uppercase ${tool.statusClass}`}>
-                      <StatusIcon className="h-3 w-3 shrink-0" />
-                      <span>{tool.badge}</span>
+                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide uppercase ${
+                      !hasAccess && tool.active 
+                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
+                        : tool.statusClass
+                    }`}>
+                      {!hasAccess && tool.active ? <AlertCircle className="h-3 w-3 shrink-0" /> : <StatusIcon className="h-3 w-3 shrink-0" />}
+                      <span>{!hasAccess && tool.active ? 'Locked' : tool.badge}</span>
                     </div>
                   </div>
 
@@ -152,7 +161,7 @@ export function ToolsPage() {
 
                 {/* Footer Action */}
                 <div className="pt-6 mt-6 border-t border-slate-800/40">
-                  {tool.active && tool.path ? (
+                  {tool.active && tool.path && hasAccess ? (
                     <Link
                       to={tool.path}
                       className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-500/10 hover:shadow-blue-500/25 hover:glow-blue transition-all duration-300"
@@ -165,7 +174,7 @@ export function ToolsPage() {
                       disabled
                       className="flex items-center justify-center gap-1.5 w-full bg-slate-900/40 border border-slate-800/60 text-slate-500 text-xs font-semibold py-3 px-4 rounded-xl cursor-not-allowed"
                     >
-                      <span>Module Locked</span>
+                      <span>{!hasAccess && tool.active ? 'Access Locked' : 'Module Locked'}</span>
                     </button>
                   )}
                 </div>

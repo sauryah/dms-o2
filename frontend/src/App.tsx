@@ -330,14 +330,14 @@ function AppContent() {
             } />
             <Route path="/calculator" element={
               <ErrorBoundary>
-                <ProtectedRoute requireToolAuth>
+                <ProtectedRoute requireToolAuth toolId="sizing-calculator">
                   <CalculatorPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
             <Route path="/wire-drawing-calculator" element={
               <ErrorBoundary>
-                <ProtectedRoute requireToolAuth>
+                <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
                   <WireDrawingCalculatorPage />
                 </ProtectedRoute>
               </ErrorBoundary>
@@ -361,10 +361,11 @@ interface ProtectedRouteProps {
   children: React.ReactElement
   allowedRoles?: string[]
   requireToolAuth?: boolean
+  toolId?: string
 }
 
-export function ProtectedRoute({ children, allowedRoles, requireToolAuth }: ProtectedRouteProps) {
-  const { token, role, isAuthorizedForTools } = useAuth()
+export function ProtectedRoute({ children, allowedRoles, requireToolAuth, toolId }: ProtectedRouteProps) {
+  const { token, role, isAuthorizedForTools, authorizedTools } = useAuth()
 
   if (!token) {
     return <Navigate to="/login" replace />
@@ -374,8 +375,17 @@ export function ProtectedRoute({ children, allowedRoles, requireToolAuth }: Prot
     return <Navigate to="/" replace />
   }
 
-  if (requireToolAuth && !isAuthorizedForTools) {
-    return <Navigate to="/" replace />
+  if (requireToolAuth) {
+    const isRoot = role === 'ROOT'
+    if (!isRoot && !isAuthorizedForTools) {
+      return <Navigate to="/" replace />
+    }
+    if (toolId && !isRoot) {
+      const userTools = authorizedTools || []
+      if (!userTools.includes(toolId)) {
+        return <Navigate to="/tools" replace />
+      }
+    }
   }
 
   return children

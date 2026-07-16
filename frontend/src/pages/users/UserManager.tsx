@@ -24,6 +24,7 @@ export function UserManager() {
   const [roleInput, setRoleInput] = useState('REGULAR')
   const [isActiveInput, setIsActiveInput] = useState(true)
   const [isAuthorizedForToolsInput, setIsAuthorizedForToolsInput] = useState(false)
+  const [authorizedToolsInput, setAuthorizedToolsInput] = useState<string[]>([])
   
   const [formError, setFormError] = useState<string | null>(null)
   const [userToDelete, setUserToDelete] = useState<any>(null)
@@ -106,6 +107,7 @@ export function UserManager() {
     setRoleInput('REGULAR')
     setIsActiveInput(true)
     setIsAuthorizedForToolsInput(false)
+    setAuthorizedToolsInput([])
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -121,6 +123,7 @@ export function UserManager() {
     setRoleInput(user.role)
     setIsActiveInput(user.is_active)
     setIsAuthorizedForToolsInput(user.is_authorized_for_tools || false)
+    setAuthorizedToolsInput(user.authorized_tools || [])
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -142,7 +145,8 @@ export function UserManager() {
       last_name: lastNameInput,
       role: roleInput,
       is_active: isActiveInput,
-      is_authorized_for_tools: isAuthorizedForToolsInput
+      is_authorized_for_tools: isAuthorizedForToolsInput,
+      authorized_tools: isAuthorizedForToolsInput ? authorizedToolsInput : []
     }
 
     if (editingUser) {
@@ -251,13 +255,32 @@ export function UserManager() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
-                          user.role === 'ROOT' || user.is_authorized_for_tools
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                            : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                        }`}>
-                          {user.role === 'ROOT' || user.is_authorized_for_tools ? 'Authorized' : 'Unauthorized'}
-                        </span>
+                        {user.role === 'ROOT' ? (
+                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full border bg-purple-500/10 text-purple-400 border-purple-500/20">
+                            All Tools
+                          </span>
+                        ) : user.is_authorized_for_tools ? (
+                          <span 
+                            className="px-2.5 py-0.5 text-xs font-semibold rounded-full border bg-blue-500/10 text-blue-400 border-blue-500/20 cursor-help" 
+                            title={user.authorized_tools && user.authorized_tools.length > 0
+                              ? user.authorized_tools.map((t: string) => {
+                                  if (t === 'sizing-calculator') return 'Sizing'
+                                  if (t === 'wire-drawing-calculator') return 'Wire Drawing'
+                                  if (t === 'die-wear') return 'Die Wear'
+                                  if (t === 'draw-optimizer') return 'Optimizer'
+                                  return t
+                                }).join(', ')
+                              : 'None'}
+                          >
+                            {user.authorized_tools && user.authorized_tools.length > 0
+                              ? `${user.authorized_tools.length} Tool${user.authorized_tools.length > 1 ? 's' : ''}`
+                              : 'No Tools'}
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full border bg-slate-500/10 text-slate-400 border-slate-500/20">
+                            Unauthorized
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-6 text-right space-x-2">
                         <button 
@@ -424,7 +447,13 @@ export function UserManager() {
                   type="checkbox"
                   id="user-tools-authorized-checkbox"
                   checked={roleInput === 'ROOT' || isAuthorizedForToolsInput}
-                  onChange={(e) => setIsAuthorizedForToolsInput(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setIsAuthorizedForToolsInput(checked)
+                    if (checked && authorizedToolsInput.length === 0) {
+                      setAuthorizedToolsInput(['sizing-calculator', 'wire-drawing-calculator'])
+                    }
+                  }}
                   disabled={roleInput === 'ROOT'}
                   className="h-4.5 w-4.5 bg-slate-955 border border-slate-800 rounded focus:ring-0 text-blue-500 disabled:opacity-50"
                 />
@@ -432,6 +461,40 @@ export function UserManager() {
                   Authorized for Sizing Tools
                 </label>
               </div>
+
+              {isAuthorizedForToolsInput && roleInput !== 'ROOT' && (
+                <div className="pl-7 space-y-2 border-l border-slate-800 ml-2 pt-1 animate-fadeIn">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-550 mb-1">Select Accessible Tools</span>
+                  {[
+                    { id: 'sizing-calculator', label: 'Sizing & Elongation Calculator' },
+                    { id: 'wire-drawing-calculator', label: 'Wire Drawing Calculator' },
+                    { id: 'die-wear', label: 'Die Wear & Lifespan Estimator' },
+                    { id: 'draw-optimizer', label: 'Sequence & Pass Optimizer' },
+                  ].map(tool => {
+                    const isChecked = authorizedToolsInput.includes(tool.id)
+                    return (
+                      <div key={tool.id} className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id={`tool-${tool.id}`}
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setAuthorizedToolsInput(prev => prev.filter(id => id !== tool.id))
+                            } else {
+                              setAuthorizedToolsInput(prev => [...prev, tool.id])
+                            }
+                          }}
+                          className="h-4 w-4 bg-slate-955 border border-slate-800 rounded focus:ring-0 text-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor={`tool-${tool.id}`} className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
+                          {tool.label}
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
 
               <div className="border-t border-slate-800 pt-5 flex justify-end space-x-2">
                 <button 

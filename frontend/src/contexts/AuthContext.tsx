@@ -9,7 +9,8 @@ interface AuthContextValue {
   username: string | null
   userId: number | null
   isAuthorizedForTools: boolean
-  login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean) => void
+  authorizedTools: string[]
+  login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean, authTools?: string[]) => void
   logout: () => void
   setToken: React.Dispatch<React.SetStateAction<string | null>>
   setRefreshToken: React.Dispatch<React.SetStateAction<string | null>>
@@ -31,6 +32,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   })
   const [isAuthorizedForTools, setIsAuthorizedForTools] = useState<boolean>(() => {
     return localStorage.getItem('dms_authorized_for_tools') === 'true'
+  })
+  const [authorizedTools, setAuthorizedTools] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('dms_authorized_tools')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
   })
 
   useEffect(() => {
@@ -77,7 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('dms_authorized_for_tools', String(isAuthorizedForTools))
   }, [isAuthorizedForTools])
 
-  const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean) => {
+  useEffect(() => {
+    localStorage.setItem('dms_authorized_tools', JSON.stringify(authorizedTools))
+  }, [authorizedTools])
+
+  const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean, authTools?: string[]) => {
     consecutiveRefreshFailures = 0
     setToken(newToken)
     setRefreshToken(refresh)
@@ -88,6 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthorizedForTools(authorizedForTools)
     } else {
       setIsAuthorizedForTools(userRole === 'ROOT')
+    }
+    if (authTools !== undefined) {
+      setAuthorizedTools(authTools)
+    } else {
+      setAuthorizedTools(userRole === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-wear', 'draw-optimizer'] : [])
     }
   }
 
@@ -107,7 +125,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsername(null)
     setUserId(null)
     setIsAuthorizedForTools(false)
+    setAuthorizedTools([])
     localStorage.removeItem('dms_authorized_for_tools')
+    localStorage.removeItem('dms_authorized_tools')
   }
 
   const handleRefreshFailure = () => {
@@ -135,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username,
       userId,
       isAuthorizedForTools: role === 'ROOT' || isAuthorizedForTools,
+      authorizedTools: role === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-wear', 'draw-optimizer'] : authorizedTools,
       login,
       logout,
       setToken,
