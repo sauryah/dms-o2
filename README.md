@@ -82,6 +82,7 @@ graph TD
 * **Immutable Auditing**: Database triggers and Django pre-save signals capture all modifications to die status, location, and dimensions.
 * **Session Management**: Concurrent session control with immediate eviction of previous logins upon new sign-ins.
 * **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
+* **Engineering Tools Suite**: Integrated die calculators, including the **Sizing & Elongation Calculator** and the high-fidelity **Wire Drawing Elongation Calculator** featuring interactive results tables, Suggesters, and PDF/Excel/CSV exports.
 
 ---
 

@@ -181,6 +181,21 @@ graph TD
 - Added a "Download SVG" button to export the CAD vector graphic file.
 - Wrapped all private pages (Dashboard, Inventory, Details, Machines, History) in `<ProtectedRoute>` to eliminate split-second unauthenticated UI flashes.
 
+### 2026-07-16 · feat: integrate Wire Drawing Elongation Calculator (Phase 13 / Release v1.7.0)
+- Integrated the high-fidelity Wire Drawing Elongation Calculator as a launchable, active Engineering Workbench tool.
+- Implemented core mathematical pass calculations, area reductions, elongation ratios, and drafting suggester algorithms.
+- Created interactive results table with inline editing, pass insertion, and full multi-step undo/redo state history tracking.
+- Added visual Area Reduction and Elongation per-pass charts utilizing `recharts`.
+- Added target tolerances checking and stars-rated pass consistency audit dashboard component.
+- Implemented Excel (XLSX), CSV, PDF (with autotable format), and clipboard export modules.
+- Registered page routing, navbar dropdown links, mobile slideouts, and global Command Palette (Ctrl+K) search keywords.
+- Updated `package.json` with charting, table, animation, and document exporting dependencies.
+
+### 2026-07-12 · docs: replace placeholder emails and clean formatting (Release v1.6.0)
+- Replaced developer support placeholder emails with the official project support addresses in `CONTRIBUTING.md` and `SUPPORT.md`.
+- Removed decorative emojis from `README.md` headers to ensure robust relative anchor link navigation.
+- Fixed list item indentation issues under caution blocks in `DOCKER.md`.
+
 ### 2026-06-28 · feat: update documentation, RBAC matrix, and onboarding deployment instructions (Phase 11)
 - Updated `docs/ARCHITECTURE.md` with the new endpoint matrices, including the SSE ticket exchange flow, verify-token internal validation, and Rack CRUD.
 - Documented role restrictions (Operator relocate limits) and new environment variables in the developer handbook.
