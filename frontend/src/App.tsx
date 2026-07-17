@@ -23,7 +23,13 @@ const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then(m 
 const ToolsPage = React.lazy(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
 const WireDrawingCalculatorPage = React.lazy(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000,
+    },
+  },
+})
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center py-12 animate-fadeIn">
@@ -198,9 +204,11 @@ function AppContent() {
             } />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/settings" element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
             } />
             <Route path="/calculator" element={
               <ErrorBoundary>

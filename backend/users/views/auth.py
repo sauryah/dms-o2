@@ -60,64 +60,36 @@ class LoginView(APIView):
         r = redis.Redis.from_url(redis_url)
         attempts_key = f"login_attempts:{username}"
 
-        attempts = r.get(attempts_key)
-        if attempts and int(attempts) >= 5:
+        pipe = r.pipeline()
+        pipe.get(attempts_key)
+        attempts_raw = pipe.execute()[0]
+        if attempts_raw and int(attempts_raw) >= 5:
             return Response(
                 {"detail": "Too many failed login attempts. Please wait 5 minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
 
         user = authenticate(username=username, password=password)
-        if not user:
+        if not user or not user.is_active:
             pipe = r.pipeline()
             pipe.incr(attempts_key)
             pipe.expire(attempts_key, 300)
             pipe.execute()
 
-            # log failed login
+            detail = "Invalid username or password"
+            if user and not user.is_active:
+                detail = "User account is inactive"
+
             UserActivityLog.objects.create(
+                user=user if user else None,
                 username=username,
                 action='FAILED_LOGIN',
                 ip_address=get_client_ip(request),
                 device=request.META.get('HTTP_USER_AGENT', '')[:255]
             )
 
-            attempts = r.get(attempts_key)
-            if attempts and int(attempts) >= 5:
-                return Response(
-                    {"detail": "Too many failed login attempts. Please wait 5 minutes."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
             return Response(
-                {"detail": "Invalid username or password"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        if not user.is_active:
-            pipe = r.pipeline()
-            pipe.incr(attempts_key)
-            pipe.expire(attempts_key, 300)
-            pipe.execute()
-
-            # log failed login due to inactive account
-            UserActivityLog.objects.create(
-                user=user,
-                username=user.username,
-                action='FAILED_LOGIN',
-                ip_address=get_client_ip(request),
-                device=request.META.get('HTTP_USER_AGENT', '')[:255]
-            )
-
-            attempts = r.get(attempts_key)
-            if attempts and int(attempts) >= 5:
-                return Response(
-                    {"detail": "Too many failed login attempts. Please wait 5 minutes."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
-            return Response(
-                {"detail": "User account is inactive"},
+                {"detail": detail},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -174,7 +146,6 @@ class LoginView(APIView):
 
         response = Response({
             'token': token_str,
-            'refresh': refresh_token_str,
             'role': user.role,
             'is_authorized_for_tools': user.is_authorized_for_tools,
             'authorized_tools': user.authorized_tools
@@ -186,7 +157,7 @@ class LoginView(APIView):
             httponly=True,
             samesite='Lax',
             secure=not settings.DEBUG,
-            max_age=12 * 3600
+            max_age=15 * 60
         )
         response.set_cookie(
             key='dms_refresh_token',
@@ -229,7 +200,6 @@ class ChangePasswordView(APIView):
         response = Response({
             "detail": "Password changed successfully.",
             "token": access_token,
-            "refresh": refresh_token_str,
         }, status=status.HTTP_200_OK)
         
         response.set_cookie(
@@ -238,7 +208,7 @@ class ChangePasswordView(APIView):
             httponly=True,
             samesite='Lax',
             secure=not settings.DEBUG,
-            max_age=12 * 3600
+            max_age=15 * 60
         )
         response.set_cookie(
             key='dms_refresh_token',
@@ -365,7 +335,7 @@ class HealthCheckView(APIView):
                 cursor.execute("SELECT 1")
         except Exception as e:
             status_data["status"] = "unhealthy"
-            status_data["database"] = f"down: {str(e)}"
+            status_data["database"] = "down" if not settings.DEBUG else f"down: {str(e)}"
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
         # Check Redis
@@ -375,7 +345,7 @@ class HealthCheckView(APIView):
             r.ping()
         except Exception as e:
             status_data["status"] = "unhealthy"
-            status_data["redis"] = f"down: {str(e)}"
+            status_data["redis"] = "down" if not settings.DEBUG else f"down: {str(e)}"
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
         return Response(status_data, status=status_code)
@@ -383,8 +353,7 @@ class HealthCheckView(APIView):
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ServerInfoView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    permission_classes = [IsAuthenticated]
     throttle_classes = []
 
     def get(self, request, *args, **kwargs):
@@ -531,16 +500,19 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                 except Exception:
                     pass
 
+                response.data.pop('access', None)
+                response.data.pop('refresh', None)
                 response.set_cookie(
                     key='dms_access_token',
                     value=access_token,
                     httponly=True,
                     samesite='Lax',
                     secure=not settings.DEBUG,
-                    max_age=12 * 3600
+                    max_age=15 * 60
                 )
             new_refresh = response.data.get('refresh')
             if new_refresh:
+                response.data.pop('refresh', None)
                 response.set_cookie(
                     key='dms_refresh_token',
                     value=new_refresh,

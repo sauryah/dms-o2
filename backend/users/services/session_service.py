@@ -92,17 +92,6 @@ class SessionService:
         session_last_seen = session_data['session_last_seen']
 
         if now - session_last_seen > timedelta(minutes=1):
-            updated_count = UserSession.objects.filter(user=user, token_hash=token_hash).update(last_seen=now)
-            if updated_count == 0:
-                UserSession.objects.create(
-                    user=user,
-                    token_hash=token_hash,
-                    ip_address=session_data['ip_address'],
-                    device=session_data['device'],
-                    created_at=session_data['session_created_at'],
-                    last_seen=now
-                )
-
             cache_key = f"user_session:{user.id}:{token_hash}"
             cache_data = {
                 'ip_address': session_data['ip_address'],

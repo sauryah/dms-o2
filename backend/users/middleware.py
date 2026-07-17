@@ -1,4 +1,9 @@
 from users.context import _thread_locals, get_current_user, get_current_ip
+from django.conf import settings
+import ipaddress
+
+
+TRUSTED_PROXIES = getattr(settings, 'TRUSTED_PROXIES', frozenset())
 
 
 class CurrentUserMiddleware:
@@ -9,10 +14,11 @@ class CurrentUserMiddleware:
         _thread_locals.user = getattr(request, 'user', None)
 
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
+        remote_addr = request.META.get('REMOTE_ADDR', '')
+        if x_forwarded_for and (not TRUSTED_PROXIES or remote_addr in TRUSTED_PROXIES):
             ip = x_forwarded_for.split(',')[0].strip()
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = remote_addr
         _thread_locals.ip = ip
 
         try:

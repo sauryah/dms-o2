@@ -25,12 +25,10 @@ interface DieBlueprintProps {
 }
 
 export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: DieBlueprintProps) {
-  if (!die) return null
-
   const { role } = useAuth()
   const isRoot = role === 'ROOT'
 
-  const isRound = die.die_type === 'ROUND'
+  const isRound = die?.die_type === 'ROUND'
   const [viewMode, setViewMode] = useState<'extrusion' | 'cross_section'>('extrusion')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -43,6 +41,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
     details: string
     isPinned?: boolean
   } | null>(null)
+
+  if (!die) return null
 
   const handleDimClick = (title: string, content: string, details: string) => {
     setActiveTooltip(prev => {
@@ -213,7 +213,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
             <rect width="200" height="200" fill="url(#blueprint-grid-round)" rx="6" pointerEvents="none" />
             
             {/* Pan & Zoom interactive group */}
-            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} transform-origin={`${cx} ${cy}`}>
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${cx}px ${cy}px` }}>
               <line x1={cx} y1="10" x2={cx} y2="190" className="blueprint-axis" />
               <line x1="10" y1={cy} x2="190" y2={cy} className="blueprint-axis" />
               
@@ -472,7 +472,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                 <rect width="200" height="200" fill="url(#blueprint-grid-flat)" rx="6" pointerEvents="none" />
 
                 {/* Pan & Zoom group */}
-                <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} transform-origin={`${cx} ${cy}`}>
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${cx}px ${cy}px` }}>
                   <line x1={cx} y1="10" x2={cx} y2="190" className="blueprint-axis" />
                   <line x1="10" y1={cy} x2="190" y2={cy} className="blueprint-axis" />
                   

@@ -18,6 +18,16 @@ import (
 	"dms-go-api/internal/search"
 )
 
+type statusResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusResponseWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
 func main() {
 	// Configure slog JSON logger
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
@@ -72,10 +82,12 @@ func main() {
 
 	port := cfg.Port
 
+	statusRecorder := &statusResponseWriter{ResponseWriter: nil}
 	loggingMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		mux.ServeHTTP(w, r)
-		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "duration", time.Since(start))
+		statusRecorder.ResponseWriter = w
+		mux.ServeHTTP(statusRecorder, r)
+		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", statusRecorder.status, "duration", time.Since(start))
 	})
 
 	server := &http.Server{

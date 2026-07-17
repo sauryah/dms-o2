@@ -23,11 +23,9 @@ export class ApiError extends Error {
 let inflightRefresh: Promise<string | null> | null = null
 
 export const useApi = () => {
-  const { token, refreshToken, logout, setToken, setRefreshToken, handleRefreshFailure, shouldBlockRefresh, resetRefreshFailures } = useAuth()
+  const { token, logout, setToken, handleRefreshFailure, shouldBlockRefresh, resetRefreshFailures } = useAuth()
   const tokenRef = useRef(token)
-  const refreshTokenRef = useRef(refreshToken)
   tokenRef.current = token
-  refreshTokenRef.current = refreshToken
 
   const activeRequestsRef = useRef<Map<string, AbortController>>(new Map())
 
@@ -38,8 +36,6 @@ export const useApi = () => {
       return inflightRefresh
     }
 
-    const currentRefresh = refreshTokenRef.current
-    if (!currentRefresh) return null
     if (shouldBlockRefresh()) {
       logout()
       window.location.hash = '/login'
@@ -51,7 +47,7 @@ export const useApi = () => {
         const res = await fetch('/api/v1/auth/refresh/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh: currentRefresh })
+          body: JSON.stringify({})
         })
         if (!res.ok) {
           let errData: any = null
@@ -72,7 +68,6 @@ export const useApi = () => {
         }
         const data = await res.json()
         setToken(data.access)
-        if (data.refresh) setRefreshToken(data.refresh)
         resetRefreshFailures()
         return data.access
       } catch {
@@ -267,7 +262,7 @@ export const useApi = () => {
         activeRequestsRef.current.delete(cancelKey)
       }
     }
-  }, [logout, setToken, setRefreshToken])
+  }, [logout, setToken])
 
   return { request }
 }

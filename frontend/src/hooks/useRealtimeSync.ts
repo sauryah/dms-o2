@@ -36,6 +36,8 @@ export function useRealtimeSync(options: {
 
     let eventSource: EventSource | null = null
     let isCancelled = false
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let reconnectDelay = 1000
 
     const connectSSE = async () => {
       try {
@@ -51,6 +53,7 @@ export function useRealtimeSync(options: {
         eventSource = new EventSource(`/api/events/?ticket=${encodeURIComponent(ticket)}`)
 
         eventSource.onmessage = (event) => {
+          reconnectDelay = 1000
           try {
             const payload = JSON.parse(event.data)
 
@@ -137,6 +140,16 @@ export function useRealtimeSync(options: {
 
         eventSource.onerror = (err) => {
           console.error('EventSource connection error:', err)
+          if (eventSource) {
+            eventSource.close()
+            eventSource = null
+          }
+          if (!isCancelled) {
+            reconnectTimer = setTimeout(() => {
+              reconnectDelay = Math.min(reconnectDelay * 2, 30000)
+              connectSSE()
+            }, reconnectDelay)
+          }
         }
       } catch (e) {
         console.error('Failed to establish SSE ticket connection:', e)
@@ -147,6 +160,9 @@ export function useRealtimeSync(options: {
 
     return () => {
       isCancelled = true
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+      }
       if (eventSource) {
         eventSource.close()
       }

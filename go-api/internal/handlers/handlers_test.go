@@ -150,8 +150,19 @@ func TestHandleHealth(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["status"] != "ok" {
-		t.Errorf("expected status 'ok', got %v", resp["status"])
+	if resp["status"] == nil {
+		t.Errorf("expected status field in response")
+	}
+
+	statusMap, ok := resp["status"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected status to be a map, got %T", resp["status"])
+	}
+	if statusMap["postgres"] != "up" {
+		t.Errorf("expected postgres status 'up', got %v", statusMap["postgres"])
+	}
+	if statusMap["meilisearch"] != "up" {
+		t.Errorf("expected meilisearch status 'up', got %v", statusMap["meilisearch"])
 	}
 
 	recon, ok := resp["reconciliation"].(map[string]interface{})

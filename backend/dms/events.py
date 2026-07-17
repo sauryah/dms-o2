@@ -1,5 +1,8 @@
 import json
+import logging
 from django.db import connection
+
+logger = logging.getLogger(__name__)
 
 def broadcast_event(event_type, payload=None):
     """
@@ -9,7 +12,6 @@ def broadcast_event(event_type, payload=None):
         connection.ensure_connection()
         conn = connection.connection
         if conn:
-            # Check if pg_notify exists and connection is valid
             cursor = conn.cursor()
             event_data = {
                 'type': event_type,
@@ -19,5 +21,4 @@ def broadcast_event(event_type, payload=None):
             cursor.execute("SELECT pg_notify('dms_events', %s);", [payload_str])
             cursor.close()
     except Exception:
-        # Gracefully handle failures to ensure transactions are not blocked
-        pass
+        logger.exception("Failed to broadcast event: %s", event_type)

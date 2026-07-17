@@ -51,11 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token])
 
   useEffect(() => {
-    if (refreshToken) {
-      localStorage.setItem('dms_refresh_token', refreshToken)
-    } else {
-      localStorage.removeItem('dms_refresh_token')
-    }
+    // Refresh token is httponly cookie-only; never persist to localStorage
   }, [refreshToken])
 
   useEffect(() => {

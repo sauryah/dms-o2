@@ -45,8 +45,8 @@ export function Navbar() {
 
   const prefetchInventory = () => {
     queryClient.prefetchQuery({
-      queryKey: ['dies', '', '', '', '', '', '', '', '', '', '', '10000'],
-      queryFn: () => request('/api/go/search?limit=10000', { keepMetadata: true })
+      queryKey: ['dies', '', '', '', '', '', '', '', '', '', '', '500'],
+      queryFn: () => request('/api/go/search?limit=500', { keepMetadata: true })
     })
     queryClient.prefetchQuery({
       queryKey: ['setsDropdownList'],

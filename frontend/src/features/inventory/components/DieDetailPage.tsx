@@ -28,7 +28,7 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
 
   const isRound = dieType === 'ROUND';
 
-  let allVals: number[] = [];
+  const allVals: number[] = [];
   data.forEach(p => {
     if (isRound) {
       if (p.Size !== undefined) allVals.push(p.Size);
@@ -251,7 +251,7 @@ function WearPredictionSection({ die }: { die: any }) {
     const points: any[] = [];
 
     if (isRound) {
-      let currentVal = parseFloat(die.punched_size || '0');
+      const currentVal = parseFloat(die.punched_size || '0');
       const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
       
       points.push({
@@ -284,8 +284,8 @@ function WearPredictionSection({ die }: { die: any }) {
         });
       }
     } else {
-      let punchedW = parseFloat(die.punched_width || '0');
-      let punchedT = parseFloat(die.punched_thickness || '0');
+      const punchedW = parseFloat(die.punched_width || '0');
+      const punchedT = parseFloat(die.punched_thickness || '0');
       const creationDate = die.created_at || (sortedHistory.length > 0 ? sortedHistory[0].timestamp : new Date().toISOString());
       
       points.push({
@@ -494,7 +494,7 @@ function WearPredictionSection({ die }: { die: any }) {
     const timestamps = points.map(p => p.timestamp)
     const minTime = Math.min(...timestamps)
     
-    let maxTime = Math.max(...timestamps)
+    const maxTime = Math.max(...timestamps)
     let projectedTime = maxTime
     let hasProjection = false
 

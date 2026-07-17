@@ -83,6 +83,26 @@ class BackupService:
         except subprocess.CalledProcessError as e:
             raise Exception(f"pg_dump failed: {e.stderr or e}")
 
+        # Verify backup file is non-empty and valid
+        if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
+            raise Exception("Backup file is empty or was not created")
+        try:
+            verify_cmd = [
+                'pg_restore',
+                '-h', db_host,
+                '-p', str(db_port),
+                '-U', db_user,
+                '-f', '/dev/null',
+                '--data-only',
+                '--list',
+                filepath
+            ]
+            result = subprocess.run(verify_cmd, env=env, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise Exception(f"Backup integrity check failed: {result.stderr}")
+        except FileNotFoundError:
+            pass
+
         BackupService.prune_old_backups()
         return filename
 

@@ -100,7 +100,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: celery -A dms worker -l warning --concurrency=2
+    command: celery -A dms worker -l warning --concurrency=2 --max-tasks-per-child=1000
     volumes:
       - ./backend:/app
       - ./backups:/backups

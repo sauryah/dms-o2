@@ -170,7 +170,6 @@ func NewHandler(
 
 func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 	h.reconMu.RLock()
 	lastRun := h.lastRecon
@@ -179,8 +178,29 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	mCnt := h.meiliCount
 	h.reconMu.RUnlock()
 
+	// Check PostgreSQL connectivity
+	dbStatus := "up"
+	if _, err := h.db.GetCount(r.Context()); err != nil {
+		dbStatus = "down"
+	}
+
+	// Check Meilisearch connectivity
+	meiliStatus := "up"
+	if _, err := h.search.GetStats(); err != nil {
+		meiliStatus = "down"
+	}
+
+	httpStatus := http.StatusOK
+	if dbStatus != "up" || meiliStatus != "up" {
+		httpStatus = http.StatusServiceUnavailable
+	}
+	w.WriteHeader(httpStatus)
+
 	resp := map[string]interface{}{
-		"status": "ok",
+		"status": map[string]string{
+			"postgres":    dbStatus,
+			"meilisearch": meiliStatus,
+		},
 		"reconciliation": map[string]interface{}{
 			"last_run":       lastRun.Format(time.RFC3339),
 			"status":         status,

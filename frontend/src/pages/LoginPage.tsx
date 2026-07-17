@@ -98,6 +98,7 @@ export function LoginPage() {
                 onChange={(e) => setUsernameInput(e.target.value)}
                 className="w-full glass-input rounded-xl py-3 px-4 text-white focus:outline-none text-base focus-ring"
                 autoComplete="username"
+                aria-label="Username"
               />
             </div>
 
@@ -110,6 +111,7 @@ export function LoginPage() {
                 onChange={(e) => setPasswordInput(e.target.value)}
                 className="w-full glass-input rounded-xl py-3 px-4 text-white focus:outline-none text-base focus-ring"
                 autoComplete="current-password"
+                aria-label="Password"
               />
             </div>
           </div>

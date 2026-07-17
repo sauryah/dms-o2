@@ -8,11 +8,11 @@ interface DieProgressionProps {
 }
 
 export default function DieProgression({ dies, onDiesChange }: DieProgressionProps) {
-  if (dies.length === 0) return null;
-
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoveredDieIndex, setHoveredDieIndex] = useState<number | null>(null);
   const [hoveredArrowIndex, setHoveredArrowIndex] = useState<number | null>(null);
+
+  if (dies.length === 0) return null;
 
   const getArea = (diameter: number) => Math.PI * Math.pow(diameter / 2, 2);
 

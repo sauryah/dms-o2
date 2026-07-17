@@ -93,12 +93,12 @@ func TestAuthMiddleware(t *testing.T) {
 
 	handlerToTest := middleware(nextHandler)
 
-	// Test 1: No token (Guest mode)
+	// Test 1: No token (returns 401)
 	req1 := httptest.NewRequest("GET", "/test", nil)
 	rr1 := httptest.NewRecorder()
 	handlerToTest.ServeHTTP(rr1, req1)
-	if rr1.Code != http.StatusOK || rr1.Body.String() != "GUEST" {
-		t.Errorf("Expected GUEST, got status %d body %q", rr1.Code, rr1.Body.String())
+	if rr1.Code != http.StatusUnauthorized {
+		t.Errorf("Expected StatusUnauthorized for no token, got status %d body %q", rr1.Code, rr1.Body.String())
 	}
 
 	// Test 2: Invalid local signature

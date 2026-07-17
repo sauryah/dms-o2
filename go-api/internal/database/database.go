@@ -68,27 +68,10 @@ func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error
 	return isActive, nil
 }
 
-func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) (string, []interface{}) {
+func buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) ([]string, []interface{}, int) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
-
-	sqlParts = append(sqlParts, `
-		SELECT 
-			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
-			s.name as set_name,
-			m.name as machine_name,
-			d.rack_id, rk.name as rack_name, d.shelf,
-			r.current_size,
-			f.current_width, f.current_thickness, f.radius
-		FROM dies_die d
-		LEFT JOIN machines_set s ON d.current_set_id = s.id
-		LEFT JOIN machines_machine m ON s.machine_id = m.id
-		LEFT JOIN machines_rack rk ON d.rack_id = rk.id
-		LEFT JOIN dies_rounddie r ON d.id = r.die_id
-		LEFT JOIN dies_flatdie f ON d.id = f.die_id
-		WHERE 1=1
-	`)
 
 	if q != "" {
 		cleanQ := strings.Trim(q, `"'`)
@@ -177,6 +160,34 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin
 	if unassigned == "true" {
 		sqlParts = append(sqlParts, "AND d.current_set_id IS NULL")
 	}
+
+	return sqlParts, args, argCounter
+}
+
+func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) (string, []interface{}) {
+	var sqlParts []string
+	var args []interface{}
+
+	sqlParts = append(sqlParts, `
+		SELECT 
+			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			s.name as set_name,
+			m.name as machine_name,
+			d.rack_id, rk.name as rack_name, d.shelf,
+			r.current_size,
+			f.current_width, f.current_thickness, f.radius
+		FROM dies_die d
+		LEFT JOIN machines_set s ON d.current_set_id = s.id
+		LEFT JOIN machines_machine m ON s.machine_id = m.id
+		LEFT JOIN machines_rack rk ON d.rack_id = rk.id
+		LEFT JOIN dies_rounddie r ON d.id = r.die_id
+		LEFT JOIN dies_flatdie f ON d.id = f.die_id
+		WHERE 1=1
+	`)
+
+	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+	sqlParts = append(sqlParts, whereParts...)
+	args = append(args, whereArgs...)
 
 	sqlParts = append(sqlParts, fmt.Sprintf("ORDER BY d.die_id ASC LIMIT %d OFFSET %d", limit, offset))
 
@@ -197,7 +208,6 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
-	argCounter := 1
 
 	sqlParts = append(sqlParts, `
 		SELECT COUNT(*)
@@ -210,93 +220,9 @@ func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, si
 		WHERE 1=1
 	`)
 
-	if q != "" {
-		cleanQ := strings.Trim(q, `"'`)
-		likeVal := "%" + cleanQ + "%"
-		sqlParts = append(sqlParts, fmt.Sprintf(`
-			AND (
-				d.die_id ILIKE $%d 
-				OR d.casing ILIKE $%d 
-				OR d.location ILIKE $%d 
-				OR d.status ILIKE $%d 
-				OR s.name ILIKE $%d 
-				OR m.name ILIKE $%d
-				OR CAST(r.current_size AS TEXT) ILIKE $%d
-				OR CAST(f.current_width AS TEXT) ILIKE $%d
-				OR CAST(f.current_thickness AS TEXT) ILIKE $%d
-			)
-		`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter))
-		args = append(args, likeVal)
-		argCounter++
-	}
-
-	if dieType != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.die_type = $%d", argCounter))
-		args = append(args, dieType)
-		argCounter++
-	}
-	if statusVal != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.status = $%d", argCounter))
-		args = append(args, statusVal)
-		argCounter++
-	}
-	if location != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.location ILIKE $%d", argCounter))
-		args = append(args, "%"+location+"%")
-		argCounter++
-	}
-	if casing != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.casing = $%d", argCounter))
-		args = append(args, casing)
-		argCounter++
-	}
-
-	if sizeMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
-		args = append(args, sizeMin)
-		argCounter++
-	}
-	if sizeMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
-		args = append(args, sizeMax)
-		argCounter++
-	}
-
-	if widthMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
-		args = append(args, widthMin)
-		argCounter++
-	}
-	if widthMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
-		args = append(args, widthMax)
-		argCounter++
-	}
-
-	if thickMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
-		args = append(args, thickMin)
-		argCounter++
-	}
-	if thickMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
-		args = append(args, thickMax)
-		argCounter++
-	}
-
-	if machineID != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND m.id = $%d", argCounter))
-		args = append(args, machineID)
-		argCounter++
-	}
-	if setID != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND s.id = $%d", argCounter))
-		args = append(args, setID)
-		argCounter++
-	}
-	if unassigned == "true" {
-		sqlParts = append(sqlParts, "AND d.current_set_id IS NULL")
-	}
+	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+	sqlParts = append(sqlParts, whereParts...)
+	args = append(args, whereArgs...)
 
 	return strings.Join(sqlParts, "\n"), args
 }

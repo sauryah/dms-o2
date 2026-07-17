@@ -257,7 +257,7 @@ export function CalculatorPage() {
     
     let K = 0
     let n = 0
-    let y0 = parseFloat(yieldStrength) || 70
+    const y0 = parseFloat(yieldStrength) || 70
     
     switch (materialType) {
       case 'copper_soft':

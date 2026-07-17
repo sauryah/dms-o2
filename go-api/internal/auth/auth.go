@@ -41,8 +41,9 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 
 
 			if tokenStr == "" {
-				// No token provided; allow guest access (AllowAny equivalent)
-				next.ServeHTTP(w, r)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Authentication required"})
 				return
 			}
 
