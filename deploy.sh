@@ -52,7 +52,7 @@ docker compose -f docker-compose.prod.yml up -d
 echo ">>> Waiting for Django service to start..."
 # Wait up to 30 seconds for the django container to be running
 for i in {1..30}; do
-    if docker compose -f docker-compose.prod.yml ps | grep -q "django-1" | grep -q "Up"; then
+    if docker compose -f docker-compose.prod.yml ps | grep "django" | grep -q "Up"; then
         break
     fi
     sleep 1
