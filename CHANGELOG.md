@@ -10,6 +10,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.7.5] - 2026-07-17
+
+### Added
+- **Unified Chronological History Feed**:
+  - Implemented `UnifiedHistoryListView` backend endpoint aggregating and sorting `DieHistory` and `MachineHistory` records.
+  - Developed client-side transaction grouping logic that collapses consecutive changes made by the same user on the same entity (within a 5-second window) into a single timeline card.
+  - Added inline visual green (additions), red (deletions), and blue (modifications) diff highlights.
+- **Collapsible User Activity Logs**:
+  - Added an inline "Logs" timeline panel within the user list of the `UserManager` console, allowing administrators to view user logins, failed attempts, and expires dynamically.
+- **Granular Wear Prediction Restricting**:
+  - Restricted frontend rendering of the `WearPredictionSection` inside the `DieDetailPage` to ROOT users or users explicitly granted `die-wear` tool permission.
+  - Hardened backend REST access in `wear_prediction` action to validate user authorization permissions, returning a `403 Forbidden` error if unauthorized.
+
+### Changed
+- **Optimized Search Indexing Performance**:
+  - Refactored `process_outbox_task` to batch Meilisearch document synchronization and deletions in chunks of 100, replacing single document updates with bulk batching for a 100x speedup.
+
+### Fixed
+- **Wire Drawing Calculator Math Toggle**:
+  - Added a "Show Details" column toggle in the calculator results table to hide or reveal mathematical details columns (`Area Before`, `Area After`, and `Ratio`) on demand.
+- **Precise Concurrent Session Eviction Alerts**:
+  - Added short-term cache records tracking concurrent user session evictions in `LoginView` and `TokenRefreshView`.
+  - Configured custom JWT authentication handler to raise structured 401 exceptions on evicted sessions, intercepted in the frontend to display an informative warning banner showing the evicting IP and time.
+
+---
+
 ## [1.7.1] - 2026-07-16
 
 ### Added
