@@ -385,29 +385,19 @@ To access DMS from another computer on the same network **without browser warnin
 
 ### Step 1: Copy the Root CA
 
-On the DMS server, find the root CA file:
+On the DMS server, copy these files from the `certs/` folder to the other computer:
 
 ```text
-certs/rootCA.pem
+certs/rootCA.cer    ← install this (DER format, works on Windows)
 ```
 
-Copy this file to the other computer (via USB, network share, email, etc.).
+Copy via USB, network share, email, etc.
 
-### Step 2: Convert to Windows-Importable Format
-
-On the other computer, open **PowerShell** and run:
-
-```powershell
-certutil -decode rootCA.pem rootCA.cer
-```
-
-Or simply use the DER-encoded version if available: `rootCA.cer`.
-
-### Step 3: Install the Certificate
+### Step 2: Install the Certificate
 
 **Option A — Command Line (Recommended)**
 
-Open **PowerShell as Administrator** and run:
+Open **PowerShell as Administrator** on the other computer and run:
 
 ```powershell
 certutil -addstore -f "Root" rootCA.cer
@@ -432,7 +422,7 @@ Firefox uses its own certificate store:
 5. Check **Trust this CA to identify websites** → OK
 6. Restart Firefox
 
-### Step 4: Verify
+### Step 3: Verify
 
 Open `https://<DMS_SERVER_IP>` in the browser. It should show as secure with no warnings.
 
