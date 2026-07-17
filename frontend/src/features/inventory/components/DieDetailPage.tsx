@@ -1078,7 +1078,7 @@ export function DieDetailPage() {
   const params = useParams()
   const id = params['*']
   const { request } = useApi()
-  const { role } = useAuth()
+  const { role, authorizedTools = [] } = useAuth()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -1892,7 +1892,7 @@ export function DieDetailPage() {
       </div>
 
       {/* Wear Prediction Section */}
-      {(role === 'ROOT' || role === 'ADMIN') && <WearPredictionSection die={die} />}
+      {(role === 'ROOT' || authorizedTools.includes('die-wear')) && <WearPredictionSection die={die} />}
 
       {/* Maintenance Logs */}
       <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">

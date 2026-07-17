@@ -255,7 +255,15 @@ class DieViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='wear-prediction')
     def wear_prediction(self, request, die_id=None):
-        if not (request.user and request.user.is_authenticated and (request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser)):
+        user = request.user
+        is_authorized = (
+            user and user.is_authenticated and (
+                user.role == 'ROOT' or
+                user.is_superuser or
+                (user.is_authorized_for_tools and isinstance(user.authorized_tools, list) and 'die-wear' in user.authorized_tools)
+            )
+        )
+        if not is_authorized:
             return Response({"detail": "You do not have permission to view wear prediction details."}, status=status.HTTP_403_FORBIDDEN)
         die = self.get_object()
         from django.utils import timezone

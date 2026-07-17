@@ -120,6 +120,10 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-17 · feat: restrict Preventive Wear Prediction module to ROOT and authorized users (v1.7.5)
+- Restricted frontend rendering of the `WearPredictionSection` inside the `DieDetailPage` to ROOT users or users explicitly granted `die-wear` tool permission.
+- Hardened backend REST access in `wear_prediction` ViewSet action to validate user authorization permissions, returning a `403 Forbidden` error if unauthorized.
+
 ### 2026-07-17 · feat: optimize search indexing performance and add inline user activity logs (v1.7.4)
 - Refactored `process_outbox_task` to batch Meilisearch document synchronization and deletions in chunks of 100, replacing single document updates with bulk batching.
 - Added a collapsible, user-specific inline "Logs" history timeline view within the `UserManager` console, allowing root admins to view logins, failed attempts, and expires dynamically.
