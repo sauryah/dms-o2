@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet
 from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView, TokenRefreshView
-from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView
+from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
 router = DefaultRouter()
@@ -51,6 +51,7 @@ urlpatterns = [
     path('api/v1/history/', DieHistoryListView.as_view(), name='die-history'),
     path('api/v1/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
     path('api/v1/history/dashboard/', DashboardHistoryListView.as_view(), name='dashboard-history'),
+    path('api/v1/history/unified/', UnifiedHistoryListView.as_view(), name='unified-history'),
     
     # Legacy fallbacks
     path('api/auth/login/', LoginView.as_view()),
@@ -68,6 +69,7 @@ urlpatterns = [
     path('api/history/', DieHistoryListView.as_view()),
     path('api/history/machines/', MachineHistoryListView.as_view()),
     path('api/history/dashboard/', DashboardHistoryListView.as_view()),
+    path('api/history/unified/', UnifiedHistoryListView.as_view()),
     
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/v1/', include(router.urls)),

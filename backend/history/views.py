@@ -204,3 +204,113 @@ class DashboardHistoryListView(APIView):
         
         return Response(response_data)
 
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class UnifiedHistoryListView(APIView):
+    permission_classes = [IsAdminOrRootOnly]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('user', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Username'),
+            OpenApiParameter('from', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Start date (YYYY-MM-DD)'),
+            OpenApiParameter('to', OpenApiTypes.STR, OpenApiParameter.QUERY, description='End date (YYYY-MM-DD)'),
+            OpenApiParameter('ip', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by IP address'),
+            OpenApiParameter('search', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Search notes or values'),
+            OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Items per page'),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+        description="Retrieve chronological unified history list of changes for dies and machines."
+    )
+    def get(self, request, *args, **kwargs):
+        user = request.query_params.get('user')
+        from_date = request.query_params.get('from')
+        to_date = request.query_params.get('to')
+        ip = request.query_params.get('ip')
+        search = request.query_params.get('search')
+
+        # 1. DieHistory
+        dh_qs = DieHistory.objects.all().select_related('die', 'changed_by')
+        if user:
+            dh_qs = dh_qs.filter(changed_by__username__icontains=user)
+        if from_date:
+            dh_qs = dh_qs.filter(timestamp__date__gte=from_date)
+        if to_date:
+            dh_qs = dh_qs.filter(timestamp__date__lte=to_date)
+        if ip:
+            dh_qs = dh_qs.filter(ip_address__icontains=ip)
+        if search:
+            dh_qs = dh_qs.filter(
+                Q(note__icontains=search) |
+                Q(old_value__icontains=search) |
+                Q(new_value__icontains=search)
+            )
+
+        # 2. MachineHistory
+        mh_qs = MachineHistory.objects.all().select_related('changed_by')
+        if user:
+            mh_qs = mh_qs.filter(changed_by__username__icontains=user)
+        if from_date:
+            mh_qs = mh_qs.filter(timestamp__date__gte=from_date)
+        if to_date:
+            mh_qs = mh_qs.filter(timestamp__date__lte=to_date)
+        if ip:
+            mh_qs = mh_qs.filter(ip_address__icontains=ip)
+        if search:
+            mh_qs = mh_qs.filter(
+                Q(old_value__icontains=search) |
+                Q(new_value__icontains=search)
+            )
+
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 25))
+        limit = page * page_size
+
+        dh_list = list(dh_qs[:limit])
+        mh_list = list(mh_qs[:limit])
+
+        serialized = []
+        for x in dh_list:
+            serialized.append({
+                'id': f"die_{x.id}",
+                'entity_type': 'DIE',
+                'entity_id': x.die.id,
+                'entity_name': x.die.die_id,
+                'action': 'UPDATED',
+                'field_name': x.field_name,
+                'old_value': x.old_value,
+                'new_value': x.new_value,
+                'changed_by_username': x.changed_by.username if x.changed_by else 'System',
+                'timestamp': x.timestamp.isoformat(),
+                'ip_address': x.ip_address,
+                'note': x.note,
+            })
+        for x in mh_list:
+            serialized.append({
+                'id': f"machine_{x.id}",
+                'entity_type': x.entity_type,
+                'entity_id': x.entity_id,
+                'entity_name': x.entity_name,
+                'action': x.action,
+                'field_name': x.field_name,
+                'old_value': x.old_value,
+                'new_value': x.new_value,
+                'changed_by_username': x.changed_by.username if x.changed_by else 'System',
+                'timestamp': x.timestamp.isoformat(),
+                'ip_address': x.ip_address,
+                'note': '',
+            })
+
+        serialized.sort(key=lambda item: item['timestamp'], reverse=True)
+
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_data = serialized[start:end]
+
+        total_count = dh_qs.count() + mh_qs.count()
+
+        return Response({
+            'count': total_count,
+            'results': paginated_data
+        })
+

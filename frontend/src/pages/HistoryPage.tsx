@@ -4,9 +4,106 @@ import { useApi } from '../hooks/useApi'
 import { useDebounce } from '../hooks/useDebounce'
 import { Search, User, Filter, ArrowLeft, ArrowRight, Download, Layers, Activity } from 'lucide-react'
 
+interface HistoryItem {
+  id: string
+  entity_type: string
+  entity_id: number
+  entity_name: string
+  action: string
+  field_name: string
+  old_value: string
+  new_value: string
+  changed_by_username: string
+  timestamp: string
+  ip_address: string
+  note: string
+}
+
+interface GroupedTransaction {
+  key: string
+  changed_by_username: string
+  timestamp: string
+  ip_address: string
+  entity_type: string
+  entity_name: string
+  action: string
+  note: string
+  changes: {
+    field_name: string
+    old_value: string
+    new_value: string
+  }[]
+}
+
+function groupHistoryItems(items: HistoryItem[]): GroupedTransaction[] {
+  const groups: GroupedTransaction[] = []
+
+  items.forEach((item) => {
+    const timestampMs = new Date(item.timestamp).getTime()
+    
+    // Find if there is an existing group for this entity + user + IP within a 5-second window
+    const matchingGroup = groups.find((g) => {
+      if (g.changed_by_username !== item.changed_by_username) return false
+      if (g.entity_name !== item.entity_name) return false
+      if (g.entity_type !== item.entity_type) return false
+      if (g.ip_address !== item.ip_address) return false
+      
+      const groupTimeMs = new Date(g.timestamp).getTime()
+      return Math.abs(groupTimeMs - timestampMs) <= 5000 // 5 seconds threshold
+    })
+
+    if (matchingGroup) {
+      if (item.field_name && !matchingGroup.changes.some(c => c.field_name === item.field_name)) {
+        matchingGroup.changes.push({
+          field_name: item.field_name,
+          old_value: item.old_value,
+          new_value: item.new_value
+        })
+      }
+      if (item.note && !matchingGroup.note) {
+        matchingGroup.note = item.note
+      }
+    } else {
+      groups.push({
+        key: item.id,
+        changed_by_username: item.changed_by_username,
+        timestamp: item.timestamp,
+        ip_address: item.ip_address,
+        entity_type: item.entity_type,
+        entity_name: item.entity_name,
+        action: item.action,
+        note: item.note,
+        changes: item.field_name ? [{
+          field_name: item.field_name,
+          old_value: item.old_value,
+          new_value: item.new_value
+        }] : []
+      })
+    }
+  })
+
+  return groups
+}
+
+function renderDiffValue(oldVal: string, newVal: string) {
+  if (!oldVal && newVal) {
+    return <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-mono">Added: {newVal}</span>
+  }
+  if (oldVal && !newVal) {
+    return <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded text-[11px] font-mono">Cleared (was: {oldVal})</span>
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+      <span className="bg-slate-950 px-1.5 py-0.5 rounded text-slate-500 line-through border border-white/[0.04]">{oldVal || 'empty'}</span>
+      <span className="text-slate-500">➔</span>
+      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded">{newVal || 'empty'}</span>
+    </div>
+  )
+}
+
 export function HistoryPage() {
   const { request } = useApi()
-  const [activeTab, setActiveTab] = useState<'dies' | 'machines'>('dies')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'dies' | 'machines'>('timeline')
   
   // Shared Filter States
   const [userInput, setUserInput] = useState('')
@@ -32,6 +129,25 @@ export function HistoryPage() {
   const debouncedSearchText = useDebounce(searchTextInput, 300)
   const debouncedDieId = useDebounce(dieIdInput, 300)
   const debouncedEntityName = useDebounce(entityNameInput, 300)
+
+  // Fetch Unified History
+  const { data: unifiedHistoryData, isLoading: isLoadingUnified, error: errorUnified } = useQuery({
+    queryKey: ['unifiedHistory', debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
+    enabled: activeTab === 'timeline',
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams()
+      if (debouncedUser) params.append('user', debouncedUser)
+      if (debouncedField) params.append('field', debouncedField)
+      if (debouncedIp) params.append('ip', debouncedIp)
+      if (debouncedSearchText) params.append('search', debouncedSearchText)
+      if (fromDate) params.append('from', fromDate)
+      if (toDate) params.append('to', toDate)
+      params.append('page', page.toString())
+      params.append('page_size', '40')
+
+      return request(`/api/history/unified/?${params.toString()}`, { signal, keepMetadata: true })
+    }
+  })
 
   // Fetch Die History
   const { data: dieHistoryData, isLoading: isLoadingDies, error: errorDies } = useQuery({
@@ -75,16 +191,16 @@ export function HistoryPage() {
     }
   })
 
-  const handleTabChange = (tab: 'dies' | 'machines') => {
+  const handleTabChange = (tab: 'timeline' | 'dies' | 'machines') => {
     setActiveTab(tab)
     setPage(1)
   }
 
-  const isCurrentLoading = activeTab === 'dies' ? isLoadingDies : isLoadingMachines
-  const currentError = activeTab === 'dies' ? errorDies : errorMachines
-  const currentList = activeTab === 'dies' ? (dieHistoryData?.results || []) : (machineHistoryData?.results || [])
-  const count = activeTab === 'dies' ? (dieHistoryData?.count || 0) : (machineHistoryData?.count || 0)
-  const totalPages = Math.ceil(count / 25)
+  const isCurrentLoading = activeTab === 'timeline' ? isLoadingUnified : (activeTab === 'dies' ? isLoadingDies : isLoadingMachines)
+  const currentError = activeTab === 'timeline' ? errorUnified : (activeTab === 'dies' ? errorDies : errorMachines)
+  const currentList = activeTab === 'timeline' ? (unifiedHistoryData?.results || []) : (activeTab === 'dies' ? (dieHistoryData?.results || []) : (machineHistoryData?.results || []))
+  const count = activeTab === 'timeline' ? (unifiedHistoryData?.count || 0) : (activeTab === 'dies' ? (dieHistoryData?.count || 0) : (machineHistoryData?.count || 0))
+  const totalPages = Math.ceil(count / (activeTab === 'timeline' ? 40 : 25))
 
   // CSV Export
   const exportToCSV = async () => {
@@ -98,12 +214,33 @@ export function HistoryPage() {
       if (toDate) params.append('to', toDate)
       params.append('page_size', '10000') // fetch all matching up to 10k
 
-      if (activeTab === 'dies') {
+      if (activeTab === 'timeline') {
+        const res = await request(`/api/history/unified/?${params.toString()}`, { keepMetadata: true })
+        const allResults = res?.results || []
+
+        let csvContent = "Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n"
+        allResults.forEach((h: any) => {
+          const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
+          const entityType = h.entity_type ?? ''
+          const entityId = h.entity_id ?? ''
+          const entityName = h.entity_name ?? ''
+          const action = h.action ?? ''
+          const fieldName = h.field_name ?? ''
+          const oldValue = `"${(h.old_value ?? "").replace(/"/g, '""')}"`
+          const newValue = `"${(h.new_value ?? "").replace(/"/g, '""')}"`
+          const changedBy = h.changed_by_username ?? 'System'
+          const ipAddress = h.ip_address ?? ''
+          const note = `"${(h.note ?? "").replace(/"/g, '""')}"`
+          csvContent += `${timestamp},${entityType},${entityId},${entityName},${action},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress},${note}\n`
+        })
+
+        triggerCSVDownload(csvContent, `dms_unified_history_${Date.now()}.csv`)
+      } else if (activeTab === 'dies') {
         if (debouncedDieId) params.append('die_id', debouncedDieId)
         const res = await request(`/api/history/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
-        let csvContent = "Timestamp,Die ID,Field Changed,Old Value,New Value,Changed By,IP Address\n"
+        let csvContent = "Timestamp,Die ID,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n"
         allResults.forEach((h: any) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const dieId = h.die_id ?? ''
@@ -112,7 +249,8 @@ export function HistoryPage() {
           const newValue = `"${(h.new_value ?? "").replace(/"/g, '""')}"`
           const changedBy = h.changed_by_username ?? 'System'
           const ipAddress = h.ip_address ?? ''
-          csvContent += `${timestamp},${dieId},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress}\n`
+          const note = `"${(h.note ?? "").replace(/"/g, '""')}"`
+          csvContent += `${timestamp},${dieId},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress},${note}\n`
         })
 
         triggerCSVDownload(csvContent, `dms_die_history_${Date.now()}.csv`)
@@ -182,13 +320,22 @@ export function HistoryPage() {
       {/* Tabs */}
       <div className="flex border-b border-slate-800 space-x-6">
         <button
+          onClick={() => handleTabChange('timeline')}
+          className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 ${
+            activeTab === 'timeline' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <Layers className="h-4 w-4 text-blue-500" />
+          <span>Unified Timeline (Grouped)</span>
+        </button>
+        <button
           onClick={() => handleTabChange('dies')}
           className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 ${
             activeTab === 'dies' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
           <Layers className="h-4 w-4" />
-          <span>Extrusion Dies</span>
+          <span>Extrusion Dies (Raw)</span>
         </button>
         <button
           onClick={() => handleTabChange('machines')}
@@ -197,7 +344,7 @@ export function HistoryPage() {
           }`}
         >
           <Activity className="h-4 w-4" />
-          <span>Machines & Sets</span>
+          <span>Machines & Sets (Raw)</span>
         </button>
       </div>
 
@@ -205,7 +352,7 @@ export function HistoryPage() {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Tab Specific Filter */}
-          {activeTab === 'dies' ? (
+          {activeTab === 'dies' && (
             <div>
               <label className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1">Die ID</label>
               <div className="relative">
@@ -219,7 +366,8 @@ export function HistoryPage() {
                 />
               </div>
             </div>
-          ) : (
+          )}
+          {activeTab === 'machines' && (
             <>
               <div>
                 <label className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1">Entity Name</label>
@@ -368,116 +516,189 @@ export function HistoryPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
-                <thead className="bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                  {activeTab === 'dies' ? (
-                    <tr>
-                      <th className="px-6 py-4.5">Timestamp</th>
-                      <th className="px-6 py-4.5">Die ID</th>
-                      <th className="px-6 py-4.5">Field Changed</th>
-                      <th className="px-6 py-4.5">Old Value</th>
-                      <th className="px-6 py-4.5">New Value</th>
-                      <th className="px-6 py-4.5">Changed By</th>
-                      <th className="px-6 py-4.5">IP Address</th>
-                      <th className="px-6 py-4.5">Reason / Note</th>
-                    </tr>
-                  ) : (
-                    <tr>
-                      <th className="px-6 py-4.5">Timestamp</th>
-                      <th className="px-6 py-4.5">Entity</th>
-                      <th className="px-6 py-4.5">Name</th>
-                      <th className="px-6 py-4.5">Action</th>
-                      <th className="px-6 py-4.5">Field Changed</th>
-                      <th className="px-6 py-4.5">Old Value</th>
-                      <th className="px-6 py-4.5">New Value</th>
-                      <th className="px-6 py-4.5">Changed By</th>
-                      <th className="px-6 py-4.5">IP Address</th>
-                    </tr>
-                  )}
-                </thead>
-                <tbody className="divide-y divide-slate-800/65 text-slate-300">
-                  {activeTab === 'dies' ? (
-                    currentList.map((log: any) => (
-                      <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
-                          {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-blue-450 font-bold font-mono text-xs">
-                          {log.die_id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
-                          {log.field_name}
-                        </td>
-                        <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-450" title={log.old_value}>
-                          {log.old_value || <span className="text-slate-700 font-mono italic">empty</span>}
-                        </td>
-                        <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
-                          {log.new_value || <span className="text-slate-700 font-mono italic">empty</span>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-300 font-bold">
-                          {log.changed_by_username || 'System'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
-                          {log.ip_address || '—'}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-400 max-w-xs truncate" title={log.note}>
-                          {log.note || '—'}
-                        </td>
+            {activeTab === 'timeline' ? (
+              <div className="p-6 space-y-6 bg-slate-950/40 relative">
+                {/* Timeline vertical rule */}
+                <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-slate-850/60" />
+                
+                {groupHistoryItems(currentList).map((group) => (
+                  <div key={group.key} className="flex gap-6 relative group animate-fadeIn">
+                    {/* Timeline bullet */}
+                    <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center relative z-10 shrink-0 group-hover:border-blue-500 transition-colors shadow-lg">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 group-hover:bg-blue-400 transition-colors" />
+                    </div>
+                    
+                    {/* Card container */}
+                    <div className="flex-1 bg-slate-900/60 border border-slate-850 hover:border-slate-800 rounded-2xl p-5 shadow-md hover:shadow-lg transition duration-200">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 border-b border-slate-800/50 pb-3">
+                        <div>
+                          <div className="flex items-center flex-wrap gap-2 text-xs">
+                            <span className="font-bold text-white text-[13px]">{group.changed_by_username}</span>
+                            <span className="text-slate-500">modified</span>
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                              group.entity_type === 'DIE'
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                : group.entity_type === 'MACHINE'
+                                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                                : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                            }`}>
+                              {group.entity_type}
+                            </span>
+                            <span className="font-semibold text-slate-200">{group.entity_name}</span>
+                          </div>
+                          
+                          {group.note && (
+                            <div className="mt-2 text-xs text-slate-400 italic bg-slate-950/40 px-3 py-1.5 rounded-lg border border-slate-850 max-w-xl">
+                              &ldquo;{group.note}&rdquo;
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-right shrink-0">
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            {new Date(group.timestamp).toLocaleString()}
+                          </div>
+                          {group.ip_address && (
+                            <div className="text-[10px] text-slate-600 font-mono mt-0.5">
+                              IP: {group.ip_address}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Changes list */}
+                      {group.changes.length > 0 ? (
+                        <div className="space-y-2 mt-2">
+                          {group.changes.map((change, idx) => (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-xs hover:bg-white/[0.01] p-1.5 rounded transition">
+                              <span className="font-mono text-[#64748B] w-36 shrink-0">{change.field_name}</span>
+                              <div className="flex-1">
+                                {renderDiffValue(change.old_value, change.new_value)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-500 font-mono">
+                          Performed action: <span className="font-bold text-slate-350">{group.action}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
+                  <thead className="bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    {activeTab === 'dies' ? (
+                      <tr>
+                        <th className="px-6 py-4.5">Timestamp</th>
+                        <th className="px-6 py-4.5">Die ID</th>
+                        <th className="px-6 py-4.5">Field Changed</th>
+                        <th className="px-6 py-4.5">Old Value</th>
+                        <th className="px-6 py-4.5">New Value</th>
+                        <th className="px-6 py-4.5">Changed By</th>
+                        <th className="px-6 py-4.5">IP Address</th>
+                        <th className="px-6 py-4.5">Reason / Note</th>
                       </tr>
-                    ))
-                  ) : (
-                    currentList.map((log: any) => (
-                      <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
-                          {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs">
-                          <span className={`px-2.5 py-0.5 text-xxs font-bold rounded-full border ${
-                            log.entity_type === 'MACHINE'
-                              ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                              : log.entity_type === 'SET'
-                              ? 'bg-sky-500/10 text-sky-400 border-sky-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          }`}>
-                            {log.entity_type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-white font-semibold">
-                          {log.entity_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs">
-                          <span className={`px-2 py-0.5 text-xxs font-bold rounded ${
-                            log.action === 'CREATED'
-                              ? 'bg-emerald-500/15 text-emerald-450'
-                              : log.action === 'DELETED'
-                              ? 'bg-rose-500/15 text-rose-450'
-                              : 'bg-amber-500/15 text-amber-450'
-                          }`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
-                          {log.field_name || '—'}
-                        </td>
-                        <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-450" title={log.old_value}>
-                          {log.old_value || '—'}
-                        </td>
-                        <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
-                          {log.new_value || '—'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-300 font-bold">
-                          {log.changed_by_username || 'System'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
-                          {log.ip_address || '—'}
-                        </td>
+                    ) : (
+                      <tr>
+                        <th className="px-6 py-4.5">Timestamp</th>
+                        <th className="px-6 py-4.5">Entity</th>
+                        <th className="px-6 py-4.5">Name</th>
+                        <th className="px-6 py-4.5">Action</th>
+                        <th className="px-6 py-4.5">Field Changed</th>
+                        <th className="px-6 py-4.5">Old Value</th>
+                        <th className="px-6 py-4.5">New Value</th>
+                        <th className="px-6 py-4.5">Changed By</th>
+                        <th className="px-6 py-4.5">IP Address</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/65 text-slate-300">
+                    {activeTab === 'dies' ? (
+                      currentList.map((log: any) => (
+                        <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-blue-450 font-bold font-mono text-xs">
+                            {log.die_id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
+                            {log.field_name}
+                          </td>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-455" title={log.old_value}>
+                            {log.old_value || <span className="text-slate-700 font-mono italic">empty</span>}
+                          </td>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
+                            {log.new_value || <span className="text-slate-700 font-mono italic">empty</span>}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-300 font-bold">
+                            {log.changed_by_username || 'System'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
+                            {log.ip_address || '—'}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-slate-400 max-w-xs truncate" title={log.note}>
+                            {log.note || '—'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      currentList.map((log: any) => (
+                        <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs">
+                            <span className={`px-2.5 py-0.5 text-xxs font-bold rounded-full border ${
+                              log.entity_type === 'MACHINE'
+                                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                                : log.entity_type === 'SET'
+                                ? 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}>
+                              {log.entity_type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-white font-semibold">
+                            {log.entity_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs">
+                            <span className={`px-2 py-0.5 text-xxs font-bold rounded ${
+                              log.action === 'CREATED'
+                                ? 'bg-emerald-500/15 text-emerald-450'
+                                : log.action === 'DELETED'
+                                ? 'bg-rose-500/15 text-rose-450'
+                                : 'bg-amber-500/15 text-amber-450'
+                            }`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
+                            {log.field_name || '—'}
+                          </td>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-455" title={log.old_value}>
+                            {log.old_value || '—'}
+                          </td>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
+                            {log.new_value || '—'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-300 font-bold">
+                            {log.changed_by_username || 'System'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
+                            {log.ip_address || '—'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Pagination Controls */}
             {totalPages > 1 && (

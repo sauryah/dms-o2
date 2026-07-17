@@ -120,6 +120,11 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-17 · feat: optimize audit history organization with unified timeline and visual diffs (v1.7.3)
+- Implemented `UnifiedHistoryListView` in the backend to query and sort both `DieHistory` and `MachineHistory` chronologically.
+- Grouped multiple simultaneous field edits by the same user into single transaction timeline cards (within a 5-second window).
+- Added visual green/red/amber diff highlight indicators showing added, removed, or changed values.
+
 ### 2026-07-17 · feat: implement precise concurrent session eviction notifications (v1.7.2)
 - Added short-term cache records tracking concurrent user session evictions in `LoginView`.
 - Refactored `TokenRefreshView` to block session hijacking and check for eviction when refreshing access tokens.
