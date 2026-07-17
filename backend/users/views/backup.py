@@ -1,4 +1,5 @@
 import os
+import hashlib
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -74,10 +75,17 @@ class BackupViewSet(viewsets.ViewSet):
                 return Response({'error': 'Backup file not found'}, status=status.HTTP_404_NOT_FOUND)
 
             from users.tasks import restore_backup_task
-            request_meta = {
-                'HTTP_AUTHORIZATION': request.META.get('HTTP_AUTHORIZATION')
-            }
-            task = restore_backup_task.delay(filepath, filename, request.user.id, request_meta)
+            # Compute token hash here instead of passing raw token through Celery broker
+            session_data = None
+            auth_header = request.META.get('HTTP_AUTHORIZATION')
+            if auth_header and auth_header.startswith('Bearer '):
+                token_str = auth_header.split(' ')[1]
+                token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+                session_data = {
+                    'user_id': request.user.id,
+                    'token_hash': token_hash,
+                }
+            task = restore_backup_task.delay(filepath, filename, request.user.id, session_data)
             
             return Response({
                 'status': 'pending',

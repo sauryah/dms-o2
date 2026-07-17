@@ -1,6 +1,5 @@
 import os
 import subprocess
-import hashlib
 from typing import Dict, Any, Optional
 from django.conf import settings
 from users.models import UserSession
@@ -88,7 +87,7 @@ class BackupService:
         return filename
 
     @staticmethod
-    def restore_backup(filepath: str, filename: str, request_user, request_meta: dict) -> None:
+    def restore_backup(filepath: str, filename: str, request_user, session_data: dict = None) -> None:
         db_name = settings.DATABASES['default']['NAME']
         db_user = settings.DATABASES['default']['USER']
         db_password = settings.DATABASES['default']['PASSWORD']
@@ -116,19 +115,19 @@ class BackupService:
         # Capture the restorer's active session data before restoration
         current_session_data = None
         try:
-            header = request_meta.get('HTTP_AUTHORIZATION')
-            if header and header.startswith('Bearer '):
-                token_str = header.split(' ')[1]
-                token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
-                current_session = UserSession.objects.get(user=request_user, token_hash=token_hash)
-                current_session_data = {
-                    'user_id': current_session.user_id,
-                    'username': request_user.username,
-                    'role': request_user.role,
-                    'token_hash': current_session.token_hash,
-                    'ip_address': current_session.ip_address,
-                    'device': current_session.device
-                }
+            if session_data and session_data.get('token_hash'):
+                token_hash = session_data['token_hash']
+                user_id = session_data.get('user_id', request_user.id if request_user else None)
+                if user_id:
+                    current_session = UserSession.objects.get(user_id=user_id, token_hash=token_hash)
+                    current_session_data = {
+                        'user_id': current_session.user_id,
+                        'username': request_user.username if request_user else '',
+                        'role': request_user.role if request_user else '',
+                        'token_hash': current_session.token_hash,
+                        'ip_address': current_session.ip_address,
+                        'device': current_session.device
+                    }
         except Exception:
             pass
 
@@ -177,7 +176,8 @@ class BackupService:
 
     @staticmethod
     def delete_backup(filepath: str) -> None:
-        os.remove(filepath)
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
     @staticmethod
     def validate_filepath(filename: str) -> str:

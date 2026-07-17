@@ -24,9 +24,15 @@ def create_backup_task(self):
         raise self.retry(exc=exc, countdown=10)
 
 @shared_task(bind=True, max_retries=1)
-def restore_backup_task(self, filepath, filename, user_id, request_meta):
+def restore_backup_task(self, filepath, filename, user_id, session_data=None):
     """
     Asynchronously execute database restoration (pg_restore) using BackupService.
+    
+    Args:
+        filepath: Path to the backup file
+        filename: Name of the backup file
+        user_id: ID of the user performing the restore
+        session_data: Dict with 'user_id' and 'token_hash' to preserve session (no raw tokens)
     """
     try:
         logger.info(f"Starting asynchronous restore task for backup: {filename}")
@@ -39,7 +45,7 @@ def restore_backup_task(self, filepath, filename, user_id, request_meta):
             except User.DoesNotExist:
                 pass
 
-        BackupService.restore_backup(filepath, filename, user, request_meta)
+        BackupService.restore_backup(filepath, filename, user, session_data)
         logger.info(f"Asynchronous restore completed successfully for backup: {filename}")
         return {'status': 'success'}
     except Exception as exc:
