@@ -3,7 +3,7 @@ package events
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -35,7 +35,7 @@ func NewEventManager() *EventManager {
 		register:   make(chan Client, 64),
 		unregister: make(chan Client, 64),
 		broadcast:  make(chan string, 256),
-		history:    make([]Event, 0, 100),
+		history:    make([]Event, 0, 500),
 		nextID:     1,
 	}
 }
@@ -46,14 +46,14 @@ func (m *EventManager) Start() {
 		case client := <-m.register:
 			m.mu.Lock()
 			m.clients[client] = true
-			log.Printf("SSE Client registered. Total active clients: %d", len(m.clients))
+			slog.Info("SSE Client registered", "total_active", len(m.clients))
 			m.mu.Unlock()
 		case client := <-m.unregister:
 			m.mu.Lock()
 			if _, ok := m.clients[client]; ok {
 				delete(m.clients, client)
 				close(client)
-				log.Printf("SSE Client unregistered. Total active clients: %d", len(m.clients))
+				slog.Info("SSE Client unregistered", "total_active", len(m.clients))
 			}
 			m.mu.Unlock()
 		case message := <-m.broadcast:
@@ -63,9 +63,9 @@ func (m *EventManager) Start() {
 				Message: message,
 			}
 			m.nextID++
-			if len(m.history) >= 100 {
-				m.history = m.history[1:]
-			}
+		if len(m.history) >= 500 {
+			m.history = m.history[1:]
+		}
 			m.history = append(m.history, event)
 			m.mu.Unlock()
 
@@ -74,7 +74,7 @@ func (m *EventManager) Start() {
 				select {
 				case client <- event:
 				default:
-					log.Println("SSE Client buffer full or blocked. Unregistering client.")
+					slog.Warn("SSE Client buffer full or blocked, unregistering client.")
 					go func(c Client) {
 						m.unregister <- c
 					}(client)
@@ -97,7 +97,7 @@ func (m *EventManager) Broadcast(msg string) {
 	select {
 	case m.broadcast <- msg:
 	default:
-		log.Println("Warning: eventManager broadcast queue full, skipping broadcast.")
+		slog.Warn("Event broadcast queue full, skipping broadcast.")
 	}
 }
 
@@ -118,34 +118,34 @@ func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			log.Printf("PostgreSQL Listener error: %v", err)
+			slog.Error("PostgreSQL Listener error", "error", err)
 		}
 	}
 
 	listener := pq.NewListener(connStr, 10*time.Second, time.Minute, reportProblem)
 	err := listener.Listen("dms_events")
 	if err != nil {
-		log.Printf("Failed to listen to dms_events: %v", err)
+		slog.Error("Failed to listen to dms_events", "error", err)
 		return
 	}
 
 	go func() {
 		defer listener.Close()
-		log.Println("Listening for database notification events on channel 'dms_events' for cache invalidation...")
+		slog.Info("Listening for database notifications on channel dms_events")
 		for {
 			select {
 			case n := <-listener.Notify:
 				if n == nil {
 					continue
 				}
-				log.Printf("Received DB event: %s. Invalidating Redis search and stats caches.", n.Extra)
+				slog.Info("Received DB event, invalidating caches and broadcasting", "event", n.Extra)
 				onNotify()
 				manager.Broadcast(n.Extra)
 			case <-time.After(90 * time.Second):
 				go func() {
 					err := listener.Ping()
 					if err != nil {
-						log.Printf("PostgreSQL Listener ping failed: %v", err)
+						slog.Warn("PostgreSQL Listener ping failed", "error", err)
 					}
 				}()
 			}

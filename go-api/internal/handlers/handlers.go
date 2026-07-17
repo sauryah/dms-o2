@@ -545,12 +545,14 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	}
 
 	var filtered []database.DieRepresentation
+	var scores []int
 	for _, die := range combined {
 		score := scoreDie(die, params.Q)
 		if hasDigits && score <= 50 {
 			continue
 		}
 		filtered = append(filtered, die)
+		scores = append(scores, score)
 	}
 
 	type scoredDie struct {
@@ -560,7 +562,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 
 	scored := make([]scoredDie, len(filtered))
 	for i, die := range filtered {
-		scored[i] = scoredDie{die: die, score: scoreDie(die, params.Q)}
+		scored[i] = scoredDie{die: die, score: scores[i]}
 	}
 
 	sort.SliceStable(scored, func(i, j int) bool {
@@ -578,7 +580,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	slog.Info("Search results count after sorting and limit truncation", "count", len(filtered))
 
 	for i := 0; i < len(filtered) && i < 5; i++ {
-		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scoreDie(filtered[i], params.Q))
+		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scores[i])
 	}
 
 	if totalHits == 0 && len(combined) > 0 {
@@ -740,10 +742,6 @@ func validateFloatParam(s string) bool {
 	}
 	_, err := strconv.ParseFloat(s, 64)
 	return err == nil
-}
-
-func escapeMeiliString(s string) string {
-	return strings.ReplaceAll(s, "'", "\\'")
 }
 
 func escapeMeiliFilterValue(s string) string {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -35,13 +35,6 @@ type PostgresDB struct {
 	*sql.DB
 }
 
-type UserSession struct {
-	LastSeen  time.Time
-	CreatedAt time.Time
-	IsActive  bool
-	Role      string
-}
-
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 	connStr := cfg.PostgresConnStr()
 
@@ -52,7 +45,7 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 		if err == nil {
 			err = db.Ping()
 			if err == nil {
-				log.Println("Successfully connected to PostgreSQL database.")
+				slog.Info("Successfully connected to PostgreSQL database.")
 				db.SetMaxIdleConns(10)
 				db.SetMaxOpenConns(50)
 				db.SetConnMaxLifetime(time.Hour)
@@ -60,34 +53,10 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 				return &PostgresDB{db}, nil
 			}
 		}
-		log.Printf("Failed to connect to database (attempt %d/5): %v. Retrying in 2s...", i+1, err)
-		time.Sleep(2 * time.Second)
+		slog.Warn("Failed to connect to database", "attempt", i+1, "max", 5, "error", err)
+		time.Sleep(time.Duration(i+1) * 2 * time.Second)
 	}
 	return nil, err
-}
-
-func (db *PostgresDB) GetSession(ctx context.Context, tokenHash string, userID int) (*UserSession, error) {
-	var s UserSession
-	err := db.QueryRowContext(ctx, `
-		SELECT s.last_seen, s.created_at, u.is_active, u.role 
-		FROM users_usersession s 
-		JOIN users_user u ON s.user_id = u.id 
-		WHERE s.token_hash = $1 AND s.user_id = $2`, 
-		tokenHash, userID).Scan(&s.LastSeen, &s.CreatedAt, &s.IsActive, &s.Role)
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func (db *PostgresDB) DeleteSession(ctx context.Context, tokenHash string) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM users_usersession WHERE token_hash = $1", tokenHash)
-	return err
-}
-
-func (db *PostgresDB) UpdateSessionLastSeen(ctx context.Context, tokenHash string) error {
-	_, err := db.ExecContext(ctx, "UPDATE users_usersession SET last_seen = NOW() WHERE token_hash = $1", tokenHash)
-	return err
 }
 
 func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error) {

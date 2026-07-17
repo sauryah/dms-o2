@@ -15,8 +15,8 @@ export const options = {
 export function setup() {
   const loginUrl = 'http://localhost:8000/api/auth/login/';
   const payload = JSON.stringify({
-    username: 'root',
-    password: 'root123',
+    username: __ENV.TEST_USERNAME || 'root',
+    password: __ENV.TEST_PASSWORD || 'changeme',
   });
   const params = {
     headers: {

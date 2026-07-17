@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -27,11 +27,11 @@ func NewCache(cfg *config.Config) *Cache {
 
 	err := client.Ping(ctx).Err()
 	if err != nil {
-		log.Printf("Warning: Failed to connect to Redis at %s: %v. Caching will be disabled.", addr, err)
+		slog.Warn("Failed to connect to Redis", "addr", addr, "error", err)
 		return &Cache{client: nil}
 	}
 
-	log.Printf("Successfully connected to Redis at %s.", addr)
+	slog.Info("Successfully connected to Redis", "addr", addr)
 	return &Cache{client: client}
 }
 
@@ -57,7 +57,7 @@ func (c *Cache) Set(ctx context.Context, key string, val []byte, expiration time
 	if len(key) >= 7 && key[:7] == "search:" {
 		errSAdd := c.client.SAdd(ctx, "cached_searches", key).Err()
 		if errSAdd != nil {
-			log.Printf("Warning: Failed to add key %s to cached_searches tracker: %v", key, errSAdd)
+			slog.Warn("Failed to add key to cached_searches tracker", "key", key, "error", errSAdd)
 		}
 	}
 	return nil
@@ -71,31 +71,30 @@ func (c *Cache) Invalidate(ctx context.Context) {
 	// Delete stats key
 	err := c.client.Del(ctx, "stats").Err()
 	if err != nil {
-		log.Printf("Failed to delete stats cache: %v", err)
+		slog.Warn("Failed to delete stats cache", "error", err)
 	} else {
-		log.Println("Successfully invalidated 'stats' cache.")
+		slog.Info("Successfully invalidated stats cache")
 	}
 
 	// Retrieve all tracked search keys from the Set
 	keys, err := c.client.SMembers(ctx, "cached_searches").Result()
 	if err != nil {
-		log.Printf("Failed to retrieve cached search keys from Set: %v", err)
+		slog.Warn("Failed to retrieve cached search keys from Set", "error", err)
 		return
 	}
 
 	if len(keys) > 0 {
 		err = c.client.Del(ctx, keys...).Err()
 		if err != nil {
-			log.Printf("Failed to delete tracked search cache keys: %v", err)
+			slog.Warn("Failed to delete tracked search cache keys", "error", err)
 		} else {
-			log.Printf("Successfully invalidated %d search cache keys.", len(keys))
+			slog.Info("Successfully invalidated search cache keys", "count", len(keys))
 		}
 	}
 
-	// Clear the tracker Set itself
 	err = c.client.Del(ctx, "cached_searches").Err()
 	if err != nil {
-		log.Printf("Failed to delete cached_searches tracker Set: %v", err)
+		slog.Warn("Failed to delete cached_searches tracker Set", "error", err)
 	}
 }
 

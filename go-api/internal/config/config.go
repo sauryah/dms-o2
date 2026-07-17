@@ -108,7 +108,10 @@ func Load() (*Config, error) {
 
 	internalAPISecret := os.Getenv("INTERNAL_API_SECRET")
 	if internalAPISecret == "" {
-		internalAPISecret = "dms_internal_secret_default_key_998"
+		return nil, fmt.Errorf("INTERNAL_API_SECRET environment variable is required")
+	}
+	if len(internalAPISecret) < 16 {
+		return nil, fmt.Errorf("INTERNAL_API_SECRET must be at least 16 characters")
 	}
 
 	searchCacheTTLStr := os.Getenv("SEARCH_CACHE_TTL_SECONDS")

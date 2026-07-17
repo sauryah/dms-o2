@@ -1,7 +1,7 @@
 package search
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/meilisearch/meilisearch-go"
 	"dms-go-api/internal/config"
@@ -17,7 +17,7 @@ func NewSearchClient(cfg *config.Config) *SearchClient {
 		Host:   cfg.MeiliHost,
 		APIKey: cfg.MeiliSearchKey,
 	})
-	log.Printf("Meilisearch client initialized with host %s", cfg.MeiliHost)
+	slog.Info("Meilisearch client initialized", "host", cfg.MeiliHost)
 	return &SearchClient{
 		client:    client,
 		indexName: "dies",

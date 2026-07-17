@@ -37,7 +37,19 @@ jobs:
       - run: python backend/manage.py makemigrations --check --dry-run  # fail if migrations are missing in codebase
       - run: python backend/manage.py migrate  # verify migrations apply cleanly to a database
       - run: python backend/manage.py test --verbosity=2  # run all tests
-      
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Run frontend tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -75,3 +87,6 @@ jobs:
             cd /opt/dms
             git pull origin main
             docker compose up -d --build
+            echo "Waiting for services to become healthy..."
+            timeout 120 bash -c 'until docker inspect --format="{{.State.Health.Status}}" dms-django-1 2>/dev/null | grep -q healthy; do sleep 5; done'
+            docker compose ps

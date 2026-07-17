@@ -180,7 +180,7 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS = config('SESSION_ABSOLUTE_TIMEOUT_HOURS', defaul
 # Meilisearch configuration
 MEILI_HOST = config('MEILI_HOST', default='http://meilisearch:7700')
 MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
-INTERNAL_API_SECRET = config('INTERNAL_API_SECRET', default='dms_internal_secret_default_key_998')
+INTERNAL_API_SECRET = config('INTERNAL_API_SECRET')
 
 # Custom user model with role (will implement in users app)
 AUTH_USER_MODEL = 'users.User'
@@ -255,7 +255,7 @@ LOGGING = {
 }
 
 HISTORY_RETENTION_DAYS = config('HISTORY_RETENTION_DAYS', default=365, cast=int)
-SESSION_MAX_CONCURRENT = config('SESSION_MAX_CONCURRENT', default=1, cast=int)
+SESSION_MAX_CONCURRENT = config('SESSION_MAX_CONCURRENT', default=3, cast=int)
 
 from django.core.exceptions import ImproperlyConfigured
 if not DEBUG:

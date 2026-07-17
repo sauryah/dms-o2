@@ -228,6 +228,9 @@ class UnifiedHistoryListView(APIView):
         to_date = request.query_params.get('to')
         ip = request.query_params.get('ip')
         search = request.query_params.get('search')
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(int(request.query_params.get('page_size', 25)), 100)
+        limit = page * page_size
 
         # 1. DieHistory
         dh_qs = DieHistory.objects.all().select_related('die', 'changed_by')
@@ -262,12 +265,12 @@ class UnifiedHistoryListView(APIView):
                 Q(new_value__icontains=search)
             )
 
-        page = int(request.query_params.get('page', 1))
-        page_size = int(request.query_params.get('page_size', 25))
-        limit = page * page_size
+        total_count = dh_qs.count() + mh_qs.count()
 
-        dh_list = list(dh_qs[:limit])
-        mh_list = list(mh_qs[:limit])
+        # Efficient windowed fetch: only fetch records that could land on this page
+        # by grabbing latest N from each table, merging in Python, then slicing
+        dh_list = list(dh_qs.order_by('-timestamp')[:limit])
+        mh_list = list(mh_qs.order_by('-timestamp')[:limit])
 
         serialized = []
         for x in dh_list:
@@ -306,8 +309,6 @@ class UnifiedHistoryListView(APIView):
         start = (page - 1) * page_size
         end = start + page_size
         paginated_data = serialized[start:end]
-
-        total_count = dh_qs.count() + mh_qs.count()
 
         return Response({
             'count': total_count,

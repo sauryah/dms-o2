@@ -8,3 +8,6 @@ entryPoints:
 
 accessLog: {}
 
+api:
+  dashboard: false
+
