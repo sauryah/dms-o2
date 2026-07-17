@@ -120,6 +120,12 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-17 · feat: implement precise concurrent session eviction notifications (v1.7.2)
+- Added short-term cache records tracking concurrent user session evictions in `LoginView`.
+- Refactored `TokenRefreshView` to block session hijacking and check for eviction when refreshing access tokens.
+- Updated `CustomJWTAuthentication` to return structured JSON errors (`code: session_evicted` and eviction details) for pruned sessions.
+- Intercepted evicted session errors in frontend API handler (`useApi.ts`) and displayed warning notifications with IP and timestamp metadata on the `LoginPage`.
+
 ### 2026-07-17 · feat: add details toggle to results table in Wire Drawing Calculator
 - Introduced showDetails toggle state in ResultsTable to hide/reveal mathematical detail columns (Area Before, Area After, and Ratio) on demand, keeping the default view focused and compact.
 

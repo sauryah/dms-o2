@@ -46,6 +46,19 @@ export const useApi = () => {
         body: JSON.stringify({ refresh: currentRefresh })
       })
       if (!res.ok) {
+        let errData: any = null
+        if (typeof res.json === 'function') {
+          errData = await res.json().catch(() => null)
+        }
+        if (errData && errData.code === 'session_evicted') {
+          localStorage.setItem('dms_logout_reason', 'session_evicted')
+          if (errData.evicted_by_ip) {
+            localStorage.setItem('dms_evicted_ip', errData.evicted_by_ip)
+          }
+          if (errData.evicted_at) {
+            localStorage.setItem('dms_evicted_at', errData.evicted_at)
+          }
+        }
         handleRefreshFailure()
         return null
       }
@@ -120,6 +133,24 @@ export const useApi = () => {
           const res = await fetch(targetUrl, { ...options, headers, signal: loopController.signal })
 
           if (res.status === 401) {
+            let errData: any = null
+            if (typeof res.clone === 'function') {
+              const resClone = res.clone()
+              errData = await resClone.json().catch(() => null)
+            }
+            if (errData && errData.code === 'session_evicted') {
+              localStorage.setItem('dms_logout_reason', 'session_evicted')
+              if (errData.evicted_by_ip) {
+                localStorage.setItem('dms_evicted_ip', errData.evicted_by_ip)
+              }
+              if (errData.evicted_at) {
+                localStorage.setItem('dms_evicted_at', errData.evicted_at)
+              }
+              logout()
+              window.location.hash = '/login'
+              throw new ApiError(errData.detail || 'Session evicted', 'unauthorized', 401)
+            }
+
             const newToken = await refreshAccessToken()
             if (newToken) {
               headers['Authorization'] = `Bearer ${newToken}`

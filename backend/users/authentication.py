@@ -81,6 +81,20 @@ class CustomJWTAuthentication(JWTAuthentication):
                 }
                 cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
             except UserSession.DoesNotExist:
+                # Check if it was evicted
+                eviction_key = f"evicted_session:{user.id}:{token_hash}"
+                evicted_data = cache.get(eviction_key)
+                if evicted_data:
+                    # Optional: clean up check, but it's okay to let it expire in cache
+                    # cache.delete(eviction_key)
+                    raise AuthenticationFailed(
+                        detail={
+                            "detail": "Session replaced on another device or expired",
+                            "code": "session_evicted",
+                            "evicted_by_ip": evicted_data.get("evicted_by_ip", ""),
+                            "evicted_at": evicted_data.get("evicted_at", "")
+                        }
+                    )
                 raise AuthenticationFailed("Session replaced on another device or expired")
 
         # Check idle and absolute timeouts

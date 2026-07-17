@@ -10,6 +10,23 @@ export function LoginPage() {
   const [passwordInput, setPasswordInput] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [evictedInfo, setEvictedInfo] = useState<{ ip: string | null; at: string | null } | null>(() => {
+    const reason = localStorage.getItem('dms_logout_reason')
+    if (reason === 'session_evicted') {
+      const ip = localStorage.getItem('dms_evicted_ip')
+      let at = localStorage.getItem('dms_evicted_at')
+      if (at) {
+        try {
+          at = new Date(at).toLocaleString()
+        } catch { /* ignore parsing errors */ }
+      }
+      localStorage.removeItem('dms_logout_reason')
+      localStorage.removeItem('dms_evicted_ip')
+      localStorage.removeItem('dms_evicted_at')
+      return { ip, at }
+    }
+    return null
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +60,24 @@ export function LoginPage() {
           <h2 className="text-3xl font-extrabold text-white tracking-tight font-heading">Sign In</h2>
           <p className="text-sm text-slate-400 mt-2">Enter your credentials to manage facility assets.</p>
         </div>
+
+        {evictedInfo && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl p-4 text-xs font-sans animate-fadeIn text-left">
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <AlertCircle className="h-4.5 w-4.5 text-amber-400 shrink-0" />
+              <span className="font-bold text-amber-200">Session Evicted</span>
+            </div>
+            <p className="text-slate-400 leading-relaxed">
+              This account was logged in from another device or browser. Your previous session was closed for security.
+            </p>
+            {(evictedInfo.ip || evictedInfo.at) && (
+              <div className="mt-2 pt-2 border-t border-white/[0.04] text-[10px] text-slate-500 font-mono flex flex-wrap gap-x-4">
+                {evictedInfo.ip && <span>IP: {evictedInfo.ip}</span>}
+                {evictedInfo.at && <span>Time: {evictedInfo.at}</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">

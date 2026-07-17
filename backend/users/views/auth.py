@@ -137,7 +137,19 @@ class LoginView(APIView):
             to_delete_count = existing_count - session_max + 1
             oldest_sessions = list(existing_sessions[:to_delete_count])
             from django.core.cache import cache as django_cache
+            from django.utils import timezone
             for old_sess in oldest_sessions:
+                # Store eviction details in cache so the evicted session can display a precise message
+                eviction_key = f"evicted_session:{user.id}:{old_sess.token_hash}"
+                django_cache.set(
+                    eviction_key,
+                    {
+                        "evicted_by_ip": get_client_ip(request),
+                        "evicted_by_device": request.META.get('HTTP_USER_AGENT', '')[:255],
+                        "evicted_at": timezone.now().isoformat()
+                    },
+                    timeout=3600 # Keep for 1 hour
+                )
                 cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
                 django_cache.delete(cache_key)
                 old_sess.delete()
@@ -474,6 +486,31 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                     if old_access:
                         old_hash = hashlib.sha256(old_access.encode('utf-8')).hexdigest()
                         session = UserSession.objects.filter(user_id=user_id, token_hash=old_hash).first()
+                        if not session:
+                            from django.core.cache import cache as django_cache
+                            eviction_key = f"evicted_session:{user_id}:{old_hash}"
+                            evicted_data = django_cache.get(eviction_key)
+                            if evicted_data:
+                                response = Response(
+                                    {
+                                        "detail": "Session replaced on another device or expired",
+                                        "code": "session_evicted",
+                                        "evicted_by_ip": evicted_data.get("evicted_by_ip", ""),
+                                        "evicted_at": evicted_data.get("evicted_at", "")
+                                    },
+                                    status=status.HTTP_401_UNAUTHORIZED
+                                )
+                                response.delete_cookie('dms_access_token')
+                                response.delete_cookie('dms_refresh_token')
+                                return response
+                            
+                            response = Response(
+                                {"detail": "Session has expired or been replaced"},
+                                status=status.HTTP_401_UNAUTHORIZED
+                            )
+                            response.delete_cookie('dms_access_token')
+                            response.delete_cookie('dms_refresh_token')
+                            return response
                         
                     if not session:
                         session = UserSession.objects.filter(user_id=user_id).order_by('-last_seen').first()
