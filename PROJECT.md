@@ -120,6 +120,10 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-17 · feat: optimize search indexing performance and add inline user activity logs (v1.7.4)
+- Refactored `process_outbox_task` to batch Meilisearch document synchronization and deletions in chunks of 100, replacing single document updates with bulk batching.
+- Added a collapsible, user-specific inline "Logs" history timeline view within the `UserManager` console, allowing root admins to view logins, failed attempts, and expires dynamically.
+
 ### 2026-07-17 · feat: optimize audit history organization with unified timeline and visual diffs (v1.7.3)
 - Implemented `UnifiedHistoryListView` in the backend to query and sort both `DieHistory` and `MachineHistory` chronologically.
 - Grouped multiple simultaneous field edits by the same user into single transaction timeline cards (within a 5-second window).

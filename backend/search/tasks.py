@@ -320,29 +320,112 @@ def rebuild_search_index_task(self, filename=None):
 @shared_task(bind=True, max_retries=5)
 def process_outbox_task(self):
     """
-    Process pending OutboxTask records and perform actual Meilisearch sync operations.
+    Process pending OutboxTask records and perform actual Meilisearch sync operations in batches.
     """
-    from dies.models import OutboxTask
+    from dies.models import OutboxTask, Die
     from django.utils import timezone
     
     # Query all unprocessed outbox records ordered by creation time
-    pending_tasks = OutboxTask.objects.filter(is_processed=False).order_by('created_at')
+    pending_tasks = list(OutboxTask.objects.filter(is_processed=False).order_by('created_at'))
     
-    logger.info(f"Processing outbox. Found {pending_tasks.count()} pending tasks.")
+    if not pending_tasks:
+        logger.info("Processing outbox. No pending tasks.")
+        return
+        
+    logger.info(f"Processing outbox. Found {len(pending_tasks)} pending tasks.")
+    
+    # Group tasks by type to execute them in batches
+    sync_tasks = []
+    delete_tasks = []
     
     for task in pending_tasks:
-        try:
-            if task.task_type == 'SYNC_DIE':
-                die_db_id = task.payload.get('die_id')
-                # call the task synchronously inside our worker to process it immediately
-                sync_die_task(die_db_id)
-            elif task.task_type == 'DELETE_DIE':
-                die_db_id = task.payload.get('die_id')
-                delete_die_document_task(die_db_id)
+        if task.task_type == 'SYNC_DIE':
+            sync_tasks.append(task)
+        elif task.task_type == 'DELETE_DIE':
+            delete_tasks.append(task)
+        else:
+            # Handle unknown task types individually
+            try:
+                task.is_processed = True
+                task.processed_at = timezone.now()
+                task.save()
+            except Exception as e:
+                logger.error(f"Failed to process unknown task {task.id}: {e}")
+
+    # Process DELETE_DIE tasks in one batch
+    if delete_tasks:
+        delete_ids = [str(t.payload.get('die_id')) for t in delete_tasks if t.payload.get('die_id')]
+        if delete_ids:
+            try:
+                meili_client.index(INDEX_NAME).delete_documents(delete_ids)
+                # Mark as processed
+                now = timezone.now()
+                for t in delete_tasks:
+                    t.is_processed = True
+                    t.processed_at = now
+                OutboxTask.objects.bulk_update(delete_tasks, ['is_processed', 'processed_at'])
+                logger.info(f"Successfully deleted {len(delete_ids)} die documents from Meilisearch in batch")
+            except Exception as exc:
+                logger.error(f"Failed to process batch delete tasks: {exc}")
+                # Fall back to individual deletes if batch fails
+                for t in delete_tasks:
+                    try:
+                        die_id = t.payload.get('die_id')
+                        delete_die_document_task(die_id)
+                        t.is_processed = True
+                        t.processed_at = timezone.now()
+                        t.save()
+                    except Exception as sub_exc:
+                        logger.error(f"Failed individual fallback delete task {t.id}: {sub_exc}")
+
+    # Process SYNC_DIE tasks in batches of 100
+    if sync_tasks:
+        batch_size = 100
+        for i in range(0, len(sync_tasks), batch_size):
+            chunk_tasks = sync_tasks[i:i+batch_size]
+            die_ids = [t.payload.get('die_id') for t in chunk_tasks if t.payload.get('die_id')]
             
-            task.is_processed = True
-            task.processed_at = timezone.now()
-            task.save()
-            logger.info(f"Successfully processed outbox task {task.id} (Type: {task.task_type})")
-        except Exception as exc:
-            logger.error(f"Failed to process outbox task {task.id} (Type: {task.task_type}): {exc}")
+            try:
+                dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=die_ids)
+                docs = []
+                for die in dies:
+                    doc = {
+                        'id':       str(die.id),
+                        'die_id':   die.die_id,
+                        'type':     die.die_type,
+                        'die_type': die.die_type,
+                        'casing':   die.casing,
+                        'status':   die.status,
+                        'location': die.location,
+                        'set':      die.current_set.name if die.current_set else '',
+                        'machine':  die.current_set.machine.name if die.current_set else '',
+                    }
+                    if hasattr(die, 'rounddie') and die.rounddie:
+                        doc['size'] = float(die.rounddie.current_size)
+                    if hasattr(die, 'flatdie') and die.flatdie:
+                        doc['width']     = float(die.flatdie.current_width)
+                        doc['thickness'] = float(die.flatdie.current_thickness)
+                    docs.append(doc)
+                
+                if docs:
+                    meili_client.index(INDEX_NAME).add_documents(docs)
+                
+                # Mark chunk tasks as processed
+                now = timezone.now()
+                for t in chunk_tasks:
+                    t.is_processed = True
+                    t.processed_at = now
+                OutboxTask.objects.bulk_update(chunk_tasks, ['is_processed', 'processed_at'])
+                logger.info(f"Successfully synced batch of {len(docs)} dies to Meilisearch")
+            except Exception as exc:
+                logger.error(f"Failed to process batch sync tasks: {exc}")
+                # Fall back to individual syncs if batch fails
+                for t in chunk_tasks:
+                    try:
+                        die_id = t.payload.get('die_id')
+                        sync_die_task(die_id)
+                        t.is_processed = True
+                        t.processed_at = timezone.now()
+                        t.save()
+                    except Exception as sub_exc:
+                        logger.error(f"Failed individual fallback sync task {t.id}: {sub_exc}")

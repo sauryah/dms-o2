@@ -14,6 +14,15 @@ export function UserManager() {
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
+  const [expandedUserLogs, setExpandedUserLogs] = useState<string | null>(null)
+  
+  const toggleUserLogs = (username: string) => {
+    if (expandedUserLogs === username) {
+      setExpandedUserLogs(null)
+    } else {
+      setExpandedUserLogs(username)
+    }
+  }
   
   const [usernameInput, setUsernameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
@@ -222,7 +231,8 @@ export function UserManager() {
                 {users?.map((user: any) => {
                   const isSelf = user.username === currentUsername
                   return (
-                    <tr key={user.id} className="hover:bg-slate-850/30 transition-colors duration-200">
+                    <React.Fragment key={user.id}>
+                      <tr className="hover:bg-slate-850/30 transition-colors duration-200">
                       <td className="py-4 px-6 font-bold text-white flex items-center space-x-2">
                         <span>{user.username}</span>
                         {isSelf && (
@@ -282,7 +292,18 @@ export function UserManager() {
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-right space-x-2">
+                      <td className="py-4 px-6 text-right space-x-2 whitespace-nowrap">
+                        <button 
+                          onClick={() => toggleUserLogs(user.username)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                            expandedUserLogs === user.username
+                              ? 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border-blue-500/20'
+                              : 'bg-slate-955 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
+                          }`}
+                          title="View user activity logs"
+                        >
+                          {expandedUserLogs === user.username ? 'Hide Logs' : 'Logs'}
+                        </button>
                         <button 
                           onClick={() => openEditForm(user)}
                           className="bg-slate-955 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
@@ -311,6 +332,16 @@ export function UserManager() {
                         </button>
                       </td>
                     </tr>
+                    {expandedUserLogs === user.username && (
+                      <tr>
+                        <td colSpan={7} className="p-0 bg-slate-950/20">
+                          <div className="px-6 py-4.5 border-t border-b border-slate-800/50 bg-slate-950/30">
+                            <UserActivityLogSection username={user.username} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                   )
                 })}
               </tbody>
@@ -531,6 +562,79 @@ export function UserManager() {
         }}
         onCancel={() => setUserToDelete(null)}
       />
+    </div>
+  )
+}
+
+function UserActivityLogSection({ username }: { username: string }) {
+  const { request } = useApi()
+  const { data: logs, isLoading, error } = useQuery({
+    queryKey: ['userActivityLogs', username],
+    queryFn: () => request(`/api/activity-logs/?username=${username}`)
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-xs text-rose-400 font-medium py-4">
+        Failed to load activity logs: {error.message}
+      </div>
+    )
+  }
+
+  const results = logs?.results || logs || []
+
+  if (results.length === 0) {
+    return (
+      <div className="text-center text-xs text-slate-500 py-4 font-medium">
+        No activity logs recorded for this user.
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3 animate-fadeIn text-left">
+      <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Activity Logs</span>
+        <span className="text-[10px] text-slate-500 font-mono">{results.length} records</span>
+      </div>
+      <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+        {results.map((log: any) => (
+          <div key={log.id} className="flex justify-between items-start gap-4 p-3 bg-slate-900 border border-slate-850 rounded-xl text-xs hover:border-slate-800 transition">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 text-[9px] font-bold rounded ${
+                  log.action === 'LOGIN'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : log.action === 'FAILED_LOGIN'
+                    ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                }`}>
+                  {log.action}
+                </span>
+                {log.ip_address && (
+                  <span className="text-[10px] text-slate-500 font-mono">IP: {log.ip_address}</span>
+                )}
+              </div>
+              {log.device && (
+                <p className="text-[10px] text-slate-500 mt-1.5 truncate max-w-md md:max-w-xl" title={log.device}>
+                  {log.device}
+                </p>
+              )}
+            </div>
+            <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">
+              {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
