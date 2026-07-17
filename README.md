@@ -197,6 +197,11 @@ System variables are managed inside the `.env` file located in the project root.
 | `POSTGRES_PASSWORD` | `your_db_password` | Database access password |
 | `POSTGRES_HOST` | `db` | Database service host inside Docker network |
 | `POSTGRES_PORT` | `5432` | PostgreSQL network port |
+| `REDIS_PASSWORD` | `change_me_redis_password` | Redis auth password; must match `docker-compose.yml` and all `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` values |
+| `DJANGO_SECRET_KEY` | `your-secret-key` | Django secret key for session signing and CSRF |
+| `INTERNAL_API_SECRET` | `your-internal-secret` | Shared secret for Django ↔ Go API communication |
+| `CELERY_BROKER_URL` | `redis://:change_me_redis_password@redis:6379/0` | Redis connection URL for Celery message broker |
+| `CELERY_RESULT_BACKEND` | `redis://:change_me_redis_password@redis:6379/0` | Redis connection URL for Celery task results |
 | `MEILI_HOST` | `http://meilisearch:7700` | Search service connection endpoint |
 | `MEILI_MASTER_KEY` | *auto-generated* | Meilisearch authorization key |
 | `ROOT_USERNAME` | `root` | Superuser username |
@@ -330,7 +335,16 @@ A scheduled database container performs compressed dumps nightly at **2:00 AM** 
 
 ## Security
 
-DMS-O2 is maintained with security as a priority. If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting and private communication channels.
+DMS-O2 is maintained with security as a priority. Key security measures include:
+
+* **JWT tokens** stored in localStorage (httpOnly cookie migration is on the roadmap).
+* **`INTERNAL_API_SECRET`** enforced via timing-safe comparison (`hmac.compare_digest`).
+* **Redis authentication** via `--requirepass` on all Redis clients (Go API, Django cache, Celery broker).
+* **Nginx security headers**: `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Content-Security-Policy`.
+* **SQL injection prevention** with parameterized queries and input validation on all shell scripts.
+* **Celery task safety** — backup restore tasks pass token hashes instead of raw JWTs through the message broker.
+
+If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting.
 
 ---
 
@@ -375,6 +389,7 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **401 Unauthorized loops** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
 | **Dies missing from sidebar tree / showing 0 count** | Database has scaled beyond the default pagination limit | Increase the default `pageSize` state variable in `frontend/src/features/inventory/hooks/useInventoryState.ts` and rebuild the frontend: `docker compose up -d --build frontend`. |
 | **Cannot connect/access from phone or external device** | Host IP not allowed in Django, Windows Network Category is Public, or Firewall blocking Docker Backend. | Add the laptop's network IP address or `*` to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart containers. On Windows, set your network profile to **Private** in admin PowerShell: `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private`. Update Docker's inbound rules to apply to all profiles. |
+| **Locked out / forgot root password** | Root password lost or compromised | Reset via Docker exec: `docker compose exec -T django python manage.py changepassword root` (enter new password when prompted). |
 
 ---
 

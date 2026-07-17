@@ -268,7 +268,7 @@ sequenceDiagram
 
 #### 5. Go-to-Django Token Verification (Internal)
 *   **Route**: `POST /internal/verify-token/`
-*   **Auth**: Internal Network Only (accessible only within Docker network context by the Go service)
+*   **Auth**: Internal Network Only (accessible only within Docker network context by the Go service). The Go service authenticates using `INTERNAL_API_SECRET` in the `Authorization` header. Django verifies the secret using **timing-safe comparison** (`hmac.compare_digest`) to prevent timing attacks.
 *   **Payload**:
     ```json
     { "token": "eyJhbG..." }
@@ -283,6 +283,7 @@ sequenceDiagram
 
 ### Redis Caching Architecture
 
+*   **Authentication**: Redis is started with `--requirepass`. All clients (Go API, Django cache backend, Celery broker) authenticate using the password set in `REDIS_PASSWORD` / `docker-compose.yml`.
 *   **Cache Lifetime**: Configurable via `SEARCH_CACHE_TTL_SECONDS` (default: 10 seconds).
 *   **Key Composition**: A combined hash of all active search query parameters:
     `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}:{limit}:{offset}`

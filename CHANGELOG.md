@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Security
+- **Redis Authentication**:
+  - Added `REDIS_PASSWORD` environment variable with `--requirepass` on the Redis container.
+  - Updated Go API, Django (Celery/CACHE), and all Redis clients to authenticate with the password.
+- **SQL Injection Prevention**:
+  - Added numeric validation for `$RETENTION_DAYS` in `scripts/prune_history.sh` before SQL interpolation.
+- **Timing Attack Mitigation**:
+  - Switched `INTERNAL_API_SECRET` comparison in `VerifyTokenView` to `hmac.compare_digest()`.
+- **HTTP Security Headers**:
+  - Added `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`, and `Content-Security-Policy` headers to nginx configuration.
+- **Celery Token Safety**:
+  - Backup restore tasks no longer serialize raw JWT tokens through the Celery broker; pre-computed token hashes are passed instead.
+- **Docker Image Pinning**:
+  - Pinned Go API Dockerfile base image from `alpine:latest` to `alpine:3.20` for reproducible builds.
+
+### Changed
+- **Health Check URL**:
+  - Updated Docker healthcheck from `/api/health/` to `/api/v1/health/` for consistency with versioned API.
+- **Meilisearch Document Mapping**:
+  - Extracted shared `die_to_meili_document()` function in `search/tasks.py`, replacing 4 duplicated mapping blocks.
+
+### Fixed
+- **N+1 Query on Die List**:
+  - Added `prefetch_related('wear_alerts')` to the die list queryset, eliminating per-die N+1 queries for active alerts.
+- **Deploy Script Health Check**:
+  - Fixed broken chained `grep` command in `deploy.sh` that caused health checks to always fail.
+- **Dead Code Cleanup**:
+  - Removed redundant `app.conf.imports` from `backend/dms/celery.py`.
+  - Added `os.path.exists` guard in `backup_service.delete_backup()`.
+- **ARIA Accessibility**:
+  - Added `role`, `aria-expanded`, `aria-haspopup`, `aria-label` attributes to the `SearchableSelect` combobox component.
+- **Documentation Consolidation**:
+  - Replaced duplicate `wiki/Architecture.md` with a redirect to the canonical `docs/ARCHITECTURE.md`.
+
 ---
 
 ## [1.7.5] - 2026-07-17

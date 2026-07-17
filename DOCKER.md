@@ -75,6 +75,8 @@ Open the generated `.env` file in your favorite text editor (e.g., VS Code, Note
 >
 > * `POSTGRES_PASSWORD` — Use a strong, random password.
 > * `ROOT_PASSWORD` — Initial admin panel password.
+> * `REDIS_PASSWORD` — Password for Redis; must match across `docker-compose.yml` and all `CELERY_*` URLs.
+> * `INTERNAL_API_SECRET` — Shared secret for Django ↔ Go API communication.
 > * `DJANGO_SECRET_KEY` — Generate a secure key:
 >   * **Cross-platform (Python):** `python -c "import secrets; print(secrets.token_urlsafe(64))"`
 > * `MEILI_MASTER_KEY` — Generate a secure key:
@@ -152,9 +154,13 @@ All images are built for **linux/amd64** and **linux/arm64**.
 | `POSTGRES_DB` | `dms` | Database name |
 | `POSTGRES_USER` | `dms_user` | Database username |
 | `POSTGRES_PASSWORD` | *(change me)* | Database password |
+| `REDIS_PASSWORD` | `change_me_redis_password` | Redis password; must match across `docker-compose.yml`, `CELERY_BROKER_URL`, and `CELERY_RESULT_BACKEND` |
 | `DJANGO_SECRET_KEY` | *(change me)* | Django cryptographic signing key |
 | `DJANGO_DEBUG` | `False` | Enable debug mode (never `True` in production) |
 | `DJANGO_ALLOWED_HOSTS` | `localhost` | Comma-separated list of allowed hostnames |
+| `INTERNAL_API_SECRET` | *(change me)* | Shared secret for Django ↔ Go API communication |
+| `CELERY_BROKER_URL` | `redis://:change_me_redis_password@redis:6379/0` | Redis URL for Celery message broker |
+| `CELERY_RESULT_BACKEND` | `redis://:change_me_redis_password@redis:6379/0` | Redis URL for Celery task results |
 | `MEILI_MASTER_KEY` | *(change me)* | Meilisearch authentication key |
 | `MEILI_SEARCH_KEY` | *(empty)* | Optional read-only Meilisearch key |
 | `ROOT_USERNAME` | `root` | Initial admin username |
@@ -280,6 +286,15 @@ Ensure the database is fully healthy before other services start:
 ```bash
 docker compose -f docker-compose.ghcr.yml logs db
 docker compose -f docker-compose.ghcr.yml exec db pg_isready -U dms_user -d dms
+```
+
+### Recover root password
+
+If the root password is lost or compromised, reset it directly:
+
+```bash
+docker compose -f docker-compose.ghcr.yml exec -T django python manage.py changepassword root
+# Enter new password when prompted
 ```
 
 ### Reset everything
