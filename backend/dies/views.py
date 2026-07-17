@@ -45,7 +45,7 @@ class DieViewSet(viewsets.ModelViewSet):
     
     **Authentication:** Required (JWT Bearer token)
     """
-    queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine', 'rack').prefetch_related('wear_alerts')
+    queryset = Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine', 'rack').prefetch_related('wear_alerts', 'history')
     lookup_field = 'die_id'
     lookup_value_regex = r'(?:(?!/wear-prediction(?:/|$)|/maintenance-logs(?:/|$)|/recut(?:/|$))[^?#])+'
     permission_classes = [IsAdminOrRootOrOperatorRelocate]
