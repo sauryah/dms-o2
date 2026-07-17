@@ -46,7 +46,7 @@ class DieWorkflowIntegrationTest(TestCase):
         }
         
         # 1. CREATE die via REST API
-        response = self.client.post('/api/dies/', payload, format='json')
+        response = self.client.post('/api/v1/dies/', payload, format='json')
         self.assertEqual(response.status_code, 201, f"Failed to create die: {response.content}")
         
         # 2. VERIFY in database
@@ -79,7 +79,7 @@ class DieWorkflowIntegrationTest(TestCase):
         }
         
         # CREATE die
-        response = self.client.post('/api/dies/', payload, format='json')
+        response = self.client.post('/api/v1/dies/', payload, format='json')
         self.assertEqual(response.status_code, 201)
         
         # VERIFY in database
@@ -109,7 +109,7 @@ class DieWorkflowIntegrationTest(TestCase):
             'status': 'RUNNING',
             'location': 'Shop Floor',
         }
-        response = self.client.patch(f'/api/dies/{die.die_id}/', update_payload, format='json')
+        response = self.client.patch(f'/api/v1/dies/{die.die_id}/', update_payload, format='json')
         self.assertEqual(response.status_code, 200)
         
         # VERIFY status changed in database
@@ -142,12 +142,12 @@ class DieWorkflowIntegrationTest(TestCase):
                 )
         
         # LIST all dies
-        response = self.client.get('/api/dies/')
+        response = self.client.get('/api/v1/dies/')
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.data['results']), 3)
         
         # LIST dies filtered by type
-        response = self.client.get('/api/dies/?die_type=ROUND')
+        response = self.client.get('/api/v1/dies/?die_type=ROUND')
         self.assertEqual(response.status_code, 200)
         round_dies = response.data['results']
         self.assertTrue(all(d['die_type'] == 'ROUND' for d in round_dies))
@@ -167,7 +167,7 @@ class DieWorkflowIntegrationTest(TestCase):
         die_id = die.die_id
         
         # DELETE die
-        response = self.client.delete(f'/api/dies/{die_id}/')
+        response = self.client.delete(f'/api/v1/dies/{die_id}/')
         self.assertEqual(response.status_code, 204)
         
         # VERIFY deletion
@@ -196,7 +196,7 @@ class DieWorkflowIntegrationTest(TestCase):
             'current_size': 2.5,
         }
         
-        response = client.post('/api/dies/', payload, format='json')
+        response = client.post('/api/v1/dies/', payload, format='json')
         self.assertEqual(response.status_code, 403)  # Forbidden
 
 
@@ -232,7 +232,7 @@ class SearchIntegrationTest(TestCase):
         RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         
         # SEARCH by die_id (using internal Django endpoint for testing)
-        response = self.client.get('/api/dies/?die_type=ROUND')
+        response = self.client.get('/api/v1/dies/?die_type=ROUND')
         self.assertEqual(response.status_code, 200)
         results = response.data['results']
         matching = [d for d in results if 'SEARCH-TEST-001' in d.get('die_id', '')]
@@ -253,7 +253,7 @@ class SearchIntegrationTest(TestCase):
             RoundDie.objects.create(die=die, punched_size=2.5, current_size=2.5)
         
         # SEARCH by status
-        response = self.client.get('/api/dies/?status=RUNNING')
+        response = self.client.get('/api/v1/dies/?status=RUNNING')
         self.assertEqual(response.status_code, 200)
         results = response.data['results']
         self.assertTrue(all(d['status'] == 'RUNNING' for d in results))
@@ -273,7 +273,7 @@ class SearchIntegrationTest(TestCase):
             RoundDie.objects.create(die=die, punched_size=size, current_size=size)
         
         # SEARCH with size range filter
-        response = self.client.get('/api/dies/?die_type=ROUND&size_min=2.5&size_max=3.5')
+        response = self.client.get('/api/v1/dies/?die_type=ROUND&size_min=2.5&size_max=3.5')
         self.assertEqual(response.status_code, 200)
         results = response.data['results']
         # Verify all results are within range

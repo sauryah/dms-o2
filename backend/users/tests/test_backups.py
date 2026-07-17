@@ -49,7 +49,7 @@ class BackupTests(APITestCase):
         )
 
         # URL for restore backup action
-        self.restore_url = '/api/backups/restore/'
+        self.restore_url = '/api/v1/backups/restore/'
 
     def test_restore_unauthenticated_fails(self):
         response = self.client.post(self.restore_url, {'filename': 'backup.dump'})

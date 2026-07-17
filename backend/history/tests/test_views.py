@@ -92,7 +92,7 @@ class DashboardHistoryApiTests(APITestCase):
             role='REGULAR'
         )
         self.login_url = reverse('login')
-        self.dashboard_history_url = '/api/history/dashboard/'
+        self.dashboard_history_url = '/api/v1/history/dashboard/'
         
         # Clear cache to ensure test isolation
         from django.core.cache import cache

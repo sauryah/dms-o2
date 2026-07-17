@@ -25,12 +25,17 @@ router.register('wear-alerts', WearAlertViewSet, basename='wear-alert')
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # API Schema and Documentation
+    # API Schema and Documentation (v1)
     path('api/v1/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsRootOnly]), name='schema'),
     path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly]), name='swagger-ui'),
     path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly]), name='redoc-ui'),
     
-    # Authentication and Utility Endpoints
+    # API Schema and Documentation (legacy - used by frontend)
+    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsRootOnly])),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly])),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly])),
+    
+    # Authentication and Utility Endpoints (v1)
     path('api/v1/auth/login/', LoginView.as_view(), name='login'),
     path('api/v1/auth/logout/', LogoutView.as_view(), name='logout'),
     path('api/v1/auth/me/', MeView.as_view(), name='auth-me'),
@@ -48,6 +53,25 @@ urlpatterns = [
     path('api/v1/history/dashboard/', DashboardHistoryListView.as_view(), name='dashboard-history'),
     path('api/v1/history/unified/', UnifiedHistoryListView.as_view(), name='unified-history'),
     
+    # Legacy fallbacks (used by frontend and e2e tests)
+    path('api/auth/login/', LoginView.as_view()),
+    path('api/auth/logout/', LogoutView.as_view()),
+    path('api/auth/me/', MeView.as_view()),
+    path('api/auth/change-password/', ChangePasswordView.as_view()),
+    path('api/auth/keep-alive/', KeepAliveView.as_view()),
+    path('api/auth/refresh/', TokenRefreshView.as_view()),
+    path('api/auth/sse-ticket/', SSETicketView.as_view()),
+    path('api/import/', ImportDiesView.as_view()),
+    path('api/import/template/', ImportTemplateView.as_view()),
+    path('api/import/logs/', ImportLogsView.as_view()),
+    path('api/events/', EventStreamView.as_view()),
+    path('api/health/', HealthCheckView.as_view()),
+    path('api/history/', DieHistoryListView.as_view()),
+    path('api/history/machines/', MachineHistoryListView.as_view()),
+    path('api/history/dashboard/', DashboardHistoryListView.as_view()),
+    path('api/history/unified/', UnifiedHistoryListView.as_view()),
+    
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/v1/', include(router.urls)),
+    path('api/', include(router.urls)),
 ]

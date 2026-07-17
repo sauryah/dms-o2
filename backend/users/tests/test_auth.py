@@ -464,7 +464,7 @@ class UserActivityLogTests(APITestCase):
         )
         self.login_url = reverse('login')
         self.logout_url = reverse('logout')
-        self.activity_logs_url = '/api/activity-logs/'
+        self.activity_logs_url = '/api/v1/activity-logs/'
         self.dies_list_url = reverse('die-list')
 
         # Clear rate-limiter keys in Redis to avoid 429 too many requests in consecutive test runs
@@ -561,12 +561,12 @@ class UserActivityLogTests(APITestCase):
 
         # 3. Retrieve active sessions list as ROOT
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {root_token}')
-        res_sessions = self.client.get('/api/active-sessions/')
+        res_sessions = self.client.get('/api/v1/active-sessions/')
         self.assertEqual(res_sessions.status_code, status.HTTP_200_OK)
         self.assertTrue(len(res_sessions.data) >= 2) # regular user and root user sessions
 
         # 4. Revoke the regular user's session
-        res_delete = self.client.delete(f'/api/active-sessions/{session.id}/')
+        res_delete = self.client.delete(f'/api/v1/active-sessions/{session.id}/')
         self.assertEqual(res_delete.status_code, status.HTTP_204_NO_CONTENT)
 
         # Verify session is deleted from DB
