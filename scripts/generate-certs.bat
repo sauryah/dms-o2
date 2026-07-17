@@ -5,7 +5,7 @@ set CERTS_DIR=%~dp0..\certs
 if not exist "%CERTS_DIR%" mkdir "%CERTS_DIR%"
 
 echo Detecting LAN IP...
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "127.0.0.1"') do (
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "127.0.0.1" ^| findstr /v "vEthernet" ^| findstr /v "Docker" ^| findstr /v "WSL" ^| findstr /v "Hyper"') do (
     for /f "tokens=*" %%b in ("%%a") do set LAN_IP=%%b
 )
 set LAN_IP=%LAN_IP: =%

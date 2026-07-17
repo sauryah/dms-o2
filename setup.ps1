@@ -51,14 +51,11 @@ if (-not (Test-Path .env)) {
 
 # 3. Generate TLS certificates for HTTPS
 Write-Host ">>> Generating TLS certificates for HTTPS..." -ForegroundColor Cyan
-# Detect LAN IP
+# Detect LAN IP - prefer physical adapters, exclude virtual/docker/WSL
 $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
     $_.IPAddress -notlike "127.*" -and
     $_.IPAddress -notlike "169.254.*" -and
-    $_.InterfaceAlias -notlike "*Loopback*" -and
-    $_.InterfaceAlias -notlike "*vEthernet*" -and
-    $_.InterfaceAlias -notlike "*docker*" -and
-    $_.InterfaceAlias -notlike "*WSL*"
+    $_.InterfaceAlias -notmatch "Loopback|vEthernet|docker|WSL|Hyper|Default Switch"
 } | Select-Object -First 1 -ExpandProperty IPAddress
 if (-not $certsLanIp) {
     $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1 -ExpandProperty IPAddress
