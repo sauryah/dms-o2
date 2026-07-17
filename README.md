@@ -549,6 +549,7 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | Symptoms | Cause | Solution |
 | :--- | :--- | :--- |
 | **Meilisearch connection error** | Dev config host mapping mismatch | Inside Docker networks, configure `MEILI_HOST=http://meilisearch:7700`. For direct local runs, set `MEILI_HOST=http://localhost:7700`. |
+| **Migrate fails with `MeilisearchCommunicationError`** | Migrate container started before Meilisearch was ready | Ensure your `docker-compose.yml` includes `meilisearch` (with `condition: service_healthy`) in the `migrate` service's `depends_on`. Pull latest and rebuild: `docker compose up -d --build`. |
 | **Port conflict on 80/443** | Another server (Nginx/Apache) is running on the host | Disable host server: `sudo systemctl stop nginx`, or change port bindings in `docker-compose.yml`. Both ports 80 (HTTP) and 443 (HTTPS) must be available. |
 | **Write/Compile permission denied** | Root-owned files left in mounting volume | Run cleanup command: `docker compose exec frontend rm -rf dist` and restart. |
 | **401 Unauthorized loops after login** | Go API cannot verify tokens with Django because `DJANGO_ALLOWED_HOSTS` is missing the Docker service name `django` | Add `django` to `DJANGO_ALLOWED_HOSTS` in your `.env` file (e.g., `DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,django`) and restart: `docker compose up -d`. |
