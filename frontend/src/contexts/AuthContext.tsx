@@ -2,6 +2,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 
 let consecutiveRefreshFailures = 0
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
+function clearAuthStorage() {
+  localStorage.removeItem('dms_token')
+  localStorage.removeItem('dms_refresh_token')
+  localStorage.removeItem('dms_role')
+  localStorage.removeItem('dms_username')
+  localStorage.removeItem('dms_user_id')
+  localStorage.removeItem('dms_authorized_for_tools')
+  localStorage.removeItem('dms_authorized_tools')
+}
+
 interface AuthContextValue {
   token: string | null
   refreshToken: string | null
@@ -22,7 +41,14 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>(null as any)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('dms_token'))
+  const [token, setToken] = useState<string | null>(() => {
+    const stored = localStorage.getItem('dms_token')
+    if (stored && isTokenExpired(stored)) {
+      clearAuthStorage()
+      return null
+    }
+    return stored
+  })
   const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem('dms_refresh_token'))
   const [role, setRole] = useState<string | null>(() => localStorage.getItem('dms_role'))
   const [username, setUsername] = useState<string | null>(() => localStorage.getItem('dms_username'))
