@@ -45,7 +45,11 @@ class DieListSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_active_alerts(self, obj):
-        active = obj.wear_alerts.filter(is_resolved=False)
+        # Use prefetched data if available, otherwise fall back to query
+        if hasattr(obj, '_prefetched_objects_cache') and 'wear_alerts' in obj._prefetched_objects_cache:
+            active = [a for a in obj._prefetched_objects_cache['wear_alerts'] if not a.is_resolved]
+        else:
+            active = obj.wear_alerts.filter(is_resolved=False)
         return WearAlertSerializer(active, many=True).data
 
     def to_representation(self, instance):

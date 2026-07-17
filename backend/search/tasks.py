@@ -8,6 +8,27 @@ from dies.models import Die
 
 logger = get_task_logger(__name__)
 
+
+def die_to_meili_document(die):
+    """Convert a Die model instance to a Meilisearch document dict."""
+    doc = {
+        'id':       str(die.id),
+        'die_id':   die.die_id,
+        'type':     die.die_type,
+        'die_type': die.die_type,
+        'casing':   die.casing,
+        'status':   die.status,
+        'location': die.location,
+        'set':      die.current_set.name if die.current_set else '',
+        'machine':  die.current_set.machine.name if die.current_set else '',
+    }
+    if hasattr(die, 'rounddie') and die.rounddie:
+        doc['size'] = float(die.rounddie.current_size)
+    if hasattr(die, 'flatdie') and die.flatdie:
+        doc['width']     = float(die.flatdie.current_width)
+        doc['thickness'] = float(die.flatdie.current_thickness)
+    return doc
+
 @task_failure.connect
 def handle_task_failure(sender=None, task_id=None, exception=None, traceback=None, **kwargs):
     """Signal handler for task failures - logs comprehensive error information"""
@@ -38,23 +59,7 @@ def sync_die_task(self, die_id):
         logger.warning(f"Die with ID {die_id} not found")
         return {'status': 'not_found', 'die_id': die_id}
         
-    doc = {
-        'id':       str(die.id),
-        'die_id':   die.die_id,
-        'type':     die.die_type,
-        'die_type': die.die_type,
-        'casing':   die.casing,
-        'status':   die.status,
-        'location': die.location,
-        'set':      die.current_set.name if die.current_set else '',
-        'machine':  die.current_set.machine.name if die.current_set else '',
-    }
-    
-    if hasattr(die, 'rounddie') and die.rounddie:
-        doc['size'] = float(die.rounddie.current_size)
-    if hasattr(die, 'flatdie') and die.flatdie:
-        doc['width']     = float(die.flatdie.current_width)
-        doc['thickness'] = float(die.flatdie.current_thickness)
+    doc = die_to_meili_document(die)
     
     try:
         meili_client.index(INDEX_NAME).add_documents([doc])
@@ -139,23 +144,7 @@ def sync_dies_batch_task(self, die_ids):
             
             docs = []
             for die in dies:
-                doc = {
-                    'id':       str(die.id),
-                    'die_id':   die.die_id,
-                    'type':     die.die_type,
-                    'die_type': die.die_type,
-                    'casing':   die.casing,
-                    'status':   die.status,
-                    'location': die.location,
-                    'set':      die.current_set.name if die.current_set else '',
-                    'machine':  die.current_set.machine.name if die.current_set else '',
-                }
-                if hasattr(die, 'rounddie') and die.rounddie:
-                    doc['size'] = float(die.rounddie.current_size)
-                if hasattr(die, 'flatdie') and die.flatdie:
-                    doc['width']     = float(die.flatdie.current_width)
-                    doc['thickness'] = float(die.flatdie.current_thickness)
-                docs.append(doc)
+                docs.append(die_to_meili_document(die))
 
             if docs:
                 task = meili_client.index(INDEX_NAME).add_documents(docs)
@@ -255,23 +244,7 @@ def rebuild_search_index_task(self, filename=None):
         batch_size = 100
         docs = []
         for idx, die in enumerate(dies):
-            doc = {
-                'id':       str(die.id),
-                'die_id':   die.die_id,
-                'type':     die.die_type,
-                'die_type': die.die_type,
-                'casing':   die.casing,
-                'status':   die.status,
-                'location': die.location,
-                'set':      die.current_set.name if die.current_set else '',
-                'machine':  die.current_set.machine.name if die.current_set else '',
-            }
-            if hasattr(die, 'rounddie') and die.rounddie:
-                doc['size'] = float(die.rounddie.current_size)
-            if hasattr(die, 'flatdie') and die.flatdie:
-                doc['width']     = float(die.flatdie.current_width)
-                doc['thickness'] = float(die.flatdie.current_thickness)
-            docs.append(doc)
+            docs.append(die_to_meili_document(die))
 
             # Upload batch when batch_size is reached or on the last item
             if len(docs) == batch_size or idx == total_dies - 1:
@@ -389,23 +362,7 @@ def process_outbox_task(self):
                 dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=die_ids)
                 docs = []
                 for die in dies:
-                    doc = {
-                        'id':       str(die.id),
-                        'die_id':   die.die_id,
-                        'type':     die.die_type,
-                        'die_type': die.die_type,
-                        'casing':   die.casing,
-                        'status':   die.status,
-                        'location': die.location,
-                        'set':      die.current_set.name if die.current_set else '',
-                        'machine':  die.current_set.machine.name if die.current_set else '',
-                    }
-                    if hasattr(die, 'rounddie') and die.rounddie:
-                        doc['size'] = float(die.rounddie.current_size)
-                    if hasattr(die, 'flatdie') and die.flatdie:
-                        doc['width']     = float(die.flatdie.current_width)
-                        doc['thickness'] = float(die.flatdie.current_thickness)
-                    docs.append(doc)
+                    docs.append(die_to_meili_document(die))
                 
                 if docs:
                     meili_client.index(INDEX_NAME).add_documents(docs)
