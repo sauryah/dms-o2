@@ -43,11 +43,13 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
             
             // Calculate taper details if there is a next die
             let areaRedPercent = 0;
+            let elongationPercent = 0;
             let wireRadiusRight = wireRadiusLeft;
             if (i < dies.length - 1) {
               const areaBef = getArea(d);
               const areaAft = getArea(dies[i + 1]);
               areaRedPercent = ((areaBef - areaAft) / areaBef) * 100;
+              elongationPercent = ((Math.pow(d, 2) / Math.pow(dies[i + 1], 2)) - 1) * 100;
               // Scale right side wire proportional to reduction
               wireRadiusRight = Math.max(4, wireRadiusLeft * (dies[i + 1] / d));
             }
@@ -119,7 +121,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                   <div
                     onMouseEnter={() => setHoveredArrowIndex(i)}
                     onMouseLeave={() => setHoveredArrowIndex(null)}
-                    className="flex items-center justify-center w-16 h-16 relative select-none transition-all duration-200"
+                    className="flex items-center justify-center w-16 h-20 relative select-none transition-all duration-200"
                   >
                     {hoveredArrowIndex === i ? (
                       <button
@@ -136,7 +138,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                         <Plus className="w-3 h-3 stroke-[3]" />
                       </button>
                     ) : (
-                      <svg width="60" height="40" className="opacity-75">
+                      <svg width="60" height="56" className="opacity-75">
                         <defs>
                           <linearGradient id={`copper-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#b45309" stopOpacity="0.45" />
@@ -146,17 +148,21 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                         
                         {/* Shaded tapered wire representing physics deformation */}
                         <path 
-                          d={`M 0 ${20 - wireRadiusLeft} L 60 ${20 - wireRadiusRight} L 60 ${20 + wireRadiusRight} L 0 ${20 + wireRadiusLeft} Z`} 
+                          d={`M 0 ${28 - wireRadiusLeft} L 60 ${28 - wireRadiusRight} L 60 ${28 + wireRadiusRight} L 0 ${28 + wireRadiusLeft} Z`} 
                           fill={`url(#copper-grad-${i})`}
                         />
                         
                         {/* Center line with reduction text */}
-                        <line x1="0" y1="20" x2="60" y2="20" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" strokeDasharray="2 2" />
+                        <line x1="0" y1="28" x2="60" y2="28" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" strokeDasharray="2 2" />
                         
-                        {/* Display Area Reduction % */}
-                        <rect x="9" y="11" width="42" height="18" rx="3" fill="#04060b" stroke="rgba(30, 41, 59, 0.6)" strokeWidth="0.75" />
-                        <text x="30" y="23" textAnchor="middle" className="fill-emerald-500/80 font-mono text-[10.5px] font-bold">
+                        {/* Display Area Reduction % and Elongation % */}
+                        <rect x="6" y="6" width="48" height="42" rx="3" fill="#04060b" stroke="rgba(30, 41, 59, 0.6)" strokeWidth="0.75" />
+                        <text x="30" y="20" textAnchor="middle" className="fill-emerald-500/80 font-mono text-[10px] font-bold">
                           -{areaRedPercent.toFixed(1)}%
+                        </text>
+                        <line x1="12" y1="25" x2="48" y2="25" stroke="rgba(30, 41, 59, 0.4)" strokeWidth="0.5" />
+                        <text x="30" y="38" textAnchor="middle" className="fill-amber-500/80 font-mono text-[10px] font-bold">
+                          +{elongationPercent.toFixed(1)}%
                         </text>
                       </svg>
                     )}
