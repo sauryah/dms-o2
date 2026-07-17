@@ -50,6 +50,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     restart: "no"
 
   django:
