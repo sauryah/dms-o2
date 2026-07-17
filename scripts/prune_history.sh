@@ -2,6 +2,13 @@
 set -e
 
 RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-365}
+
+# Validate RETENTION_DAYS is a positive integer to prevent SQL injection
+if ! printf '%s' "$RETENTION_DAYS" | grep -qE '^[0-9]+$'; then
+    echo "ERROR: HISTORY_RETENTION_DAYS must be a positive integer, got: '${RETENTION_DAYS}'"
+    exit 1
+fi
+
 echo "=== Starting DieHistory Pruning (Retention: ${RETENTION_DAYS} days) ==="
 
 # Execute SQL query on PostgreSQL database to prune old DieHistory and MachineHistory records

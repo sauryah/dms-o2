@@ -18,6 +18,7 @@ type Config struct {
 	MeiliMasterKey              string
 	RedisHost                   string
 	RedisPort                   string
+	RedisPassword               string
 	DjangoSecretKey             string
 	SessionIdleTimeoutMinutes   string
 	SessionAbsoluteTimeoutHours string
@@ -83,6 +84,8 @@ func Load() (*Config, error) {
 		redisPort = "6379"
 	}
 
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
 	djangoSecret := os.Getenv("DJANGO_SECRET_KEY")
 	if djangoSecret == "" {
 		return nil, fmt.Errorf("DJANGO_SECRET_KEY environment variable is required")
@@ -127,6 +130,7 @@ func Load() (*Config, error) {
 		MeiliSearchKey:              meiliKey,
 		RedisHost:                   redisHost,
 		RedisPort:                   redisPort,
+		RedisPassword:               redisPassword,
 		DjangoSecretKey:             djangoSecret,
 		SessionIdleTimeoutMinutes:   sessionIdle,
 		SessionAbsoluteTimeoutHours: sessionAbs,

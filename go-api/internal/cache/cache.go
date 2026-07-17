@@ -18,7 +18,7 @@ func NewCache(cfg *config.Config) *Cache {
 	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
-		Password: "",
+		Password: cfg.RedisPassword,
 		DB:       0,
 	})
 

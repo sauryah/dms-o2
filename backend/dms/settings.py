@@ -189,16 +189,18 @@ ROOT_USERNAME = config('ROOT_USERNAME', default='root')
 ROOT_PASSWORD = config('ROOT_PASSWORD', default='root123')
 
 # Caching with Redis (Django 4.0+)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
+REDIS_CACHE_URL = config('REDIS_CACHE_URL', default=f'redis://:{REDIS_PASSWORD}@redis:6379/0' if REDIS_PASSWORD else 'redis://redis:6379/0')
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': config('REDIS_CACHE_URL', default='redis://redis:6379/0'),
+        'LOCATION': REDIS_CACHE_URL,
     }
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://redis:6379/1')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://redis:6379/1')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=f'redis://:{REDIS_PASSWORD}@redis:6379/1' if REDIS_PASSWORD else 'redis://redis:6379/1')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=f'redis://:{REDIS_PASSWORD}@redis:6379/1' if REDIS_PASSWORD else 'redis://redis:6379/1')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

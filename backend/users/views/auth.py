@@ -399,8 +399,9 @@ class VerifyTokenView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        import hmac
         internal_key = request.headers.get('X-Internal-Key')
-        if not internal_key or internal_key != settings.INTERNAL_API_SECRET:
+        if not internal_key or not hmac.compare_digest(internal_key, settings.INTERNAL_API_SECRET):
             return Response({"detail": "Forbidden: Invalid internal verification key."}, status=status.HTTP_403_FORBIDDEN)
 
         return Response({
