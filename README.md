@@ -398,8 +398,7 @@ Copy this file to the other computer (via USB, network share, email, etc.).
 On the other computer, open **PowerShell** and run:
 
 ```powershell
-certutil -encode rootCA.pem rootCA.cer
-certutil -decode rootCA.cer rootCA.cer
+certutil -decode rootCA.pem rootCA.cer
 ```
 
 Or simply use the DER-encoded version if available: `rootCA.cer`.

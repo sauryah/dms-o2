@@ -25,8 +25,7 @@ echo Copying root CA...
 for /f "tokens=*" %%i in ('mkcert -CAROOT') do set CAROOT=%%i
 if exist "%CAROOT%\rootCA.pem" (
     copy "%CAROOT%\rootCA.pem" "%CERTS_DIR%\rootCA.pem" /Y >nul
-    certutil -encode "%CERTS_DIR%\rootCA.pem" "%CERTS_DIR%\rootCA.cer" >nul
-    certutil -decode "%CERTS_DIR%\rootCA.cer" "%CERTS_DIR%\rootCA.cer" >nul
+    certutil -decode "%CERTS_DIR%\rootCA.pem" "%CERTS_DIR%\rootCA.cer" >nul
     echo   rootCA.pem - root CA (PEM format)
     echo   rootCA.cer - root CA (DER format, for Windows import)
 ) else (

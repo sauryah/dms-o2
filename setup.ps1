@@ -75,8 +75,7 @@ if ($certsLanIp) {
     $caroot = & mkcert -CAROOT 2>$null
     if ($caroot -and (Test-Path "$caroot\rootCA.pem")) {
         Copy-Item "$caroot\rootCA.pem" "certs\rootCA.pem" -Force
-        & certutil -encode "certs\rootCA.pem" "certs\rootCA.cer" 2>$null | Out-Null
-        & certutil -decode "certs\rootCA.cer" "certs\rootCA.cer" 2>$null | Out-Null
+        & certutil -decode "certs\rootCA.pem" "certs\rootCA.cer" 2>$null | Out-Null
         Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
     }
     Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
