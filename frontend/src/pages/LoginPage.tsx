@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw, Globe } from 'lucide-react'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -10,6 +10,7 @@ export function LoginPage() {
   const [passwordInput, setPasswordInput] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [serverInfo, setServerInfo] = useState<{ hostname: string; ip: string } | null>(null)
   const [evictedInfo, setEvictedInfo] = useState<{ ip: string | null; at: string | null } | null>(() => {
     const reason = localStorage.getItem('dms_logout_reason')
     if (reason === 'session_evicted') {
@@ -27,6 +28,13 @@ export function LoginPage() {
     }
     return null
   })
+
+  useEffect(() => {
+    fetch('/api/v1/server-info/')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setServerInfo(data) })
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,6 +136,15 @@ export function LoginPage() {
             )}
           </button>
         </form>
+
+        {serverInfo && (
+          <div className="text-center mt-4 pt-4 border-t border-white/[0.04]">
+            <p className="text-[10px] text-slate-500 font-mono flex items-center justify-center gap-1.5">
+              <Globe className="h-3 w-3" />
+              <span>LAN: https://{serverInfo.ip}</span>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

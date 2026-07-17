@@ -1,6 +1,7 @@
 import hashlib
 import redis
 import uuid
+import socket
 from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
@@ -378,6 +379,27 @@ class HealthCheckView(APIView):
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
         return Response(status_data, status=status_code)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class ServerInfoView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        hostname = socket.gethostname()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            server_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            server_ip = request.get_host().split(':')[0]
+        return Response({
+            "hostname": hostname,
+            "ip": server_ip,
+        })
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')

@@ -8,6 +8,7 @@ from users.views.auth import (
     SSETicketView,
     EventStreamView,
     HealthCheckView,
+    ServerInfoView,
 )
 from users.views.profile import (
     UserViewSet,
@@ -27,6 +28,7 @@ __all__ = [
     'SSETicketView',
     'EventStreamView',
     'HealthCheckView',
+    'ServerInfoView',
     'UserViewSet',
     'MeView',
     'UserActivityLogViewSet',

@@ -37,7 +37,8 @@ This document serves as the main engineering ledger, data schema reference, depl
 | **Databases** | PostgreSQL 18 | Primary relational storage, transactions, auditing |
 | **Search Engine**| Meilisearch v1.7 | Fuzzy text search matching (ids, locations, casings) |
 | **Frontend** | React 18 + Vite | Single Page Application served via Nginx in production |
-| **Reverse Proxy**| Traefik v3 | Local network routing, auto-routing rules, and port bindings |
+| **Reverse Proxy**| Traefik v3 | Local network routing, auto-routing rules, port bindings, and HTTPS via mkcert certificates |
+| **TLS Certificates** | mkcert (LAN) | Machine-specific TLS certs for HTTPS LAN access, auto-generated via setup scripts |
 
 ---
 
@@ -119,6 +120,23 @@ graph TD
 ---
 
 ## 8. Chronological Changelog
+
+### 2026-07-17 · feat: 10 infrastructure improvements — HTTPS, health checks, gzip, log rotation, Makefile, pre-commit hooks
+- **HTTPS/TLS**: Configured Traefik to serve TLS using mkcert-generated certificates. HTTP→HTTPS redirect on port 80→443. Added `dynamic.yml` for TLS store, `traefik.yml` for static config, and `certs/` volume mount across all compose files.
+- **Certificate Scripts**: Created `generate-certs.sh` (Linux/macOS) and `generate-certs.bat` (Windows) with auto-detection of LAN IP (excluding WSL/Docker/Hyper-V virtual adapters). Added `install-cert.bat` for Windows root CA installation.
+- **Setup Scripts**: Updated `setup.ps1` and `setup.sh` to auto-generate TLS certs, copy rootCA (PEM + DER), open port 443, and display https:// URLs.
+- **Server Info API**: Added `ServerInfoView` returning hostname + detected LAN IP. Frontend `LoginPage` fetches and displays `LAN: https://<ip>` for easy access.
+- **Traefik Health Check**: Added Docker health check (`wget --spider http://127.0.0.1:80`) with 10s interval and 3 retries on all compose files.
+- **Version Pinning**: Pinned Traefik from `v3` to `v3` (stable) in all 3 compose files (dev, prod, ghcr).
+- **Gzip Compression**: Added `go-compress` middleware to Go API router (Django and Frontend already had compression).
+- **Log Rotation**: Added `json-file` driver with `max-size: 10m` / `max-file: 3` to traefik, django, and go-api services across all compose files.
+- **Backup Verification**: Enhanced `backup_db.sh` with MD5 checksum generation, table count comparison vs live database, and `.md5` file pruning.
+- **Makefile**: Created `Makefile` with 20 targets (setup, certs, start/stop/restart/build, logs, migrate, shell, seed, backup, restore, clean, etc.).
+- **Pre-commit Hook**: Created `.githooks/pre-commit` script with Python syntax checks, JS console.log detection, Docker FROM validation, and secret leak detection.
+- **Swagger Docs**: Opened Swagger/OpenAPI docs access from ROOT-only to ADMIN+ROOT roles.
+- **.env.example**: Cleaned up placeholder values with `auto:run_setup_to_generate` labels, added section headers, added `HISTORY_RETENTION_DAYS`.
+- **README**: Updated with HTTPS everywhere, LAN cert install guide (4-step), new troubleshooting rows, and updated project structure.
+- **IP Detection Fix**: Fixed virtual adapter exclusion in `setup.ps1` and `generate-certs.bat` to avoid picking up WSL/Docker IPs.
 
 ### 2026-07-17 · feat: restrict Preventive Wear Prediction module to ROOT and authorized users (v1.7.5)
 - Restricted frontend rendering of the `WearPredictionSection` inside the `DieDetailPage` to ROOT users or users explicitly granted `die-wear` tool permission.

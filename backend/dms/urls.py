@@ -3,9 +3,9 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.permissions import IsAuthenticated
-from users.permissions import IsRootOnly
+from users.permissions import IsRootOnly, IsAdminOrRoot
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet
-from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, VerifyTokenView, TokenRefreshView
+from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, ServerInfoView, VerifyTokenView, TokenRefreshView
 from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
@@ -25,15 +25,15 @@ router.register('wear-alerts', WearAlertViewSet, basename='wear-alert')
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # API Schema and Documentation (v1)
-    path('api/v1/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsRootOnly]), name='schema'),
-    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly]), name='swagger-ui'),
-    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly]), name='redoc-ui'),
+    # API Schema and Documentation (v1) - accessible to Admin and Root
+    path('api/v1/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsAdminOrRoot]), name='schema'),
+    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsAdminOrRoot]), name='swagger-ui'),
+    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsAdminOrRoot]), name='redoc-ui'),
     
     # API Schema and Documentation (legacy - used by frontend)
-    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsRootOnly])),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly])),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsRootOnly])),
+    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated, IsAdminOrRoot])),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsAdminOrRoot])),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAuthenticated, IsAdminOrRoot])),
     
     # Authentication and Utility Endpoints (v1)
     path('api/v1/auth/login/', LoginView.as_view(), name='login'),
@@ -48,6 +48,7 @@ urlpatterns = [
     path('api/v1/import/logs/', ImportLogsView.as_view(), name='import-logs'),
     path('api/v1/events/', EventStreamView.as_view(), name='events'),
     path('api/v1/health/', HealthCheckView.as_view(), name='health'),
+    path('api/v1/server-info/', ServerInfoView.as_view(), name='server-info'),
     path('api/v1/history/', DieHistoryListView.as_view(), name='die-history'),
     path('api/v1/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
     path('api/v1/history/dashboard/', DashboardHistoryListView.as_view(), name='dashboard-history'),
@@ -66,6 +67,7 @@ urlpatterns = [
     path('api/import/logs/', ImportLogsView.as_view()),
     path('api/events/', EventStreamView.as_view()),
     path('api/health/', HealthCheckView.as_view()),
+    path('api/server-info/', ServerInfoView.as_view()),
     path('api/history/', DieHistoryListView.as_view()),
     path('api/history/machines/', MachineHistoryListView.as_view()),
     path('api/history/dashboard/', DashboardHistoryListView.as_view()),

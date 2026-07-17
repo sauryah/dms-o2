@@ -128,6 +128,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 > [!TIP]
+> **Using Make**
+> A `Makefile` is provided with common commands. Run `make help` to see all available targets (setup, certs, start, stop, logs, backup, etc.).
+
+> [!TIP]
 > **LAN Network Access**
 > On completion, the setup scripts output your LAN IP address (e.g., `https://192.168.1.15`). Any device on the same local network can access the frontend dashboard directly. To access from other computers without browser warnings, install the root CA certificate — see [LAN HTTPS Access from Other Computers](#lan-https-access-from-other-computers).
 
@@ -220,6 +224,7 @@ System variables are managed inside the `.env` file located in the project root.
 ```text
 dms-o2/
 ├── .github/workflows/         # CI/CD Deployment configurations
+├── .githooks/                 # Git hooks (pre-commit linting & secret detection)
 ├── backend/                   # Django Backend Service
 │   ├── dies/                  # Die models, database signals, and viewsets
 │   ├── history/               # Audit logging logic and model hooks
@@ -238,6 +243,7 @@ dms-o2/
 ├── scripts/                   # Utility scripts
 │   ├── generate-certs.sh      # Auto-generate TLS certs (Linux/macOS)
 │   ├── generate-certs.bat     # Auto-generate TLS certs (Windows)
+│   ├── install-cert.bat       # Install rootCA on Windows clients
 │   ├── backup_db.sh           # Database backup script
 │   └── prune_history.sh       # Audit history retention cleanup
 ├── docs/                      # Documentation folder
@@ -245,7 +251,9 @@ dms-o2/
 ├── design-system/             # CSS tokens and design specs
 │   └── die-management-system/
 │       └── MASTER.md          # Global design components and tokens
-├── traefik.yml                # Traefik reverse proxy + TLS configuration
+├── Makefile                   # Common dev commands (make help)
+├── traefik.yml                # Traefik static config (entrypoints, providers)
+├── dynamic.yml                # Traefik dynamic config (TLS store, certificates)
 ├── docker-compose.yml         # Local development compose stack
 ├── docker-compose.prod.yml    # Production compose stack
 ├── docker-compose.ghcr.yml    # Pre-built image compose stack
@@ -261,6 +269,21 @@ dms-o2/
 ---
 
 ## Usage Guide
+
+### Using Make (Recommended)
+
+Run `make help` to see all available commands:
+
+| Command | Description |
+| :--- | :--- |
+| `make setup` | Full automated setup (Docker + DB + certs) |
+| `make certs` | Regenerate TLS certificates for current LAN IP |
+| `make start` | Start all containers |
+| `make stop` | Stop all containers |
+| `make logs` | Tail all container logs |
+| `make migrate` | Run database migrations |
+| `make backup` | Run manual database backup |
+| `make build` | Rebuild and restart all containers |
 
 ### Common Container Tasks
 
@@ -520,6 +543,14 @@ For detailed intellectual property and branding rules, see:
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup instructions, testing workflows, and information on our Contributor License Agreement (CLA) that permits dual-licensing of your changes.
+
+### Pre-commit Hooks
+
+A pre-commit hook is included in `.githooks/pre-commit` that checks Python syntax, detects `console.log` statements in JS/TS, validates Dockerfiles, and scans for accidental secret leaks. To enable:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ---
 
