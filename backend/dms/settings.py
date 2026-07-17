@@ -18,6 +18,18 @@ if not DEBUG and (not SECRET_KEY or SECRET_KEY == 'django-insecure-development-s
 
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
+# Auto-detect LAN IP so other devices on the network can access without manual ALLOWED_HOSTS config
+import socket
+try:
+    _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    _s.connect(("8.8.8.8", 80))
+    _lan_ip = _s.getsockname()[0]
+    _s.close()
+    if _lan_ip and _lan_ip not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS = list(ALLOWED_HOSTS) + [_lan_ip]
+except Exception:
+    pass
+
 # Application definition
 
 INSTALLED_APPS = [
