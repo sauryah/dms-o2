@@ -50,3 +50,37 @@
 * **Go Database Connection Hardening:** Configured `SetConnMaxLifetime` and `SetConnMaxIdleTime` connection limits in the Go database pool to eliminate stale DB connection resets.
 * **Resolved Test Suite Transaction Errors:** Turned off global `ATOMIC_REQUESTS` in Django `settings.py` to allow exception responses (400, 401, 403) to return without contaminating testing transactions, while adding selective transaction wrapping decorators (`@transaction.atomic`) on `DieCreateSerializer` creation and update flows.
 * **Improved Virtualized Accessibility:** Spread the `ariaAttributes` object from the list virtualizer down to the rows inside `DiesTable.tsx` for full screen reader compliance.
+
+## 9. Architecture & Security Hardening (July 17, 2026)
+
+### 9.1 Thread-Locals to Contextvars Migration
+* **Problem:** The original `threading.local()` pattern in `users/context.py` is not safe for async/ASGI deployments and creates implicit coupling between middleware, signals, and import services.
+* **Solution:** Replaced `threading.local()` with `contextvars.ContextVar` instances (`_current_user_var`, `_current_ip_var`, `_skip_single_sync_var`, `_pending_sync_die_ids_var`, `_pending_broadcast_keys_var`). A backward-compatible `_ThreadLocalsProxy` class exposes property accessors so existing `from users.context import _thread_locals` imports continue to work. The `CurrentUserMiddleware` now writes directly to contextvars on entry and clears them on exit.
+
+### 9.2 View-to-Service Extraction
+* **Problem:** `dies/views.py` contained ~200 lines of recut and wear prediction business logic inline, mixing HTTP concerns with domain logic.
+* **Solution:** Extracted `RecutService.recut_die()` into `backend/dies/services/recut_service.py` and `WearPredictionService.calculate_wear_prediction()` into `backend/dies/services/wear_prediction_service.py`. The view methods now delegate to these services in 3-5 lines each, improving testability and separation of concerns.
+
+### 9.3 Session Service Extraction
+* **Problem:** `users/authentication.py` contained session lookup, timeout validation, and last-seen update logic interleaved with JWT parsing, creating a monolithic authentication handler.
+* **Solution:** Extracted all session lifecycle operations into `backend/users/services/session_service.py` (`SessionService.get_session_data()`, `SessionService.check_timeouts()`, `SessionService.update_last_seen()`). The `CustomJWTAuthentication.authenticate()` method now calls these static methods, reducing the file from ~150 lines to ~46 lines.
+
+### 9.4 Go API SearchParams Refactoring
+* **Problem:** The `HandleSearch` function in `go-api/internal/handlers/handlers.go` parsed 15+ query parameters with repeated `r.URL.Query().Get()` calls, and computed die scores twice per element during sorting.
+* **Solution:** Introduced a `SearchParams` struct with a `ParseFromURL(r *http.Request)` method. All filter parameters are now accessed via `params.FieldName`. Pre-computed scores using a `scoredDie` slice avoid the double `scoreDie()` call per sort element, cutting the search hot path computation roughly in half.
+
+### 9.5 Meilisearch Filter Injection Fix
+* **Problem:** User-supplied filter values (e.g., `size_min`, `casing`) were embedded directly into Meilisearch filter expressions without escaping. A malicious `casing` value containing a single quote could break the filter syntax or inject unintended filter clauses.
+* **Solution:** Added `escapeMeiliFilterValue()` that escapes backslashes (`\` → `\\`), single quotes (`'` → `\'`), and control characters (`\x00`-`\x1f`) before string interpolation. `QueryMeilisearchAndPostgres` now accepts `*SearchParams` to ensure all filter values pass through the sanitizer.
+
+### 9.6 Frontend SSE Selective Invalidation
+* **Problem:** The `useEffect` SSE handler in `App.tsx` called `queryClient.invalidateQueries()` (no arguments) on every event, forcing all React Query caches to refetch regardless of event type.
+* **Solution:** Extracted the handler into `useRealtimeSync` custom hook with an `EVENT_QUERY_KEYS` map. A `die_update` event now only invalidates `['dies']`, `['search']`, and `['stats']` queries; a `set_update` event only invalidates `['sets']` and `['machines']`, etc. This reduces unnecessary network requests and improves UI responsiveness.
+
+### 9.7 Docker Compose Production Hardening
+* **Problem:** The Django service ran `python manage.py runserver` (development-only server) even in production Docker deployments. The `backup` container had no health check. Environment variables were duplicated across multiple service definitions.
+* **Solution:** Replaced `runserver` with `gunicorn dms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --reload`. Added `pgrep -x crond` health check to the backup service. Introduced `x-common-env` YAML anchor to deduplicate shared environment variables across `migrate`, `django`, and `worker` services.
+
+### 9.8 Production Secret Validation
+* **Problem:** Default or weak secrets (e.g., `dms_internal_secret_default_key_998`) could silently pass into production deployments without triggering any warnings.
+* **Solution:** Added startup validation in `settings.py` that raises `ImproperlyConfigured` if `DJANGO_DEBUG=False` and any of `SECRET_KEY`, `MEILI_MASTER_KEY`, `INTERNAL_API_SECRET`, or `POSTGRES_PASSWORD` match known weak defaults or are shorter than 16 characters.

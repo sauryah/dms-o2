@@ -6,6 +6,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.7.6] - 2026-07-17
+
+### Security
+- **Meilisearch Filter Injection Prevention**:
+  - Added `escapeMeiliFilterValue()` in Go API to escape backslashes, single quotes, and control characters before embedding user input into Meilisearch filter expressions.
+  - `QueryMeilisearchAndPostgres` now accepts a `*SearchParams` struct instead of raw strings, ensuring all user-supplied filter values pass through the sanitizer.
+- **Production Secret Validation**:
+  - Added startup validation in `settings.py` that rejects weak or default `INTERNAL_API_SECRET`, `DJANGO_SECRET_KEY`, `MEILI_MASTER_KEY`, and `POSTGRES_PASSWORD` values when `DJANGO_DEBUG=False`.
+  - Added `INTERNAL_API_SECRET` to the Go API container environment (`docker-compose.yml`) and `.env.example` to ensure both services share a matching secret.
+
+### Changed
+- **Context Variables Replace Thread-Locals**:
+  - Replaced `threading.local()` in `users/context.py` with a `contextvars`-based `_ThreadLocalsProxy` for async-safe request context (`current_user`, `current_ip`, `pending_sync_die_ids`, `pending_broadcast_keys`).
+  - Updated `users/middleware.py`, `dies/signals.py`, `dies/services/import_service.py`, and `dies/services/search_service.py` to import from `users.context`.
+- **Service Layer Extraction**:
+  - Extracted `RecutService.recut_die()` into `backend/dies/services/recut_service.py`, removing ~80 lines of business logic from `dies/views.py`.
+  - Extracted `WearPredictionService.calculate_wear_prediction()` into `backend/dies/services/wear_prediction_service.py`, removing ~120 lines from `dies/views.py`.
+  - Extracted session validation, timeout checks, and last-seen updates into `backend/users/services/session_service.py` (`SessionService`), simplifying `users/authentication.py`.
+- **Go API Search Refactoring**:
+  - Introduced `SearchParams` struct with `ParseFromURL()` method in `go-api/internal/handlers/handlers.go`, replacing 15+ inline `r.URL.Query().Get()` calls.
+  - Pre-computed die scores before sorting to avoid double `scoreDie()` calls per element during search result ranking.
+- **Frontend Realtime Sync Hook**:
+  - Extracted SSE event handling from `App.tsx` into a dedicated `useRealtimeSync` custom hook (`frontend/src/hooks/useRealtimeSync.ts`).
+  - Implemented selective query invalidation: an `EVENT_QUERY_KEYS` map invalidates only relevant React Query caches per event type (`die_update` → `['dies','search','stats']`, etc.) instead of invalidating all queries.
+- **Production WSGI Server**:
+  - Replaced `python manage.py runserver` with `gunicorn dms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --reload` in `docker-compose.yml` for the Django dev container.
+- **Docker Compose Optimization**:
+  - Introduced `x-common-env` YAML anchor in `docker-compose.yml` to deduplicate environment variables across `migrate`, `django`, and `worker` services.
+  - Added `pgrep -x crond` health check to the `backup` container with a 30-second interval.
+- **Session Architecture Cleanup**:
+  - Removed redundant inline imports from `users/authentication.py`, consolidating all imports at module level.
+  - The `CurrentUserMiddleware` now writes directly to contextvars instead of thread-locals, making it safe for async/ASGI deployments.
+
+### Fixed
+- **Go Build Compilation Error**:
+  - Fixed undefined variable references (`sizeMin`, `sizeMax`, etc.) at `handlers.go:500` after the `SearchParams` refactoring — replaced bare variable names with `params.SizeMin`, `params.SizeMax`, etc.
+- **TypeScript Type Mismatch**:
+  - Fixed `useRealtimeSync` callback type signatures — `onShowToast` and `onAddNotification` now accept optional `"info" | "success" | "error"` union types instead of bare `string`.
+
+### Added
+- **Mocked Database Unit Tests**:
+  - Added `backend/dies/tests/test_recut_service.py` with mocked ORM tests covering round die recut, flat die recut, permission checks, note validation, and size regression detection.
+- **E2E Test for Wire Drawing Calculator**:
+  - Added `frontend/tests/e2e/wire-drawing-calculator.spec.js` — basic Playwright E2E smoke test validating the calculator page loads and renders the input form.
+
+### Deprecated
+- **Thread-Locals Proxy (`thread_locals`)**:
+  - The legacy `threading.local()` pattern in `users/context.py` is replaced by `contextvars.ContextVar` through the `_ThreadLocalsProxy` class. Direct `from users.context import _thread_locals` still works for backward compatibility but new code should use `get_current_user()` and `get_current_ip()` helpers.
+
+---
+
 ## [Unreleased]
 
 ### Security

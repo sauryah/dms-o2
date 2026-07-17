@@ -14,11 +14,21 @@ This document outlines the detailed system architecture, API specifications, and
    - [Fuzzy Search Flow Control](#fuzzy-search-flow-control)
    - [Endpoints Specifications](#endpoints-specifications)
    - [Redis Caching Architecture](#redis-caching-architecture)
-3. [Database Connection Pooling & Performance](#3-database-connection-pooling--performance)
+3. [Backend Service Layer Architecture](#3-backend-service-layer-architecture)
+   - [Service Extraction Pattern](#service-extraction-pattern)
+   - [Context Variables](#context-variables-async-safe-request-context)
+   - [Middleware Stack](#middleware-stack)
+4. [Database Connection Pooling & Performance](#4-database-connection-pooling--performance)
    - [Django PostgreSQL Pool Configuration](#django-postgresql-pool-configuration)
    - [Tuning Guidelines](#tuning-guidelines)
    - [Monitoring Queries](#monitoring-queries)
-4. [See Also](#see-also)
+5. [Scheduled History Pruning & Cache Invalidation](#5-scheduled-history-pruning--cache-invalidation)
+6. [Inventory Scaling Constraints & Limits](#6-inventory-scaling-constraints--limits)
+7. [Security Hardening](#7-security-hardening)
+   - [Startup Secret Validation](#startup-secret-validation)
+   - [Meilisearch Filter Injection Prevention](#meilisearch-filter-injection-prevention)
+   - [Internal API Secret](#internal-api-secret)
+8. [See Also](#8-see-also)
 
 ---
 
@@ -169,18 +179,19 @@ Authorization: Bearer <your_jwt_access_token>
 
 ### Fuzzy Search Flow Control
 
-The Go Search Service (`go-api`) handles fuzzy, high-performance read-only searches. For complex queries containing decimal ranges, it dynamically joins Meilisearch matches with PostgreSQL index scans.
+The Go Search Service (`go-api`) handles fuzzy, high-performance read-only searches. For complex queries containing decimal ranges, it dynamically joins Meilisearch matches with PostgreSQL index scans. All search parameters are parsed into a `SearchParams` struct via `ParseFromURL()`, and user-supplied filter values are sanitized through `escapeMeiliFilterValue()` before Meilisearch query construction.
 
 ```mermaid
 sequenceDiagram
     autonumber
     Client->>Go Service: GET /api/go/search?q=120&die_type=ROUND
+    Note over Go Service: ParseFromURL → SearchParams struct
     Note over Go Service: Check Redis Cache for key: search:120:ROUND...
     
     alt Cache Hit
         Go Service-->>Client: Return JSON results (Cached)
     else Cache Miss
-        Go Service->>Meilisearch: Query q="120"
+        Go Service->>Meilisearch: Query q="120" (escaped filters)
         Meilisearch-->>Go Service: Return matching die IDs ["R-120", "R-121"]
         Go Service->>PostgreSQL: SELECT * FROM dies WHERE die_id IN ('R-120', 'R-121') AND die_type = 'ROUND'
         PostgreSQL-->>Go Service: Return database records
@@ -206,18 +217,25 @@ sequenceDiagram
 #### 2. Search & Filter Dies
 *   **Route**: `GET /api/go/search`
 *   **Auth**: Authenticated (JWT Access Token)
+*   **Request Parsing**: All query parameters are parsed into a `SearchParams` struct via `ParseFromURL(r *http.Request)`. Filter values are sanitized through `escapeMeiliFilterValue()` before Meilisearch query construction.
 *   **Query Parameters Matrix**:
     | Parameter | Type | Description | Example |
     | :--- | :--- | :--- | :--- |
     | `q` | string | Fuzzy keyword query (searches ids, locations, casing, sets) | `R-101` |
     | `die_type` | string | Match type exactly: `ROUND` or `FLAT` | `ROUND` |
     | `status` | string | Match status exactly: `AVAILABLE`, `RUNNING`, etc. | `RUNNING` |
-    | `casing` | string | Filter casing substring | `Steel` |
+    | `casing` | string | Filter casing substring (escaped for Meilisearch) | `Steel` |
+    | `location` | string | Filter by location | `Rack A` |
     | `size_min` | decimal | Lower bound ROUND diameter | `5.25` |
     | `size_max` | decimal | Upper bound ROUND diameter | `10.5` |
     | `width_min` | decimal | Lower bound FLAT width | `25.0` |
+    | `width_max` | decimal | Upper bound FLAT width | `35.0` |
     | `thick_min` | decimal | Lower bound FLAT thickness | `1.5` |
-    | `limit` | integer | Page size limit | `50` |
+    | `thick_max` | decimal | Upper bound FLAT thickness | `3.0` |
+    | `machine_id` | integer | Filter by machine ID | `42` |
+    | `set_id` | integer | Filter by set ID | `7` |
+    | `unassigned` | string | Filter unassigned dies | `true` |
+    | `limit` | integer | Page size limit (default: 150) | `50` |
     | `offset` | integer | Offset/starting item index for pagination | `20` |
 
 *   **Response (200 OK)**:
@@ -268,11 +286,7 @@ sequenceDiagram
 
 #### 5. Go-to-Django Token Verification (Internal)
 *   **Route**: `POST /internal/verify-token/`
-*   **Auth**: Internal Network Only (accessible only within Docker network context by the Go service). The Go service authenticates using `INTERNAL_API_SECRET` in the `Authorization` header. Django verifies the secret using **timing-safe comparison** (`hmac.compare_digest`) to prevent timing attacks.
-*   **Payload**:
-    ```json
-    { "token": "eyJhbG..." }
-    ```
+*   **Auth**: Internal Network Only (accessible only within Docker network context by the Go service). The Go service authenticates using `INTERNAL_API_SECRET` in the `X-Internal-Key` header. Django verifies the secret using **timing-safe comparison** (`hmac.compare_digest`) to prevent timing attacks.
 *   **Response (200 OK)**:
     ```json
     { "valid": true, "user_id": 4, "role": "ADMIN" }
@@ -292,7 +306,56 @@ sequenceDiagram
 
 ---
 
-## 3. Database Connection Pooling & Performance
+## 3. Backend Service Layer Architecture
+
+### Service Extraction Pattern
+
+The Django backend follows a strict view → service → model layering pattern. Business logic is extracted into dedicated service classes to keep views as thin HTTP adapters:
+
+| Service | Location | Responsibility |
+| :--- | :--- | :--- |
+| `SessionService` | `backend/users/services/session_service.py` | Session lookup, timeout validation, last-seen updates, eviction detection |
+| `RecutService` | `backend/dies/services/recut_service.py` | Die recut business logic (size validation, audit logging) |
+| `WearPredictionService` | `backend/dies/services/wear_prediction_service.py` | Wear prediction calculations and threshold evaluation |
+| `ImportService` | `backend/dies/services/import_service.py` | Spreadsheet parsing, data resolution, bulk imports |
+| `SearchService` | `backend/dies/services/search_service.py` | Meilisearch query construction and PostgreSQL fallback |
+| `BackupService` | `backend/users/services/backup_service.py` | pg_dump/restore operations, backup file management |
+
+### Context Variables (Async-Safe Request Context)
+
+Request-scoped state (current user, IP, pending sync IDs) is managed via `contextvars.ContextVar` instances in `backend/users/context.py`, replacing the legacy `threading.local()` pattern. This makes the system safe for async/ASGI deployments.
+
+```python
+# backend/users/context.py
+_current_user_var = contextvars.ContextVar('current_user', default=None)
+_current_ip_var = contextvars.ContextVar('current_ip', default=None)
+
+# Usage in views/services
+from users.context import get_current_user
+user = get_current_user()
+```
+
+The `_ThreadLocalsProxy` class provides backward compatibility for existing `from users.context import _thread_locals` imports.
+
+### Middleware Stack
+
+```python
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.CurrentUserMiddleware',      # Writes to contextvars
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+---
+
+## 4. Database Connection Pooling & Performance
 
 ### Django PostgreSQL Pool Configuration
 
@@ -345,7 +408,7 @@ ORDER BY query_start ASC;
 
 ---
 
-## 4. Scheduled History Pruning & Cache Invalidation
+## 5. Scheduled History Pruning & Cache Invalidation
 
 To prevent query degradation and database bloating as operational logs grow over time:
 *   **Celery Beat Task**: A daily background task `auto_prune_history` is configured via `CELERY_BEAT_SCHEDULE` to run every 24 hours. It calls the Django management command `prune_history` to delete logs older than the retention threshold.
@@ -355,7 +418,7 @@ To prevent query degradation and database bloating as operational logs grow over
 
 ---
 
-## 5. Inventory Scaling Constraints & Limits
+## 6. Inventory Scaling Constraints & Limits
 
 To deliver high performance and low-latency rendering, the DMS React frontend uses a client-side grouping architecture for the Inventory Explorer sidebar tree and machine detail views:
 - **Client-Side Grouping**: The frontend fetches active inventory records using a single paginated API request `/api/go/search` and then dynamically parses and groups them into their respective machines and sets in memory.
@@ -366,7 +429,33 @@ To deliver high performance and low-latency rendering, the DMS React frontend us
 
 ---
 
-## 6. See Also
+## 7. Security Hardening
+
+### Startup Secret Validation
+
+When `DJANGO_DEBUG=False`, the Django application validates all critical secrets at startup and raises `ImproperlyConfigured` if any match known weak defaults:
+
+| Secret | Validation Rule |
+| :--- | :--- |
+| `DJANGO_SECRET_KEY` | Must not equal `django-insecure-development-secret-key-12345` |
+| `MEILI_MASTER_KEY` | Must be ≥16 chars and not `meili_secret_key` or `change_me` |
+| `INTERNAL_API_SECRET` | Must be ≥16 chars and not `dms_internal_secret_default_key_998` or `your-internal-secret` |
+| `POSTGRES_PASSWORD` | Must be ≥16 chars and not `password`, `postgres`, or `dms_pass_password` |
+
+### Meilisearch Filter Injection Prevention
+
+All user-supplied filter values embedded in Meilisearch filter expressions pass through `escapeMeiliFilterValue()` which escapes:
+- Backslashes: `\` → `\\`
+- Single quotes: `'` → `\'`
+- Control characters: `\x00`-`\x1f` → ` ` (space)
+
+### Internal API Secret
+
+The Go API authenticates to Django's `/internal/verify-token/` endpoint using the `X-Internal-Key` header with the shared `INTERNAL_API_SECRET`. Django validates using `hmac.compare_digest()` for timing-safe comparison.
+
+---
+
+## 8. See Also
 
 *   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System Installation, configuration variables, and docker quick starts.
 *   [PROJECT.md](file:///home/sahil/Projects/dms-o2/PROJECT.md) - Development roadmap, stack rules, and changelog lists.
