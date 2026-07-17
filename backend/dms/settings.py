@@ -180,7 +180,7 @@ SESSION_ABSOLUTE_TIMEOUT_HOURS = config('SESSION_ABSOLUTE_TIMEOUT_HOURS', defaul
 # Meilisearch configuration
 MEILI_HOST = config('MEILI_HOST', default='http://meilisearch:7700')
 MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
-INTERNAL_API_SECRET = config('INTERNAL_API_SECRET')
+INTERNAL_API_SECRET = config('INTERNAL_API_SECRET', default='')
 
 # Custom user model with role (will implement in users app)
 AUTH_USER_MODEL = 'users.User'
