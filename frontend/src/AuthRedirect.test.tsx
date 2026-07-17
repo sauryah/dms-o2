@@ -5,6 +5,13 @@ import { useAuth } from './contexts/AuthContext'
 import { useApi } from './hooks/useApi'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 
+function makeValidToken(payload: Record<string, unknown> = {}): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const body = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, ...payload }))
+  const sig = btoa('fake-signature')
+  return `${header}.${body}.${sig}`
+}
+
 interface TestApiComponentProps {
   url: string
   onResult: (res: any) => void
@@ -91,7 +98,8 @@ describe('Auth Redirect on 401', () => {
   })
 
   test('initializes state from localStorage and updates localStorage on changes', async () => {
-    localStorage.setItem('dms_token', 'test-token')
+    const validToken = makeValidToken()
+    localStorage.setItem('dms_token', validToken)
     localStorage.setItem('dms_role', 'operator')
     localStorage.setItem('dms_username', 'bob')
 
@@ -101,7 +109,7 @@ describe('Auth Redirect on 401', () => {
       </AuthProvider>
     )
 
-    expect(getByTestId('token').textContent).toBe('test-token')
+    expect(getByTestId('token').textContent).toBe(validToken)
     expect(getByTestId('role').textContent).toBe('operator')
     expect(getByTestId('username').textContent).toBe('bob')
 
