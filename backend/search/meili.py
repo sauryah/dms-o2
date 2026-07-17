@@ -32,8 +32,6 @@ def init_meilisearch():
         logger.info(f"Meilisearch index '{INDEX_NAME}' initialized successfully")
     except Exception as e:
         logger.error(f"Meilisearch connection/init failed: {e}")
-        if not settings.DEBUG:
-            raise
 
 def sync_die(die):
     from search.tasks import sync_die_task
