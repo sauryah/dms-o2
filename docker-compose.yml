@@ -78,7 +78,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.rule=PathPrefix(`/api`) || PathPrefix(`/admin`)"
-      - "traefik.http.routers.django.entrypoints=web"
+      - "traefik.http.routers.django.entrypoints=websecure"
+      - "traefik.http.routers.django.tls=true"
       - "traefik.http.routers.django.priority=50"
       - "traefik.http.services.django.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.api-ratelimit.ratelimit.average=100"
@@ -87,7 +88,8 @@ services:
       - "traefik.http.middlewares.api-compress.compress=true"
       # Dedicated login route rate limiting
       - "traefik.http.routers.django-login.rule=Path(`/api/auth/login/`)"
-      - "traefik.http.routers.django-login.entrypoints=web"
+      - "traefik.http.routers.django-login.entrypoints=websecure"
+      - "traefik.http.routers.django-login.tls=true"
       - "traefik.http.routers.django-login.priority=60"
       - "traefik.http.routers.django-login.middlewares=login-ratelimit,api-compress"
       - "traefik.http.middlewares.login-ratelimit.ratelimit.average=5"
@@ -156,7 +158,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`) || PathPrefix(`/api/events`)"
-      - "traefik.http.routers.go-api.entrypoints=web"
+      - "traefik.http.routers.go-api.entrypoints=websecure"
+      - "traefik.http.routers.go-api.tls=true"
       - "traefik.http.routers.go-api.priority=100"
       - "traefik.http.services.go-api.loadbalancer.server.port=8080"
 
@@ -190,7 +193,7 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -201,7 +204,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
       - "traefik.http.middlewares.frontend-compress.compress=true"
       - "traefik.http.routers.frontend.middlewares=frontend-compress"
@@ -211,9 +215,12 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./certs:/certs:ro
     depends_on:
       django:
         condition: service_healthy

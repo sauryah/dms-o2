@@ -51,4 +51,12 @@ backups/
 # Temporary files
 backend/tmp/
 
+# TLS certificates (generated per-machine)
+certs/*.pem
+certs/*.der
+certs/*.cer
+certs/*.pfx
+certs/cert_check.der
+certs/served_cert.der
+
 

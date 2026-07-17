@@ -9,6 +9,17 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# 1.5 Check if mkcert is installed
+if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
+    Write-Host ">>> mkcert not found. Installing via winget..." -ForegroundColor Yellow
+    winget install -e --id FiloSottile.MkCert --accept-source-agreements --accept-package-agreements 2>$null
+    if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
+        Write-Host ">>> WARNING: Could not install mkcert automatically." -ForegroundColor Yellow
+        Write-Host ">>> Install manually: https://github.com/FiloSottile/mkcert#installation" -ForegroundColor Yellow
+        Write-Host ">>> Then run: scripts\generate-certs.bat" -ForegroundColor Yellow
+    }
+}
+
 # 2. Check environment file
 if (-not (Test-Path .env)) {
     Write-Host ">>> Creating .env file from template with secure dynamic keys..."
@@ -38,7 +49,35 @@ if (-not (Test-Path .env)) {
     Write-Host ">>> Environment file .env already exists."
 }
 
-# 3. Spin up Docker containers
+# 3. Generate TLS certificates for HTTPS
+Write-Host ">>> Generating TLS certificates for HTTPS..." -ForegroundColor Cyan
+if (-not (Test-Path "certs\cert.pem")) {
+    # Detect LAN IP
+    $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+        $_.IPAddress -notlike "127.*" -and
+        $_.IPAddress -notlike "169.254.*" -and
+        $_.InterfaceAlias -notlike "*Loopback*" -and
+        $_.InterfaceAlias -notlike "*vEthernet*" -and
+        $_.InterfaceAlias -notlike "*docker*" -and
+        $_.InterfaceAlias -notlike "*WSL*"
+    } | Select-Object -First 1 -ExpandProperty IPAddress
+    if (-not $certsLanIp) {
+        $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1 -ExpandProperty IPAddress
+    }
+
+    if ($certsLanIp) {
+        if (-not (Test-Path "certs")) { New-Item -ItemType Directory -Path "certs" -Force | Out-Null }
+        & mkcert -install 2>$null
+        & mkcert -cert-file "certs\cert.pem" -key-file "certs\key.pem" localhost 127.0.0.1 $certsLanIp ::1
+        Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
+    } else {
+        Write-Host ">>> WARNING: Could not detect LAN IP. Run scripts\generate-certs.bat manually." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host ">>> TLS certificates already exist."
+}
+
+# 4. Spin up Docker containers
 Write-Host ">>> Pre-pulling required Docker images sequentially to prevent connection timeouts..." -ForegroundColor Cyan
 $images = @(
     "postgres:18-alpine",
@@ -94,14 +133,16 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if ($isAdmin) {
     Write-Host ">>> Administrator privileges detected. Configuring Windows Firewall for LAN Access..."
     New-NetFirewallRule -DisplayName "DMS Port 80" -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
+    New-NetFirewallRule -DisplayName "DMS Port 443" -Direction Inbound -LocalPort 443 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
     Get-NetFirewallRule -DisplayName "Docker Desktop Backend" -ErrorAction SilentlyContinue | Set-NetFirewallRule -Profile Any -ErrorAction SilentlyContinue | Out-Null
 } else {
     Write-Host ""
     Write-Host ">>> LAN ACCESS SETUP NOTE:" -ForegroundColor Yellow
-    Write-Host "    To allow other LAN devices (like phones) to access this server:"
+    Write-Host "    To allow other LAN devices to access this server:"
     Write-Host "    1. Make sure your Wi-Fi connection profile is set to 'Private' in Windows settings."
-    Write-Host "    2. Open PowerShell as Administrator and run the following command to allow Docker & Port 80:"
+    Write-Host "    2. Open PowerShell as Administrator and run the following commands:"
     Write-Host "       New-NetFirewallRule -DisplayName 'DMS Port 80' -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow"
+    Write-Host "       New-NetFirewallRule -DisplayName 'DMS Port 443' -Direction Inbound -LocalPort 443 -Protocol TCP -Action Allow"
     Write-Host "       Get-NetFirewallRule -DisplayName 'Docker Desktop Backend' | Set-NetFirewallRule -Profile Any"
 }
 
@@ -126,13 +167,17 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host ">>> Setup Completed Successfully!" -ForegroundColor Green
 Write-Host ">>> You can now access the DMS application at:"
-Write-Host "    - Local Web URL:  http://localhost"
-Write-Host "    - Django Admin:   http://localhost/admin/"
+Write-Host "    - Local Web URL:  https://localhost"
+Write-Host "    - Django Admin:   https://localhost/admin/"
 if ($lanIps) {
     foreach ($ip in $lanIps) {
-        Write-Host "    - LAN Web URL:    http://$ip"
+        Write-Host "    - LAN Web URL:    https://$ip"
     }
 }
-Write-Host "    - LAN mDNS URL:   http://$computerName"
+Write-Host "    - LAN mDNS URL:   https://$computerName"
+Write-Host ""
+Write-Host ">>> To access from another computer:" -ForegroundColor Cyan
+Write-Host "    Copy certs\rootCA.pem to the other PC, convert and install as trusted root CA"
+Write-Host "    See README.md for instructions"
 Write-Host "======================================================" -ForegroundColor Green
 

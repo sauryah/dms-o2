@@ -38,19 +38,45 @@ else
     echo ">>> Environment file .env already exists."
 fi
 
-# 2.8. Check for active firewalls and open port 80/HTTP if needed
+# 2.8. Generate TLS certificates
+if [ ! -f "certs/cert.pem" ]; then
+    if command -v mkcert &> /dev/null; then
+        echo ">>> Generating TLS certificates for HTTPS..."
+        LAN_IP_CERT=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
+        if [ -z "$LAN_IP_CERT" ]; then
+            LAN_IP_CERT=$(hostname -I | awk '{print $1}' || true)
+        fi
+        if [ -n "$LAN_IP_CERT" ]; then
+            mkdir -p certs
+            mkcert -install 2>/dev/null || true
+            mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 "$LAN_IP_CERT" ::1
+            echo ">>> TLS certificates generated for $LAN_IP_CERT"
+        else
+            echo ">>> WARNING: Could not detect LAN IP. Run scripts/generate-certs.sh manually."
+        fi
+    else
+        echo ">>> WARNING: mkcert not found. Install with: brew install mkcert (macOS) or apt install mkcert (Linux)"
+        echo ">>> Then run: scripts/generate-certs.sh"
+    fi
+else
+    echo ">>> TLS certificates already exist."
+fi
+
+# 2.9. Check for active firewalls and open port 80/443 if needed
 if systemctl is-active firewalld &>/dev/null; then
     echo ">>> Detected active firewalld. Ensuring HTTP port 80 is open..."
     if ! firewall-cmd --list-services | grep -q "http"; then
         echo ">>> Opening port 80/HTTP in firewalld..."
         sudo firewall-cmd --add-service=http --permanent
+        sudo firewall-cmd --add-service=https --permanent
         sudo firewall-cmd --reload
     else
         echo ">>> HTTP service is already allowed in firewalld."
     fi
 elif command -v ufw &>/dev/null && sudo ufw status | grep -q "Status: active" &>/dev/null; then
-    echo ">>> Detected active UFW firewall. Ensuring HTTP port 80 is open..."
-    sudo ufw allow http
+    echo ">>> Detected active UFW firewall. Ensuring HTTP/HTTPS ports are open..."
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
 fi
 
 # 3. Spin up Docker containers
@@ -116,20 +142,23 @@ CUR_HOSTNAME=$(hostname)
 echo "======================================================"
 echo ">>> Setup Completed Successfully!"
 echo ">>> You can now access the DMS application at:"
-echo "    - Local Web URL: http://localhost"
-echo "    - Django Admin:  http://localhost/admin/"
+echo "    - Local Web URL: https://localhost"
+echo "    - Django Admin:  https://localhost/admin/"
 if [ -n "$LAN_IP" ]; then
-    echo "    - LAN Web URL:   http://$LAN_IP"
+    echo "    - LAN Web URL:   https://$LAN_IP"
 fi
 if [ "$CUR_HOSTNAME" = "dms" ]; then
-    echo "    - LAN mDNS URL:  http://dms.local"
+    echo "    - LAN mDNS URL:  https://dms.local"
 else
     echo ""
     echo ">>> LAN ACCESS SETUP NOTE:"
     echo "    Your current system hostname is '$CUR_HOSTNAME'."
-    echo "    To access the app from other computers on your LAN using http://dms.local:"
+    echo "    To access the app from other computers on your LAN using https://dms.local:"
     echo "    1. Run: sudo hostnamectl set-hostname dms"
     echo "    2. Run: sudo systemctl restart avahi-daemon"
 fi
+echo ""
+echo ">>> To access from another computer without warnings:"
+echo "    Copy certs/rootCA.pem to the other PC, convert to .cer and install as trusted root CA"
 echo "======================================================"
 
