@@ -564,6 +564,25 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **Certificate does not match IP (DNS/IP SAN error)** | Server IP changed after certificates were generated. | Regenerate certificates: `scripts\generate-certs.bat` (Windows) or `./scripts/generate-certs.sh` (Linux/macOS), then reinstall the root CA on client machines. |
 | **Locked out / forgot root password** | Root password lost or compromised | Reset via Docker exec: `docker compose exec -T django python manage.py changepassword root` (enter new password when prompted). |
 
+### Full Docker Reset (Nuclear Option)
+
+To completely wipe all Docker containers, images, volumes, networks, and build caches — giving you a clean slate:
+
+**Linux/macOS:**
+
+```bash
+sudo bash -c 'systemctl start docker && docker ps -aq | xargs -r docker rm -f && docker images -aq | xargs -r docker rmi -f && docker volume ls -q | xargs -r docker volume rm -f && docker network ls --filter type=custom -q | xargs -r docker network rm && docker builder prune -af && docker system prune -af --volumes'
+```
+
+**Windows (PowerShell as Administrator):**
+
+```powershell
+docker rm -f $(docker ps -aq) 2>$null; docker rmi -f $(docker images -aq) 2>$null; docker volume rm -f $(docker volume ls -q) 2>$null; docker network rm $(docker network ls --filter type=custom -q) 2>$null; docker builder prune -af; docker system prune -af --volumes
+```
+
+> [!WARNING]
+> This removes **all** Docker data on the system, not just DMS containers. Only use this when you need a completely fresh Docker environment.
+
 ---
 
 ## Licensing & Compliance
