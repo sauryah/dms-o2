@@ -20,6 +20,8 @@ export class ApiError extends Error {
   }
 }
 
+let inflightRefresh: Promise<string | null> | null = null
+
 export const useApi = () => {
   const { token, refreshToken, logout, setToken, setRefreshToken, handleRefreshFailure, shouldBlockRefresh, resetRefreshFailures } = useAuth()
   const tokenRef = useRef(token)
@@ -32,6 +34,10 @@ export const useApi = () => {
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
   const refreshAccessToken = async (): Promise<string | null> => {
+    if (inflightRefresh) {
+      return inflightRefresh
+    }
+
     const currentRefresh = refreshTokenRef.current
     if (!currentRefresh) return null
     if (shouldBlockRefresh()) {
@@ -39,38 +45,45 @@ export const useApi = () => {
       window.location.hash = '/login'
       return null
     }
-    try {
-      const res = await fetch('/api/v1/auth/refresh/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh: currentRefresh })
-      })
-      if (!res.ok) {
-        let errData: any = null
-        if (typeof res.json === 'function') {
-          errData = await res.json().catch(() => null)
-        }
-        if (errData && errData.code === 'session_evicted') {
-          localStorage.setItem('dms_logout_reason', 'session_evicted')
-          if (errData.evicted_by_ip) {
-            localStorage.setItem('dms_evicted_ip', errData.evicted_by_ip)
+
+    inflightRefresh = (async () => {
+      try {
+        const res = await fetch('/api/v1/auth/refresh/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: currentRefresh })
+        })
+        if (!res.ok) {
+          let errData: any = null
+          if (typeof res.json === 'function') {
+            errData = await res.json().catch(() => null)
           }
-          if (errData.evicted_at) {
-            localStorage.setItem('dms_evicted_at', errData.evicted_at)
+          if (errData && errData.code === 'session_evicted') {
+            localStorage.setItem('dms_logout_reason', 'session_evicted')
+            if (errData.evicted_by_ip) {
+              localStorage.setItem('dms_evicted_ip', errData.evicted_by_ip)
+            }
+            if (errData.evicted_at) {
+              localStorage.setItem('dms_evicted_at', errData.evicted_at)
+            }
           }
+          handleRefreshFailure()
+          return null
         }
+        const data = await res.json()
+        setToken(data.access)
+        if (data.refresh) setRefreshToken(data.refresh)
+        resetRefreshFailures()
+        return data.access
+      } catch {
         handleRefreshFailure()
         return null
+      } finally {
+        inflightRefresh = null
       }
-      const data = await res.json()
-      setToken(data.access)
-      if (data.refresh) setRefreshToken(data.refresh)
-      resetRefreshFailures()
-      return data.access
-    } catch {
-      handleRefreshFailure()
-      return null
-    }
+    })()
+
+    return inflightRefresh
   }
 
   const request = useCallback(async (url: string, options: any = {}) => {

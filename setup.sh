@@ -19,13 +19,15 @@ if [ ! -f .env ]; then
     if command -v python3 &> /dev/null; then
         echo ">>> Creating .env file from template with secure dynamic keys..."
         python3 -c "
-import secrets
+import secrets, re
 with open('.env.example', 'r') as f:
     content = f.read()
-content = content.replace('POSTGRES_PASSWORD=dms_pass_secure_development_placeholder_123', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
-content = content.replace('DJANGO_SECRET_KEY=1i-Z36mjYZYX9lwdlTcUGlLflUlt8M6oykwbMa0pmLx3FSWXjwkYQ_i37LCSfhV3', f'DJANGO_SECRET_KEY={secrets.token_urlsafe(48)}')
-content = content.replace('MEILI_MASTER_KEY=ghq8ynFj6vPGb29wfZaWpvuCmmQZ4FBPGoZ4xCvxElo', f'MEILI_MASTER_KEY={secrets.token_urlsafe(32)}')
-content = content.replace('ROOT_PASSWORD=root123', f'ROOT_PASSWORD={secrets.token_urlsafe(16)}')
+content = content.replace('POSTGRES_PASSWORD=auto:run_setup_to_generate', f'POSTGRES_PASSWORD={secrets.token_urlsafe(24)}')
+content = content.replace('DJANGO_SECRET_KEY=auto:run_setup_to_generate', f'DJANGO_SECRET_KEY={secrets.token_urlsafe(48)}')
+content = content.replace('MEILI_MASTER_KEY=auto:run_setup_to_generate', f'MEILI_MASTER_KEY={secrets.token_urlsafe(32)}')
+content = content.replace('ROOT_PASSWORD=auto:run_setup_to_generate', f'ROOT_PASSWORD={secrets.token_urlsafe(16)}')
+content = content.replace('REDIS_PASSWORD=auto:run_setup_to_generate', f'REDIS_PASSWORD={secrets.token_urlsafe(24)}')
+content = content.replace('INTERNAL_API_SECRET=auto:run_setup_to_generate', f'INTERNAL_API_SECRET={secrets.token_urlsafe(32)}')
 with open('.env', 'w') as f:
     f.write(content)
 "

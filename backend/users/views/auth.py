@@ -509,32 +509,6 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                     if old_access:
                         old_hash = hashlib.sha256(old_access.encode('utf-8')).hexdigest()
                         session = UserSession.objects.filter(user_id=user_id, token_hash=old_hash).first()
-                        if not session:
-                            from django.core.cache import cache as django_cache
-                            eviction_key = f"evicted_session:{user_id}:{old_hash}"
-                            evicted_data = django_cache.get(eviction_key)
-                            if evicted_data:
-                                response = Response(
-                                    {
-                                        "detail": "Session replaced on another device or expired",
-                                        "code": "session_evicted",
-                                        "evicted_by_ip": evicted_data.get("evicted_by_ip", ""),
-                                        "evicted_at": evicted_data.get("evicted_at", "")
-                                    },
-                                    status=status.HTTP_401_UNAUTHORIZED
-                                )
-                                response.delete_cookie('dms_access_token')
-                                response.delete_cookie('dms_refresh_token')
-                                return response
-                            
-                            response = Response(
-                                {"detail": "Session has expired or been replaced"},
-                                status=status.HTTP_401_UNAUTHORIZED
-                            )
-                            response.delete_cookie('dms_access_token')
-                            response.delete_cookie('dms_refresh_token')
-                            return response
-                        
                     if not session:
                         session = UserSession.objects.filter(user_id=user_id).order_by('-last_seen').first()
                         

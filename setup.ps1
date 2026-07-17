@@ -34,13 +34,17 @@ if (-not (Test-Path .env)) {
     $djangoKey = Generate-Secret 60
     $meiliMaster = Generate-Secret 32
     $rootPass = Generate-Secret 16
+    $redisPass = Generate-Secret 24
+    $apiSecret = Generate-Secret 32
 
     $examplePath = Resolve-Path .env.example
     $content = [System.IO.File]::ReadAllText($examplePath)
-    $content = $content.Replace('POSTGRES_PASSWORD=dms_pass_secure_development_placeholder_123', "POSTGRES_PASSWORD=$dbPass")
-    $content = $content.Replace('DJANGO_SECRET_KEY=1i-Z36mjYZYX9lwdlTcUGlLflUlt8M6oykwbMa0pmLx3FSWXjwkYQ_i37LCSfhV3', "DJANGO_SECRET_KEY=$djangoKey")
-    $content = $content.Replace('MEILI_MASTER_KEY=ghq8ynFj6vPGb29wfZaWpvuCmmQZ4FBPGoZ4xCvxElo', "MEILI_MASTER_KEY=$meiliMaster")
-    $content = $content.Replace('ROOT_PASSWORD=root123', "ROOT_PASSWORD=$rootPass")
+    $content = $content.Replace('POSTGRES_PASSWORD=auto:run_setup_to_generate', "POSTGRES_PASSWORD=$dbPass")
+    $content = $content.Replace('DJANGO_SECRET_KEY=auto:run_setup_to_generate', "DJANGO_SECRET_KEY=$djangoKey")
+    $content = $content.Replace('MEILI_MASTER_KEY=auto:run_setup_to_generate', "MEILI_MASTER_KEY=$meiliMaster")
+    $content = $content.Replace('ROOT_PASSWORD=auto:run_setup_to_generate', "ROOT_PASSWORD=$rootPass")
+    $content = $content.Replace('REDIS_PASSWORD=auto:run_setup_to_generate', "REDIS_PASSWORD=$redisPass")
+    $content = $content.Replace('INTERNAL_API_SECRET=auto:run_setup_to_generate', "INTERNAL_API_SECRET=$apiSecret")
 
     $envPath = Join-Path (Get-Location) ".env"
     [System.IO.File]::WriteAllText($envPath, $content)

@@ -105,9 +105,44 @@ graph TD
 
 ### Prerequisites
 
-* **Docker** & **Docker Compose** (V2+)
+* **Docker** & **Docker Compose** (V2+) — On Linux, ensure your user can access the Docker daemon without `sudo`:
+
+  ```bash
+  sudo usermod -aG docker $USER
+  # Log out and log back in for the change to take effect
+  ```
+
+* **mkcert** (required for TLS certificate generation)
 * **Node.js** (v18+) & **npm** (only required for local developer running)
 * **Python 3.11** (only required for local Django execution)
+
+#### Installing mkcert
+
+**Linux (Fedora/RHEL):**
+
+```bash
+sudo dnf install mkcert
+```
+
+**Linux (Debian/Ubuntu):**
+
+```bash
+sudo apt install mkcert
+```
+
+**macOS:**
+
+```bash
+brew install mkcert
+```
+
+**Windows:**
+
+```powershell
+choco install mkcert
+```
+
+Or install from the [official releases](https://github.com/FiloSottile/mkcert/releases).
 
 ### Automated Setup
 
@@ -516,9 +551,13 @@ No. Moving dies, adding new records, or editing states requires **Admin** or **R
 | **Meilisearch connection error** | Dev config host mapping mismatch | Inside Docker networks, configure `MEILI_HOST=http://meilisearch:7700`. For direct local runs, set `MEILI_HOST=http://localhost:7700`. |
 | **Port conflict on 80/443** | Another server (Nginx/Apache) is running on the host | Disable host server: `sudo systemctl stop nginx`, or change port bindings in `docker-compose.yml`. Both ports 80 (HTTP) and 443 (HTTPS) must be available. |
 | **Write/Compile permission denied** | Root-owned files left in mounting volume | Run cleanup command: `docker compose exec frontend rm -rf dist` and restart. |
-| **401 Unauthorized loops** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
+| **401 Unauthorized loops after login** | Go API cannot verify tokens with Django because `DJANGO_ALLOWED_HOSTS` is missing the Docker service name `django` | Add `django` to `DJANGO_ALLOWED_HOSTS` in your `.env` file (e.g., `DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,django`) and restart: `docker compose up -d`. |
+| **401 Unauthorized loops (other)** | Database state was reset or session invalidated | Clear local storage in browser devtools and log in again. |
 | **Dies missing from sidebar tree / showing 0 count** | Database has scaled beyond the default pagination limit | Increase the default `pageSize` state variable in `frontend/src/features/inventory/hooks/useInventoryState.ts` and rebuild the frontend: `docker compose up -d --build frontend`. |
 | **Cannot connect/access from phone or external device** | Host IP not allowed in Django, Windows Network Category is Public, or Firewall blocking Docker Backend. | Add the laptop's network IP address or `*` to `DJANGO_ALLOWED_HOSTS` in your `.env` file, then restart containers. On Windows, set your network profile to **Private** in admin PowerShell: `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private`. Update Docker's inbound rules to apply to all profiles. |
+| **Docker "permission denied" on Linux** | User not in the `docker` group | Run `sudo usermod -aG docker $USER`, then **log out and log back in** for the group change to take effect. |
+| **`.env` secrets still show `auto:run_setup_to_generate`** | `.env` existed before `setup.sh` was run | Delete the file and re-run setup: `sudo rm .env && ./setup.sh` |
+| **`password authentication failed for user "dms_user"` after regenerating `.env`** | Old database volume has the previous password, new `.env` has a different one | Bring down and remove the old volume so PostgreSQL reinitializes: `docker compose down -v && docker compose up -d --build`, then re-run migrations and seed: `docker compose exec -T django python manage.py migrate && docker compose exec -T django python manage.py create_root_user && docker compose exec -T django python manage.py sync_search` |
 | **Browser shows "Not Secure" or certificate warning** | Root CA certificate not installed on client machine. | See [LAN HTTPS Access from Other Computers](#lan-https-access-from-other-computers) to install the root CA. For Firefox, import via `about:preferences#privacy`. |
 | **`ERR_CERT_AUTHORITY_INVALID` in Chrome** | Chrome uses its own root store and ignores Windows certificate store. | Import the root CA via `chrome://settings/certificates` → Authorities → Import. Or use Microsoft Edge which uses the Windows store. |
 | **Certificate does not match IP (DNS/IP SAN error)** | Server IP changed after certificates were generated. | Regenerate certificates: `scripts\generate-certs.bat` (Windows) or `./scripts/generate-certs.sh` (Linux/macOS), then reinstall the root CA on client machines. |
