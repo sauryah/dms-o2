@@ -263,6 +263,8 @@ if not DEBUG:
         raise ImproperlyConfigured("Insecure DJANGO_SECRET_KEY detected in production!")
     if not MEILI_MASTER_KEY or len(MEILI_MASTER_KEY) < 16 or MEILI_MASTER_KEY in ('meili_secret_key', 'change_me'):
         raise ImproperlyConfigured("Insecure MEILI_MASTER_KEY detected in production!")
+    if not INTERNAL_API_SECRET or len(INTERNAL_API_SECRET) < 16 or INTERNAL_API_SECRET in ('dms_internal_secret_default_key_998', 'your-internal-secret'):
+        raise ImproperlyConfigured("Insecure INTERNAL_API_SECRET detected in production!")
     db_pass = DATABASES['default']['PASSWORD']
     if not db_pass or len(db_pass) < 16 or db_pass in ('db_secret_password', 'password', 'postgres', 'dms_pass_password'):
         raise ImproperlyConfigured("Insecure POSTGRES_PASSWORD detected in production!")

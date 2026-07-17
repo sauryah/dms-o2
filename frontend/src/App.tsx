@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { Navbar } from './components/Navbar'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -8,8 +8,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { SessionTimeoutManager } from './components/SessionTimeoutManager'
 import { Footer } from './components/Footer'
 import { AuthProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
-import { useApi } from './hooks/useApi'
-import { DIE_UPDATE_EVENT, SET_UPDATE_EVENT, MACHINE_UPDATE_EVENT, BACKUP_UPDATE_EVENT } from './contracts/dieContracts'
+import { useRealtimeSync } from './hooks/useRealtimeSync'
 
 const DashboardPage = React.lazy(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const InventoryPage = React.lazy(() => import('./features/inventory/components/InventoryPage').then(m => ({ default: m.InventoryPage })))
@@ -40,12 +39,9 @@ const PageLoader = () => (
 
 function AppContent() {
   const { token } = useAuth()
-  const { request } = useApi()
   const { showToast } = useToast()
   const { addNotification } = useNotifications()
   const announce = useAnnouncer()
-  const queryClient = useQueryClient()
-  const recentEvents = useRef(new Set<string>())
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
   const [rebuildStatus, setRebuildStatus] = useState<{
@@ -58,7 +54,11 @@ function AppContent() {
 
   const checkIndexStatus = useCallback(async () => {
     try {
-      const data = await request('/api/go/index-status')
+      const res = await fetch('/api/go/index-status', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      })
+      if (!res.ok) return
+      const data = await res.json()
       if (data.status === 'rebuilding') {
         setRebuildStatus(data)
         setIsPolling(true)
@@ -78,7 +78,14 @@ function AppContent() {
     } catch (e) {
       console.error('Failed to fetch search index status:', e)
     }
-  }, [request, rebuildStatus, showToast, addNotification, announce])
+  }, [rebuildStatus, showToast, addNotification, announce, token])
+
+  useRealtimeSync({
+    onShowToast: showToast,
+    onAddNotification: addNotification,
+    onAnnounce: announce,
+    onRebuildDetected: () => setIsPolling(true),
+  })
 
   useEffect(() => {
     if (!token) {
@@ -91,18 +98,12 @@ function AppContent() {
 
   useEffect(() => {
     if (!isPolling || !token) return
-
-    const interval = setInterval(() => {
-      checkIndexStatus()
-    }, 2000)
-
+    const interval = setInterval(checkIndexStatus, 2000)
     return () => clearInterval(interval)
   }, [isPolling, token, checkIndexStatus])
 
   useEffect(() => {
-    const handleTriggerPolling = () => {
-      setIsPolling(true)
-    }
+    const handleTriggerPolling = () => setIsPolling(true)
     window.addEventListener('trigger-index-polling', handleTriggerPolling)
     return () => window.removeEventListener('trigger-index-polling', handleTriggerPolling)
   }, [])
@@ -117,133 +118,6 @@ function AppContent() {
     window.addEventListener('keydown', handleGlobalKey)
     return () => window.removeEventListener('keydown', handleGlobalKey)
   }, [])
-
-  useEffect(() => {
-    if (!token) return
-
-    let eventSource: EventSource | null = null
-    let isCancelled = false
-
-    const connectSSE = async () => {
-      try {
-        const res = await request('/api/auth/sse-ticket/', { method: 'POST' })
-        if (isCancelled) return
-
-        const ticket = res.ticket
-        if (!ticket) {
-          console.error('Failed to get SSE ticket from response:', res)
-          return
-        }
-
-        eventSource = new EventSource(`/api/events/?ticket=${encodeURIComponent(ticket)}`)
-
-        eventSource.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data)
-            console.log('Real-time sync event received:', payload)
-
-            const signature = `${payload.type}-${payload.data?.id || payload.data?.filename || ''}-${payload.data?.action || ''}`
-            if (recentEvents.current.has(signature)) {
-              return
-            }
-            recentEvents.current.add(signature)
-            setTimeout(() => {
-              recentEvents.current.delete(signature)
-            }, 3000)
-
-            queryClient.invalidateQueries()
-            checkIndexStatus()
-
-            if (payload.type === DIE_UPDATE_EVENT) {
-              if (payload.data?.action === 'delete') {
-                const msg = `Die ${payload.data.id} has been deleted.`
-                showToast(msg, 'info')
-                addNotification('Die Deleted', msg, 'info')
-                announce(msg)
-              } else if (payload.data?.action === 'bulk_import') {
-                const msg = 'Bulk import of dies completed.'
-                showToast(msg, 'success')
-                addNotification('Bulk Import Completed', msg, 'success')
-                announce(msg)
-              } else if (payload.data?.action === 'save') {
-                request(`/api/dies/${payload.data.id}/`)
-                  .then(die => {
-                    let locationMsg = ''
-                    if (die.set_name) {
-                      locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
-                    } else if (die.location) {
-                      locationMsg = ` in ${die.location}`
-                    }
-                    const msg = `Die ${die.die_id} is now ${die.status}${locationMsg}.`
-                    showToast(msg, 'info')
-                    addNotification('Die Updated', msg, 'info')
-                    announce(msg)
-                  })
-                  .catch(() => {
-                    const msg = `Die ${payload.data.id} was updated.`
-                    showToast(msg, 'info')
-                    addNotification('Die Updated', msg, 'info')
-                    announce(msg)
-                  })
-              }
-            } else if (payload.type === SET_UPDATE_EVENT) {
-              const msg = 'Die sets have been updated.'
-              showToast(msg, 'info')
-              addNotification('Die Sets Updated', msg, 'info')
-              announce(msg)
-            } else if (payload.type === MACHINE_UPDATE_EVENT) {
-              const msg = 'Machine configurations have been updated.'
-              showToast(msg, 'info')
-              addNotification('Machines Updated', msg, 'info')
-              announce(msg)
-            } else if (payload.type === BACKUP_UPDATE_EVENT) {
-              const action = payload.data?.action
-              const filename = payload.data?.filename || ''
-              if (action === 'backup') {
-                const msg = `Database backup "${filename}" created successfully.`
-                showToast(msg, 'success')
-                addNotification('Backup Created', msg, 'success')
-                announce(msg)
-              } else if (action === 'restore') {
-                const msg = `Database restore from "${filename}" executed successfully.`
-                showToast(msg, 'success')
-                addNotification('System Restored', msg, 'success')
-                announce(msg)
-                setIsPolling(true)
-              } else if (action === 'delete') {
-                const msg = `Backup "${filename}" deleted.`
-                showToast(msg, 'info')
-                addNotification('Backup Deleted', msg, 'info')
-                announce(msg)
-              } else if (action === 'upload') {
-                const msg = `Backup "${filename}" uploaded successfully.`
-                showToast(msg, 'success')
-                addNotification('Backup Uploaded', msg, 'success')
-                announce(msg)
-              }
-            }
-          } catch (e) {
-            console.error('Failed to parse event data:', e)
-          }
-        }
-
-        eventSource.onerror = (err) => {
-          console.error('EventSource connection error:', err)
-        }
-      } catch (e) {
-        console.error('Failed to establish SSE ticket connection:', e)
-      }
-    }
-
-    connectSSE()
-
-    return () => {
-      isCancelled = true
-      if (eventSource) {
-        eventSource.close()
-      }
-    }
-  }, [token, queryClient, request, showToast, checkIndexStatus])
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col">

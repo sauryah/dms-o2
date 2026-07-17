@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict, Any, Optional
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from machines.models import Set
-from users.middleware import _thread_locals
+from users.context import _thread_locals
 from dies.services.validation_service import ValidationService
 from dies.services.search_service import SearchService
 
@@ -252,7 +252,5 @@ class ImportService:
                 result['dry_run'] = True
             return result
         finally:
-            if hasattr(_thread_locals, 'user'):
-                del _thread_locals.user
-            if hasattr(_thread_locals, 'skip_single_sync'):
-                del _thread_locals.skip_single_sync
+            _thread_locals.user = None
+            _thread_locals.skip_single_sync = None

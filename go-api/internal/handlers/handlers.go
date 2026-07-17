@@ -61,6 +61,82 @@ func writeProblemDetails(w http.ResponseWriter, r *http.Request, title string, s
 	json.NewEncoder(w).Encode(prob)
 }
 
+type SearchParams struct {
+	Q         string
+	DieType   string
+	Status    string
+	Location  string
+	Casing    string
+	SizeMin   string
+	SizeMax   string
+	WidthMin  string
+	WidthMax  string
+	ThickMin  string
+	ThickMax  string
+	MachineID string
+	SetID     string
+	Unassigned string
+	Limit     int
+	Offset    int
+}
+
+func ParseSearchParams(r *http.Request) (*SearchParams, error) {
+	q := r.URL.Query().Get("q")
+	dieType := r.URL.Query().Get("die_type")
+	statusVal := r.URL.Query().Get("status")
+	location := r.URL.Query().Get("location")
+	casing := r.URL.Query().Get("casing")
+	sizeMin := r.URL.Query().Get("size_min")
+	sizeMax := r.URL.Query().Get("size_max")
+	widthMin := r.URL.Query().Get("width_min")
+	widthMax := r.URL.Query().Get("width_max")
+	thickMin := r.URL.Query().Get("thick_min")
+	thickMax := r.URL.Query().Get("thick_max")
+	machineID := r.URL.Query().Get("machine_id")
+	setID := r.URL.Query().Get("set_id")
+	unassigned := r.URL.Query().Get("unassigned")
+
+	limit := 150
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	offset := 0
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		} else {
+			return nil, fmt.Errorf("invalid offset parameter format")
+		}
+	}
+
+	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
+		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
+		!validateFloatParam(thickMin) || !validateFloatParam(thickMax) {
+		return nil, fmt.Errorf("invalid decimal parameter format")
+	}
+
+	return &SearchParams{
+		Q: q, DieType: dieType, Status: statusVal,
+		Location: location, Casing: casing,
+		SizeMin: sizeMin, SizeMax: sizeMax,
+		WidthMin: widthMin, WidthMax: widthMax,
+		ThickMin: thickMin, ThickMax: thickMax,
+		MachineID: machineID, SetID: setID, Unassigned: unassigned,
+		Limit: limit, Offset: offset,
+	}, nil
+}
+
+func (p *SearchParams) CacheKey() string {
+	return fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d:%d",
+		p.Q, p.DieType, p.Status, p.Location, p.Casing,
+		p.SizeMin, p.SizeMax, p.WidthMin, p.WidthMax, p.ThickMin, p.ThickMax,
+		p.MachineID, p.SetID, p.Unassigned, p.Limit, p.Offset,
+	)
+}
+
 type Handler struct {
 	cfg          *config.Config
 	db           Database
@@ -219,55 +295,13 @@ type SearchResponse struct {
 func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Parse query params
-	q := r.URL.Query().Get("q")
-	dieType := r.URL.Query().Get("die_type")
-	statusVal := r.URL.Query().Get("status")
-	location := r.URL.Query().Get("location")
-	casing := r.URL.Query().Get("casing")
-
-	sizeMin := r.URL.Query().Get("size_min")
-	sizeMax := r.URL.Query().Get("size_max")
-	widthMin := r.URL.Query().Get("width_min")
-	widthMax := r.URL.Query().Get("width_max")
-	thickMin := r.URL.Query().Get("thick_min")
-	thickMax := r.URL.Query().Get("thick_max")
-	machineID := r.URL.Query().Get("machine_id")
-	setID := r.URL.Query().Get("set_id")
-	unassigned := r.URL.Query().Get("unassigned")
-
-	limitStr := r.URL.Query().Get("limit")
-	limit := 150
-	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
-
-	offsetStr := r.URL.Query().Get("offset")
-	offset := 0
-	if offsetStr != "" {
-		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		} else {
-			writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid offset parameter format")
-			return
-		}
-	}
-
-	// Validate numeric query parameters
-	if !validateFloatParam(sizeMin) || !validateFloatParam(sizeMax) ||
-		!validateFloatParam(widthMin) || !validateFloatParam(widthMax) ||
-		!validateFloatParam(thickMin) || !validateFloatParam(thickMax) {
-		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid decimal parameter format")
+	params, err := ParseSearchParams(r)
+	if err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, err.Error())
 		return
 	}
 
-	cacheKey := fmt.Sprintf("search:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d:%d",
-		q, dieType, statusVal, location, casing,
-		sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax,
-		machineID, setID, unassigned, limit, offset,
-	)
+	cacheKey := params.CacheKey()
 
 	// Try to fetch from Redis
 	if h.cache.Enabled() {
@@ -281,17 +315,14 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	var dies []database.DieRepresentation
 	var total int
-	var err error
 
-	if q == "" {
-		// 1. Direct database query
-		dies, err = h.db.QueryPostgresDirectly(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
+	if params.Q == "" {
+		dies, err = h.db.QueryPostgresDirectly(r.Context(), params.Q, params.DieType, params.Status, params.Location, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Limit, params.Offset)
 		if err == nil {
-			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+			total, err = h.db.QueryPostgresDirectlyCount(r.Context(), params.Q, params.DieType, params.Status, params.Location, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned)
 		}
 	} else {
-		// 2. Query Meilisearch first, then database
-		dies, total, err = h.QueryMeilisearchAndPostgres(r.Context(), q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
+		dies, total, err = h.QueryMeilisearchAndPostgres(r.Context(), params)
 	}
 
 	if err != nil {
@@ -306,8 +337,8 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	searchResponse := SearchResponse{
 		Total:   total,
-		Limit:   limit,
-		Offset:  offset,
+		Limit:   params.Limit,
+		Offset:  params.Offset,
 		Results: dies,
 	}
 
@@ -318,7 +349,6 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Cache in Redis using configurable TTL
 	if h.cache.Enabled() {
 		err = h.cache.Set(r.Context(), cacheKey, respBytes, time.Duration(h.cfg.SearchCacheTTLSeconds)*time.Second)
 		if err != nil {
@@ -390,47 +420,45 @@ func scoreDie(die database.DieRepresentation, q string) int {
 	return 50
 }
 
-func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, int, error) {
-	slog.Info("Received search query", "q", q)
+func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *SearchParams) ([]database.DieRepresentation, int, error) {
+	slog.Info("Received search query", "q", params.Q)
 
-	// Build Meilisearch filters
 	var filters []string
-	if dieType != "" {
-		filters = append(filters, fmt.Sprintf("die_type = '%s'", escapeMeiliString(dieType)))
+	if params.DieType != "" {
+		filters = append(filters, fmt.Sprintf("die_type = '%s'", escapeMeiliFilterValue(params.DieType)))
 	}
-	if statusVal != "" {
-		filters = append(filters, fmt.Sprintf("status = '%s'", escapeMeiliString(statusVal)))
+	if params.Status != "" {
+		filters = append(filters, fmt.Sprintf("status = '%s'", escapeMeiliFilterValue(params.Status)))
 	}
-	if location != "" {
-		filters = append(filters, fmt.Sprintf("location = '%s'", escapeMeiliString(location)))
+	if params.Location != "" {
+		filters = append(filters, fmt.Sprintf("location = '%s'", escapeMeiliFilterValue(params.Location)))
 	}
-	if casing != "" {
-		filters = append(filters, fmt.Sprintf("casing = '%s'", escapeMeiliString(casing)))
+	if params.Casing != "" {
+		filters = append(filters, fmt.Sprintf("casing = '%s'", escapeMeiliFilterValue(params.Casing)))
 	}
 
-	// Numeric range filters in Meilisearch
-	if sizeMin != "" {
-		filters = append(filters, fmt.Sprintf("size >= %s", sizeMin))
+	if params.SizeMin != "" {
+		filters = append(filters, fmt.Sprintf("size >= %s", params.SizeMin))
 	}
-	if sizeMax != "" {
-		filters = append(filters, fmt.Sprintf("size <= %s", sizeMax))
+	if params.SizeMax != "" {
+		filters = append(filters, fmt.Sprintf("size <= %s", params.SizeMax))
 	}
-	if widthMin != "" {
-		filters = append(filters, fmt.Sprintf("width >= %s", widthMin))
+	if params.WidthMin != "" {
+		filters = append(filters, fmt.Sprintf("width >= %s", params.WidthMin))
 	}
-	if widthMax != "" {
-		filters = append(filters, fmt.Sprintf("width <= %s", widthMax))
+	if params.WidthMax != "" {
+		filters = append(filters, fmt.Sprintf("width <= %s", params.WidthMax))
 	}
-	if thickMin != "" {
-		filters = append(filters, fmt.Sprintf("thickness >= %s", thickMin))
+	if params.ThickMin != "" {
+		filters = append(filters, fmt.Sprintf("thickness >= %s", params.ThickMin))
 	}
-	if thickMax != "" {
-		filters = append(filters, fmt.Sprintf("thickness <= %s", thickMax))
+	if params.ThickMax != "" {
+		filters = append(filters, fmt.Sprintf("thickness <= %s", params.ThickMax))
 	}
 
 	searchParams := meilisearch.SearchRequest{
-		Limit:  int64(limit),
-		Offset: int64(offset),
+		Limit:  int64(params.Limit),
+		Offset: int64(params.Offset),
 	}
 	if len(filters) > 0 {
 		searchParams.Filter = strings.Join(filters, " AND ")
@@ -443,7 +471,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 	meiliSuccess := false
 
 	// Search Meilisearch index
-	res, err := h.search.Search(q, &searchParams)
+		res, err := h.search.Search(params.Q, &searchParams)
 	if err != nil {
 		slog.Error("Meilisearch search error", "error", err)
 	} else {
@@ -456,7 +484,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 			totalHits = len(res.Hits)
 		}
 
-		slog.Info("Meilisearch search success", "hits", len(res.Hits), "totalHits", totalHits, "query", q)
+		slog.Info("Meilisearch search success", "hits", len(res.Hits), "totalHits", totalHits, "query", params.Q)
 		if len(res.Hits) > 0 {
 			var hitIDs []int64
 			for _, hit := range res.Hits {
@@ -469,7 +497,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 				}
 			}
 			if len(hitIDs) > 0 {
-				diesFromDB, err := h.db.QueryPostgresByIDs(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+				diesFromDB, err := h.db.QueryPostgresByIDs(ctx, hitIDs, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax)
 				if err != nil {
 					slog.Error("Failed to query Postgres by Meilisearch IDs", "error", err)
 				} else {
@@ -494,7 +522,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 		combined = meiliDies
 	} else {
 		// Fallback to Postgres direct query only if Meilisearch search failed
-		postgresDies, err := h.db.QueryPostgresDirectly(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
+		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Location, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Limit, params.Offset)
 		if err != nil {
 			slog.Error("Postgres direct query fallback error", "error", err)
 		} else {
@@ -507,8 +535,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 
 	slog.Info("Search results count before relevance sorting", "count", len(combined))
 
-	// Detect if query contains digits to suppress irrelevant fuzzy token separations
-	qClean := strings.TrimSpace(strings.Trim(q, `"'`))
+	qClean := strings.TrimSpace(strings.Trim(params.Q, `"'`))
 	hasDigits := false
 	for _, char := range qClean {
 		if char >= '0' && char <= '9' {
@@ -519,31 +546,39 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, q, dieType, s
 
 	var filtered []database.DieRepresentation
 	for _, die := range combined {
-		score := scoreDie(die, q)
-		// If query contains digits, filter out fuzzy matches (Score = 50) that do not match fields literally
+		score := scoreDie(die, params.Q)
 		if hasDigits && score <= 50 {
 			continue
 		}
 		filtered = append(filtered, die)
 	}
 
-	// Score and sort results based on the priority rules
-	sort.SliceStable(filtered, func(i, j int) bool {
-		scoreI := scoreDie(filtered[i], q)
-		scoreJ := scoreDie(filtered[j], q)
-		return scoreI > scoreJ // Higher score first
+	type scoredDie struct {
+		die   database.DieRepresentation
+		score int
+	}
+
+	scored := make([]scoredDie, len(filtered))
+	for i, die := range filtered {
+		scored[i] = scoredDie{die: die, score: scoreDie(die, params.Q)}
+	}
+
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
 	})
 
-	// Truncate to limit
-	if len(filtered) > limit {
-		filtered = filtered[:limit]
+	for i := range scored {
+		filtered[i] = scored[i].die
+	}
+
+	if len(filtered) > params.Limit {
+		filtered = filtered[:params.Limit]
 	}
 
 	slog.Info("Search results count after sorting and limit truncation", "count", len(filtered))
 
-	// Log scores of the first 5 results
 	for i := 0; i < len(filtered) && i < 5; i++ {
-		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scoreDie(filtered[i], q))
+		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scoreDie(filtered[i], params.Q))
 	}
 
 	if totalHits == 0 && len(combined) > 0 {
@@ -709,4 +744,12 @@ func validateFloatParam(s string) bool {
 
 func escapeMeiliString(s string) string {
 	return strings.ReplaceAll(s, "'", "\\'")
+}
+
+func escapeMeiliFilterValue(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "'", "\\'")
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, "\r", "")
+	return s
 }

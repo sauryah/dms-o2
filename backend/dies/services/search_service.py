@@ -14,14 +14,16 @@ class SearchService:
     def queue_die_sync(die_id):
         if getattr(_thread_locals, 'skip_single_sync', False):
             return
-        if not hasattr(_thread_locals, 'pending_sync_die_ids'):
-            _thread_locals.pending_sync_die_ids = set()
+        pending = _thread_locals.pending_sync_die_ids
+        if pending is None:
+            pending = set()
+            _thread_locals.pending_sync_die_ids = pending
         
-        if die_id not in _thread_locals.pending_sync_die_ids:
-            _thread_locals.pending_sync_die_ids.add(die_id)
+        if die_id not in pending:
+            pending.add(die_id)
             
             def run_sync():
-                _thread_locals.pending_sync_die_ids.discard(die_id)
+                pending.discard(die_id)
                 from dies.models import OutboxTask
                 from search.tasks import process_outbox_task
                 OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
@@ -35,15 +37,17 @@ class SearchService:
             return
         if action not in DIE_WORKFLOW_ACTIONS:
             raise ValueError(f"Unsupported die workflow action: {action}")
-        if not hasattr(_thread_locals, 'pending_broadcast_keys'):
-            _thread_locals.pending_broadcast_keys = set()
+        pending = _thread_locals.pending_broadcast_keys
+        if pending is None:
+            pending = set()
+            _thread_locals.pending_broadcast_keys = pending
             
         broadcast_key = (die_id, action)
-        if broadcast_key not in _thread_locals.pending_broadcast_keys:
-            _thread_locals.pending_broadcast_keys.add(broadcast_key)
+        if broadcast_key not in pending:
+            pending.add(broadcast_key)
             
             def run_broadcast():
-                _thread_locals.pending_broadcast_keys.discard(broadcast_key)
+                pending.discard(broadcast_key)
                 broadcast_event(DIE_UPDATE_EVENT, {'id': die_id, 'action': action})
                 
             transaction.on_commit(run_broadcast)

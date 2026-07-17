@@ -390,7 +390,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 1: Exact size match prioritization
 	// When searching for "1.600", candidate 3 (DIE-SIZE-16, size: "1.600") should be first
-	results, _, err := h.QueryMeilisearchAndPostgres(context.Background(), "1.600", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	results, _, err := h.QueryMeilisearchAndPostgres(context.Background(), &SearchParams{Q: "1.600", Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 2: Exact size match normalized
 	// Searching "1.6" should also rank DIE-SIZE-16 first
-	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "1.6", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), &SearchParams{Q: "1.6", Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -410,7 +410,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 3: Exact die_id match prioritization
 	// When searching for "DIE-EXACT-ID", candidate 2 should be first
-	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-EXACT-ID", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), &SearchParams{Q: "DIE-EXACT-ID", Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -420,7 +420,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 4: Starts-with match prioritization
 	// When searching for "DIE-START", candidate 4 (DIE-START-WITH-EXACT) should be ranked first because "DIE-START-WITH-EXACT" prefix matches.
-	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "DIE-START", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), &SearchParams{Q: "DIE-START", Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -430,7 +430,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 	// Test Case 5: Casing / attribute match
 	// When searching for "casing-target", candidate 5 (DIE-CASING-MATCH) should be ranked higher than other unrelated candidates
-	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), "casing-target", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	results, _, err = h.QueryMeilisearchAndPostgres(context.Background(), &SearchParams{Q: "casing-target", Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

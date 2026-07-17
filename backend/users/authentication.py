@@ -1,8 +1,10 @@
 import hashlib
+from django.utils import timezone
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from users.models import UserSession
-from users.middleware import _thread_locals
+from users.services.session_service import SessionService
+from users.context import _thread_locals
+
 
 class CustomJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
@@ -34,117 +36,11 @@ class CustomJWTAuthentication(JWTAuthentication):
             return None
 
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
-        
-        from django.utils import timezone
-        from datetime import timedelta
-        from django.conf import settings
 
-        from django.utils import timezone
-        from datetime import timedelta
-        from django.conf import settings
-        from django.core.cache import cache
-        from users.models import UserSession
+        session_data = SessionService.get_session_data(user, token_hash)
+        SessionService.check_timeouts(user, token_hash, session_data)
+        SessionService.update_last_seen(user, token_hash, session_data)
 
-        now = timezone.now()
-        cache_key = f"user_session:{user.id}:{token_hash}"
-        cached_data = cache.get(cache_key)
-        
-        session_created_at = None
-        session_last_seen = None
-        ip_address = ""
-        device = ""
-
-        if cached_data:
-            try:
-                session_created_at = timezone.datetime.fromisoformat(cached_data['created_at'])
-                session_last_seen = timezone.datetime.fromisoformat(cached_data['last_seen'])
-                ip_address = cached_data.get('ip_address', '')
-                device = cached_data.get('device', '')
-            except (KeyError, ValueError, TypeError):
-                # Cache corrupted or old format, trigger DB fetch
-                cached_data = None
-
-        if not cached_data:
-            try:
-                session = UserSession.objects.get(user=user, token_hash=token_hash)
-                session_created_at = session.created_at
-                session_last_seen = session.last_seen
-                ip_address = session.ip_address
-                device = session.device
-                
-                # Cache the session parameters
-                cache_data = {
-                    'ip_address': ip_address,
-                    'device': device,
-                    'created_at': session_created_at.isoformat(),
-                    'last_seen': session_last_seen.isoformat(),
-                }
-                cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
-            except UserSession.DoesNotExist:
-                # Check if it was evicted
-                eviction_key = f"evicted_session:{user.id}:{token_hash}"
-                evicted_data = cache.get(eviction_key)
-                if evicted_data:
-                    # Optional: clean up check, but it's okay to let it expire in cache
-                    # cache.delete(eviction_key)
-                    raise AuthenticationFailed(
-                        detail={
-                            "detail": "Session replaced on another device or expired",
-                            "code": "session_evicted",
-                            "evicted_by_ip": evicted_data.get("evicted_by_ip", ""),
-                            "evicted_at": evicted_data.get("evicted_at", "")
-                        }
-                    )
-                raise AuthenticationFailed("Session replaced on another device or expired")
-
-        # Check idle and absolute timeouts
-        idle_limit = now - timedelta(minutes=settings.SESSION_IDLE_TIMEOUT_MINUTES)
-        absolute_limit = now - timedelta(hours=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS)
-
-        if session_last_seen < idle_limit or session_created_at < absolute_limit:
-            # Cleanup DB & Cache
-            UserSession.objects.filter(user=user, token_hash=token_hash).delete()
-            cache.delete(cache_key)
-            
-            # Log session expiration
-            from users.models import UserActivityLog
-            UserActivityLog.objects.create(
-                user=user,
-                username=user.username,
-                action='SESSION_EXPIRED',
-                ip_address=ip_address,
-                device=device
-            )
-            
-            raise AuthenticationFailed("Session replaced on another device or expired")
-
-        # Update last_seen (throttled to once per minute to reduce DB writes)
-        if now - session_last_seen > timedelta(minutes=1):
-            session_last_seen = now
-            # Update database
-            updated_count = UserSession.objects.filter(user=user, token_hash=token_hash).update(last_seen=now)
-            if updated_count == 0:
-                # DB was restored, recreate DB row seamlessly using cache data
-                UserSession.objects.create(
-                    user=user,
-                    token_hash=token_hash,
-                    ip_address=ip_address,
-                    device=device,
-                    created_at=session_created_at,
-                    last_seen=now
-                )
-            
-            # Update cache
-            cache_data = {
-                'ip_address': ip_address,
-                'device': device,
-                'created_at': session_created_at.isoformat(),
-                'last_seen': session_last_seen.isoformat(),
-            }
-            cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
-
-        # Set thread local user for history tracking
         _thread_locals.user = user
-        
-        return user, validated_token
 
+        return user, validated_token

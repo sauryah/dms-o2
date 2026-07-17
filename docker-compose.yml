@@ -1,4 +1,21 @@
 # Password recovery: docker compose exec django python manage.py changepassword root
+x-common-env: &common-env
+  POSTGRES_DB: ${POSTGRES_DB}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: ${POSTGRES_HOST}
+  POSTGRES_PORT: ${POSTGRES_PORT}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  DJANGO_DEBUG: ${DJANGO_DEBUG}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+  MEILI_HOST: ${MEILI_HOST}
+  MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+  ROOT_USERNAME: ${ROOT_USERNAME}
+  ROOT_PASSWORD: ${ROOT_PASSWORD}
+  SESSION_IDLE_TIMEOUT_MINUTES: ${SESSION_IDLE_TIMEOUT_MINUTES}
+  SESSION_ABSOLUTE_TIMEOUT_HOURS: ${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+  INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+
 services:
   db:
     image: postgres:18-alpine
@@ -29,20 +46,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - MEILI_HOST=${MEILI_HOST}
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
-      - ROOT_USERNAME=${ROOT_USERNAME}
-      - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
-      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+      <<: *common-env
     depends_on:
       db:
         condition: service_healthy
@@ -53,28 +57,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn dms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --reload
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
       - ./backups:/backups
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - MEILI_HOST=${MEILI_HOST}
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
-      - ROOT_USERNAME=${ROOT_USERNAME}
-      - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
-      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      <<: *common-env
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -115,21 +106,8 @@ services:
       - ./backend:/app
       - ./backups:/backups
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - MEILI_HOST=${MEILI_HOST}
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
-      - ROOT_USERNAME=${ROOT_USERNAME}
-      - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
-      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      <<: *common-env
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       redis:
         condition: service_healthy
@@ -159,6 +137,7 @@ services:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - MEILI_SEARCH_KEY=${MEILI_SEARCH_KEY}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -254,6 +233,12 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-365}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x crond || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     entrypoint: |
       sh -c '
       echo "export PATH=\"$$PATH\"" > /env.sh

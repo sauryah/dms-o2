@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db import transaction
 from dies.models import Die, RoundDie, FlatDie
 from history.models import DieHistory
-from users.middleware import get_current_user, get_current_ip, _thread_locals
+from users.context import get_current_user, get_current_ip, _thread_locals
 from dies.services.search_service import SearchService
 from dies.contracts import DIE_SAVE_ACTION
 
