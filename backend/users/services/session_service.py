@@ -100,3 +100,23 @@ class SessionService:
                 'last_seen': now.isoformat(),
             }
             cache.set(cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
+
+            # Throttle database write-back to once every 5 minutes
+            db_update_cache_key = f"user_session_db_update:{user.id}:{token_hash}"
+            last_db_update = cache.get(db_update_cache_key)
+            
+            should_update_db = True
+            if last_db_update:
+                try:
+                    last_db_update_dt = timezone.datetime.fromisoformat(last_db_update)
+                    if now - last_db_update_dt < timedelta(minutes=5):
+                        should_update_db = False
+                except (ValueError, TypeError):
+                    pass
+            
+            if should_update_db:
+                try:
+                    UserSession.objects.filter(user=user, token_hash=token_hash).update(last_seen=now)
+                    cache.set(db_update_cache_key, now.isoformat(), timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
+                except Exception:
+                    pass

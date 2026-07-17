@@ -223,6 +223,8 @@ class UnifiedHistoryListView(APIView):
         description="Retrieve chronological unified history list of changes for dies and machines."
     )
     def get(self, request, *args, **kwargs):
+        from django.db import connection
+        
         user = request.query_params.get('user')
         from_date = request.query_params.get('from')
         to_date = request.query_params.get('to')
@@ -230,88 +232,150 @@ class UnifiedHistoryListView(APIView):
         search = request.query_params.get('search')
         page = max(int(request.query_params.get('page', 1)), 1)
         page_size = min(int(request.query_params.get('page_size', 25)), 100)
-        limit = page * page_size
+        offset = (page - 1) * page_size
 
-        # 1. DieHistory
-        dh_qs = DieHistory.objects.all().select_related('die', 'changed_by')
+        # 1. Build SELECT for DieHistory
+        dh_where = []
+        dh_params = []
         if user:
-            dh_qs = dh_qs.filter(changed_by__username__icontains=user)
+            dh_where.append("u.username ILIKE %s")
+            dh_params.append(f"%{user}%")
         if from_date:
-            dh_qs = dh_qs.filter(timestamp__date__gte=from_date)
+            dh_where.append("h.timestamp >= %s")
+            dh_params.append(from_date)
         if to_date:
-            dh_qs = dh_qs.filter(timestamp__date__lte=to_date)
+            dh_where.append("h.timestamp <= %s")
+            dh_params.append(to_date)
         if ip:
-            dh_qs = dh_qs.filter(ip_address__icontains=ip)
+            dh_where.append("h.ip_address ILIKE %s")
+            dh_params.append(f"%{ip}%")
         if search:
-            dh_qs = dh_qs.filter(
-                Q(note__icontains=search) |
-                Q(old_value__icontains=search) |
-                Q(new_value__icontains=search)
-            )
+            dh_where.append("(h.note ILIKE %s OR h.old_value ILIKE %s OR h.new_value ILIKE %s)")
+            dh_params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
+            
+        dh_where_str = " AND ".join(dh_where)
+        if dh_where_str:
+            dh_where_str = "WHERE " + dh_where_str
+            
+        dh_query = f"""
+            SELECT 
+                'DIE' AS entity_type,
+                h.id,
+                h.die_id AS entity_id,
+                d.die_id AS entity_name,
+                'UPDATED' AS action,
+                h.field_name,
+                h.old_value,
+                h.new_value,
+                u.username AS changed_by_username,
+                h.timestamp,
+                h.ip_address,
+                h.note
+            FROM history_diehistory h
+            LEFT JOIN dies_die d ON h.die_id = d.id
+            LEFT JOIN users_user u ON h.changed_by_id = u.id
+            {dh_where_str}
+        """
 
-        # 2. MachineHistory
-        mh_qs = MachineHistory.objects.all().select_related('changed_by')
+        # 2. Build SELECT for MachineHistory
+        mh_where = []
+        mh_params = []
         if user:
-            mh_qs = mh_qs.filter(changed_by__username__icontains=user)
+            mh_where.append("u.username ILIKE %s")
+            mh_params.append(f"%{user}%")
         if from_date:
-            mh_qs = mh_qs.filter(timestamp__date__gte=from_date)
+            mh_where.append("m.timestamp >= %s")
+            mh_params.append(from_date)
         if to_date:
-            mh_qs = mh_qs.filter(timestamp__date__lte=to_date)
+            mh_where.append("m.timestamp <= %s")
+            mh_params.append(to_date)
         if ip:
-            mh_qs = mh_qs.filter(ip_address__icontains=ip)
+            mh_where.append("m.ip_address ILIKE %s")
+            mh_params.append(f"%{ip}%")
         if search:
-            mh_qs = mh_qs.filter(
-                Q(old_value__icontains=search) |
-                Q(new_value__icontains=search)
-            )
+            mh_where.append("(m.old_value ILIKE %s OR m.new_value ILIKE %s)")
+            mh_params.extend([f"%{search}%", f"%{search}%"])
+            
+        mh_where_str = " AND ".join(mh_where)
+        if mh_where_str:
+            mh_where_str = "WHERE " + mh_where_str
+            
+        mh_query = f"""
+            SELECT 
+                m.entity_type,
+                m.id,
+                m.entity_id,
+                m.entity_name,
+                m.action,
+                m.field_name,
+                m.old_value,
+                m.new_value,
+                u.username AS changed_by_username,
+                m.timestamp,
+                m.ip_address,
+                '' AS note
+            FROM history_machinehistory m
+            LEFT JOIN users_user u ON m.changed_by_id = u.id
+            {mh_where_str}
+        """
 
-        total_count = dh_qs.count() + mh_qs.count()
+        # 3. Query Execution
+        with connection.cursor() as cursor:
+            # Get total count
+            count_query = f"""
+                SELECT 
+                    (SELECT COUNT(*) FROM history_diehistory h LEFT JOIN users_user u ON h.changed_by_id = u.id {dh_where_str}) +
+                    (SELECT COUNT(*) FROM history_machinehistory m LEFT JOIN users_user u ON m.changed_by_id = u.id {mh_where_str})
+            """
+            cursor.execute(count_query, dh_params + mh_params)
+            total_count = cursor.fetchone()[0]
+            
+            # Get paginated data
+            union_query = f"""
+                SELECT 
+                    entity_type,
+                    id,
+                    entity_id,
+                    entity_name,
+                    action,
+                    field_name,
+                    old_value,
+                    new_value,
+                    changed_by_username,
+                    timestamp,
+                    ip_address,
+                    note
+                FROM (
+                    ({dh_query})
+                    UNION ALL
+                    ({mh_query})
+                ) AS unified
+                ORDER BY timestamp DESC
+                LIMIT %s OFFSET %s
+            """
+            params = dh_params + mh_params + [page_size, offset]
+            cursor.execute(union_query, params)
+            rows = cursor.fetchall()
 
-        # Efficient windowed fetch: only fetch records that could land on this page
-        # by grabbing latest N from each table, merging in Python, then slicing
-        dh_list = list(dh_qs.order_by('-timestamp')[:limit])
-        mh_list = list(mh_qs.order_by('-timestamp')[:limit])
-
-        serialized = []
-        for x in dh_list:
-            serialized.append({
-                'id': f"die_{x.id}",
-                'entity_type': 'DIE',
-                'entity_id': x.die.id,
-                'entity_name': x.die.die_id,
-                'action': 'UPDATED',
-                'field_name': x.field_name,
-                'old_value': x.old_value,
-                'new_value': x.new_value,
-                'changed_by_username': x.changed_by.username if x.changed_by else 'System',
-                'timestamp': x.timestamp.isoformat(),
-                'ip_address': x.ip_address,
-                'note': x.note,
+        results = []
+        for r in rows:
+            results.append({
+                'id': f"{r[0].lower()}_{r[1]}",
+                'entity_type': r[0],
+                'entity_id': r[2],
+                'entity_name': r[3],
+                'action': r[4],
+                'field_name': r[5],
+                'old_value': r[6],
+                'new_value': r[7],
+                'changed_by_username': r[8] if r[8] else 'System',
+                'timestamp': r[9].isoformat() if r[9] else None,
+                'ip_address': r[10] or '',
+                'note': r[11] or '',
             })
-        for x in mh_list:
-            serialized.append({
-                'id': f"machine_{x.id}",
-                'entity_type': x.entity_type,
-                'entity_id': x.entity_id,
-                'entity_name': x.entity_name,
-                'action': x.action,
-                'field_name': x.field_name,
-                'old_value': x.old_value,
-                'new_value': x.new_value,
-                'changed_by_username': x.changed_by.username if x.changed_by else 'System',
-                'timestamp': x.timestamp.isoformat(),
-                'ip_address': x.ip_address,
-                'note': '',
-            })
-
-        serialized.sort(key=lambda item: item['timestamp'], reverse=True)
-
-        start = (page - 1) * page_size
-        end = start + page_size
-        paginated_data = serialized[start:end]
 
         return Response({
             'count': total_count,
-            'results': paginated_data
+            'results': results
         })
 

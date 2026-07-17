@@ -23,17 +23,26 @@ class CustomJWTAuthentication(JWTAuthentication):
                 except Exception:
                     token_str = None
 
+        is_cookie_auth = False
         if not token_str:
             token_str = request.COOKIES.get('dms_access_token')
             if token_str:
+                is_cookie_auth = True
                 try:
                     validated_token = self.get_validated_token(token_str)
                     user = self.get_user(validated_token)
                 except Exception:
                     token_str = None
+                    is_cookie_auth = False
 
         if not token_str:
             return None
+
+        # CSRF Protection: Enforce custom header for state-changing cookie authenticated requests
+        if is_cookie_auth and request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+            csrf_header = request.headers.get('X-Requested-With')
+            if csrf_header != 'XMLHttpRequest':
+                raise AuthenticationFailed("CSRF validation failed: Missing custom request header.")
 
         token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
 

@@ -57,24 +57,34 @@ class LoginView(APIView):
         password = serializer.validated_data['password']
 
         redis_url = settings.CACHES['default']['LOCATION']
-        r = redis.Redis.from_url(redis_url)
-        attempts_key = f"login_attempts:{username}"
+        # Check failed attempts in Redis
+        redis_available = True
+        try:
+            r = redis.Redis.from_url(redis_url)
+            attempts_key = f"login_attempts:{username}"
 
-        pipe = r.pipeline()
-        pipe.get(attempts_key)
-        attempts_raw = pipe.execute()[0]
-        if attempts_raw and int(attempts_raw) >= 5:
-            return Response(
-                {"detail": "Too many failed login attempts. Please wait 5 minutes."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
+            pipe = r.pipeline()
+            pipe.get(attempts_key)
+            attempts_raw = pipe.execute()[0]
+            if attempts_raw and int(attempts_raw) >= 5:
+                return Response(
+                    {"detail": "Too many failed login attempts. Please wait 5 minutes."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+        except Exception as e:
+            redis_available = False
+            logger.warning(f"Redis rate limiting unavailable during login attempt: {e}")
 
         user = authenticate(username=username, password=password)
         if not user or not user.is_active:
-            pipe = r.pipeline()
-            pipe.incr(attempts_key)
-            pipe.expire(attempts_key, 300)
-            pipe.execute()
+            if redis_available:
+                try:
+                    pipe = r.pipeline()
+                    pipe.incr(attempts_key)
+                    pipe.expire(attempts_key, 300)
+                    pipe.execute()
+                except Exception:
+                    pass
 
             detail = "Invalid username or password"
             if user and not user.is_active:
@@ -94,7 +104,11 @@ class LoginView(APIView):
             )
 
         # Success - clear any failed attempts
-        r.delete(attempts_key)
+        if redis_available:
+            try:
+                r.delete(attempts_key)
+            except Exception:
+                pass
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
@@ -114,17 +128,20 @@ class LoginView(APIView):
             for old_sess in oldest_sessions:
                 # Store eviction details in cache so the evicted session can display a precise message
                 eviction_key = f"evicted_session:{user.id}:{old_sess.token_hash}"
-                django_cache.set(
-                    eviction_key,
-                    {
-                        "evicted_by_ip": get_client_ip(request),
-                        "evicted_by_device": request.META.get('HTTP_USER_AGENT', '')[:255],
-                        "evicted_at": timezone.now().isoformat()
-                    },
-                    timeout=3600 # Keep for 1 hour
-                )
-                cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
-                django_cache.delete(cache_key)
+                try:
+                    django_cache.set(
+                        eviction_key,
+                        {
+                            "evicted_by_ip": get_client_ip(request),
+                            "evicted_by_device": request.META.get('HTTP_USER_AGENT', '')[:255],
+                            "evicted_at": timezone.now().isoformat()
+                        },
+                        timeout=3600 # Keep for 1 hour
+                    )
+                    cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
+                    django_cache.delete(cache_key)
+                except Exception:
+                    pass
                 old_sess.delete()
 
         # Create new user session
@@ -500,7 +517,7 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                 except Exception:
                     pass
 
-                response.data.pop('access', None)
+                # Do not pop 'access' from response.data, frontend useApi requires it
                 response.data.pop('refresh', None)
                 response.set_cookie(
                     key='dms_access_token',

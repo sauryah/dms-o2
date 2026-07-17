@@ -86,6 +86,7 @@ export const useApi = () => {
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json'
     }
+    headers['X-Requested-With'] = 'XMLHttpRequest'
     if (tokenRef.current) {
       headers['Authorization'] = `Bearer ${tokenRef.current}`
     }
