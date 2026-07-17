@@ -120,6 +120,9 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-17 · feat: add details toggle to results table in Wire Drawing Calculator
+- Introduced showDetails toggle state in ResultsTable to hide/reveal mathematical detail columns (Area Before, Area After, and Ratio) on demand, keeping the default view focused and compact.
+
 ### 2026-07-15 · feat: implement database-driven Wear Alert Engine and Dashboard navigation fixes (v1.5.0)
 - Implemented database-driven `DieTolerance` and `WearAlert` models to support user-configurable limits per die type.
 - Built a background validation workflow running automatically via Django signals to calculate reaming size expansion for Round dies and width/thickness expansion for Flat dies.

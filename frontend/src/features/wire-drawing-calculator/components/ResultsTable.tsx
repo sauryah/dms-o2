@@ -38,6 +38,7 @@ export default function ResultsTable({
 }: ResultsTableProps) {
   const [editing, setEditing] = useState<{ pass: number; field: 'fromDie' | 'toDie' } | null>(null);
   const [editVal, setEditVal] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
 
   const saveEdit = () => {
     if (!editing) return;
@@ -62,7 +63,9 @@ export default function ResultsTable({
     onDiesChange(nd);
   };
 
-  const headers = ['Pass', 'From', 'To', 'Area Bef (mm²)', 'Area Aft (mm²)', 'Red %', 'Elong %', 'Ratio'];
+  const headers = showDetails
+    ? ['Pass', 'From', 'To', 'Area Bef (mm²)', 'Area Aft (mm²)', 'Red %', 'Elong %', 'Ratio']
+    : ['Pass', 'From', 'To', 'Red %', 'Elong %'];
 
   return (
     <motion.div
@@ -74,6 +77,13 @@ export default function ResultsTable({
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <h2 className="text-[15px] font-semibold text-[#F8FAFC] m-0">Results</h2>
         <div className="flex flex-wrap gap-1.5 items-center">
+          <div className="flex items-center gap-2 mr-2 text-xs select-none cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
+            <span className="text-[11px] font-medium text-[#94A3B8]">Show Math Details</span>
+            <div className={`relative w-8.5 h-4.5 rounded-full transition-colors duration-200 shrink-0 ${showDetails ? 'bg-blue-600' : 'bg-slate-800'}`}>
+              <div className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 ${showDetails ? 'translate-x-4.5' : 'translate-x-0'}`} />
+            </div>
+          </div>
+          <div className="w-px h-5 bg-white/[0.06] mx-1" />
           <button onClick={onUndo} disabled={!canUndo} className="wdc-btn wdc-btn-ghost text-xs px-2" title="Undo (Ctrl+Z)">
             <Undo2 className="w-3.5 h-3.5" />
           </button>
@@ -160,8 +170,12 @@ export default function ResultsTable({
                       </td>
                     );
                   })}
-                  <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaBefore)}</td>
-                  <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaAfter)}</td>
+                  {showDetails && (
+                    <>
+                      <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaBefore)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.areaAfter)}</td>
+                    </>
+                  )}
                   <td className="px-3 py-2.5 text-right">
                     <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${reductionBadge(p.areaReduction)}`}>
                       {formatNumber(p.areaReduction)}
@@ -172,7 +186,9 @@ export default function ResultsTable({
                       {formatNumber(p.elongation)}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.reductionRatio)}</td>
+                  {showDetails && (
+                    <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.reductionRatio)}</td>
+                  )}
                 </tr>
               );
             })}
