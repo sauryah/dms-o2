@@ -51,30 +51,37 @@ if (-not (Test-Path .env)) {
 
 # 3. Generate TLS certificates for HTTPS
 Write-Host ">>> Generating TLS certificates for HTTPS..." -ForegroundColor Cyan
-if (-not (Test-Path "certs\cert.pem")) {
-    # Detect LAN IP
-    $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
-        $_.IPAddress -notlike "127.*" -and
-        $_.IPAddress -notlike "169.254.*" -and
-        $_.InterfaceAlias -notlike "*Loopback*" -and
-        $_.InterfaceAlias -notlike "*vEthernet*" -and
-        $_.InterfaceAlias -notlike "*docker*" -and
-        $_.InterfaceAlias -notlike "*WSL*"
-    } | Select-Object -First 1 -ExpandProperty IPAddress
-    if (-not $certsLanIp) {
-        $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1 -ExpandProperty IPAddress
-    }
+# Detect LAN IP
+$certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.IPAddress -notlike "127.*" -and
+    $_.IPAddress -notlike "169.254.*" -and
+    $_.InterfaceAlias -notlike "*Loopback*" -and
+    $_.InterfaceAlias -notlike "*vEthernet*" -and
+    $_.InterfaceAlias -notlike "*docker*" -and
+    $_.InterfaceAlias -notlike "*WSL*"
+} | Select-Object -First 1 -ExpandProperty IPAddress
+if (-not $certsLanIp) {
+    $certsLanIp = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1 -ExpandProperty IPAddress
+}
 
-    if ($certsLanIp) {
-        if (-not (Test-Path "certs")) { New-Item -ItemType Directory -Path "certs" -Force | Out-Null }
-        & mkcert -install 2>$null
-        & mkcert -cert-file "certs\cert.pem" -key-file "certs\key.pem" localhost 127.0.0.1 $certsLanIp ::1
-        Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
-    } else {
-        Write-Host ">>> WARNING: Could not detect LAN IP. Run scripts\generate-certs.bat manually." -ForegroundColor Yellow
+if ($certsLanIp) {
+    if (-not (Test-Path "certs")) { New-Item -ItemType Directory -Path "certs" -Force | Out-Null }
+    if (Test-Path "certs\cert.pem") {
+        Write-Host ">>> Certificates already exist. Regenerating..." -ForegroundColor Yellow
     }
+    & mkcert -install 2>$null
+    & mkcert -cert-file "certs\cert.pem" -key-file "certs\key.pem" localhost 127.0.0.1 $certsLanIp ::1
+    # Copy root CA for distribution
+    $caroot = & mkcert -CAROOT 2>$null
+    if ($caroot -and (Test-Path "$caroot\rootCA.pem")) {
+        Copy-Item "$caroot\rootCA.pem" "certs\rootCA.pem" -Force
+        & certutil -encode "certs\rootCA.pem" "certs\rootCA.cer" 2>$null | Out-Null
+        & certutil -decode "certs\rootCA.cer" "certs\rootCA.cer" 2>$null | Out-Null
+        Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
+    }
+    Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
 } else {
-    Write-Host ">>> TLS certificates already exist."
+    Write-Host ">>> WARNING: Could not detect LAN IP. Run scripts\generate-certs.bat manually." -ForegroundColor Yellow
 }
 
 # 4. Spin up Docker containers

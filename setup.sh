@@ -39,27 +39,27 @@ else
 fi
 
 # 2.8. Generate TLS certificates
-if [ ! -f "certs/cert.pem" ]; then
-    if command -v mkcert &> /dev/null; then
-        echo ">>> Generating TLS certificates for HTTPS..."
-        LAN_IP_CERT=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
-        if [ -z "$LAN_IP_CERT" ]; then
-            LAN_IP_CERT=$(hostname -I | awk '{print $1}' || true)
-        fi
-        if [ -n "$LAN_IP_CERT" ]; then
-            mkdir -p certs
-            mkcert -install 2>/dev/null || true
-            mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 "$LAN_IP_CERT" ::1
-            echo ">>> TLS certificates generated for $LAN_IP_CERT"
-        else
-            echo ">>> WARNING: Could not detect LAN IP. Run scripts/generate-certs.sh manually."
-        fi
-    else
-        echo ">>> WARNING: mkcert not found. Install with: brew install mkcert (macOS) or apt install mkcert (Linux)"
-        echo ">>> Then run: scripts/generate-certs.sh"
+echo ">>> Generating TLS certificates for HTTPS..."
+LAN_IP_CERT=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
+if [ -z "$LAN_IP_CERT" ]; then
+    LAN_IP_CERT=$(hostname -I | awk '{print $1}' || true)
+fi
+if [ -n "$LAN_IP_CERT" ] && command -v mkcert &> /dev/null; then
+    mkdir -p certs
+    mkcert -install 2>/dev/null || true
+    mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 "$LAN_IP_CERT" ::1
+    # Copy root CA for distribution
+    CAROOT=$(mkcert -CAROOT 2>/dev/null || true)
+    if [ -n "$CAROOT" ] && [ -f "$CAROOT/rootCA.pem" ]; then
+        cp "$CAROOT/rootCA.pem" certs/rootCA.pem
+        echo ">>> Root CA copied: certs/rootCA.pem"
     fi
+    echo ">>> TLS certificates generated for $LAN_IP_CERT"
+elif [ -z "$LAN_IP_CERT" ]; then
+    echo ">>> WARNING: Could not detect LAN IP. Run scripts/generate-certs.sh manually."
 else
-    echo ">>> TLS certificates already exist."
+    echo ">>> WARNING: mkcert not found. Install with: brew install mkcert (macOS) or apt install mkcert (Linux)"
+    echo ">>> Then run: scripts/generate-certs.sh"
 fi
 
 # 2.9. Check for active firewalls and open port 80/443 if needed
