@@ -82,12 +82,11 @@ func main() {
 
 	port := cfg.Port
 
-	statusRecorder := &statusResponseWriter{ResponseWriter: nil}
 	loggingMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		statusRecorder.ResponseWriter = w
-		mux.ServeHTTP(statusRecorder, r)
-		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", statusRecorder.status, "duration", time.Since(start))
+		recorder := &statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
+		mux.ServeHTTP(recorder, r)
+		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", recorder.status, "duration", time.Since(start))
 	})
 
 	server := &http.Server{
