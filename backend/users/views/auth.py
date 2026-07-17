@@ -1,5 +1,8 @@
 import hashlib
 import redis
+import logging
+
+logger = logging.getLogger(__name__)
 import uuid
 import socket
 from django.conf import settings
