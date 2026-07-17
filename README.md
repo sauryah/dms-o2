@@ -449,6 +449,19 @@ If the server's IP address changes, regenerate the certificates:
 scripts\generate-certs.bat
 ```
 
+Or run `mkcert` directly, replacing `YOUR_LAN_IP` with your actual IP (e.g., `192.168.10.71`):
+
+```bash
+mkcert -install
+mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 YOUR_LAN_IP ::1
+```
+
+After generating, restart Traefik:
+
+```bash
+docker compose up -d --force-recreate traefik
+```
+
 Then redistribute `rootCA.cer` to all client machines and reinstall it.
 
 ---
