@@ -156,6 +156,10 @@ export function SearchableSelect({
         className={`flex items-center justify-between w-full text-left transition-all duration-300 outline-none ${className} ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
         }`}
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-label={placeholder}
       >
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
@@ -180,12 +184,14 @@ export function SearchableSelect({
               }}
               className="w-full bg-transparent border-0 outline-none text-xs text-white placeholder-slate-500 py-1"
               onClick={e => e.stopPropagation()}
+              aria-label="Search options"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="p-1 hover:bg-slate-800 rounded-md transition text-slate-400 hover:text-white"
+                aria-label="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -193,12 +199,14 @@ export function SearchableSelect({
           </div>
 
           {/* Options List */}
-          <div ref={listRef} className="overflow-y-auto py-1 flex-1 max-h-[220px]">
+          <div ref={listRef} className="overflow-y-auto py-1 flex-1 max-h-[220px]" role="listbox" aria-label={placeholder}>
             {/* Show "Unassigned" default option only if search query is empty */}
             {!searchQuery && (
               <button
                 type="button"
                 onClick={() => handleSelect('')}
+                role="option"
+                aria-selected={value === ''}
                 className={`w-full text-left px-3.5 py-2 text-xs transition duration-150 ${
                   value === '' 
                     ? 'bg-blue-600/20 text-blue-400 font-semibold' 
@@ -222,6 +230,8 @@ export function SearchableSelect({
                     key={opt.value}
                     type="button"
                     onClick={() => handleSelect(opt.value)}
+                    role="option"
+                    aria-selected={isSelected}
                     className={`w-full text-left px-3.5 py-2 text-xs transition duration-150 ${
                       isSelected
                         ? 'bg-blue-600/20 text-blue-400 font-semibold border-l-2 border-blue-500'
