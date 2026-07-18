@@ -38,8 +38,12 @@ export function useRealtimeSync(options: {
     let isCancelled = false
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
     let reconnectDelay = 1000
+    let consecutiveFailures = 0
+    const MAX_RECONNECT_ATTEMPTS = 5
 
     const connectSSE = async () => {
+      if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS) return
+
       try {
         const res = await request('/api/auth/sse-ticket/', { method: 'POST' })
         if (isCancelled) return
@@ -54,6 +58,7 @@ export function useRealtimeSync(options: {
 
         eventSource.onmessage = (event) => {
           reconnectDelay = 1000
+          consecutiveFailures = 0
           try {
             const payload = JSON.parse(event.data)
 
@@ -139,12 +144,13 @@ export function useRealtimeSync(options: {
         }
 
         eventSource.onerror = (err) => {
+          consecutiveFailures++
           console.error('EventSource connection error:', err)
           if (eventSource) {
             eventSource.close()
             eventSource = null
           }
-          if (!isCancelled) {
+          if (!isCancelled && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
             reconnectTimer = setTimeout(() => {
               reconnectDelay = Math.min(reconnectDelay * 2, 30000)
               connectSSE()
@@ -160,6 +166,7 @@ export function useRealtimeSync(options: {
 
     return () => {
       isCancelled = true
+      consecutiveFailures = MAX_RECONNECT_ATTEMPTS
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
       }
