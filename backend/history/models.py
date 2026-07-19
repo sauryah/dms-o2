@@ -16,6 +16,7 @@ class DieHistory(models.Model):
         indexes  = [
             models.Index(fields=['die', 'timestamp']),
             models.Index(fields=['timestamp']),
+            models.Index(fields=['die', 'field_name', 'timestamp']),
         ]
 
     def __str__(self):
