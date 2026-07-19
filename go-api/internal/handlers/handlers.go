@@ -34,6 +34,7 @@ type Cache interface {
 	Set(ctx context.Context, key string, val []byte, expiration time.Duration) error
 	Invalidate(ctx context.Context)
 	Delete(ctx context.Context, key string) error
+	Ping(ctx context.Context) error
 }
 
 type Search interface {
@@ -190,8 +191,14 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 		meiliStatus = "down"
 	}
 
+	// Check Redis connectivity
+	redisStatus := "up"
+	if err := h.cache.Ping(r.Context()); err != nil {
+		redisStatus = "down"
+	}
+
 	httpStatus := http.StatusOK
-	if dbStatus != "up" || meiliStatus != "up" {
+	if dbStatus != "up" || meiliStatus != "up" || redisStatus != "up" {
 		httpStatus = http.StatusServiceUnavailable
 	}
 	w.WriteHeader(httpStatus)
@@ -200,6 +207,7 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 		"status": map[string]string{
 			"postgres":    dbStatus,
 			"meilisearch": meiliStatus,
+			"redis":       redisStatus,
 		},
 		"reconciliation": map[string]interface{}{
 			"last_run":       lastRun.Format(time.RFC3339),

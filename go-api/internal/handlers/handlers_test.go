@@ -73,6 +73,7 @@ type MockCache struct {
 	SetFn        func(ctx context.Context, key string, val []byte, expiration time.Duration) error
 	InvalidateFn func(ctx context.Context)
 	DeleteFn     func(ctx context.Context, key string) error
+	PingFn       func(ctx context.Context) error
 }
 
 func (m *MockCache) Enabled() bool {
@@ -105,6 +106,13 @@ func (m *MockCache) Invalidate(ctx context.Context) {
 func (m *MockCache) Delete(ctx context.Context, key string) error {
 	if m.DeleteFn != nil {
 		return m.DeleteFn(ctx, key)
+	}
+	return nil
+}
+
+func (m *MockCache) Ping(ctx context.Context) error {
+	if m.PingFn != nil {
+		return m.PingFn(ctx)
 	}
 	return nil
 }

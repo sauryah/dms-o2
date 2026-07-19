@@ -109,3 +109,10 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 	}
 	return c.client.Del(ctx, key).Err()
 }
+
+func (c *Cache) Ping(ctx context.Context) error {
+	if c.client == nil {
+		return fmt.Errorf("redis cache is disabled")
+	}
+	return c.client.Ping(ctx).Err()
+}
