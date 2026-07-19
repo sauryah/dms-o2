@@ -26,6 +26,10 @@ class SearchService:
                 pending.discard(die_id)
                 from dies.models import OutboxTask
                 OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
+                from django.conf import settings
+                if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+                    from search.tasks import process_outbox_task
+                    process_outbox_task.delay()
                 
             transaction.on_commit(run_sync)
 
@@ -75,6 +79,9 @@ class SearchService:
 
         if tasks:
             OutboxTask.objects.bulk_create(tasks)
+        if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+            from search.tasks import process_outbox_task
+            process_outbox_task.delay()
 
     @staticmethod
     def broadcast_bulk_import():
@@ -85,6 +92,10 @@ class SearchService:
         def run_delete():
             from dies.models import OutboxTask
             OutboxTask.objects.create(task_type='DELETE_DIE', payload={'die_id': die_id})
+            from django.conf import settings
+            if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+                from search.tasks import process_outbox_task
+                process_outbox_task.delay()
         transaction.on_commit(run_delete)
 
     @staticmethod
