@@ -17,9 +17,14 @@ type Cache struct {
 func NewCache(cfg *config.Config) *Cache {
 	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
 	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: cfg.RedisPassword,
-		DB:       0,
+		Addr:         addr,
+		Password:     cfg.RedisPassword,
+		DB:           0,
+		PoolSize:     100,
+		MinIdleConns: 10,
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
