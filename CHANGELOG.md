@@ -23,6 +23,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Dashboard Search Cards Pagination**:
   - Implemented server-side pagination (24 cards per page matching 3-column layouts) for the main search results grid in `DashboardPage.tsx`.
   - Refactored `useSearchQuery` hook in `useDashboard.ts` to support the `offset` parameter and preserve JSON metadata (`total`, `limit`, `offset`) via `keepMetadata: true` options.
+- **Celery Worker Workload Segregation**:
+  - Configured custom task routes in `backend/dms/settings.py` splitting long-running imports/backups tasks to a dedicated `heavy` queue, leaving search syncs on `default`.
+  - Configured docker compose and supervisor files to run segregated `worker` (default queue) and `heavy-worker` containers.
+- **Decoupled Outbox periodic scheduling via Celery Beat**:
+  - Configured Celery Beat service containers and daemon programs across Docker Compose configurations and supervisor controls.
+  - Removed immediate transactional outbox sync delay triggers in `SearchService` to pool database updates and index batch modifications periodically every 5 seconds.
+- **Wear Prediction Caching**:
+  - Cached wear forecast regression endpoint computations in Redis for up to 24 hours.
+  - Implemented event-driven cache invalidation hooks inside die and dimensions post-save signals in `backend/dies/signals.py`.
 
 ## [1.7.6] - 2026-07-17
 
