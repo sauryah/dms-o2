@@ -107,58 +107,7 @@ services:
       retries: 5
       start_period: 15s
 
-  # ---------------------------------------------------------------------------
-  # Automated Backups (daily at 2 AM via cron)
-  # ---------------------------------------------------------------------------
-  backup:
-    image: postgres:18-alpine
-    restart: always
-    volumes:
-      - dms_backups:/backups
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-365}
-    entrypoint: |
-      sh -c '
-      echo "export PATH=\"$$PATH\"" > /env.sh
-      echo "export POSTGRES_DB=\"$$POSTGRES_DB\"" >> /env.sh
-      echo "export POSTGRES_USER=\"$$POSTGRES_USER\"" >> /env.sh
-      echo "export POSTGRES_PASSWORD=\"$$POSTGRES_PASSWORD\"" >> /env.sh
-      echo "export POSTGRES_HOST=\"$$POSTGRES_HOST\"" >> /env.sh
-      echo "export POSTGRES_PORT=\"$$POSTGRES_PORT\"" >> /env.sh
-      echo "export HISTORY_RETENTION_DAYS=\"$$HISTORY_RETENTION_DAYS\"" >> /env.sh
-      chmod +x /env.sh
 
-      # Create backup script inline
-      cat > /usr/local/bin/backup.sh << "SCRIPT"
-      #!/bin/sh
-      . /env.sh
-      TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-      BACKUP_FILE="/backups/${POSTGRES_DB}_${TIMESTAMP}.sql.gz"
-      echo "[$(date)] Starting backup..."
-      pg_dump -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$BACKUP_FILE"
-      if [ $? -eq 0 ]; then
-        echo "[$(date)] Backup completed: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
-      else
-        echo "[$(date)] Backup FAILED"
-        exit 1
-      fi
-      # Keep only last 30 backups
-      ls -t /backups/*.sql.gz 2>/dev/null | tail -n +31 | xargs rm -f 2>/dev/null
-      SCRIPT
-      chmod +x /usr/local/bin/backup.sh
-
-      echo "0 2 * * * . /env.sh; /usr/local/bin/backup.sh >> /proc/1/fd/1 2>&1" > /etc/crontabs/root
-      echo ">>> Starting crond in background..."
-      crond -f -l 2
-      '
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   postgres_data:

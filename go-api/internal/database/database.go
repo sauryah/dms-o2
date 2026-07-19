@@ -13,22 +13,23 @@ import (
 )
 
 type DieRepresentation struct {
-	ID               int64   `json:"-"`
-	DieID            string  `json:"die_id"`
-	DieType          string  `json:"die_type"`
-	Casing           string  `json:"casing"`
-	Status           string  `json:"status"`
-	Location         string  `json:"location"`
-	SetName          string  `json:"set_name"`
-	MachineName      string  `json:"machine_name"`
-	CurrentSet       *int    `json:"current_set"`
-	RackID           *int    `json:"rack_id"`
-	RackName         string  `json:"rack_name"`
-	Shelf            *int    `json:"shelf"`
-	CurrentSize      *string `json:"current_size,omitempty"`
-	CurrentWidth     *string `json:"current_width,omitempty"`
-	CurrentThickness *string `json:"current_thickness,omitempty"`
-	Radius           *string `json:"radius,omitempty"`
+	ID                     int64   `json:"-"`
+	DieID                  string  `json:"die_id"`
+	DieType                string  `json:"die_type"`
+	Casing                 string  `json:"casing"`
+	Status                 string  `json:"status"`
+	Location               string  `json:"location"`
+	SetName                string  `json:"set_name"`
+	MachineName            string  `json:"machine_name"`
+	CurrentSet             *int    `json:"current_set"`
+	RackID                 *int    `json:"rack_id"`
+	RackName               string  `json:"rack_name"`
+	Shelf                  *int    `json:"shelf"`
+	PredictedRemainingDays *int    `json:"predicted_remaining_days"`
+	CurrentSize            *string `json:"current_size,omitempty"`
+	CurrentWidth           *string `json:"current_width,omitempty"`
+	CurrentThickness       *string `json:"current_thickness,omitempty"`
+	Radius                 *string `json:"radius,omitempty"`
 }
 
 type PostgresDB struct {
@@ -173,7 +174,8 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin
 			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
-			d.rack_id, rk.name as rack_name, d.shelf,
+			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
+			d.predicted_remaining_days,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
@@ -247,7 +249,8 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
-			d.rack_id, rk.name as rack_name, d.shelf,
+			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
+			d.predicted_remaining_days,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
@@ -345,13 +348,13 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 	var dies []DieRepresentation
 	for rows.Next() {
 		var d DieRepresentation
-		var setID, rackID, shelf sql.NullInt64
+		var setID, rackID, shelf, predictedRemainingDays sql.NullInt64
 		var setName, machineName, rackName sql.NullString
 		var size, width, thickness, radius sql.NullString
 
 		err := rows.Scan(
 			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
-			&setName, &machineName, &rackID, &rackName, &shelf, &size, &width, &thickness, &radius,
+			&setName, &machineName, &rackID, &rackName, &shelf, &predictedRemainingDays, &size, &width, &thickness, &radius,
 		)
 		if err != nil {
 			return nil, err
@@ -377,6 +380,10 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		if shelf.Valid {
 			val := int(shelf.Int64)
 			d.Shelf = &val
+		}
+		if predictedRemainingDays.Valid {
+			val := int(predictedRemainingDays.Int64)
+			d.PredictedRemainingDays = &val
 		}
 
 		if d.DieType == "ROUND" && size.Valid {

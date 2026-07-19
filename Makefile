@@ -63,10 +63,10 @@ password: ## Reset root password
 	docker compose exec django python manage.py changepassword root
 
 backup: ## Run manual database backup
-	docker compose exec backup /scripts/backup_db.sh
+	docker compose exec django python manage.py backup_db
 
 restore: ## Restore from backup (usage: make restore FILE=dms_backup.dump)
-	docker compose exec backup pg_restore -h db -p 5432 -U $(shell grep POSTGRES_USER .env | cut -d= -f2) -d $(shell grep POSTGRES_DB .env | cut -d= -f2) --clean --if-exists /backups/$(FILE)
+	docker compose exec django pg_restore -h db -p 5432 -U $(shell grep POSTGRES_USER .env | cut -d= -f2) -d $(shell grep POSTGRES_DB .env | cut -d= -f2) --clean --if-exists /backups/$(FILE)
 
 clean: ## Remove all containers, volumes, and networks
 	docker compose down -v

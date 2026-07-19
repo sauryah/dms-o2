@@ -18,15 +18,15 @@ def _get_change_context():
 
 @receiver(pre_save, sender=Die)
 def log_die_changes(sender, instance, **kwargs):
-    # 1. If rack and shelf are explicitly set, regenerate location from them
-    if instance.rack and instance.shelf is not None:
-        instance.location = f"{instance.rack.name} - Shelf {instance.shelf}"
-    # 2. If rack/shelf are not set, but a location string is provided, parse it
+    # 1. If rack and shelf_number are explicitly set, regenerate location from them
+    if instance.rack and instance.shelf_number is not None:
+        instance.location = f"{instance.rack.name} - Shelf {instance.shelf_number}"
+    # 2. If rack/shelf_number are not set, but a location string is provided, parse it
     elif instance.location:
         loc_str = instance.location.strip()
         if loc_str.lower() in ('', 'general', 'none', 'unassigned'):
             instance.rack = None
-            instance.shelf = None
+            instance.shelf_number = None
             instance.location = ''
         else:
             import re
@@ -39,14 +39,14 @@ def log_die_changes(sender, instance, **kwargs):
                     rack = Rack.objects.filter(name__iexact=rack_name).first()
                     if rack:
                         instance.rack = rack
-                        instance.shelf = shelf_num
+                        instance.shelf_number = shelf_num
                         instance.location = f"{rack.name} - Shelf {shelf_num}"
                 except Exception:
                     pass
     # 3. Otherwise, if both are empty/null, clear everything
     else:
         instance.rack = None
-        instance.shelf = None
+        instance.shelf_number = None
         instance.location = ''
 
     if not instance.pk:

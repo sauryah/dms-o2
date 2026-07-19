@@ -71,3 +71,24 @@ func TestCacheOperations(t *testing.T) {
 		t.Errorf("expected search:another_key to be invalidated")
 	}
 }
+
+func TestDisabledCache(t *testing.T) {
+	c := &Cache{client: nil}
+	if c.Enabled() {
+		t.Error("expected cache to be disabled")
+	}
+	ctx := context.Background()
+	_, err := c.Get(ctx, "key")
+	if err == nil || err.Error() != "redis cache is disabled" {
+		t.Errorf("expected error 'redis cache is disabled', got: %v", err)
+	}
+	err = c.Set(ctx, "key", []byte("val"), 0)
+	if err == nil || err.Error() != "redis cache is disabled" {
+		t.Errorf("expected error 'redis cache is disabled', got: %v", err)
+	}
+	err = c.Delete(ctx, "key")
+	if err == nil || err.Error() != "redis cache is disabled" {
+		t.Errorf("expected error 'redis cache is disabled', got: %v", err)
+	}
+	c.Invalidate(ctx)
+}

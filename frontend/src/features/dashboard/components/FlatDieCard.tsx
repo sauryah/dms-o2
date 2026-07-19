@@ -65,6 +65,21 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
           </span>
         </div>
       </div>
+
+      {die.predicted_remaining_days !== undefined && die.predicted_remaining_days !== null && (
+        <div className="flex justify-between items-center bg-slate-950/40 border border-slate-800/50 rounded-lg px-3 py-2 mt-4">
+          <span className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold">Est. Lifetime</span>
+          <span className={`font-mono text-xs font-bold ${
+            die.predicted_remaining_days < 7 
+              ? 'text-rose-500' 
+              : die.predicted_remaining_days < 30 
+              ? 'text-amber-500' 
+              : 'text-emerald-500'
+          }`}>
+            {die.predicted_remaining_days} days
+          </span>
+        </div>
+      )}
     </div>
   )
 }

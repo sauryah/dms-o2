@@ -218,11 +218,21 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+from celery.schedules import crontab
+
 # Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {
     'auto-prune-history-daily': {
         'task': 'history.tasks.auto_prune_history',
-        'schedule': 86400.0, # Every 24 hours
+        'schedule': crontab(hour=3, minute=0),  # Daily at 3 AM
+    },
+    'auto-backup-daily': {
+        'task': 'users.tasks.auto_backup_task',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
+    },
+    'auto-check-wear-alerts-daily': {
+        'task': 'dies.tasks.check_all_wear_alerts_task',
+        'schedule': crontab(hour=1, minute=0),  # Daily at 1 AM
     },
 }
 

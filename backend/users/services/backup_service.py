@@ -37,10 +37,11 @@ class BackupService:
             return
 
         seconds_in_days = days * 24 * 60 * 60
+        from django.utils import timezone
         current_time = timezone.now().timestamp()
 
         for f in os.listdir(backup_dir):
-            if f.endswith('.dump'):
+            if f.endswith('.dump') or f.endswith('.dump.md5') or f.endswith('.md5'):
                 fp = os.path.join(backup_dir, f)
                 stat = os.stat(fp)
                 if (current_time - stat.st_mtime) > seconds_in_days:
@@ -101,6 +102,19 @@ class BackupService:
             if result.returncode != 0:
                 raise Exception(f"Backup integrity check failed: {result.stderr}")
         except FileNotFoundError:
+            pass
+
+        # Generate MD5 checksum file
+        try:
+            import hashlib
+            hasher = hashlib.md5()
+            with open(filepath, 'rb') as f_in:
+                buf = f_in.read()
+                hasher.update(buf)
+            checksum = hasher.hexdigest()
+            with open(f"{filepath}.md5", 'w') as md5_f:
+                md5_f.write(f"{checksum}  {filename}\n")
+        except Exception:
             pass
 
         BackupService.prune_old_backups()

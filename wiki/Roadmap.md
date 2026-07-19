@@ -120,6 +120,14 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-19 · feat: implement Phase 2, 3 & 4 upgrades (Schema Hardening, Database Consolidation & Wear Forecasting)
+- **Coordinate Grid Alignment**: Renamed database column `shelf` to `shelf_number` on `Die` model, generated migrations, mapped serializers automatically for backward compatibility, and updated operator PATCH permissions. Integrated Go database query to select `shelf_number AS shelf` to maintain API query functionality.
+- **Decimal Sizing Hardening**: Applied `MinValueValidator(0.001)` to all sizing DecimalFields of `RoundDie` and `FlatDie` to block zero or negative dimensional specifications.
+- **Expanded Shop Floor Auditing**: Registered signal handlers to audit change events on `Rack`, expanding coverage to `Set`, `Machine`, and `Rack` changes.
+- **Go Test Coverage**: Wrote table-driven unit tests for `config` environment loading validation and `cache` disabled/offline error branches, ensuring robust coverage.
+- **Database Backup Consolidation**: Created Django management commands `backup_db` and `prune_history`, and registered them under Celery Beat (eliminating duplicate alpine backup container service in compose files).
+- **Wear Alert & Prediction Engine**: Added a scheduled Celery task `check_all_wear_alerts_task` for daily wear reviews. Added `predicted_remaining_days` to `Die` model to cache lifetime forecasting calculations and displayed it on `RoundDieCard` and `FlatDieCard` on the dashboard.
+
 ### 2026-07-19 · feat: implement Phase 1 enterprise authentication, outbox security, and dev secrets protection
 - **Unified Auth Interface**: Increased the Go token verification caching TTL from 15 seconds to 5 minutes (`5*time.Minute`) in `go-api/internal/auth/auth.go` to reduce server authorization overhead.
 - **Direct Cache Invalidation**: Extended Django `LogoutView` in `backend/users/views/auth.py` to directly delete the `verify_token` Redis key upon logout, preventing unauthorized cached access.

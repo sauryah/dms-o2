@@ -51,3 +51,19 @@ def restore_backup_task(self, filepath, filename, user_id, session_data=None):
     except Exception as exc:
         logger.error(f"Asynchronous restore failed: {exc}")
         raise self.retry(exc=exc, countdown=10)
+
+
+@shared_task
+def auto_backup_task():
+    """
+    Automated scheduled backup task triggered by Celery Beat.
+    """
+    from django.core.management import call_command
+    logger.info("Triggering scheduled database backup...")
+    try:
+        call_command('backup_db')
+        logger.info("Scheduled database backup completed successfully.")
+        return {'status': 'success'}
+    except Exception as exc:
+        logger.error(f"Scheduled database backup failed: {exc}")
+        return {'status': 'failed', 'error': str(exc)}

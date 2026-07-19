@@ -27,6 +27,7 @@ class MachineHistory(models.Model):
         ('MACHINE', 'Machine'),
         ('SET', 'Set'),
         ('CATEGORY', 'Category'),
+        ('RACK', 'Rack'),
     ]
     ACTION_CHOICES = [
         ('CREATED', 'Created'),

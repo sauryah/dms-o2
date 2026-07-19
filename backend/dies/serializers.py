@@ -30,10 +30,11 @@ class DieListSerializer(serializers.ModelSerializer):
     set_name = serializers.SerializerMethodField()
     machine_name = serializers.SerializerMethodField()
     active_alerts = serializers.SerializerMethodField()
+    shelf = serializers.IntegerField(source='shelf_number', allow_null=True, required=False)
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'active_alerts', 'version']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'predicted_remaining_days', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -69,10 +70,11 @@ class DieDetailSerializer(serializers.ModelSerializer):
     machine_name = serializers.SerializerMethodField()
     history = DieHistorySerializer(many=True, read_only=True)
     active_alerts = serializers.SerializerMethodField()
+    shelf = serializers.IntegerField(source='shelf_number', allow_null=True, required=False)
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'active_alerts', 'version']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'predicted_remaining_days', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -114,10 +116,11 @@ class DieCreateSerializer(serializers.ModelSerializer):
     punched_thickness = serializers.DecimalField(max_digits=7, decimal_places=3, required=False)
     current_thickness = serializers.DecimalField(max_digits=7, decimal_places=3, required=False)
     radius = serializers.DecimalField(max_digits=7, decimal_places=3, required=False)
+    shelf = serializers.IntegerField(source='shelf_number', allow_null=True, required=False)
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'current_set', 'remarks', 'rack', 'shelf',
+        fields = ['die_id', 'die_type', 'casing', 'status', 'location', 'current_set', 'remarks', 'rack', 'shelf', 'shelf_number',
                   'punched_size', 'current_size', 'punched_width', 'current_width',
                   'punched_thickness', 'current_thickness', 'radius', 'version']
                   
@@ -229,7 +232,8 @@ def serialize_die_list_fast(dies_queryset):
             'rack': die.rack_id,
             'rack_id': die.rack_id,
             'rack_name': die.rack.name if die.rack else '',
-            'shelf': die.shelf,
+            'shelf': die.shelf_number,
+            'shelf_number': die.shelf_number,
         }
         if die.die_type == 'ROUND':
             rd = getattr(die, 'rounddie', None)

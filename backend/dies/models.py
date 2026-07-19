@@ -1,20 +1,22 @@
 from django.db import models
 from django.contrib.postgres.indexes import GinIndex
+from django.core.validators import MinValueValidator
 from dies.contracts import DIE_STATUS_CHOICES, DIE_TYPE_CHOICES
 
 class Die(models.Model):
-    die_id      = models.CharField(max_length=50, unique=True)
-    die_type    = models.CharField(max_length=10, choices=DIE_TYPE_CHOICES)
-    casing      = models.CharField(max_length=50)
-    status      = models.CharField(max_length=20, choices=DIE_STATUS_CHOICES, default='AVAILABLE')
-    location    = models.CharField(max_length=200, blank=True)  # e.g. "Rack A - Shelf 3"
-    rack        = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
-    shelf       = models.PositiveSmallIntegerField(null=True, blank=True)
-    current_set = models.ForeignKey('machines.Set', null=True, blank=True, on_delete=models.SET_NULL)
-    remarks     = models.TextField(blank=True)
-    created_at  = models.DateTimeField(auto_now_add=True)
-    updated_at  = models.DateTimeField(auto_now=True)
-    version     = models.IntegerField(default=1)
+    die_id       = models.CharField(max_length=50, unique=True)
+    die_type     = models.CharField(max_length=10, choices=DIE_TYPE_CHOICES)
+    casing       = models.CharField(max_length=50)
+    status       = models.CharField(max_length=20, choices=DIE_STATUS_CHOICES, default='AVAILABLE')
+    location     = models.CharField(max_length=200, blank=True)  # e.g. "Rack A - Shelf 3"
+    rack         = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
+    shelf_number = models.PositiveSmallIntegerField(null=True, blank=True)
+    current_set  = models.ForeignKey('machines.Set', null=True, blank=True, on_delete=models.SET_NULL)
+    remarks                  = models.TextField(blank=True)
+    predicted_remaining_days = models.IntegerField(null=True, blank=True)
+    created_at               = models.DateTimeField(auto_now_add=True)
+    updated_at               = models.DateTimeField(auto_now=True)
+    version                  = models.IntegerField(default=1)
 
     class Meta:
         indexes = [
@@ -29,8 +31,8 @@ class Die(models.Model):
 
 class RoundDie(models.Model):
     die           = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='rounddie')
-    punched_size  = models.DecimalField(max_digits=7, decimal_places=3)
-    current_size  = models.DecimalField(max_digits=7, decimal_places=3)
+    punched_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    current_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
 
     class Meta:
         indexes = [models.Index(fields=['current_size'])]
@@ -40,11 +42,11 @@ class RoundDie(models.Model):
 
 class FlatDie(models.Model):
     die                = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='flatdie')
-    punched_width      = models.DecimalField(max_digits=7, decimal_places=3)
-    current_width      = models.DecimalField(max_digits=7, decimal_places=3)
-    punched_thickness  = models.DecimalField(max_digits=7, decimal_places=3)
-    current_thickness  = models.DecimalField(max_digits=7, decimal_places=3)
-    radius             = models.DecimalField(max_digits=7, decimal_places=3)
+    punched_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    current_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    punched_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    current_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    radius             = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
 
     class Meta:
         indexes = [models.Index(fields=['current_width', 'current_thickness'])]

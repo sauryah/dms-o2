@@ -101,6 +101,18 @@ class WearAlertService:
                     active_alert.resolved_at = timezone.now()
                     active_alert.save()
                     logger.info(f"Active wear alert resolved for die {die.die_id}")
-                    
+
+            # Calculate and save predicted remaining days
+            try:
+                from dies.services.wear_prediction_service import WearPredictionService
+                pred = WearPredictionService.predict_die(die)
+                rem_days = pred.get('overall_remaining_days')
+                if rem_days is not None:
+                    Die.objects.filter(id=die.id).update(predicted_remaining_days=int(rem_days))
+                else:
+                    Die.objects.filter(id=die.id).update(predicted_remaining_days=None)
+            except Exception as pe:
+                logger.error(f"Failed to save predicted remaining days for die {die.die_id}: {pe}")
+                
         except Exception as e:
             logger.error(f"Error checking wear alerts for die {die.die_id}: {e}", exc_info=True)

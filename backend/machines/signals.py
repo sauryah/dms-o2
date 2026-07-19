@@ -1,7 +1,7 @@
 from django.db.models.signals import pre_save, post_save, post_delete, pre_delete
 from django.dispatch import receiver
 from django.db import transaction
-from machines.models import Set, Machine, MachineCategory
+from machines.models import Set, Machine, MachineCategory, Rack
 from dies.models import Die
 from history.models import MachineHistory
 from users.middleware import get_current_user, get_current_ip
@@ -242,6 +242,67 @@ def log_set_deleted(sender, instance, **kwargs):
     ip = get_current_ip()
     MachineHistory.objects.create(
         entity_type='SET',
+        entity_id=instance.id,
+        entity_name=instance.name,
+        action='DELETED',
+        changed_by=changed_by,
+        ip_address=ip,
+    )
+
+
+@receiver(post_save, sender=Rack)
+def log_rack_created(sender, instance, created, **kwargs):
+    if created:
+        user = get_current_user()
+        changed_by = user if (user and user.is_authenticated) else None
+        ip = get_current_ip()
+        MachineHistory.objects.create(
+            entity_type='RACK',
+            entity_id=instance.id,
+            entity_name=instance.name,
+            action='CREATED',
+            changed_by=changed_by,
+            ip_address=ip,
+        )
+
+
+@receiver(pre_save, sender=Rack)
+def log_rack_updated(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old_obj = Rack.objects.get(pk=instance.pk)
+    except Rack.DoesNotExist:
+        return
+        
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+
+    for field in ['name', 'row_count', 'column_count']:
+        old_val = getattr(old_obj, field)
+        new_val = getattr(instance, field)
+        if old_val != new_val:
+            MachineHistory.objects.create(
+                entity_type='RACK',
+                entity_id=instance.id,
+                entity_name=instance.name,
+                action='UPDATED',
+                field_name=field,
+                old_value=str(old_val),
+                new_value=str(new_val),
+                changed_by=changed_by,
+                ip_address=ip,
+            )
+
+
+@receiver(post_delete, sender=Rack)
+def log_rack_deleted(sender, instance, **kwargs):
+    user = get_current_user()
+    changed_by = user if (user and user.is_authenticated) else None
+    ip = get_current_ip()
+    MachineHistory.objects.create(
+        entity_type='RACK',
         entity_id=instance.id,
         entity_name=instance.name,
         action='DELETED',
