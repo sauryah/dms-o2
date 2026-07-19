@@ -217,6 +217,13 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_ROUTES = {
+    'dies.tasks.import_dies_task': {'queue': 'heavy'},
+    'users.tasks.create_backup_task': {'queue': 'heavy'},
+    'users.tasks.restore_backup_task': {'queue': 'heavy'},
+    'users.tasks.auto_backup_task': {'queue': 'heavy'},
+}
 
 from celery.schedules import crontab
 
