@@ -239,6 +239,13 @@ export function DashboardPage() {
     }
   }, [statsData])
 
+  const [page, setPage] = useState(1)
+  const pageSize = 24
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+
   // Fetch fuzzy search results if search query or filters exist
   const searchEnabled = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
   const { data: searchDiesData, isLoading: isSearchLoading } = useSearchQuery({
@@ -252,10 +259,12 @@ export function DashboardPage() {
     width_max: widthMax,
     thick_min: thickMin,
     thick_max: thickMax,
+    limit: String(pageSize),
+    offset: String((page - 1) * pageSize),
   }, searchEnabled)
   const [sortOption, setSortOption] = useState<'default' | 'size_asc' | 'size_desc'>('default')
   const sortedSearchDies = useMemo(() => {
-    const raw = searchDiesData || []
+    const raw = searchDiesData?.results || []
     if (sortOption === 'default') return raw
     return [...raw].sort((a, b) => {
       const sizeA = a.die_type === 'ROUND' ? parseFloat(String(a.current_size || '0')) : parseFloat(String(a.current_width || '0'))
@@ -386,7 +395,7 @@ export function DashboardPage() {
                 />
                 {searchEnabled && (
                   <span className="absolute right-4 bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-lg select-none">
-                    {isSearchLoading ? '...' : `${searchDies.length} ${searchDies.length === 1 ? 'result' : 'results'}`}
+                    {isSearchLoading ? '...' : `${searchDiesData?.total || 0} ${searchDiesData?.total === 1 ? 'result' : 'results'}`}
                   </span>
                 )}
 
@@ -443,14 +452,14 @@ export function DashboardPage() {
                         <div className="p-2 bg-slate-950/60 text-center text-slate-500 text-[10px] font-mono border-t border-slate-800/40">
                           Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓/↑</kbd> or <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Tab</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to open
                         </div>
-                        {searchDies.length > 6 && (
+                        {searchDiesData && searchDiesData.total > 6 && (
                           <div 
                             onClick={() => {
                               setShowDropdown(false)
                             }}
                             className="p-3 bg-slate-950/40 text-center text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
                           >
-                            Scroll down to view all {searchDies.length} results
+                            Scroll down to view all {searchDiesData.total} results
                           </div>
                         )}
                       </>
@@ -614,9 +623,9 @@ export function DashboardPage() {
           <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
             <h3 className="text-lg font-semibold text-slate-300">
               {q ? (
-                <>Search Results for <span className="text-blue-400">"{q}"</span> <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
+                <>Search Results for <span className="text-blue-400">"{q}"</span> <span className="text-xs font-normal text-slate-400 ml-2">({searchDiesData?.total || 0} matching {searchDiesData?.total === 1 ? 'die' : 'dies'} found)</span></>
               ) : (
-                <>Filtered Search Results <span className="text-xs font-normal text-slate-400 ml-2">({searchDies?.length || 0} matching {searchDies?.length === 1 ? 'die' : 'dies'} found)</span></>
+                <>Filtered Search Results <span className="text-xs font-normal text-slate-400 ml-2">({searchDiesData?.total || 0} matching {searchDiesData?.total === 1 ? 'die' : 'dies'} found)</span></>
               )}
             </h3>
             <div className="flex items-center gap-4">
@@ -659,29 +668,66 @@ export function DashboardPage() {
                 <CardSkeleton key={i} />
               ))}
             </div>
-          ) : searchDies?.length === 0 ? (
+          ) : searchDiesData?.results?.length === 0 ? (
             <EmptyState
               title="No Dies Found"
               description="No dies in inventory match your active search term or filter criteria. Try clearing search filters."
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {searchDies?.map((die: any) => 
-                die.die_type === 'ROUND' ? (
-                  <RoundDieCard 
-                    key={die.die_id} 
-                    die={die} 
-                    onClick={() => navigate(`/dies/${die.die_id}`)}
-                  />
-                ) : (
-                  <FlatDieCard 
-                    key={die.die_id} 
-                    die={die} 
-                    onClick={() => navigate(`/dies/${die.die_id}`)}
-                  />
-                )
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {searchDies?.map((die: any) => 
+                  die.die_type === 'ROUND' ? (
+                    <RoundDieCard 
+                      key={die.die_id} 
+                      die={die} 
+                      onClick={() => navigate(`/dies/${die.die_id}`)}
+                    />
+                  ) : (
+                    <FlatDieCard 
+                      key={die.die_id} 
+                      die={die} 
+                      onClick={() => navigate(`/dies/${die.die_id}`)}
+                    />
+                  )
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              {searchDiesData && searchDiesData.total > pageSize && (
+                <div className="mt-8 flex justify-between items-center bg-slate-900/50 border border-slate-800/80 px-4 py-3 rounded-xl flex-wrap gap-4">
+                  <div className="text-xs text-slate-400 font-medium">
+                    Showing <span className="font-bold text-slate-200">{((page - 1) * pageSize) + 1}</span> to{' '}
+                    <span className="font-bold text-slate-200">
+                      {Math.min(page * pageSize, searchDiesData.total)}
+                    </span>{' '}
+                    of <span className="font-bold text-slate-200">{searchDiesData.total}</span> tools
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => {
+                        setPage(prev => Math.max(1, prev - 1))
+                        window.scrollTo({ top: 350, behavior: 'smooth' })
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-bold text-slate-200 rounded-lg transition-colors border border-slate-700/50 cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      disabled={page * pageSize >= searchDiesData.total}
+                      onClick={() => {
+                        setPage(prev => prev + 1)
+                        window.scrollTo({ top: 350, behavior: 'smooth' })
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-bold text-slate-200 rounded-lg transition-colors border border-slate-700/50 cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}

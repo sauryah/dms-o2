@@ -14,6 +14,14 @@ export interface SearchQueryParams {
   thick_min?: string;
   thick_max?: string;
   limit?: string;
+  offset?: string;
+}
+
+export interface SearchResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  results: Die[];
 }
 
 export function useStatsQuery() {
@@ -26,7 +34,7 @@ export function useStatsQuery() {
 
 export function useSearchQuery(params: SearchQueryParams, enabled = true) {
   const { request } = useApi()
-  return useQuery<Die[]>({
+  return useQuery<SearchResponse>({
     queryKey: ['searchDies', params],
     queryFn: async ({ signal }) => {
       let url = '/api/go/search'
@@ -43,13 +51,14 @@ export function useSearchQuery(params: SearchQueryParams, enabled = true) {
       if (params.thick_min) searchParams.append('thick_min', params.thick_min)
       if (params.thick_max) searchParams.append('thick_max', params.thick_max)
       if (params.limit) searchParams.append('limit', params.limit)
+      if (params.offset) searchParams.append('offset', params.offset)
       
       const queryString = searchParams.toString()
       if (queryString) {
         url += `?${queryString}`
       }
       
-      return request(url, { signal })
+      return request(url, { signal, keepMetadata: true })
     },
     enabled: enabled
   })
