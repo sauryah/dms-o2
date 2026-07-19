@@ -376,7 +376,8 @@ class TolerancesAndAlertsAPITests(APITestCase):
 
     def test_wear_prediction_caching_and_invalidation(self):
         from django.core.cache import cache
-        cache.clear()
+        cache_key = f"die_wear_prediction_{self.round_die.id}"
+        cache.delete(cache_key)
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
         url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-TEST-ALERT'})
@@ -385,7 +386,6 @@ class TolerancesAndAlertsAPITests(APITestCase):
         res = self.client.get(url_wp)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         
-        cache_key = f"die_wear_prediction_{self.round_die.id}"
         cached_data = cache.get(cache_key)
         self.assertIsNotNone(cached_data)
         self.assertEqual(cached_data['die_id'], 'R-TEST-ALERT')

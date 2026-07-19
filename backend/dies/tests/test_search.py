@@ -5,13 +5,44 @@ from dies.models import Die, RoundDie
 from search.meili import client as meili_client, INDEX_NAME
 from decimal import Decimal
 
+def wait_for_meili_tasks():
+    try:
+        for _ in range(50):
+            tasks = meili_client.get_tasks({'statuses': ['enqueued', 'processing'], 'indexUids': [INDEX_NAME]})
+            if not tasks.results:
+                break
+            time.sleep(0.1)
+    except Exception:
+        pass
+
 class MeilisearchTests(TransactionTestCase):
     def setUp(self):
         try:
-            meili_client.index(INDEX_NAME).delete_all_documents()
+            meili_client.index(INDEX_NAME).delete()
         except Exception:
             pass
-        time.sleep(0.5)
+        try:
+            meili_client.create_index(INDEX_NAME, {'primaryKey': 'id'})
+        except Exception:
+            pass
+        try:
+            index = meili_client.index(INDEX_NAME)
+            task = index.update_settings({
+                'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
+                'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
+                'sortableAttributes':   ['die_id'],
+            })
+            uid = task.get('taskUid') or task.get('task_uid')
+            meili_client.wait_for_task(uid, timeout_in_ms=5000)
+        except Exception:
+            pass
+        
+        try:
+            task = meili_client.index(INDEX_NAME).delete_all_documents()
+            uid = task.get('taskUid') or task.get('task_uid')
+            meili_client.wait_for_task(uid, timeout_in_ms=5000)
+        except Exception:
+            time.sleep(0.5)
 
     def test_sync_on_create_and_update(self):
         die = Die.objects.create(
@@ -27,7 +58,7 @@ class MeilisearchTests(TransactionTestCase):
             current_size=Decimal("3.500")
         )
         
-        time.sleep(1.0)
+        wait_for_meili_tasks()
         
         index = meili_client.index(INDEX_NAME)
         doc = index.get_document(str(die.id))
@@ -37,7 +68,7 @@ class MeilisearchTests(TransactionTestCase):
 
         die.status = "RUNNING"
         die.save()
-        time.sleep(1.0)
+        wait_for_meili_tasks()
         doc = index.get_document(str(die.id))
         self.assertEqual(doc.status, "RUNNING")
 
@@ -73,7 +104,7 @@ class MeilisearchTests(TransactionTestCase):
             current_size=Decimal("5.500")
         )
         
-        time.sleep(1.0)
+        wait_for_meili_tasks()
         
         index = meili_client.index(INDEX_NAME)
         # Test max filter
@@ -100,7 +131,7 @@ class MeilisearchTests(TransactionTestCase):
             current_size=Decimal("3.500")
         )
         
-        time.sleep(1.0)
+        wait_for_meili_tasks()
         
         index = meili_client.index(INDEX_NAME)
         # Test search with single quote in location

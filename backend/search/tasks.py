@@ -347,7 +347,9 @@ def process_outbox_task(self):
         delete_ids = [str(t.payload.get('die_id')) for t in delete_tasks if t.payload.get('die_id')]
         if delete_ids:
             try:
-                meili_client.index(INDEX_NAME).delete_documents(delete_ids)
+                task = meili_client.index(INDEX_NAME).delete_documents(delete_ids)
+                task_uid = task.task_uid if hasattr(task, 'task_uid') else task['taskUid']
+                meili_client.wait_for_task(task_uid)
                 # Mark as processed
                 now = timezone.now()
                 for t in delete_tasks:
@@ -382,7 +384,9 @@ def process_outbox_task(self):
                     docs.append(die_to_meili_document(die))
                 
                 if docs:
-                    meili_client.index(INDEX_NAME).add_documents(docs)
+                    task = meili_client.index(INDEX_NAME).add_documents(docs)
+                    task_uid = task.task_uid if hasattr(task, 'task_uid') else task['taskUid']
+                    meili_client.wait_for_task(task_uid)
                 
                 # Mark chunk tasks as processed
                 now = timezone.now()

@@ -13,9 +13,6 @@ IS_TESTING = 'test' in sys.argv
 INDEX_NAME = 'dies_test' if IS_TESTING else 'dies'
 
 def init_meilisearch():
-    if IS_TESTING:
-        logger.info("Skipping Meilisearch initialization during testing.")
-        return
     try:
         # Create index if it does not exist
         client.create_index(INDEX_NAME, {'primaryKey': 'id'})

@@ -1,13 +1,23 @@
 import os
 import tempfile
 import time
+from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from decimal import Decimal
 from dies.models import Die, RoundDie, FlatDie
 from dies.services.import_service import ImportService
 import_dies = ImportService.import_dies
 from search.meili import client as meili_client, INDEX_NAME
+
+def wait_for_meili_tasks():
+    try:
+        for _ in range(50):
+            tasks = meili_client.get_tasks({'statuses': ['enqueued', 'processing'], 'indexUids': [INDEX_NAME]})
+            if not tasks.results:
+                break
+            time.sleep(0.1)
+    except Exception:
+        pass
 
 User = get_user_model()
 
@@ -19,10 +29,31 @@ class BulkImportTests(TestCase):
             role='ADMIN'
         )
         try:
-            meili_client.index(INDEX_NAME).delete_all_documents()
+            meili_client.index(INDEX_NAME).delete()
         except Exception:
             pass
-        time.sleep(0.5)
+        try:
+            meili_client.create_index(INDEX_NAME, {'primaryKey': 'id'})
+        except Exception:
+            pass
+        try:
+            index = meili_client.index(INDEX_NAME)
+            task = index.update_settings({
+                'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
+                'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
+                'sortableAttributes':   ['die_id'],
+            })
+            uid = task.get('taskUid') or task.get('task_uid')
+            meili_client.wait_for_task(uid, timeout_in_ms=5000)
+        except Exception:
+            pass
+        
+        try:
+            task = meili_client.index(INDEX_NAME).delete_all_documents()
+            uid = task.get('taskUid') or task.get('task_uid')
+            meili_client.wait_for_task(uid, timeout_in_ms=5000)
+        except Exception:
+            time.sleep(0.5)
 
     def write_temp_csv(self, content):
         temp_file = tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', encoding='utf-8')
@@ -55,8 +86,12 @@ R-IMP-5,ROUND,25x10,DAMAGED,Rack C,remark5,4.5,4.5
             self.assertEqual(rd.rounddie.current_size, Decimal('2.500'))
             
             # Wait for Meilisearch sync and check
-            time.sleep(1.0)
+            wait_for_meili_tasks()
             index = meili_client.index(INDEX_NAME)
+            try:
+                print("INDEX DOCUMENTS:", [d.__dict__ for d in index.get_documents().results])
+            except Exception as e:
+                print("FAILED TO GET DOCUMENTS:", e)
             doc = index.get_document(str(rd.id))
             self.assertEqual(doc.id, str(rd.id))
             self.assertEqual(doc.status, "AVAILABLE")
@@ -158,7 +193,7 @@ F-IMP-2,FLAT,30x15,RUNNING,Rack B,,6.0,6.0,16.0,16.0,1.5
             self.assertEqual(die1.flatdie.current_thickness, Decimal('15.000'))
             
             # Wait for Meilisearch sync and check
-            time.sleep(1.0)
+            wait_for_meili_tasks()
             index = meili_client.index(INDEX_NAME)
             doc = index.get_document(str(die1.id))
             self.assertEqual(doc.id, str(die1.id))
