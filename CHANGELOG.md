@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Transactional Outbox Batch Writes Optimization**:
   - Refactored `SearchService.sync_dies_batch()` in `backend/dies/services/search_service.py` to use `bulk_create()` instead of sequential loops.
   - Pre-calculated and populated HMAC-SHA256 signatures inside Python before execution to maintain outbox payload integrity checks.
+- **Gunicorn Production Process Tuning**:
+  - Configured Gunicorn server command inside `supervisord.conf`, `docker-compose.ghcr.yml`, and `backend/Dockerfile` to run with 4 workers, 4 threads, and the `gthread` async worker class.
+  - Aligned development `docker-compose.yml` configuration to utilize 3 workers and 2 threads running under `gthread` (retaining `--reload` file-monitoring checks).
+- **Go Redis Client Connection Pooling**:
+  - Configured connection pooling parameters (`PoolSize: 100`, `MinIdleConns: 10`, and socket timeouts) in `go-api/internal/cache/cache.go` to eliminate TCP handshake latencies during concurrent search volumes.
+- **DieHistory Composite Index**:
+  - Added composite index `(die, field_name, timestamp)` to `DieHistory` model in `backend/history/models.py`.
+  - Generated and applied database schema migration to speed up query execution times inside the wear prediction engine.
+- **Dashboard Search Cards Pagination**:
+  - Implemented server-side pagination (24 cards per page matching 3-column layouts) for the main search results grid in `DashboardPage.tsx`.
+  - Refactored `useSearchQuery` hook in `useDashboard.ts` to support the `offset` parameter and preserve JSON metadata (`total`, `limit`, `offset`) via `keepMetadata: true` options.
 
 ## [1.7.6] - 2026-07-17
 
