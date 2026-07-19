@@ -351,6 +351,7 @@ class HealthCheckView(APIView):
             "status": "healthy",
             "database": "up",
             "redis": "up",
+            "meilisearch": "up",
         }
         status_code = status.HTTP_200_OK
 
@@ -371,6 +372,17 @@ class HealthCheckView(APIView):
         except Exception as e:
             status_data["status"] = "unhealthy"
             status_data["redis"] = "down" if not settings.DEBUG else f"down: {str(e)}"
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        # Check Meilisearch
+        try:
+            from search.meili import client as meili_client
+            res = meili_client.health()
+            if res.get('status') != 'available':
+                raise ValueError("Meilisearch not reporting available status")
+        except Exception as e:
+            status_data["status"] = "unhealthy"
+            status_data["meilisearch"] = "down" if not settings.DEBUG else f"down: {str(e)}"
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
         return Response(status_data, status=status_code)

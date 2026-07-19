@@ -76,4 +76,5 @@ urlpatterns = [
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/v1/', include(router.urls)),
     path('api/', include(router.urls)),
+    path('', include('django_prometheus.urls')),
 ]

@@ -33,6 +33,7 @@ except Exception:
 # Application definition
 
 INSTALLED_APPS = [
+    'django_prometheus',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -62,6 +64,7 @@ MIDDLEWARE = [
     'users.middleware.CurrentUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 # We will implement custom session/JWT middleware in Phase 8
@@ -203,6 +206,11 @@ ROOT_PASSWORD = config('ROOT_PASSWORD', default='root123')
 # Caching with Redis (Django 4.0+)
 REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
 REDIS_CACHE_URL = config('REDIS_CACHE_URL', default=f'redis://:{REDIS_PASSWORD}@redis:6379/0' if REDIS_PASSWORD else 'redis://redis:6379/0')
+import sys
+if 'test' in sys.argv:
+    import re
+    REDIS_CACHE_URL = re.sub(r'/\d+$', '/15', REDIS_CACHE_URL)
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
@@ -290,6 +298,14 @@ LOGGING = {
 HISTORY_RETENTION_DAYS = config('HISTORY_RETENTION_DAYS', default=365, cast=int)
 SESSION_MAX_CONCURRENT = config('SESSION_MAX_CONCURRENT', default=3, cast=int)
 
+# S3 / MinIO Backup Configuration
+S3_BACKUPS_ENABLED = config('S3_BACKUPS_ENABLED', default=False, cast=bool)
+S3_BACKUPS_BUCKET = config('S3_BACKUPS_BUCKET', default='')
+S3_BACKUPS_ACCESS_KEY = config('S3_BACKUPS_ACCESS_KEY', default='')
+S3_BACKUPS_SECRET_KEY = config('S3_BACKUPS_SECRET_KEY', default='')
+S3_BACKUPS_ENDPOINT_URL = config('S3_BACKUPS_ENDPOINT_URL', default=None)
+S3_BACKUPS_REGION = config('S3_BACKUPS_REGION', default='us-east-1')
+
 from django.core.exceptions import ImproperlyConfigured
 if not DEBUG:
     if SECRET_KEY == 'django-insecure-development-secret-key-12345':
@@ -301,3 +317,38 @@ if not DEBUG:
     db_pass = DATABASES['default']['PASSWORD']
     if not db_pass or len(db_pass) < 16 or db_pass in ('db_secret_password', 'password', 'postgres', 'dms_pass_password'):
         raise ImproperlyConfigured("Insecure POSTGRES_PASSWORD detected in production!")
+
+# Sentry Integration
+SENTRY_DSN = config('SENTRY_DSN', default=None)
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float),
+            send_default_pii=True
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to initialize Sentry: {e}")
+
+# OpenTelemetry Tracing Setup
+OTEL_EXPORTER_OTLP_ENDPOINT = config('OTEL_EXPORTER_OTLP_ENDPOINT', default=None)
+if OTEL_EXPORTER_OTLP_ENDPOINT:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.instrumentation.django import DjangoInstrumentor
+
+        provider = TracerProvider()
+        processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True))
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
+        DjangoInstrumentor().instrument()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to initialize OpenTelemetry: {e}")
