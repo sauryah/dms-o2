@@ -120,6 +120,13 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-19 · feat: implement Phase 1 enterprise authentication, outbox security, and dev secrets protection
+- **Unified Auth Interface**: Increased the Go token verification caching TTL from 15 seconds to 5 minutes (`5*time.Minute`) in `go-api/internal/auth/auth.go` to reduce server authorization overhead.
+- **Direct Cache Invalidation**: Extended Django `LogoutView` in `backend/users/views/auth.py` to directly delete the `verify_token` Redis key upon logout, preventing unauthorized cached access.
+- **Outbox Payload Integrity**: Added `payload_hash` field to `OutboxTask` in `backend/dies/models.py` with a custom `save()` model hook that automatically signs task payloads using the Django `SECRET_KEY` via HMAC-SHA256.
+- **Task Signature Verification**: Updated the outbox processor task `process_outbox_task` in `backend/search/tasks.py` to verify the payload signature before executing search syncs, preventing unauthorized execution.
+- **Dev Secrets Protection**: Added validation checks in Go configuration loader `go-api/internal/config/config.go` to reject running with default development secrets in production environments.
+
 ### 2026-07-12 · feat: add production Docker distribution support and comprehensive documentation refactoring (Phase 15) (v1.6.0)
 - Created pre-built GitHub Container Registry (GHCR) and Docker Hub multi-arch images (`backend`, `frontend`, `go-api`) supporting `linux/amd64` and `linux/arm64`.
 - Added `docker-compose.ghcr.yml` for quick, source-free deployment.

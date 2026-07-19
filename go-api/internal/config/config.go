@@ -114,6 +114,21 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("INTERNAL_API_SECRET must be at least 16 characters")
 	}
 
+	if os.Getenv("DJANGO_DEBUG") == "False" {
+		if djangoSecret == "django-insecure-development-secret-key-12345" {
+			return nil, fmt.Errorf("insecure DJANGO_SECRET_KEY detected in production")
+		}
+		if pgPass == "db_secret_password" || pgPass == "password" || pgPass == "postgres" || pgPass == "dms_pass_password" {
+			return nil, fmt.Errorf("insecure POSTGRES_PASSWORD detected in production")
+		}
+		if meiliMasterKey == "meili_secret_key" || meiliMasterKey == "change_me" || meiliSearchKey == "meili_secret_key" || meiliSearchKey == "change_me" {
+			return nil, fmt.Errorf("insecure MEILI_MASTER_KEY/MEILI_SEARCH_KEY detected in production")
+		}
+		if internalAPISecret == "dms_internal_secret_default_key_998" || internalAPISecret == "your-internal-secret" {
+			return nil, fmt.Errorf("insecure INTERNAL_API_SECRET detected in production")
+		}
+	}
+
 	searchCacheTTLStr := os.Getenv("SEARCH_CACHE_TTL_SECONDS")
 	searchCacheTTL := 10
 	if searchCacheTTLStr != "" {

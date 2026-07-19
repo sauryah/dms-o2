@@ -132,11 +132,11 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 				return
 			}
 
-			// Cache valid token verification in Redis with a 15-second TTL
+			// Cache valid token verification in Redis with a 5-minute TTL
 			if cache.Enabled() {
 				cacheData, err := json.Marshal(verifyResp)
 				if err == nil {
-					_ = cache.Set(queryCtx, cacheKey, cacheData, 15*time.Second)
+					_ = cache.Set(queryCtx, cacheKey, cacheData, 5*time.Minute)
 				}
 			}
 

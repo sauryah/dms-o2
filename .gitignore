@@ -50,6 +50,7 @@ backups/
 
 # Temporary files
 backend/tmp/
+skills-lock.json
 
 # TLS certificates (generated per-machine)
 certs/*.pem

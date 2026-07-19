@@ -455,6 +455,15 @@ class LogoutView(APIView):
             cache_key = f"user_session:{user.id}:{token_hash}"
             cache.delete(cache_key)
 
+            # Direct Redis delete for Go verify_token cache key (to bypass Django prefix)
+            try:
+                import redis
+                from django.conf import settings
+                r = redis.Redis.from_url(settings.REDIS_CACHE_URL)
+                r.delete(f"verify_token:{token_hash}")
+            except Exception:
+                pass
+
         # Log action
         UserActivityLog.objects.create(
             user=user,

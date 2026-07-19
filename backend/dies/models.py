@@ -127,9 +127,22 @@ class WearAlert(models.Model):
 class OutboxTask(models.Model):
     task_type    = models.CharField(max_length=50)  # e.g., 'SYNC_DIE' or 'DELETE_DIE'
     payload      = models.JSONField()
+    payload_hash = models.CharField(max_length=64, blank=True, default='')  # SHA-256 integrity check
     is_processed = models.BooleanField(default=False)
     created_at   = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.payload_hash and self.payload:
+            import json, hmac, hashlib
+            from django.conf import settings
+            serialized = json.dumps(self.payload, sort_keys=True)
+            self.payload_hash = hmac.new(
+                settings.SECRET_KEY.encode('utf-8'),
+                serialized.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"OutboxTask {self.task_type} - Processed: {self.is_processed}"
