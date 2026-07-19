@@ -117,6 +117,32 @@ class BackupService:
         except Exception:
             pass
 
+        # Stream backup to S3/MinIO if enabled
+        if getattr(settings, 'S3_BACKUPS_ENABLED', False):
+            try:
+                import boto3
+                from botocore.config import Config
+                import logging
+
+                logger = logging.getLogger(__name__)
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=settings.S3_BACKUPS_ACCESS_KEY,
+                    aws_secret_access_key=settings.S3_BACKUPS_SECRET_KEY,
+                    endpoint_url=settings.S3_BACKUPS_ENDPOINT_URL or None,
+                    region_name=settings.S3_BACKUPS_REGION or 'us-east-1',
+                    config=Config(signature_version='s3v4')
+                )
+                bucket = settings.S3_BACKUPS_BUCKET
+                s3_client.upload_file(filepath, bucket, filename)
+                md5_filepath = f"{filepath}.md5"
+                if os.path.exists(md5_filepath):
+                    s3_client.upload_file(md5_filepath, bucket, f"{filename}.md5")
+                logger.info(f"Successfully streamed backup {filename} and checksum to S3 bucket {bucket}")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Failed to stream backup to S3/MinIO: {e}")
+
         BackupService.prune_old_backups()
         return filename
 
