@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.8.0] - 2026-07-19
+
+### Performance
+- **Transactional Outbox Batch Writes Optimization**:
+  - Refactored `SearchService.sync_dies_batch()` in `backend/dies/services/search_service.py` to use `bulk_create()` instead of sequential loops.
+  - Pre-calculated and populated HMAC-SHA256 signatures inside Python before execution to maintain outbox payload integrity checks.
+
 ## [1.7.6] - 2026-07-17
 
 ### Security

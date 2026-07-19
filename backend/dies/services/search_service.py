@@ -56,8 +56,28 @@ class SearchService:
     def sync_dies_batch(die_ids):
         from dies.models import OutboxTask
         from search.tasks import process_outbox_task
+        import json, hmac, hashlib
+        from django.conf import settings
+
+        tasks = []
         for die_id in die_ids:
-            OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
+            payload = {'die_id': die_id}
+            serialized = json.dumps(payload, sort_keys=True)
+            payload_hash = hmac.new(
+                settings.SECRET_KEY.encode('utf-8'),
+                serialized.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            tasks.append(
+                OutboxTask(
+                    task_type='SYNC_DIE',
+                    payload=payload,
+                    payload_hash=payload_hash
+                )
+            )
+
+        if tasks:
+            OutboxTask.objects.bulk_create(tasks)
         process_outbox_task.delay()
 
     @staticmethod
