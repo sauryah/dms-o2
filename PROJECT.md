@@ -121,6 +121,10 @@ graph TD
 
 ## 8. Chronological Changelog
 
+### 2026-07-19 · docs: establish AI Agent Operating Manual (AGENT.md)
+- **Agent Operating Manual**: Created and refined a production-grade [AGENT.md](file:///home/sahil/Desktop/Projects/dms-o2/AGENT.md) file containing the mission, engineering philosophy, architecture rules, coding standards, repository conventions, security requirements, performance guidelines, testing strategy, and code review checklists for AI coding agents.
+- **Project Guidelines**: Documented and aligned conventions with existing patterns (such as request-scoped `contextvars` proxy compatibility, Meilisearch synchronization indexes, double-buffered queries, cascading ORM audit signals, security user profile serializers guards, pg_dump/pg_restore parallel connections restore tasks, unified supervisord container packaging, and local Makefile automation tools).
+
 ### 2026-07-17 · feat: 10 infrastructure improvements — HTTPS, health checks, gzip, log rotation, Makefile, pre-commit hooks
 - **HTTPS/TLS**: Configured Traefik to serve TLS using mkcert-generated certificates. HTTP→HTTPS redirect on port 80→443. Added `dynamic.yml` for TLS store, `traefik.yml` for static config, and `certs/` volume mount across all compose files.
 - **Certificate Scripts**: Created `generate-certs.sh` (Linux/macOS) and `generate-certs.bat` (Windows) with auto-detection of LAN IP (excluding WSL/Docker/Hyper-V virtual adapters). Added `install-cert.bat` for Windows root CA installation.

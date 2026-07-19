@@ -65,6 +65,20 @@ COPY entrypoint.sh /entrypoint.sh
 # Normalize script endings and make executable
 RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh
 
-EXPOSE 80
+# Create a non-root system user and group
+RUN groupadd -g 1000 dmsgroup && \
+    useradd -u 1000 -g dmsgroup -m -s /bin/bash dmsuser
+
+# Configure Nginx to use /tmp/nginx.pid
+RUN sed -i 's|pid .*nginx.pid;|pid /tmp/nginx.pid;|g' /etc/nginx/nginx.conf
+
+# Create necessary directories and set ownership recursively
+RUN mkdir -p /backups /var/log/supervisor /var/run /var/lib/nginx /var/log/nginx /run && \
+    chown -R dmsuser:dmsgroup /app /backups /var/log/supervisor /var/run /var/lib/nginx /var/log/nginx /run
+
+# Switch to non-root user
+USER dmsuser
+
+EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]

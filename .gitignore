@@ -36,6 +36,7 @@ blob-report/
 # Cli
 .agent/
 .agents/
+skills-lock.json
 graphify-out/
 
 # User

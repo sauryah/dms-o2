@@ -16,6 +16,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
 
+# Create a non-root system user and group
+RUN groupadd -g 1000 dmsgroup && \
+    useradd -u 1000 -g dmsgroup -m -s /bin/bash dmsuser
+
+# Create necessary directories and set ownership recursively
+RUN mkdir -p /backups && chown -R dmsuser:dmsgroup /app /backups
+
+# Switch to non-root user
+USER dmsuser
+
 EXPOSE 8000
 
 CMD ["gunicorn", "dms.wsgi:application", "--bind", "0.0.0.0:8000"]
