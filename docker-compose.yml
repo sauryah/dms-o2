@@ -153,6 +153,23 @@ services:
       retries: 3
       start_period: 10s
 
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A dms beat -l warning
+    volumes:
+      - ./backend:/app
+    environment:
+      <<: *common-env
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
 
   go-api:
     build:

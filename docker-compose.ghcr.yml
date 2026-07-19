@@ -209,6 +209,34 @@ services:
       retries: 3
       start_period: 10s
 
+  beat:
+    image: ghcr.io/sauryah/dms-o2/backend:${DMS_VERSION:-latest}
+    restart: unless-stopped
+    command: celery -A dms beat -l warning
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - ROOT_USERNAME=${ROOT_USERNAME}
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES}
+      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+
+
   # ---------------------------------------------------------------------------
   # Go API (high-performance search & SSE endpoints)
   # ---------------------------------------------------------------------------

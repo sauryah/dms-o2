@@ -60,4 +60,9 @@ certs/*.pfx
 certs/cert_check.der
 certs/served_cert.der
 
+# Celery beat runtime
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule*
+
 

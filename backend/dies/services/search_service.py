@@ -25,9 +25,7 @@ class SearchService:
             def run_sync():
                 pending.discard(die_id)
                 from dies.models import OutboxTask
-                from search.tasks import process_outbox_task
                 OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_id})
-                process_outbox_task.delay()
                 
             transaction.on_commit(run_sync)
 
@@ -55,7 +53,6 @@ class SearchService:
     @staticmethod
     def sync_dies_batch(die_ids):
         from dies.models import OutboxTask
-        from search.tasks import process_outbox_task
         import json, hmac, hashlib
         from django.conf import settings
 
@@ -78,7 +75,6 @@ class SearchService:
 
         if tasks:
             OutboxTask.objects.bulk_create(tasks)
-        process_outbox_task.delay()
 
     @staticmethod
     def broadcast_bulk_import():
@@ -88,9 +84,7 @@ class SearchService:
     def delete_die_document(die_id):
         def run_delete():
             from dies.models import OutboxTask
-            from search.tasks import process_outbox_task
             OutboxTask.objects.create(task_type='DELETE_DIE', payload={'die_id': die_id})
-            process_outbox_task.delay()
         transaction.on_commit(run_delete)
 
     @staticmethod
