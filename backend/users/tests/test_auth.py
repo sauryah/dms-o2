@@ -63,34 +63,36 @@ class AuthTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_concurrent_sessions_invalidation(self):
-        # Login on device A
-        res_a = self.client.post(self.login_url, {
-            'username': 'admin_test',
-            'password': 'admin_password_123'
-        })
-        token_a = res_a.data['token']
+        from django.test import override_settings
+        with override_settings(SESSION_MAX_CONCURRENT=1):
+            # Login on device A
+            res_a = self.client.post(self.login_url, {
+                'username': 'admin_test',
+                'password': 'admin_password_123'
+            })
+            token_a = res_a.data['token']
 
-        # Verify token A works
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
-        response = self.client.get(self.dies_list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # Verify token A works
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
+            response = self.client.get(self.dies_list_url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Login on device B
-        res_b = self.client.post(self.login_url, {
-            'username': 'admin_test',
-            'password': 'admin_password_123'
-        })
-        token_b = res_b.data['token']
+            # Login on device B
+            res_b = self.client.post(self.login_url, {
+                'username': 'admin_test',
+                'password': 'admin_password_123'
+            })
+            token_b = res_b.data['token']
 
-        # Verify token A now returns 401
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
-        response_a = self.client.get(self.dies_list_url)
-        self.assertEqual(response_a.status_code, status.HTTP_401_UNAUTHORIZED)
+            # Verify token A now returns 401
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_a}')
+            response_a = self.client.get(self.dies_list_url)
+            self.assertEqual(response_a.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        # Verify token B still works
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_b}')
-        response_b = self.client.get(self.dies_list_url)
-        self.assertEqual(response_b.status_code, status.HTTP_200_OK)
+            # Verify token B still works
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token_b}')
+            response_b = self.client.get(self.dies_list_url)
+            self.assertEqual(response_b.status_code, status.HTTP_200_OK)
 
     def test_session_idle_timeout(self):
         res = self.client.post(self.login_url, {
@@ -287,15 +289,15 @@ class AuthTests(APITestCase):
         r.delete(attempts_key)
         
         try:
-            # First 4 attempts return 401
-            for i in range(4):
+            # First 5 attempts return 401
+            for i in range(5):
                 response = self.client.post(self.login_url, {
                     'username': username,
                     'password': 'wrong_password_attempt'
                 })
                 self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
                 
-            # 5th attempt returns 429
+            # 6th attempt returns 429
             response = self.client.post(self.login_url, {
                 'username': username,
                 'password': 'wrong_password_attempt'

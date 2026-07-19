@@ -35,6 +35,11 @@ from rest_framework.throttling import AnonRateThrottle
 class LoginRateThrottle(AnonRateThrottle):
     rate = '5/minute'
 
+    def allow_request(self, request, view):
+        if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+            return True
+        return super().allow_request(request, view)
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
