@@ -149,6 +149,12 @@ def log_flat_changes(sender, instance, **kwargs):
 def _sync_die_from_related(instance):
     die = instance if isinstance(instance, Die) else instance.die
     try:
+        from django.core.cache import cache
+        cache.delete(f"die_wear_prediction_{die.id}")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to invalidate wear prediction cache in post-save signal: {e}")
+    try:
         from dies.services.wear_alert_service import WearAlertService
         WearAlertService.check_wear_alerts(die)
     except Exception as e:

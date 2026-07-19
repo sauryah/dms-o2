@@ -179,11 +179,16 @@ class DieViewSet(viewsets.ModelViewSet):
         if not is_authorized:
             return Response({"detail": "You do not have permission to view wear prediction details."}, status=status.HTTP_403_FORBIDDEN)
         die = self.get_object()
-        from dies.services.wear_prediction_service import WearPredictionService
-        try:
-            analysis = WearPredictionService.predict_die(die)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        from django.core.cache import cache
+        cache_key = f"die_wear_prediction_{die.id}"
+        analysis = cache.get(cache_key)
+        if analysis is None:
+            from dies.services.wear_prediction_service import WearPredictionService
+            try:
+                analysis = WearPredictionService.predict_die(die)
+                cache.set(cache_key, analysis, timeout=86400)
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(analysis)
 
 
