@@ -93,7 +93,7 @@ services:
   django:
     image: ghcr.io/sauryah/dms-o2/backend:${DMS_VERSION:-latest}
     restart: unless-stopped
-    command: gunicorn dms.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn dms.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 4 --worker-class gthread
     stop_grace_period: 2m
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
