@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.9.0] - 2026-07-20
+
+### Observability
+- **Structured JSON Logging**:
+  - Outfitted application with structured logging (slog in Go, Python standard JsonFormatter in Django).
+- **Sentry & OpenTelemetry Tracing**:
+  - Configured sentry-sdk error monitoring and OpenTelemetry tracing parameters in Django configurations.
+- **Enhanced Health Probes & Metrics**:
+  - Extended Django health checks to probe Meilisearch availability, and integrated Redis cache status checks inside Go API `/api/go/health` endpoint.
+  - Exposed `/metrics` endpoints utilizing django-prometheus.
+
+### Developer Experience & Quality
+- **Pre-commit hooks**:
+  - Added `.pre-commit-config.yaml` to enforce code quality checks locally using Ruff and ESLint.
+- **Redis Test Database Isolation**:
+  - Routed cache operations to Redis DB 15 during tests to prevent collision with dev caching states.
+- **Meilisearch Test Stability**:
+  - Restored Meilisearch test index settings during testing, and resolved indexing lag flakes by using blocking `wait_for_task` waiting hooks during outbox sync execution.
+
+### Production Infrastructure
+- **S3 / MinIO Backup Streaming**:
+  - Implemented configurable database backup streaming to S3-compatible cloud storage (S3/MinIO) via `boto3`.
+
 ## [1.8.0] - 2026-07-19
 
 ### Performance

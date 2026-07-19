@@ -41,3 +41,21 @@
     *   `history/0002_alter_machinehistory_entity_type.py`
 *   **Testing Performed**: Ran Go test suite successfully (all checks pass, coverages boosted), verified Django migrations generated with no issues, performed django system checks successfully.
 
+### 2026-07-20 · Phase 5: Observability, DX & Infrastructure Upgrades
+*   **Feature**: Structured JSON logging (Go and Python), Sentry & OpenTelemetry Tracing, Prometheus metrics endpoints, isolated Redis cache DB for unit tests, resolved Meilisearch async test flakes, local pre-commit config setup, and backup streaming to S3/MinIO.
+*   **Affected Modules**: `go-api`, `dies`, `users`, `search`
+*   **Files Modified/Created**:
+    *   [cache.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/cache/cache.go)
+    *   [handlers.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/handlers/handlers.go)
+    *   [handlers_test.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/handlers/handlers_test.go)
+    *   [settings.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dms/settings.py)
+    *   [urls.py (dms)](file:///home/sahil/Desktop/Projects/dms-o2/backend/dms/urls.py)
+    *   [auth.py (users)](file:///home/sahil/Desktop/Projects/dms-o2/backend/users/views/auth.py)
+    *   [requirements.txt](file:///home/sahil/Desktop/Projects/dms-o2/backend/requirements.txt)
+    *   [test_search.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/tests/test_search.py)
+    *   [test_import.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/tests/test_import.py)
+    *   [tasks.py (search)](file:///home/sahil/Desktop/Projects/dms-o2/backend/search/tasks.py)
+    *   [backup_service.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/users/services/backup_service.py)
+    *   [.pre-commit-config.yaml](file:///home/sahil/Desktop/Projects/dms-o2/.pre-commit-config.yaml)
+*   **Testing Performed**: Rebuilt docker environment; ran and passed 129 Django unit tests and 6 Go packages unit tests successfully (100% green).
+
