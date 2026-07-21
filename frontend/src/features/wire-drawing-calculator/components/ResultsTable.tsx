@@ -5,6 +5,11 @@ import {
 } from 'lucide-react';
 import type { PassData } from '../types';
 import { formatNumber } from '../utils/parsing';
+import {
+  calculateDieFromElongation,
+  calculateDieFromReduction,
+  calculateDieFromRatio,
+} from '../utils/calculations';
 
 interface ResultsTableProps {
   passes: PassData[];
@@ -32,16 +37,20 @@ function reductionBadge(val: number) {
   return 'bg-red-500/15 text-red-400 border-red-500/20';
 }
 
+type EditingField =
+  | { type: 'die'; pass: number; field: 'fromDie' | 'toDie' }
+  | { type: 'calc'; pass: number; field: 'elongation' | 'reduction' | 'ratio' };
+
 export default function ResultsTable({
   passes, dies, onDiesChange, canUndo, canRedo, onUndo, onRedo,
   selectedPassIdx, onSelectPass,
 }: ResultsTableProps) {
-  const [editing, setEditing] = useState<{ pass: number; field: 'fromDie' | 'toDie' } | null>(null);
+  const [editing, setEditing] = useState<EditingField | null>(null);
   const [editVal, setEditVal] = useState('');
   const [showDetails, setShowDetails] = useState(false);
 
-  const saveEdit = () => {
-    if (!editing) return;
+  const saveDieEdit = () => {
+    if (!editing || editing.type !== 'die') return;
     const v = parseFloat(editVal);
     if (isNaN(v) || v <= 0) { setEditing(null); return; }
     const nd = [...dies];
@@ -49,6 +58,39 @@ export default function ResultsTable({
     if (idx >= 0 && idx < nd.length) nd[idx] = Math.round(v * 1000) / 1000;
     onDiesChange(nd);
     setEditing(null);
+  };
+
+  const saveCalcEdit = () => {
+    if (!editing || editing.type !== 'calc') return;
+    const v = parseFloat(editVal);
+    if (isNaN(v) || v <= 0) { setEditing(null); return; }
+
+    const passIdx = editing.pass - 1;
+    const dBefore = dies[passIdx];
+    if (!dBefore) { setEditing(null); return; }
+
+    let newToDie: number;
+    if (editing.field === 'elongation') {
+      newToDie = calculateDieFromElongation(dBefore, v);
+    } else if (editing.field === 'reduction') {
+      newToDie = calculateDieFromReduction(dBefore, v);
+    } else {
+      newToDie = calculateDieFromRatio(dBefore, v);
+    }
+
+    newToDie = Math.round(newToDie * 1000) / 1000;
+    if (newToDie <= 0 || newToDie >= dBefore) { setEditing(null); return; }
+
+    const nd = [...dies];
+    nd[passIdx + 1] = newToDie;
+    onDiesChange(nd);
+    setEditing(null);
+  };
+
+  const saveEdit = () => {
+    if (!editing) return;
+    if (editing.type === 'die') saveDieEdit();
+    else saveCalcEdit();
   };
 
   const addDie = () => {
@@ -64,7 +106,7 @@ export default function ResultsTable({
   };
 
   const headers = showDetails
-    ? ['Pass', 'From', 'To', 'Area Bef (mm²)', 'Area Aft (mm²)', 'Red %', 'Elong %', 'Ratio']
+    ? ['Pass', 'From', 'To', 'Area Bef (mm\u00B2)', 'Area Aft (mm\u00B2)', 'Red %', 'Elong %', 'Ratio']
     : ['Pass', 'From', 'To', 'Red %', 'Elong %'];
 
   return (
@@ -124,8 +166,11 @@ export default function ResultsTable({
           </thead>
           <tbody>
             {passes.map((p, i) => {
-              const isEF = editing?.pass === p.pass && editing.field === 'fromDie';
-              const isET = editing?.pass === p.pass && editing.field === 'toDie';
+              const isEF = editing?.type === 'die' && editing.pass === p.pass && editing.field === 'fromDie';
+              const isET = editing?.type === 'die' && editing.pass === p.pass && editing.field === 'toDie';
+              const isElong = editing?.type === 'calc' && editing.pass === p.pass && editing.field === 'elongation';
+              const isRed = editing?.type === 'calc' && editing.pass === p.pass && editing.field === 'reduction';
+              const isRatio = editing?.type === 'calc' && editing.pass === p.pass && editing.field === 'ratio';
               const isSelected = selectedPassIdx === i;
               return (
                 <tr
@@ -149,7 +194,7 @@ export default function ResultsTable({
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelectPass?.(i);
-                          setEditing({ pass: p.pass, field });
+                          setEditing({ type: 'die', pass: p.pass, field });
                           setEditVal(String(val));
                         }}
                       >
@@ -164,7 +209,7 @@ export default function ResultsTable({
                         ) : (
                           <>
                             {formatNumber(val)}
-                            <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-blue-400/0 group-hover:text-blue-400/60 transition-colors">✎</span>
+                            <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-blue-400/0 group-hover:text-blue-400/60 transition-colors">{'\u270E'}</span>
                           </>
                         )}
                       </td>
@@ -177,17 +222,78 @@ export default function ResultsTable({
                     </>
                   )}
                   <td className="px-3 py-2.5 text-right">
-                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${reductionBadge(p.areaReduction)}`}>
-                      {formatNumber(p.areaReduction)}
-                    </span>
+                    {isRed ? (
+                      <input
+                        autoFocus type="number" step="0.01" value={editVal}
+                        onChange={(e) => setEditVal(e.target.value)}
+                        onBlur={saveEdit}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
+                        className="w-20 text-right bg-[#0F172A] border border-blue-500/40 rounded-lg px-2 py-1 text-xs font-mono text-[#F8FAFC] outline-none"
+                      />
+                    ) : (
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border cursor-pointer hover:ring-1 hover:ring-blue-500/40 transition-all relative group ${reductionBadge(p.areaReduction)}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectPass?.(i);
+                          setEditing({ type: 'calc', pass: p.pass, field: 'reduction' });
+                          setEditVal(String(p.areaReduction));
+                        }}
+                      >
+                        {formatNumber(p.areaReduction)}
+                        <span className="absolute -right-0.5 -top-0.5 text-[7px] text-blue-400/0 group-hover:text-blue-400/60 transition-colors">{'\u270E'}</span>
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${elongationBadge(p.elongation)}`}>
-                      {formatNumber(p.elongation)}
-                    </span>
+                    {isElong ? (
+                      <input
+                        autoFocus type="number" step="0.01" value={editVal}
+                        onChange={(e) => setEditVal(e.target.value)}
+                        onBlur={saveEdit}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
+                        className="w-20 text-right bg-[#0F172A] border border-blue-500/40 rounded-lg px-2 py-1 text-xs font-mono text-[#F8FAFC] outline-none"
+                      />
+                    ) : (
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border cursor-pointer hover:ring-1 hover:ring-blue-500/40 transition-all relative group ${elongationBadge(p.elongation)}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectPass?.(i);
+                          setEditing({ type: 'calc', pass: p.pass, field: 'elongation' });
+                          setEditVal(String(p.elongation));
+                        }}
+                      >
+                        {formatNumber(p.elongation)}
+                        <span className="absolute -right-0.5 -top-0.5 text-[7px] text-blue-400/0 group-hover:text-blue-400/60 transition-colors">{'\u270E'}</span>
+                      </span>
+                    )}
                   </td>
                   {showDetails && (
-                    <td className="px-3 py-2.5 text-right font-mono text-[#64748B]">{formatNumber(p.reductionRatio)}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      {isRatio ? (
+                        <input
+                          autoFocus type="number" step="0.001" value={editVal}
+                          onChange={(e) => setEditVal(e.target.value)}
+                          onBlur={saveEdit}
+                          onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
+                          className="w-20 text-right bg-[#0F172A] border border-blue-500/40 rounded-lg px-2 py-1 text-xs font-mono text-[#F8FAFC] outline-none"
+                        />
+                      ) : (
+                        <span
+                          className="font-mono text-[#64748B] cursor-pointer hover:text-[#F8FAFC] hover:bg-blue-500/[0.06] px-1 rounded transition-colors relative group"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectPass?.(i);
+                            setEditing({ type: 'calc', pass: p.pass, field: 'ratio' });
+                            setEditVal(String(p.reductionRatio));
+                          }}
+                        >
+                          {formatNumber(p.reductionRatio)}
+                          <span className="absolute -right-0.5 -top-0.5 text-[7px] text-blue-400/0 group-hover:text-blue-400/60 transition-colors">{'\u270E'}</span>
+                        </span>
+                      )}
+                    </td>
                   )}
                 </tr>
               );

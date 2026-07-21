@@ -16,6 +16,21 @@ export function calculateReductionRatio(dBefore: number, dAfter: number): number
   return (dBefore * dBefore) / (dAfter * dAfter);
 }
 
+export function calculateDieFromElongation(dBefore: number, elongation: number): number {
+  if (elongation <= -100) return dBefore;
+  return dBefore / Math.sqrt(1 + elongation / 100);
+}
+
+export function calculateDieFromReduction(dBefore: number, reduction: number): number {
+  if (reduction >= 100) return 0;
+  return dBefore * Math.sqrt(1 - reduction / 100);
+}
+
+export function calculateDieFromRatio(dBefore: number, ratio: number): number {
+  if (ratio <= 0) return dBefore;
+  return dBefore / Math.sqrt(ratio);
+}
+
 export function calculatePassData(dies: number[]): PassData[] {
   if (dies.length < 2) return [];
 
