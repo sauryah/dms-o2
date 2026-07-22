@@ -3,7 +3,7 @@ set -e
 
 # Load environment variables from .env if present
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    export $(grep -v '^#' .env | tr -d '\r' | xargs)
 fi
 
 ACTION="$1"
@@ -60,15 +60,15 @@ case "$ACTION" in
         docker compose stop django worker go-api
         
         echo ">>> Terminating any remaining active connections to database $POSTGRES_DB..."
-        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" django psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();" || true
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" db psql -U "$POSTGRES_USER" -d "postgres" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();" || true
         
         echo ">>> Dropping and recreating clean database $POSTGRES_DB..."
-        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" django psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "DROP DATABASE IF EXISTS $POSTGRES_DB;"
-        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" django psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "CREATE DATABASE $POSTGRES_DB;"
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" db psql -U "$POSTGRES_USER" -d "postgres" -c "DROP DATABASE IF EXISTS $POSTGRES_DB;"
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" db psql -U "$POSTGRES_USER" -d "postgres" -c "CREATE DATABASE $POSTGRES_DB;"
         
         echo ">>> Restoring database from ./backups/$FILE..."
         set +e
-        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" django pg_restore -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner "/backups/$FILE"
+        docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" db pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner "/backups/$FILE"
         set -e
         
         echo ">>> Starting database client services to rebuild search index..."
