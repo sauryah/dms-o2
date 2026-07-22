@@ -435,6 +435,7 @@ func scoreDie(die database.DieRepresentation, q string) int {
 		(die.CurrentWidth != nil && strings.Contains(strings.ToLower(*die.CurrentWidth), qLower)) ||
 		(die.CurrentThickness != nil && strings.Contains(strings.ToLower(*die.CurrentThickness), qLower)) ||
 		strings.Contains(strings.ToLower(die.Casing), qLower) ||
+		strings.Contains(strings.ToLower(die.Location), qLower) ||
 		strings.Contains(strings.ToLower(die.RackName), qLower) ||
 		strings.Contains(strings.ToLower(die.SetName), qLower) ||
 		strings.Contains(strings.ToLower(die.MachineName), qLower) ||

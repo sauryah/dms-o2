@@ -18,8 +18,8 @@ import (
 // Mock definitions
 type MockDatabase struct {
 	GetStatsFn                   func(ctx context.Context) (map[string]int, int, error)
-	QueryPostgresDirectlyFn      func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error)
-	QueryPostgresDirectlyCountFn func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error)
+	QueryPostgresDirectlyFn      func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error)
+	QueryPostgresDirectlyCountFn func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error)
 	QueryPostgresByIDsFn         func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
 	GetCountFn                   func(ctx context.Context) (int, error)
 	IsUserActiveFn               func(ctx context.Context, userID int) (bool, error)
@@ -32,16 +32,16 @@ func (m *MockDatabase) GetStats(ctx context.Context) (map[string]int, int, error
 	return nil, 0, nil
 }
 
-func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
+func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 	if m.QueryPostgresDirectlyFn != nil {
-		return m.QueryPostgresDirectlyFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
+		return m.QueryPostgresDirectlyFn(ctx, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 	}
 	return nil, nil
 }
 
-func (m *MockDatabase) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+func (m *MockDatabase) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
 	if m.QueryPostgresDirectlyCountFn != nil {
-		return m.QueryPostgresDirectlyCountFn(ctx, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+		return m.QueryPostgresDirectlyCountFn(ctx, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 	}
 	return 0, nil
 }
@@ -277,13 +277,13 @@ func TestHandleSearch_DirectPostgres(t *testing.T) {
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 			if q == "" && dieType == "ROUND" {
 				return expectedDies, nil
 			}
 			return nil, nil
 		},
-		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
 			return 1, nil
 		},
 	}
@@ -383,7 +383,7 @@ func TestRelevanceSorting(t *testing.T) {
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 			return candidates, nil
 		},
 		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
@@ -462,7 +462,7 @@ func TestHandleSearch_PaginationParams(t *testing.T) {
 	cfg := &config.Config{}
 	
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 			if limit == 10 && offset == 20 {
 				return []database.DieRepresentation{
 					{DieID: "PAGINATED-DIE"},
@@ -470,7 +470,7 @@ func TestHandleSearch_PaginationParams(t *testing.T) {
 			}
 			return nil, nil
 		},
-		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
 			return 100, nil
 		},
 	}
@@ -724,14 +724,14 @@ func TestHandleSearch_MeilisearchFailureFallback(t *testing.T) {
 	postgresDirectlyCalled := false
 
 	mockDb := &MockDatabase{
-		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 			if q == "fallback-query" {
 				postgresDirectlyCalled = true
 				return expectedDies, nil
 			}
 			return nil, nil
 		},
-		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
 			return 1, nil
 		},
 	}
