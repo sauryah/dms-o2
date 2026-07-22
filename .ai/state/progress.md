@@ -33,21 +33,20 @@ Track implementation status across all phases.
 - Expanded architecture/database.md with full schema
 - Expanded architecture/coding-standards.md with standards
 
-### Phase 3: State and Operations 🔄
-**Status:** In Progress
-**Date:** 2026-07-20
+### Phase 3: State and Operations ✅
+**Status:** Complete
+**Commit:** `32c15f2`
+**Date:** 2026-07-22
 
 **Completed:**
 - Created state/active-task.md
 - Created state/current-goal.md
 - Created state/progress.md (this document)
-
-**In Progress:**
-- Creating state/technical-debt.md
-- Creating operations/production-runbook.md
-- Creating metrics/metrics.md
-- Creating risk-register.md
-- Creating modules/backend.md
+- Created state/technical-debt.md
+- Created operations/production-runbook.md
+- Created metrics/metrics.md
+- Created risk-register.md
+- Created modules/backend.md
 
 ### Phase 4: Optional Documentation ⏳
 **Status:** Deferred
@@ -58,20 +57,52 @@ Track implementation status across all phases.
 - Additional process documents
 - Additional state documents
 
+## Roadmap Progress
+
+### Phase 1: Security & Service Boundaries ✅
+**Status:** Complete
+**Commit:** `d827396`
+**Date:** 2026-07-22
+
+**Completed:**
+- Security headers middleware
+- Request size limits
+- Redis AOF persistence
+- Docker resource limits
+- Go auth verification caching
+- OutboxTask payload signing
+- Go startup validation
+
+### Phase 2: Location Grid & Physical Schema 🔄
+**Status:** Ready to start
+**Target:** TBD
+
+**Planned:**
+- Migrate free-text `Die.location` to structured table
+- Prevent tool assignment to non-existent layout spots
+- Update API endpoints
+- Update frontend components
+- Write tests
+
+### Phase 3: Wear Alert Automation & ML ⏳
+**Status:** Future phase
+**Target:** TBD
+
+**Planned:**
+- Build daily cron tasks executing wear predictions
+- Train predictive models forecasting tool remaining lifetime
+
 ## Overall Progress
-- **Phase 1:** 100% complete
-- **Phase 2:** 100% complete
-- **Phase 3:** 37% complete (3/8 documents)
-- **Phase 4:** 0% complete (deferred)
+- **AI-EOS:** 100% complete
+- **Roadmap Phase 1:** 100% complete
+- **Roadmap Phase 2:** 0% complete (ready to start)
+- **Roadmap Phase 3:** 0% complete (future)
 
 ## Next Actions
-1. Complete Phase 3 documents
-2. Commit Phase 3
-3. Update this document
-4. Defer Phase 4 until needed
-
-## Quality Metrics
-- All documents answer: Why? Who reads it? When updated?
-- No placeholder files created
-- Lean documentation approach followed
-- Engineering principles applied
+1. Start Roadmap Phase 2: Location Grid
+2. Read affected module documentation
+3. Design Location model
+4. Implement database migration
+5. Update Die model and views
+6. Write tests
+7. Update documentation

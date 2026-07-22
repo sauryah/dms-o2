@@ -7,42 +7,43 @@ Define the current objective for AI sessions.
 **Updated:** When goal changes.
 
 ## Current Goal
-**Objective:** Complete AI Engineering Operating System implementation
-**Target Date:** 2026-07-20
+**Objective:** Implement Location Grid & Physical Schema (Roadmap Phase 2)
+**Target Date:** TBD
 **Priority:** High
 
 ## Goal Description
-Implement a lean, maintainable AI Engineering Operating System that:
-- Enables any AI agent to understand the project
-- Provides clear workflows and processes
-- Tracks state and progress effectively
-- Supports autonomous operation
+Migrate free-text `Die.location` to structured table (`rack_id` + `shelf_number`) and prevent tool assignment to non-existent layout spots.
 
 ## Success Criteria
-1. AGENTS.md is under 80 lines and provides clear entry point
-2. All documentation answers: Why? Who reads it? When updated?
-3. No placeholder files - all content is useful
-4. State tracking enables seamless session continuity
-5. Processes are actionable and followable
+1. Location table created with rack_id and shelf_number
+2. Die model updated to reference Location table
+3. Validation prevents assignment to non-existent locations
+4. API endpoints updated to work with new structure
+5. Frontend updated to display location information
+6. All tests pass
+7. Documentation updated
 
 ## Current Progress
-- ✅ Directory structure created
-- ✅ Core documentation created
-- 🔄 State and operations in progress
-- ⏳ Optional documentation deferred
-
-## Next Milestone
-Complete Phase 3: State and Operations
+- ✅ AI Engineering Operating System complete
+- ✅ Roadmap Phase 1 (Security) complete
+- 🔄 Roadmap Phase 2 (Location Grid) ready to start
 
 ## How to Achieve
-1. Create state tracking documents
-2. Create operational runbook
-3. Create metrics summary
-4. Create risk register
-5. Create backend module documentation
+1. Read affected module documentation
+2. Review existing location-related code
+3. Design Location model
+4. Create database migration
+5. Update Die model and views
+6. Add validation logic
+7. Update API endpoints
+8. Update frontend components
+9. Write tests
+10. Update documentation
 
 ## Definition of Done
-- All Phase 3 documents created
-- All documents answer purpose questions
-- No redundant or placeholder content
-- State files are current and accurate
+- Location table created and populated
+- Die.location field migrated to Location foreign key
+- Validation prevents invalid location assignments
+- All existing functionality preserved
+- All tests pass
+- Documentation updated
