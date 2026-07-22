@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../hooks/useApi'
+import { APP_VERSION } from '../version'
 import { 
   Calculator, 
   Ruler, 
@@ -411,7 +412,7 @@ export function CalculatorPage() {
             </button>
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-[#0D1325] border border-[#1b253b] rounded-xl text-slate-500 text-xs font-mono">
               <Zap className="h-3.5 w-3.5 text-amber-500" />
-              <span>V1.9.1</span>
+              <span>V{APP_VERSION}</span>
             </div>
           </div>
         </div>

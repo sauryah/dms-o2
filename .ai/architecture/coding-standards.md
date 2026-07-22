@@ -173,6 +173,7 @@ func processData(ctx context.Context, id int) error {
 - Extract custom hooks
 - Use React.memo for performance
 - Handle loading and error states
+- **Centralized Application Versioning**: Do NOT hardcode version strings in UI components (`Footer`, `AboutModal`, `CalculatorPage`, etc.). Always import `APP_VERSION` from `src/version.ts` (which reads from `package.json`). Whenever `package.json` is updated for a release, all UI badges across the application update automatically in sync.
 
 ### Example
 ```typescript

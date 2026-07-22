@@ -1,5 +1,6 @@
 import React from 'react'
 import { X, Code2, Cpu, Info } from 'lucide-react'
+import { APP_VERSION } from '../version'
 
 interface AboutModalProps {
   isOpen: boolean
@@ -37,7 +38,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-white tracking-tight">CREDITS & CONTRIBUTORS</h2>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">DMS | Die Management System (v1.9.1)</p>
+            <p className="text-xs font-semibold text-slate-400 mt-0.5">DMS | Die Management System (v{APP_VERSION})</p>
           </div>
         </div>
 

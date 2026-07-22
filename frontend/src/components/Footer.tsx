@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { AboutModal } from './AboutModal'
 import { Info } from 'lucide-react'
+import { APP_VERSION } from '../version'
 
 export function Footer() {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
@@ -15,7 +16,7 @@ export function Footer() {
               <span className="text-slate-700">•</span>
               <span>Die Management System</span>
               <span className="text-slate-700">•</span>
-              <span className="font-mono text-[10px] text-slate-500 bg-slate-900/50 border border-slate-800 px-1.5 py-0.5 rounded">v1.9.1</span>
+              <span className="font-mono text-[10px] text-slate-500 bg-slate-900/50 border border-slate-800 px-1.5 py-0.5 rounded">v{APP_VERSION}</span>
             </div>
             <div className="flex items-center space-x-4">
               <span>
