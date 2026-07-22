@@ -22,15 +22,15 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api/go': {
-        target: process.env.GO_API_TARGET || 'http://localhost',
+        target: process.env.GO_API_TARGET || 'http://127.0.0.1',
         changeOrigin: true,
       },
       '/api': {
-        target: process.env.API_TARGET || 'http://localhost:8000',
+        target: process.env.API_TARGET || 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
       '/admin': {
-        target: process.env.API_TARGET || 'http://localhost:8000',
+        target: process.env.API_TARGET || 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     }
