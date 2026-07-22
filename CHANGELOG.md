@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.9.1] - 2026-07-22
+
+### Search & Read Microservice
+- **Size & Dimension Search Precision**:
+  - Eliminated false-positive size search results (such as searching `25` matching size `1.25` or `0.25`) by replacing string `contains` checks on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix matching.
+  - Fixed search count reporting ("1000 results found") by ensuring `total` matches the actual count of relevant post-filtered items (`len(filtered)`) for digit/size queries.
+  - Added unit suffix normalization (`2.5mm` -> `2.5`) for exact float matching (score 100).
+  - Enforced strict score > 50 filter on digit queries across both Meilisearch and direct SQL search paths.
+  - Updated PostgreSQL search builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric dimension columns when query is numeric.
+
 ## [1.9.0] - 2026-07-20
 
 ### Observability

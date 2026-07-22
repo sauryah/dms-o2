@@ -151,6 +151,15 @@ func processData(ctx context.Context, id int) error {
 }
 ```
 
+### Search Relevance & Dimension Scoring Standards
+- **Never use substring matching on numeric dimension fields**: Do NOT use string `contains` checks on numeric dimension attributes (`CurrentSize`, `CurrentWidth`, `CurrentThickness`). Searching for `25` must NOT match `1.25` or `0.25`.
+- **Dimension Matching Rules**:
+  1. **Exact Match (Score 100)**: Parse floating point query values (strip `"mm"` unit suffix if present). If parsed float matches `CurrentSize`, `CurrentWidth`, or `CurrentThickness`, return score 100.
+  2. **Prefix Match (Score 70)**: Only match dimension text if it equals or starts with the numeric query string (e.g. query `25` matches size `25.4`).
+- **Enforce Relevancy Filters on Digit Queries**: If search query contains digits (like a size or ID query), results with score `≤ 50` (fuzzy/rack/shelf matches) MUST be filtered out regardless of whether hits originated from Meilisearch or PostgreSQL fallback.
+- **SQL Parameterized Wildcards for Dimensions**: In PostgreSQL queries (`buildWhereClauses`), use prefix wildcards `cleanQ%` for numeric dimension fields (`current_size`, `current_width`, `current_thickness`) when query is numeric, while keeping `%cleanQ%` for text attributes (`die_id`, `casing`, `rack`, `status`).
+- **Total Count Accuracy**: For digit/size queries where post-filtering (`score > 50`) is applied, the response `total` count MUST equal the actual count of relevant filtered items (`len(filtered)`), rather than returning Meilisearch's raw estimated total hits (e.g. 1000).
+
 ## TypeScript Standards (React 18)
 
 ### Code Style

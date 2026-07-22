@@ -1,5 +1,15 @@
 # AI Implementation History (changelog-ai.md)
 
+### 2026-07-22 · Fix Search Size Precision & Dimension Relevance Scoring
+*   **Feature**: Fixed false-positive size search results by replacing arbitrary string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix dimension matching, normalized `"mm"` unit suffixes for float parsing, enforced score > 50 filter on digit queries for Meilisearch hits, and updated PostgreSQL direct query builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric fields.
+*   **Affected Modules**: `go-api`
+*   **Files Modified**:
+    *   [handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go)
+    *   [database.go](file:///D:/DMS/dms-o2/go-api/internal/database/database.go)
+    *   [handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go)
+*   **Documentation Updated**: `.ai/architecture/coding-standards.md`, `.ai/modules/go-api.md`, `CHANGELOG.md`
+*   **Testing Performed**: Ran Go test suite successfully (`go test ./...` in `go-api`), verified 100% test pass including new unit test cases.
+
 ### 2026-07-19 · Phase 1 Security Upgrades
 *   **Feature**: Unified Auth Interface, Outbox Integrity Hashing, and Dev Secrets protection.
 *   **Affected Modules**: `go-api`, `dies`, `users`, `search`

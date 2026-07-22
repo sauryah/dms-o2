@@ -183,6 +183,13 @@ graph TD
 - Overhauled simple JWT token refresh handlers to automatically keep UserSession models, local cookies, and Redis cache entries synchronized.
 - Resolved and stabilized all unit test failures across Django (backend), Vitest (frontend), and added Go handlers fallback tests.
 
+### 2026-07-22 · fix: eliminate false-positive search results for size and dimension queries
+- Resolved irrelevant search results when searching for die sizes (e.g. searching `25` returned size `1.25`, `0.25`, and `12.5`).
+- Replaced string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix matching.
+- Added unit suffix normalization (`2.5mm` -> `2.5`) for exact float matching (score 100).
+- Enforced strict score > 50 filter on digit queries across both Meilisearch and direct SQL search paths.
+- Updated PostgreSQL search builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric dimension columns when query is numeric.
+
 ### 2026-07-08 · feat: implement real-time search indexing progress bar for bulk spreadsheet imports (Phase 20)
 - Modified `sync_dies_batch_task` in `backend/search/tasks.py` to upload document batches in chunks of 100, track the sync percentage, and write intermediate progress status to Redis.
 - Updated `frontend/src/App.tsx` to automatically trigger `checkIndexStatus()` whenever a real-time SSE ticket event is received, starting/stopping index progress bar rendering and polling seamlessly.

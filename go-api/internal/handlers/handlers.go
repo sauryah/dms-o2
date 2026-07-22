@@ -395,8 +395,14 @@ func scoreDie(die database.DieRepresentation, q string) int {
 	qLower := strings.ToLower(qClean)
 	dieIDLower := strings.ToLower(die.DieID)
 
+	// Clean unit suffix for numeric evaluation (e.g., "2.5mm" -> "2.5")
+	qNumStr := qClean
+	if strings.HasSuffix(strings.ToLower(qNumStr), "mm") {
+		qNumStr = strings.TrimSpace(qNumStr[:len(qNumStr)-2])
+	}
+
 	// 1. Exact size/dimension match
-	qFloat, err := strconv.ParseFloat(qClean, 64)
+	qFloat, err := strconv.ParseFloat(qNumStr, 64)
 	if err == nil {
 		if die.DieType == "ROUND" && die.CurrentSize != nil {
 			szFloat, err := strconv.ParseFloat(*die.CurrentSize, 64)
@@ -429,11 +435,26 @@ func scoreDie(die database.DieRepresentation, q string) int {
 		return 80
 	}
 
-	// 4. Partial matches (substring in die_id, dimensions, or other fields)
+	// Helper for dimension prefix / exact matching
+	matchDimension := func(dimStr *string) bool {
+		if dimStr == nil {
+			return false
+		}
+		dStr := strings.TrimSpace(*dimStr)
+		if dStr == "" {
+			return false
+		}
+		// Match exact dimension string or starts-with prefix (e.g., query "25" matches size "25.4")
+		if dStr == qNumStr || dStr == qLower || strings.HasPrefix(dStr, qNumStr) || strings.HasPrefix(dStr, qLower) {
+			return true
+		}
+		return false
+	}
+
+	// 4. Partial matches (substring in die_id, casing, location, etc., or dimension prefix match)
 	if strings.Contains(dieIDLower, qLower) ||
-		(die.CurrentSize != nil && strings.Contains(strings.ToLower(*die.CurrentSize), qLower)) ||
-		(die.CurrentWidth != nil && strings.Contains(strings.ToLower(*die.CurrentWidth), qLower)) ||
-		(die.CurrentThickness != nil && strings.Contains(strings.ToLower(*die.CurrentThickness), qLower)) ||
+		(die.DieType == "ROUND" && matchDimension(die.CurrentSize)) ||
+		(die.DieType == "FLAT" && (matchDimension(die.CurrentWidth) || matchDimension(die.CurrentThickness))) ||
 		strings.Contains(strings.ToLower(die.Casing), qLower) ||
 		strings.Contains(strings.ToLower(die.Location), qLower) ||
 		strings.Contains(strings.ToLower(die.RackName), qLower) ||
@@ -495,7 +516,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	meiliSuccess := false
 
 	// Search Meilisearch index
-		res, err := h.search.Search(params.Q, &searchParams)
+	res, err := h.search.Search(params.Q, &searchParams)
 	if err != nil {
 		slog.Error("Meilisearch search error", "error", err)
 	} else {
@@ -541,11 +562,9 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	}
 
 	var combined []database.DieRepresentation
-	fromMeilisearch := false
 
 	if meiliSuccess {
 		combined = meiliDies
-		fromMeilisearch = true
 	} else {
 		// Fallback to Postgres direct query only if Meilisearch search failed
 		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Limit, params.Offset)
@@ -574,7 +593,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	var scores []int
 	for _, die := range combined {
 		score := scoreDie(die, params.Q)
-		if hasDigits && score <= 50 && !fromMeilisearch {
+		if hasDigits && score <= 50 {
 			continue
 		}
 		filtered = append(filtered, die)
@@ -599,21 +618,28 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 		filtered[i] = scored[i].die
 	}
 
+	totalCount := len(filtered)
+	if hasDigits {
+		if params.Offset > 0 {
+			totalCount = params.Offset + len(filtered)
+		} else {
+			totalCount = len(filtered)
+		}
+	} else if meiliSuccess && totalHits > totalCount {
+		totalCount = totalHits
+	}
+
 	if len(filtered) > params.Limit {
 		filtered = filtered[:params.Limit]
 	}
 
-	slog.Info("Search results count after sorting and limit truncation", "count", len(filtered))
+	slog.Info("Search results count after sorting and limit truncation", "count", len(filtered), "total", totalCount)
 
 	for i := 0; i < len(filtered) && i < 5; i++ {
 		slog.Info("Search result score", "index", i, "die_id", filtered[i].DieID, "score", scores[i])
 	}
 
-	if totalHits == 0 && len(combined) > 0 {
-		totalHits = len(combined)
-	}
-
-	return filtered, totalHits, nil
+	return filtered, totalCount, nil
 }
 
 func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {

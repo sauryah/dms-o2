@@ -526,12 +526,32 @@ func TestScoreDie(t *testing.T) {
 		{
 			name: "Exact size match normalized mm",
 			die: database.DieRepresentation{
-				DieID:   "R-101",
-				DieType: "ROUND",
+				DieID:       "R-101",
+				DieType:     "ROUND",
 				CurrentSize: &size2_5,
 			},
-			query: "2.5mm",
+			query:    "2.5mm",
+			expected: 100,
+		},
+		{
+			name: "Irrelevant substring size match returns 50 baseline",
+			die: database.DieRepresentation{
+				DieID:       "R-102",
+				DieType:     "ROUND",
+				CurrentSize: func() *string { s := "1.25"; return &s }(),
+			},
+			query:    "25",
 			expected: 50,
+		},
+		{
+			name: "Size prefix match returns 70",
+			die: database.DieRepresentation{
+				DieID:       "R-103",
+				DieType:     "ROUND",
+				CurrentSize: func() *string { s := "25.4"; return &s }(),
+			},
+			query:    "25",
+			expected: 70,
 		},
 		{
 			name: "Exact die_id match",

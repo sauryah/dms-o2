@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,21 +86,45 @@ func buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin
 	if q != "" {
 		cleanQ := strings.Trim(q, `"'`)
 		likeVal := "%" + cleanQ + "%"
-		sqlParts = append(sqlParts, fmt.Sprintf(`
-			AND (
-				d.die_id ILIKE $%d 
-				OR d.casing ILIKE $%d 
-				OR rk.name ILIKE $%d 
-				OR d.status ILIKE $%d 
-				OR s.name ILIKE $%d 
-				OR m.name ILIKE $%d
-				OR CAST(r.current_size AS TEXT) ILIKE $%d
-				OR CAST(f.current_width AS TEXT) ILIKE $%d
-				OR CAST(f.current_thickness AS TEXT) ILIKE $%d
-			)
-		`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter))
-		args = append(args, likeVal)
-		argCounter++
+		qNumStr := cleanQ
+		if strings.HasSuffix(strings.ToLower(qNumStr), "mm") {
+			qNumStr = strings.TrimSpace(qNumStr[:len(qNumStr)-2])
+		}
+
+		if _, err := strconv.ParseFloat(qNumStr, 64); err == nil {
+			sizeLikeVal := qNumStr + "%"
+			sqlParts = append(sqlParts, fmt.Sprintf(`
+				AND (
+					d.die_id ILIKE $%d 
+					OR d.casing ILIKE $%d 
+					OR rk.name ILIKE $%d 
+					OR d.status ILIKE $%d 
+					OR s.name ILIKE $%d 
+					OR m.name ILIKE $%d
+					OR CAST(r.current_size AS TEXT) ILIKE $%d
+					OR CAST(f.current_width AS TEXT) ILIKE $%d
+					OR CAST(f.current_thickness AS TEXT) ILIKE $%d
+				)
+			`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter+1, argCounter+1, argCounter+1))
+			args = append(args, likeVal, sizeLikeVal)
+			argCounter += 2
+		} else {
+			sqlParts = append(sqlParts, fmt.Sprintf(`
+				AND (
+					d.die_id ILIKE $%d 
+					OR d.casing ILIKE $%d 
+					OR rk.name ILIKE $%d 
+					OR d.status ILIKE $%d 
+					OR s.name ILIKE $%d 
+					OR m.name ILIKE $%d
+					OR CAST(r.current_size AS TEXT) ILIKE $%d
+					OR CAST(f.current_width AS TEXT) ILIKE $%d
+					OR CAST(f.current_thickness AS TEXT) ILIKE $%d
+				)
+			`, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter, argCounter))
+			args = append(args, likeVal)
+			argCounter++
+		}
 	}
 
 	if dieType != "" {
