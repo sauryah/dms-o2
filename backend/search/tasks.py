@@ -66,6 +66,12 @@ def sync_die_task(self, die_id):
     try:
         meili_client.index(INDEX_NAME).add_documents([doc])
         logger.info(f"Successfully synced die {die.die_id} to Meilisearch", extra={'die_id': die.die_id})
+        try:
+            from dms.events import broadcast_event
+            from dies.contracts import DIE_UPDATE_EVENT, DIE_SAVE_ACTION
+            broadcast_event(DIE_UPDATE_EVENT, {'id': die.die_id, 'action': DIE_SAVE_ACTION})
+        except Exception as ev_err:
+            logger.error(f"Failed to broadcast update event for die {die.die_id}: {ev_err}")
         return {'status': 'synced', 'die_id': die.die_id}
     except Exception as exc:
         logger.error(
@@ -77,13 +83,14 @@ def sync_die_task(self, die_id):
         raise self.retry(exc=exc, countdown=retry_delay)
 
 @shared_task(bind=True, max_retries=3)
-def delete_die_document_task(self, die_db_id):
+def delete_die_document_task(self, die_db_id, die_str_id=None):
     """
     Delete a die from Meilisearch index.
     
     Retries up to 3 times on failure with exponential backoff.
     Args:
         die_db_id: Database ID of the die to delete
+        die_str_id: User-facing string ID of the die for SSE event
     """
     doc_id = str(die_db_id)
     
@@ -91,6 +98,12 @@ def delete_die_document_task(self, die_db_id):
         logger.info(f"Starting deletion for die document ID: {doc_id}")
         meili_client.index(INDEX_NAME).delete_document(doc_id)
         logger.info(f"Successfully deleted die {doc_id} from Meilisearch", extra={'die_id': doc_id})
+        try:
+            from dms.events import broadcast_event
+            from dies.contracts import DIE_UPDATE_EVENT, DIE_DELETE_ACTION
+            broadcast_event(DIE_UPDATE_EVENT, {'id': die_str_id or doc_id, 'action': DIE_DELETE_ACTION})
+        except Exception as ev_err:
+            logger.error(f"Failed to broadcast delete event for die {die_str_id or doc_id}: {ev_err}")
         return {'status': 'deleted', 'die_id': doc_id}
     except Exception as exc:
         logger.error(
@@ -365,13 +378,25 @@ def process_outbox_task(self):
                     t.processed_at = now
                 OutboxTask.objects.bulk_update(delete_tasks, ['is_processed', 'processed_at'])
                 logger.info(f"Successfully deleted {len(delete_ids)} die documents from Meilisearch in batch")
+                
+                # Broadcast delete events for each successfully deleted die *after* Meilisearch delete completes!
+                from dms.events import broadcast_event
+                from dies.contracts import DIE_UPDATE_EVENT, DIE_DELETE_ACTION
+                for t in delete_tasks:
+                    try:
+                        die_id = t.payload.get('die_id')
+                        die_str_id = t.payload.get('die_str_id') or str(die_id)
+                        broadcast_event(DIE_UPDATE_EVENT, {'id': die_str_id, 'action': DIE_DELETE_ACTION})
+                    except Exception as ev_err:
+                        logger.error(f"Failed to broadcast delete event in batch: {ev_err}")
             except Exception as exc:
                 logger.error(f"Failed to process batch delete tasks: {exc}")
                 # Fall back to individual deletes if batch fails
                 for t in delete_tasks:
                     try:
                         die_id = t.payload.get('die_id')
-                        delete_die_document_task(die_id)
+                        die_str_id = t.payload.get('die_str_id')
+                        delete_die_document_task(die_id, die_str_id)
                         t.is_processed = True
                         t.processed_at = timezone.now()
                         t.save()
@@ -403,6 +428,15 @@ def process_outbox_task(self):
                     t.processed_at = now
                 OutboxTask.objects.bulk_update(chunk_tasks, ['is_processed', 'processed_at'])
                 logger.info(f"Successfully synced batch of {len(docs)} dies to Meilisearch")
+                
+                # Broadcast update events for each successfully synced die *after* Meilisearch sync completes!
+                from dms.events import broadcast_event
+                from dies.contracts import DIE_UPDATE_EVENT, DIE_SAVE_ACTION
+                for die in dies:
+                    try:
+                        broadcast_event(DIE_UPDATE_EVENT, {'id': die.die_id, 'action': DIE_SAVE_ACTION})
+                    except Exception as ev_err:
+                        logger.error(f"Failed to broadcast update event for die {die.die_id}: {ev_err}")
             except Exception as exc:
                 logger.error(f"Failed to process batch sync tasks: {exc}")
                 # Fall back to individual syncs if batch fails

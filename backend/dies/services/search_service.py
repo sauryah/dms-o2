@@ -88,10 +88,13 @@ class SearchService:
         broadcast_event(DIE_UPDATE_EVENT, {'action': DIE_BULK_IMPORT_ACTION})
 
     @staticmethod
-    def delete_die_document(die_id):
+    def delete_die_document(die_id, die_str_id=None):
         def run_delete():
             from dies.models import OutboxTask
-            OutboxTask.objects.create(task_type='DELETE_DIE', payload={'die_id': die_id})
+            payload = {'die_id': die_id}
+            if die_str_id:
+                payload['die_str_id'] = die_str_id
+            OutboxTask.objects.create(task_type='DELETE_DIE', payload=payload)
             from django.conf import settings
             if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
                 from search.tasks import process_outbox_task

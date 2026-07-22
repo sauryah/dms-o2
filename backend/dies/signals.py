@@ -130,7 +130,6 @@ def _sync_die_from_related(instance):
         import logging
         logging.getLogger(__name__).error(f"Failed to check wear alerts in post-save signal: {e}")
     SearchService.queue_die_sync(die.id)
-    SearchService.queue_die_broadcast(die.die_id, DIE_SAVE_ACTION)
 
 
 @receiver(post_save, sender=Die)
@@ -148,5 +147,4 @@ def sync_flat_die_post_save(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=Die)
 def delete_die_post_delete(sender, instance, **kwargs):
-    SearchService.delete_die_document(instance.id)
-    SearchService.broadcast_die_delete(instance.die_id)
+    SearchService.delete_die_document(instance.id, instance.die_id)

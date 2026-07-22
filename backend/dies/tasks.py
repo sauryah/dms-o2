@@ -85,7 +85,6 @@ def check_all_wear_alerts_task():
             WearAlertService.check_wear_alerts(die)
             # Sync search index and broadcast SSE events to push live warnings to the UI
             SearchService.queue_die_sync(die.id)
-            SearchService.queue_die_broadcast(die.die_id, DIE_SAVE_ACTION)
             count += 1
         except Exception as e:
             logger.error(f"Failed to check wear alerts for die {die.die_id}: {e}")
