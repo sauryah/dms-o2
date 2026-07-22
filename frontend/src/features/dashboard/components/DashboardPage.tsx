@@ -434,7 +434,7 @@ export function DashboardPage() {
                               <div className="flex flex-col text-left">
                                 <span className="font-bold text-white text-sm">{sizeStr}</span>
                                 <span className="text-xs text-slate-400 mt-0.5">
-                                  {die.die_type} • {die.die_id} • {die.location || 'No Location'}
+                                  {die.die_type} • {die.die_id} • {die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : 'No Location'}
                                 </span>
                               </div>
                               <span className={`px-2 py-0.5 text-xxs font-bold rounded-full border ${
@@ -848,7 +848,7 @@ function MaintenanceQueue() {
                       </span>
                     </td>
                     <td className="py-3 px-3 font-mono text-slate-400">{die.durationStr}</td>
-                    <td className="py-3 px-3 text-slate-450">{die.location || '—'}</td>
+                    <td className="py-3 px-3 text-slate-450">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</td>
                   </tr>
                 ))}
               </tbody>

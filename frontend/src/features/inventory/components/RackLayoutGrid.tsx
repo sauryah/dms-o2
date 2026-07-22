@@ -7,7 +7,6 @@ interface Die {
   die_id: string
   die_type: string
   status: string
-  location?: string
   rack?: number | null
   rack_id?: number | null
   rack_name?: string
@@ -20,7 +19,7 @@ interface Die {
 
 interface RackLayoutGridProps {
   dies: Die[]
-  onMoveDie: (dieId: string, rackId: number | null, shelf: number | null, location: string) => void
+  onMoveDie: (dieId: string, rackId: number | null, shelf: number | null) => void
   canMove: boolean
   navigate: (path: string) => void
 }
@@ -43,7 +42,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
   })
   const racks = racksList || []
 
-  // Parse location strings using structured fields first, then falling back to regex
+  // Parse location using structured fields
   const parsedDies = dies.map(die => {
     const rId = die.rack_id || die.rack
     if (rId && die.rack_name && die.shelf !== null && die.shelf !== undefined) {
@@ -51,17 +50,6 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
         die,
         rack: `Rack ${die.rack_name.toUpperCase()}`,
         shelf: `Shelf ${die.shelf}`
-      }
-    }
-    
-    // Fall back to regex parsing location string
-    const loc = die.location || ''
-    const match = loc.match(/Rack\s+([A-Za-z0-9]+)\s*-\s*Shelf\s*([0-9]+)/i)
-    if (match) {
-      return {
-        die,
-        rack: `Rack ${match[1].toUpperCase()}`,
-        shelf: `Shelf ${match[2]}`
       }
     }
     
@@ -142,9 +130,9 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
       const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
       
       if (matchedRack) {
-        onMoveDie(dieId, matchedRack.id, shelfNum, `${rackName} - ${shelfName}`)
+        onMoveDie(dieId, matchedRack.id, shelfNum)
       } else {
-        onMoveDie(dieId, null, null, `${rackName} - ${shelfName}`)
+        onMoveDie(dieId, null, null)
       }
     }
     setDragOverCell(null)
@@ -156,7 +144,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
     e.preventDefault()
     const dieId = e.dataTransfer.getData('text/plain') || draggedDieId
     if (dieId) {
-      onMoveDie(dieId, null, null, 'General')
+      onMoveDie(dieId, null, null)
     }
     setDragOverCell(null)
     setDraggedDieId(null)
@@ -212,9 +200,9 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
         const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
         
         if (matchedRack) {
-          onMoveDie(pickedUpDie.die_id, matchedRack.id, shelfNum, `${targetCell.rack} - ${targetCell.shelf}`)
+          onMoveDie(pickedUpDie.die_id, matchedRack.id, shelfNum)
         } else {
-          onMoveDie(pickedUpDie.die_id, null, null, `${targetCell.rack} - ${targetCell.shelf}`)
+          onMoveDie(pickedUpDie.die_id, null, null)
         }
         setPickedUpDie(null)
         setTargetCell(null)
@@ -449,7 +437,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                             {die.die_id}
                           </div>
                           <div className="text-[10px] text-slate-400 truncate">
-                            Loc: {die.location || 'None'}
+                            Loc: {die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : 'None'}
                           </div>
                         </div>
                       </div>
@@ -509,8 +497,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                                 onMoveDie(
                                   die.die_id,
                                   rObj.id,
-                                  selectedShelf,
-                                  `Rack ${rObj.name.toUpperCase()} - Shelf ${selectedShelf}`
+                                  selectedShelf
                                 )
                               }
                               setAssigningDieId(null)

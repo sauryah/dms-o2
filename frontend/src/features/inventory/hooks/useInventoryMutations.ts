@@ -39,18 +39,18 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
   // Mutation for updating die location (visual grid)
   const moveDieLocationMutation = useMutation({
-    mutationFn: ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => request(`/api/dies/${dieId}/`, {
+    mutationFn: ({ dieId, rack, shelf }: { dieId: string, rack?: number | null, shelf?: number | null }) => request(`/api/dies/${dieId}/`, {
       method: 'PATCH',
-      body: JSON.stringify({ location, rack, shelf })
+      body: JSON.stringify({ rack, shelf })
     }),
-    onMutate: async ({ dieId, location, rack, shelf }: { dieId: string, location?: string, rack?: number | null, shelf?: number | null }) => {
+    onMutate: async ({ dieId, rack, shelf }: { dieId: string, rack?: number | null, shelf?: number | null }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
       const previousSearch = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
       const updateLoc = (old: any) => {
-        return mapQueryDataList(old, (d: any) => String(d.die_id) === String(dieId) ? { ...d, location: location !== undefined ? location : d.location, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
+        return mapQueryDataList(old, (d: any) => String(d.die_id) === String(dieId) ? { ...d, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
       }
       queryClient.setQueriesData({ queryKey: ['dies'] }, updateLoc)
       queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLoc)
@@ -69,7 +69,7 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       showToast(`Failed to move die: ${err.message}`, 'error')
     },
     onSuccess: (data: any, variables: any) => {
-      showToast(`Successfully moved die ${variables.dieId} to ${variables.location}.`, 'success')
+      showToast(`Successfully moved die ${variables.dieId}.`, 'success')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['dies'] })

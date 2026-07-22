@@ -324,7 +324,7 @@ export const DiesTable = memo(function DiesTable({
       if (!Array.isArray(old)) return old
       return old.map((die: any) => {
         if (selectedDieIds.has(die.die_id)) {
-          return { ...die, location: nextLocation }
+          return { ...die, rack_name: nextLocation }
         }
         return die
       })
@@ -339,11 +339,11 @@ export const DiesTable = memo(function DiesTable({
       const p2 = queryClient.getQueryData(['dieDetail', dieId])
       if (p1 !== undefined) {
         previousIndividualDies.push([['die', dieId], p1])
-        queryClient.setQueryData(['die', dieId], (old: any) => old ? { ...old, location: nextLocation } : old)
+        queryClient.setQueryData(['die', dieId], (old: any) => old ? { ...old, rack_name: nextLocation } : old)
       }
       if (p2 !== undefined) {
         previousIndividualDies.push([['dieDetail', dieId], p2])
-        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? { ...old, location: nextLocation } : old)
+        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? { ...old, rack_name: nextLocation } : old)
       }
     })
 
@@ -355,7 +355,7 @@ export const DiesTable = memo(function DiesTable({
       for (const dieId of snapshotDieIds) {
         await request(`/api/dies/${dieId}/`, {
           method: 'PATCH',
-          body: JSON.stringify({ location: nextLocation })
+          body: JSON.stringify({ rack_name: nextLocation })
         })
       }
       showToast(`Successfully updated location of ${snapshotDieIds.size} dies to "${nextLocation}".`, 'success')
@@ -437,7 +437,7 @@ export const DiesTable = memo(function DiesTable({
             </span>
           )}
         </div>
-        <div className="px-3 sm:px-6 text-slate-300 truncate text-sm">{die.location || '—'}</div>
+        <div className="px-3 sm:px-6 text-slate-300 truncate text-sm">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</div>
         <div className="px-3 sm:px-6 text-slate-300">
           <span className="px-2 py-0.5 text-xxs font-mono font-semibold bg-slate-800 rounded border border-slate-700/50">
             {die.die_type}
@@ -587,7 +587,7 @@ export const DiesTable = memo(function DiesTable({
                   </div>
                   <div>
                     <span className="text-slate-500">Location: </span>
-                    <span className="text-slate-200 truncate">{die.location || '—'}</span>
+                    <span className="text-slate-200 truncate">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
                   </div>
                   <div>
                     <span className="text-slate-500">Updated: </span>
@@ -737,8 +737,8 @@ export const DiesTable = memo(function DiesTable({
             <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('current_size')}>
               Size / Dimensions {sortField === 'current_size' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
             </div>
-            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('location')}>
-              Location {sortField === 'location' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
+            <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('rack_name')}>
+              Location {sortField === 'rack_name' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}
             </div>
             <div className="px-3 sm:px-6 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('category')}>
               Category {sortField === 'category' && (sortOrder === 'asc' ? ' ▲' : ' ▼')}

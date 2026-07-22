@@ -87,8 +87,8 @@ export function useRealtimeSync(options: {
                     let locationMsg = ''
                     if (die.set_name) {
                       locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
-                    } else if (die.location) {
-                      locationMsg = ` in ${die.location}`
+                    } else if (die.rack_name && die.shelf) {
+                      locationMsg = ` in ${die.rack_name} - Shelf ${die.shelf}`
                     }
                     const msg = `Die ${die.die_id} is now ${die.status}${locationMsg}.`
                     options.onShowToast(msg, 'info')

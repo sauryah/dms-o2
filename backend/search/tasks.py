@@ -18,7 +18,9 @@ def die_to_meili_document(die):
         'die_type': die.die_type,
         'casing':   die.casing,
         'status':   die.status,
-        'location': die.location,
+        'rack': die.rack.name if die.rack else '',
+        'rack_id': die.rack_id,
+        'shelf_number': die.shelf_number,
         'set':      die.current_set.name if die.current_set else '',
         'machine':  die.current_set.machine.name if die.current_set else '',
     }
@@ -208,8 +210,8 @@ def rebuild_search_index_task(self, filename=None):
             meili_client.create_index(temp_index_name, {'primaryKey': 'id'})
             temp_idx = meili_client.index(temp_index_name)
             temp_idx.update_settings({
-                'searchableAttributes': ['die_id', 'casing', 'status', 'location', 'set', 'machine', 'size', 'width', 'thickness'],
-                'filterableAttributes': ['die_type', 'status', 'casing', 'location', 'size', 'width', 'thickness', 'machine'],
+                'searchableAttributes': ['die_id', 'casing', 'status', 'rack', 'shelf_number', 'set', 'machine', 'size', 'width', 'thickness'],
+                'filterableAttributes': ['die_type', 'status', 'casing', 'rack', 'shelf_number', 'size', 'width', 'thickness', 'machine'],
                 'sortableAttributes':   ['die_id'],
             })
         except Exception as e:
@@ -217,7 +219,7 @@ def rebuild_search_index_task(self, filename=None):
             raise e
 
         # 2. Fetch all dies
-        dies = list(Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine').all())
+        dies = list(Die.objects.select_related('rounddie', 'flatdie', 'current_set__machine', 'rack').all())
         total_dies = len(dies)
         
         if total_dies == 0:

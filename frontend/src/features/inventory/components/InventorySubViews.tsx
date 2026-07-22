@@ -90,7 +90,7 @@ export function SearchView({
             {viewMode === 'grid' ? (
               <RackLayoutGrid 
                 dies={activeDiesList} 
-                onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
+                onMoveDie={(dieId, rackId, shelf) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf })} 
                 canMove={canCreate} 
                 navigate={navigate}
               />
@@ -210,7 +210,7 @@ export function MachineView({
             {viewMode === 'grid' ? (
               <RackLayoutGrid 
                 dies={activeDiesList} 
-                onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
+                onMoveDie={(dieId, rackId, shelf) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf })} 
                 canMove={canCreate} 
                 navigate={navigate}
               />
@@ -356,7 +356,7 @@ export function SetView({
             {viewMode === 'grid' ? (
               <RackLayoutGrid 
                 dies={activeDiesList} 
-                onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
+                onMoveDie={(dieId, rackId, shelf) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf })} 
                 canMove={canCreate} 
                 navigate={navigate}
               />
@@ -460,7 +460,7 @@ export function UnassignedView({
             {viewMode === 'grid' ? (
               <RackLayoutGrid 
                 dies={activeDiesList} 
-                onMoveDie={(dieId, rackId, shelf, location) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf, location })} 
+                onMoveDie={(dieId, rackId, shelf) => moveDieLocationMutation.mutate({ dieId, rack: rackId, shelf })} 
                 canMove={canCreate} 
                 navigate={navigate}
               />

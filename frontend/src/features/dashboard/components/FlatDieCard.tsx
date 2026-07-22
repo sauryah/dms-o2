@@ -20,7 +20,7 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
-      aria-label={`Flat Die ${die.die_id}, Status: ${die.status}, Casing: ${die.casing || 'None'}, Location: ${die.location || 'None'}`}
+      aria-label={`Flat Die ${die.die_id}, Status: ${die.status}, Casing: ${die.casing || 'None'}, Location: ${die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : 'None'}`}
       className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 hover:border-blue-500/40 hover:bg-slate-900/90 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-lg rounded-xl p-6 flex flex-col justify-between group h-full focus-ring"
     >
       <div>
@@ -56,7 +56,7 @@ export function FlatDieCard({ die, onClick }: FlatDieCardProps) {
         </div>
         <div>
           <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Location</span>
-          <span className="font-semibold text-slate-200 truncate block" title={die.location || undefined}>{die.location || '—'}</span>
+          <span className="font-semibold text-slate-200 truncate block" title={die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : undefined}>{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
         </div>
         <div>
           <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5 font-semibold">Set / Machine</span>

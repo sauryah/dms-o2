@@ -32,6 +32,14 @@ type DieRepresentation struct {
 	Radius                 *string `json:"radius,omitempty"`
 }
 
+func (d *DieRepresentation) ComputeLocation() {
+	if d.RackName != "" && d.Shelf != nil {
+		d.Location = fmt.Sprintf("%s - Shelf %d", d.RackName, *d.Shelf)
+	} else {
+		d.Location = ""
+	}
+}
+
 type PostgresDB struct {
 	*sql.DB
 }
@@ -69,7 +77,7 @@ func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error
 	return isActive, nil
 }
 
-func buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) ([]string, []interface{}, int) {
+func buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) ([]string, []interface{}, int) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -81,7 +89,7 @@ func buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax
 			AND (
 				d.die_id ILIKE $%d 
 				OR d.casing ILIKE $%d 
-				OR d.location ILIKE $%d 
+				OR rk.name ILIKE $%d 
 				OR d.status ILIKE $%d 
 				OR s.name ILIKE $%d 
 				OR m.name ILIKE $%d
@@ -102,11 +110,6 @@ func buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax
 	if statusVal != "" {
 		sqlParts = append(sqlParts, fmt.Sprintf("AND d.status = $%d", argCounter))
 		args = append(args, statusVal)
-		argCounter++
-	}
-	if location != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND d.location ILIKE $%d", argCounter))
-		args = append(args, "%"+location+"%")
 		argCounter++
 	}
 	if casing != "" {
@@ -165,13 +168,13 @@ func buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax
 	return sqlParts, args, argCounter
 }
 
-func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) (string, []interface{}) {
+func BuildQueryPostgresDirectly(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 
 	sqlParts = append(sqlParts, `
 		SELECT 
-			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			d.id, d.die_id, d.die_type, d.casing, d.status, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
 			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
@@ -187,7 +190,7 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin
 		WHERE 1=1
 	`)
 
-	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 	sqlParts = append(sqlParts, whereParts...)
 	args = append(args, whereArgs...)
 
@@ -196,8 +199,8 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin
 	return strings.Join(sqlParts, "\n"), args
 }
 
-func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]DieRepresentation, error) {
-	query, args := BuildQueryPostgresDirectly(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
+func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]DieRepresentation, error) {
+	query, args := BuildQueryPostgresDirectly(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, limit, offset)
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -207,7 +210,7 @@ func (db *PostgresDB) QueryPostgresDirectly(ctx context.Context, q, dieType, sta
 	return scanDies(rows)
 }
 
-func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (string, []interface{}) {
+func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (string, []interface{}) {
 	var sqlParts []string
 	var args []interface{}
 
@@ -222,15 +225,15 @@ func BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, si
 		WHERE 1=1
 	`)
 
-	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+	whereParts, whereArgs, _ := buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 	sqlParts = append(sqlParts, whereParts...)
 	args = append(args, whereArgs...)
 
 	return strings.Join(sqlParts, "\n"), args
 }
 
-func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
-	query, args := BuildQueryPostgresDirectlyCount(q, dieType, statusVal, location, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
+func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error) {
+	query, args := BuildQueryPostgresDirectlyCount(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned)
 	var count int
 	err := db.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
@@ -246,7 +249,7 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 
 	sqlParts = append(sqlParts, `
 		SELECT 
-			d.id, d.die_id, d.die_type, d.casing, d.status, d.location, d.current_set_id,
+			d.id, d.die_id, d.die_type, d.casing, d.status, d.current_set_id,
 			s.name as set_name,
 			m.name as machine_name,
 			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
@@ -353,7 +356,7 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		var size, width, thickness, radius sql.NullString
 
 		err := rows.Scan(
-			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &d.Location, &setID,
+			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &setID,
 			&setName, &machineName, &rackID, &rackName, &shelf, &predictedRemainingDays, &size, &width, &thickness, &radius,
 		)
 		if err != nil {
@@ -400,6 +403,7 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 			}
 		}
 
+		d.ComputeLocation()
 		dies = append(dies, d)
 	}
 	return dies, nil

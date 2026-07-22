@@ -389,7 +389,7 @@ export function useInventoryState() {
         die.die_type || '',
         die.casing || '',
         die.status || '',
-        die.location || '',
+        die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '',
         die.set_name || '',
         isRound ? (die.current_size || '') : '',
         isRound ? (die.punched_size || '') : '',

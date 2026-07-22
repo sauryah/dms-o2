@@ -5,7 +5,10 @@ export interface Die {
   die_type: DieType;
   casing: string;
   status: DieStatus;
-  location: string | null;
+  rack_id?: number | null;
+  rack_name?: string;
+  shelf?: number | null;
+  shelf_number?: number | null;
   remarks: string | null;
   current_set: number | null;
   current_set_name?: string;

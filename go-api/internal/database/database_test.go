@@ -10,7 +10,7 @@ import (
 
 func TestBuildQueryPostgresDirectly(t *testing.T) {
 	// Test empty parameters
-	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if !strings.Contains(query, "SELECT") {
 		t.Errorf("expected SELECT query, got: %s", query)
 	}
@@ -19,7 +19,7 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 	}
 
 	// Test filters
-	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Rack A", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", 10, 0)
+	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", 10, 0)
 	
 	if !strings.Contains(query, "ILIKE $1") {
 		t.Errorf("expected search query parameter placeholder $1, got: %s", query)
@@ -30,26 +30,23 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 	if !strings.Contains(query, "AND d.status = $3") {
 		t.Errorf("expected status filter placeholder $3, got: %s", query)
 	}
-	if !strings.Contains(query, "AND d.location ILIKE $4") {
-		t.Errorf("expected location filter placeholder $4, got: %s", query)
+	if !strings.Contains(query, "AND d.casing = $4") {
+		t.Errorf("expected casing filter placeholder $4, got: %s", query)
 	}
-	if !strings.Contains(query, "AND d.casing = $5") {
-		t.Errorf("expected casing filter placeholder $5, got: %s", query)
+	if !strings.Contains(query, "AND r.current_size >= $5") {
+		t.Errorf("expected sizeMin filter placeholder $5, got: %s", query)
 	}
-	if !strings.Contains(query, "AND r.current_size >= $6") {
-		t.Errorf("expected sizeMin filter placeholder $6, got: %s", query)
-	}
-	if !strings.Contains(query, "AND r.current_size <= $7") {
-		t.Errorf("expected sizeMax filter placeholder $7, got: %s", query)
+	if !strings.Contains(query, "AND r.current_size <= $6") {
+		t.Errorf("expected sizeMax filter placeholder $6, got: %s", query)
 	}
 
-	if len(args) != 7 {
-		t.Errorf("expected 7 args, got %d", len(args))
+	if len(args) != 6 {
+		t.Errorf("expected 6 args, got %d", len(args))
 	}
 }
 
 func TestBuildQueryPostgresDirectlyCount(t *testing.T) {
-	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "", "10.0", "50.0", "1.0", "5.0", "", "", "")
+	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "10.0", "50.0", "1.0", "5.0", "", "", "")
 	if !strings.Contains(query, "COUNT(*)") {
 		t.Errorf("expected COUNT query, got: %s", query)
 	}

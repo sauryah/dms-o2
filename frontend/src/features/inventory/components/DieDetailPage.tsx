@@ -1085,7 +1085,6 @@ export function DieDetailPage() {
   
   const [isEditing, setIsEditing] = useState(false)
   const [statusVal, setStatusVal] = useState('')
-  const [location, setLocation] = useState('')
   const [rack, setRack] = useState('')
   const [shelf, setShelf] = useState('')
   const [remarks, setRemarks] = useState('')
@@ -1172,7 +1171,6 @@ export function DieDetailPage() {
       setDieIdVal(die.die_id || '')
       setCasingVal(die.casing || '')
       setStatusVal(die.status || 'AVAILABLE')
-      setLocation(die.location || '')
       setRack(die.rack ? String(die.rack) : '')
       setShelf(die.shelf ? String(die.shelf) : '')
       setRemarks(die.remarks || '')
@@ -1280,14 +1278,10 @@ export function DieDetailPage() {
       return
     }
 
-    const selectedRack = racks.find((r: any) => String(r.id) === String(rack))
-    const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
-
     const payload: any = {
       die_id: trimmedId,
       casing: casingVal,
       status: statusVal,
-      location: finalLocation,
       rack: rack ? Number(rack) : null,
       shelf: shelf ? Number(shelf) : null,
       remarks,
@@ -1775,7 +1769,7 @@ export function DieDetailPage() {
                   </div>
                   <div className="flex justify-between px-2 py-1.5">
                     <span className="text-slate-500 print:text-slate-800">Location</span>
-                    <span className="font-semibold text-slate-200 print:text-black">{die.location || '—'}</span>
+                    <span className="font-semibold text-slate-200 print:text-black">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
                   </div>
                   <div className="flex justify-between px-2 py-1.5">
                     <span className="text-slate-500 print:text-slate-800">Set Assignment</span>
@@ -2116,7 +2110,7 @@ export function DieDetailPage() {
               <MapPin className="h-4 w-4 text-slate-400" />
               <span>Location</span>
             </span>
-            <span className="font-semibold text-slate-900">{die.location || '—'}</span>
+            <span className="font-semibold text-slate-900">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
           </div>
           {/* Set Assignment */}
           <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
