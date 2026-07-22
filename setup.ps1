@@ -80,6 +80,30 @@ if ($certsLanIp) {
         Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
     }
     Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
+
+    # Automatically add detected LAN IP and hostname to DJANGO_ALLOWED_HOSTS in .env
+    if (Test-Path .env) {
+        $envContent = [System.IO.File]::ReadAllText(".env")
+        if ($envContent -match 'DJANGO_ALLOWED_HOSTS=(.*)') {
+            $existingHosts = $Matches[1].Trim()
+            $hostArr = $existingHosts -split ',' | ForEach-Object { $_.Trim() }
+            $updated = $false
+            if ($certsLanIp -and $hostArr -notcontains $certsLanIp) {
+                $existingHosts += ",$certsLanIp"
+                $updated = $true
+            }
+            $compName = $env:COMPUTERNAME.ToLower()
+            if ($compName -and $hostArr -notcontains $compName) {
+                $existingHosts += ",$compName"
+                $updated = $true
+            }
+            if ($updated) {
+                $envContent = $envContent -replace 'DJANGO_ALLOWED_HOSTS=.*', "DJANGO_ALLOWED_HOSTS=$existingHosts"
+                [System.IO.File]::WriteAllText(".env", $envContent)
+                Write-Host ">>> Updated DJANGO_ALLOWED_HOSTS in .env with LAN IP ($certsLanIp) and hostname ($compName)" -ForegroundColor Green
+            }
+        }
+    }
 } else {
     Write-Host ">>> WARNING: Could not detect LAN IP. Run scripts\generate-certs.bat manually." -ForegroundColor Yellow
 }

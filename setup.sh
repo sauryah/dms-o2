@@ -57,6 +57,14 @@ if [ -n "$LAN_IP_CERT" ] && command -v mkcert &> /dev/null; then
         echo ">>> Root CA copied: certs/rootCA.pem"
     fi
     echo ">>> TLS certificates generated for $LAN_IP_CERT"
+    if [ -f .env ] && ! grep -q "$LAN_IP_CERT" .env; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/DJANGO_ALLOWED_HOSTS=.*/&,$LAN_IP_CERT/" .env
+        else
+            sed -i "s/DJANGO_ALLOWED_HOSTS=.*/&,$LAN_IP_CERT/" .env
+        fi
+        echo ">>> Updated DJANGO_ALLOWED_HOSTS in .env with LAN IP ($LAN_IP_CERT)"
+    fi
 elif [ -z "$LAN_IP_CERT" ]; then
     echo ">>> WARNING: Could not detect LAN IP. Run scripts/generate-certs.sh manually."
 else
