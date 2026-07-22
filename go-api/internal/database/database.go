@@ -363,6 +363,9 @@ func (db *PostgresDB) GetStats(ctx context.Context) (map[string]int, int, error)
 		stats[status] = count
 		total += count
 	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
 	return stats, total, nil
 }
 
@@ -431,5 +434,10 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		d.ComputeLocation()
 		dies = append(dies, d)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return dies, nil
 }
