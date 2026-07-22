@@ -59,3 +59,23 @@
     *   [.pre-commit-config.yaml](file:///home/sahil/Desktop/Projects/dms-o2/.pre-commit-config.yaml)
 *   **Testing Performed**: Rebuilt docker environment; ran and passed 129 Django unit tests and 6 Go packages unit tests successfully (100% green).
 
+### 2026-07-22 · Phase 6: Security Hardening & Infrastructure Resilience
+*   **Feature**: Security headers middleware, request size limits, Redis AOF persistence, Docker resource limits, and Redis connection pooling improvements.
+*   **Affected Modules**: `go-api`, `dies`, `infrastructure`
+*   **Files Modified/Created**:
+    *   [middleware/security.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/middleware/security.go) - New security headers and request size limit middleware
+    *   [main.go (go-api)](file:///home/sahil/Desktop/Projects/dms-o2/go-api/cmd/server/main.go) - Applied security headers, request size limits, and server timeouts
+    *   [views.py (dies)](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/views.py) - Refactored ImportDiesView to use Django cache framework instead of raw Redis connections
+    *   [docker-compose.yml](file:///home/sahil/Desktop/Projects/dms-o2/docker-compose.yml) - Added Redis AOF persistence, Docker resource limits, and redis_data volume
+*   **Security Improvements**:
+    *   Added production-standard security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`
+    *   Added 10MB request body size limit to prevent DoS attacks
+    *   Added server timeouts (ReadHeader: 10s, Read: 30s, Write: 30s, Idle: 120s)
+    *   Refactored Redis connection management to use Django's cache framework with connection pooling
+*   **Infrastructure Improvements**:
+    *   Enabled Redis AOF persistence with `appendfsync everysec` for data durability
+    *   Added Redis maxmemory limit (256MB) with LRU eviction policy
+    *   Added Docker resource limits to all services (memory and CPU)
+*   **Testing Performed**: Verified Go code compiles successfully, Django changes are syntactically correct.
+*   **Documentation Updated**: `.ai/changelog-ai.md`, `.ai/security.md`, `.ai/decisions.md`, `.ai/deployment.md`
+

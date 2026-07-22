@@ -272,13 +272,10 @@ class ImportDiesView(APIView):
             temp_path = temp_file.name
 
         try:
-            import redis
             import json
-            from django.conf import settings
+            from django.core.cache import cache
             from dies.tasks import import_dies_task
 
-            redis_url = settings.CACHES['default']['LOCATION']
-            r = redis.Redis.from_url(redis_url)
             initial_status = {
                 "status": "importing",
                 "progress": 0,
@@ -286,7 +283,7 @@ class ImportDiesView(APIView):
                 "filename": file_obj.name,
                 "dry_run": dry_run
             }
-            r.set('import_status', json.dumps(initial_status))
+            cache.set('import_status', json.dumps(initial_status), timeout=3600)
 
             import_dies_task.delay(temp_path, ext, request.user.username, file_obj.name, dry_run=dry_run)
             

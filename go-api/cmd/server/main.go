@@ -15,6 +15,7 @@ import (
 	"dms-go-api/internal/database"
 	"dms-go-api/internal/events"
 	"dms-go-api/internal/handlers"
+	"dms-go-api/internal/middleware"
 	"dms-go-api/internal/search"
 )
 
@@ -89,9 +90,17 @@ func main() {
 		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", recorder.status, "duration", time.Since(start))
 	})
 
+	// Apply security headers and request size limits
+	secureMux := middleware.SecurityHeaders(loggingMux)
+	limitedMux := middleware.MaxBytesReader(secureMux, 10<<20) // 10MB limit
+
 	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: loggingMux,
+		Addr:              ":" + port,
+		Handler:           limitedMux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	stopChan := make(chan os.Signal, 1)

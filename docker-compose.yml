@@ -37,6 +37,11 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '2.0'
 
   migrate:
     build:
@@ -82,6 +87,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.rule=PathPrefix(`/api`) || PathPrefix(`/admin`)"
@@ -127,6 +137,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.5'
 
   heavy-worker:
     build:
@@ -152,6 +167,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
 
   beat:
     build:
@@ -209,6 +229,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.5'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`) || PathPrefix(`/api/events`)"
@@ -232,11 +257,18 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.5'
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfsync everysec --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 3s
@@ -299,3 +331,4 @@ services:
 volumes:
   postgres_data:
   meili_data:
+  redis_data:
