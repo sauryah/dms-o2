@@ -37,7 +37,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-white tracking-tight">CREDITS & CONTRIBUTORS</h2>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">DMS | Die Management System (v1.7.1)</p>
+            <p className="text-xs font-semibold text-slate-400 mt-0.5">DMS | Die Management System (v1.9.1)</p>
           </div>
         </div>
 
