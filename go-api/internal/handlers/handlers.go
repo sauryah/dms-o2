@@ -540,9 +540,11 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	}
 
 	var combined []database.DieRepresentation
+	fromMeilisearch := false
 
 	if meiliSuccess {
 		combined = meiliDies
+		fromMeilisearch = true
 	} else {
 		// Fallback to Postgres direct query only if Meilisearch search failed
 		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Limit, params.Offset)
@@ -571,7 +573,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 	var scores []int
 	for _, die := range combined {
 		score := scoreDie(die, params.Q)
-		if hasDigits && score <= 50 {
+		if hasDigits && score <= 50 && !fromMeilisearch {
 			continue
 		}
 		filtered = append(filtered, die)
