@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Calculator, TrendingDown, Sliders, ArrowRight, CheckCircle2, AlertCircle, Calendar } from 'lucide-react'
+import { Calculator, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ToolsPage() {
@@ -39,40 +39,6 @@ export function ToolsPage() {
         'Area reductions & elongation stats',
         'Interactive die list editing & undo/redo',
         'Export reports to PDF, Excel & CSV'
-      ]
-    },
-    {
-      id: 'die-wear',
-      title: 'Die Wear & Lifespan Estimator',
-      description: 'Analyze historically recorded wear patterns, track throughput tonnages, and forecast remaining operation time or volume before recutting is required.',
-      icon: TrendingDown,
-      color: 'from-amber-600/10 to-orange-600/10 border-amber-500/10 text-amber-400 shadow-amber-500/5',
-      active: false,
-      badge: 'In Development',
-      statusIcon: AlertCircle,
-      statusClass: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-      features: [
-        'Throughput tonnage wear modeling',
-        'Historical log wear correlation',
-        'Automatic recut/re-sizing predictions',
-        'Audit history alert dispatching'
-      ]
-    },
-    {
-      id: 'draw-optimizer',
-      title: 'Sequence & Pass Optimizer',
-      description: 'Determine the most efficient progression of die sizes to minimize wire breakages, reduce heat accumulation, and optimize power consumption.',
-      icon: Sliders,
-      color: 'from-purple-600/10 to-pink-600/10 border-purple-500/10 text-purple-400 shadow-purple-500/5',
-      active: false,
-      badge: 'Planned Roadmap',
-      statusIcon: Calendar,
-      statusClass: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-      features: [
-        'Friction-adjusted dynamic drafting',
-        'Power draw & torque minimization',
-        'Thermal stress distribution index',
-        'Optimal machine-set asset assignment'
       ]
     }
   ]

@@ -174,9 +174,8 @@ class DieViewSet(viewsets.ModelViewSet):
         user = request.user
         is_authorized = (
             user and user.is_authenticated and (
-                user.role == 'ROOT' or
-                user.is_superuser or
-                (user.is_authorized_for_tools and isinstance(user.authorized_tools, list) and 'die-wear' in user.authorized_tools)
+                user.role in ['ROOT', 'ADMIN'] or
+                user.is_superuser
             )
         )
         if not is_authorized:

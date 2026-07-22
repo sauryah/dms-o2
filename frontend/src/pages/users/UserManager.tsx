@@ -276,8 +276,6 @@ export function UserManager() {
                               ? user.authorized_tools.map((t: string) => {
                                   if (t === 'sizing-calculator') return 'Sizing'
                                   if (t === 'wire-drawing-calculator') return 'Wire Drawing'
-                                  if (t === 'die-wear') return 'Die Wear'
-                                  if (t === 'draw-optimizer') return 'Optimizer'
                                   return t
                                 }).join(', ')
                               : 'None'}
@@ -499,8 +497,6 @@ export function UserManager() {
                   {[
                     { id: 'sizing-calculator', label: 'Sizing & Elongation Calculator' },
                     { id: 'wire-drawing-calculator', label: 'Wire Drawing Calculator' },
-                    { id: 'die-wear', label: 'Die Wear & Lifespan Estimator' },
-                    { id: 'draw-optimizer', label: 'Sequence & Pass Optimizer' },
                   ].map(tool => {
                     const isChecked = authorizedToolsInput.includes(tool.id)
                     return (

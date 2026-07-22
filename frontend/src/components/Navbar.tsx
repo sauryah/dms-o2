@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, TrendingDown, Sliders, ChevronDown } from 'lucide-react'
+import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../contexts/NotificationContext'
@@ -194,28 +194,6 @@ export function Navbar() {
                               <span className="text-[10px] text-slate-500 font-normal mt-0.5">Precision elongation analysis</span>
                             </div>
                           </Link>
-                          
-                          <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                            <TrendingDown className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                                Die Wear Estimator
-                                <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Forecast remaining die life</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-550 opacity-60 rounded-lg select-none">
-                            <Sliders className="h-4 w-4 text-slate-650 mt-0.5 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                                Sequence Optimizer
-                                <span className="bg-slate-800 text-slate-500 text-[8px] px-1 py-0.2 rounded font-mono">SOON</span>
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Determine optimal drafts</span>
-                            </div>
-                          </div>
                           
                           <div className="border-t border-slate-800/50 my-1" />
                           
@@ -450,20 +428,6 @@ export function Navbar() {
                   <Calculator className="h-4 w-4 text-indigo-500" />
                   <span>Wire Drawing Calculator</span>
                 </Link>
-                <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
-                  <TrendingDown className="h-4 w-4 text-slate-650" />
-                  <span className="flex items-center gap-1.5">
-                    Die Wear Estimator
-                    <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-550 py-1.5 text-sm font-medium select-none opacity-60">
-                  <Sliders className="h-4 w-4 text-slate-650" />
-                  <span className="flex items-center gap-1.5">
-                    Sequence Optimizer
-                    <span className="bg-slate-850 text-[8px] text-slate-500 px-1 py-0.2 rounded font-mono">SOON</span>
-                  </span>
-                </div>
               </div>
             </div>
           )}
