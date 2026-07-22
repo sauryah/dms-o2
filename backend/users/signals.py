@@ -37,3 +37,12 @@ def evict_redis_cache_on_session_delete(sender, instance, **kwargs):
     from django.core.cache import cache
     cache_key = f"user_session:{instance.user_id}:{instance.token_hash}"
     cache.delete(cache_key)
+
+    # Direct Redis delete for Go verify_token cache key (to bypass Django prefix)
+    try:
+        import redis
+        from django.conf import settings
+        r = redis.Redis.from_url(settings.REDIS_CACHE_URL)
+        r.delete(f"verify_token:{instance.token_hash}")
+    except Exception:
+        pass

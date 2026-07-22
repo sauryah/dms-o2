@@ -401,6 +401,41 @@ class AuthTests(APITestCase):
         self.assertEqual(response.data['user_id'], self.admin_user.id)
         self.assertEqual(response.data['role'], 'ADMIN')
 
+    def test_verify_token_redis_key_deleted_on_session_eviction(self):
+        # 1. Login to generate a session
+        login_res = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        token = login_res.data['token']
+        token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+        
+        # 2. Simulate Go API caching the token in Redis
+        import redis
+        from django.conf import settings
+        import json
+        
+        try:
+            r = redis.Redis.from_url(settings.REDIS_CACHE_URL)
+            verify_key = f"verify_token:{token_hash}"
+            r.set(verify_key, json.dumps({"user_id": self.admin_user.id, "role": "ADMIN"}))
+            
+            # Assert the key exists in Redis initially
+            self.assertTrue(r.exists(verify_key))
+            
+            # 3. Evict/Delete the session from Django (e.g. direct delete)
+            from users.models import UserSession
+            UserSession.objects.filter(user=self.admin_user, token_hash=token_hash).delete()
+            
+            # 4. Assert that the verify_token Redis key has been deleted automatically
+            self.assertFalse(r.exists(verify_key))
+        finally:
+            # Cleanup just in case
+            try:
+                r.delete(verify_key)
+            except Exception:
+                pass
+
     def test_multi_device_concurrent_sessions(self):
         from django.test import override_settings
         
