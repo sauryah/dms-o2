@@ -1,25 +1,26 @@
 from django.test import TestCase
 from dies.models import Die, RoundDie, FlatDie
-from machines.models import MachineCategory, Machine, Set
+from machines.models import MachineCategory, Machine, Set, Rack
 from history.models import DieHistory
 from decimal import Decimal
 
 class DieSignalTests(TestCase):
     def setUp(self):
-        # Set up a Machine and Set for testing foreign key updates
         self.category = MachineCategory.objects.create(name="Cat 1")
         self.machine = Machine.objects.create(category=self.category, name="Machine 1")
         self.set_a = Set.objects.create(machine=self.machine, name="Set A")
         self.set_b = Set.objects.create(machine=self.machine, name="Set B")
+        self.rack_a = Rack.objects.create(name="Rack A", row_count=4, column_count=3)
+        self.rack_b = Rack.objects.create(name="Rack B", row_count=4, column_count=3)
 
     def test_create_new_die_no_history(self):
-        # Create new Die -> no DieHistory row created
         die = Die.objects.create(
             die_id="ROUND-NEW",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
         history_count = DieHistory.objects.filter(die=die).count()
         self.assertEqual(history_count, 0)
@@ -55,21 +56,22 @@ class DieSignalTests(TestCase):
         self.assertEqual(history.old_value, self.set_a.name)
         self.assertEqual(history.new_value, self.set_b.name)
 
-    def test_change_die_location_creates_history(self):
+    def test_change_die_rack_creates_history(self):
         die = Die.objects.create(
             die_id="ROUND-LOC",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
-        die.location = "Rack B"
+        die.rack = self.rack_b
         die.save()
 
-        history = DieHistory.objects.filter(die=die, field_name="location").first()
+        history = DieHistory.objects.filter(die=die, field_name="rack_id").first()
         self.assertIsNotNone(history)
-        self.assertEqual(history.old_value, "Rack A")
-        self.assertEqual(history.new_value, "Rack B")
+        self.assertEqual(history.old_value, str(self.rack_a.pk))
+        self.assertEqual(history.new_value, str(self.rack_b.pk))
 
     def test_change_round_die_size_creates_history(self):
         die = Die.objects.create(
@@ -83,10 +85,8 @@ class DieSignalTests(TestCase):
             punched_size=Decimal("10.000"),
             current_size=Decimal("10.000"),
         )
-        # Verify no history created on creation of round_die either
         self.assertEqual(DieHistory.objects.filter(die=die).count(), 0)
 
-        # Now change the current_size
         round_die.current_size = Decimal("9.950")
         round_die.save()
 
@@ -149,9 +149,9 @@ class DieSignalTests(TestCase):
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
-        # Update without changing anything
         die.save()
         history_count = DieHistory.objects.filter(die=die).count()
         self.assertEqual(history_count, 0)

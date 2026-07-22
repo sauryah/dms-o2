@@ -5,12 +5,12 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User, UserSession
 import hashlib
 from dies.models import Die, RoundDie, FlatDie
+from machines.models import Rack
 from history.models import DieHistory
 from decimal import Decimal
 
 class DieAPITests(APITestCase):
     def setUp(self):
-        # Create users
         self.root_user = User.objects.create_superuser(
             username='rootuser',
             password='password123',
@@ -18,20 +18,24 @@ class DieAPITests(APITestCase):
             role='ROOT'
         )
         self.root_token = str(AccessToken.for_user(self.root_user))
-        
+
         token_hash = hashlib.sha256(self.root_token.encode('utf-8')).hexdigest()
         UserSession.objects.create(
             user=self.root_user,
             token_hash=token_hash
         )
 
-        # Create some dies
+        self.rack_a = Rack.objects.create(name="Rack A", row_count=4, column_count=3)
+        self.rack_b = Rack.objects.create(name="Rack B", row_count=4, column_count=3)
+        self.rack_c = Rack.objects.create(name="Rack C", row_count=4, column_count=3)
+
         self.round_die = Die.objects.create(
             die_id="R-101",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
         self.rd_details = RoundDie.objects.create(
             die=self.round_die,
@@ -44,7 +48,8 @@ class DieAPITests(APITestCase):
             die_type="FLAT",
             casing="30x15",
             status="RUNNING",
-            location="Rack B",
+            rack=self.rack_b,
+            shelf_number=2,
         )
         self.fd_details = FlatDie.objects.create(
             die=self.flat_die,
@@ -65,7 +70,8 @@ class DieAPITests(APITestCase):
         self.assertIn('die_type', first_item)
         self.assertIn('casing', first_item)
         self.assertIn('status', first_item)
-        self.assertIn('location', first_item)
+        self.assertIn('rack', first_item)
+        self.assertIn('shelf_number', first_item)
         self.assertIn('set_name', first_item)
         self.assertIn('machine_name', first_item)
 
@@ -117,7 +123,8 @@ class DieAPITests(APITestCase):
             'die_type': 'ROUND',
             'casing': '30x30',
             'status': 'AVAILABLE',
-            'location': 'Rack C',
+            'rack': self.rack_c.id,
+            'shelf_number': 1,
             'punched_size': 3.5,
             'current_size': 3.5
         }
@@ -141,7 +148,6 @@ class DieAPITests(APITestCase):
         self.assertFalse(Die.objects.filter(die_id='R-101').exists())
 
     def test_operator_rbac_boundaries(self):
-        # Create an operator user and get token
         operator_user = User.objects.create_user(
             username='operatoruser',
             password='password123',
@@ -153,25 +159,27 @@ class DieAPITests(APITestCase):
             user=operator_user,
             token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
         )
-        
+
         # 1. Operator can view
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
         url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
         response = self.client.get(url_detail)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # 2. Operator can relocate (PATCH location only)
-        data = {'location': 'Rack Z'}
+        # 2. Operator can relocate (PATCH rack/shelf only)
+        rack_z = Rack.objects.create(name="Rack Z", row_count=4, column_count=3)
+        data = {'rack': rack_z.id, 'shelf_number': 5}
         response = self.client.patch(url_detail, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.round_die.refresh_from_db()
-        self.assertEqual(self.round_die.location, 'Rack Z')
-        
+        self.assertEqual(self.round_die.rack, rack_z)
+        self.assertEqual(self.round_die.shelf_number, 5)
+
         # 3. Operator cannot PATCH other fields (e.g. status)
         data = {'status': 'DAMAGED'}
         response = self.client.patch(url_detail, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        
+
         # 4. Operator cannot POST (create) a die
         url_list = reverse('die-list')
         data = {
@@ -179,7 +187,8 @@ class DieAPITests(APITestCase):
             'die_type': 'ROUND',
             'casing': '30x30',
             'status': 'AVAILABLE',
-            'location': 'Rack C',
+            'rack': self.rack_c.id,
+            'shelf_number': 1,
             'punched_size': 3.5,
             'current_size': 3.5
         }
@@ -196,7 +205,6 @@ class DieAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_regular_user_cannot_relocate(self):
-        # Create regular user and get token
         regular_user = User.objects.create_user(
             username='regularuser',
             password='password123',
@@ -208,10 +216,11 @@ class DieAPITests(APITestCase):
             user=regular_user,
             token_hash=hashlib.sha256(regular_token.encode('utf-8')).hexdigest()
         )
-        
+
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {regular_token}')
         url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
-        data = {'location': 'Rack Z'}
+        rack_z = Rack.objects.create(name="Rack Z 2", row_count=4, column_count=3)
+        data = {'rack': rack_z.id, 'shelf_number': 5}
         response = self.client.patch(url_detail, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -221,13 +230,13 @@ class DieAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_detail_actions_with_slashed_die_id(self):
-        # Create a die with a slash in die_id
         slashed_die = Die.objects.create(
             die_id="IWD-AL-1/1-01",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
         RoundDie.objects.create(
             die=slashed_die,
@@ -236,7 +245,7 @@ class DieAPITests(APITestCase):
         )
 
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
-        
+
         # Test wear prediction detail action
         url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'IWD-AL-1/1-01'})
         response = self.client.get(url_wp)
@@ -265,12 +274,15 @@ class TolerancesAndAlertsAPITests(APITestCase):
             token_hash=hashlib.sha256(self.root_token.encode('utf-8')).hexdigest()
         )
 
+        self.rack_a = Rack.objects.create(name="Rack A TA", row_count=4, column_count=3)
+
         self.round_die = Die.objects.create(
             die_id="R-TEST-ALERT",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A",
+            rack=self.rack_a,
+            shelf_number=1,
         )
         self.rd_details = RoundDie.objects.create(
             die=self.round_die,
@@ -287,12 +299,11 @@ class TolerancesAndAlertsAPITests(APITestCase):
         self.assertTrue(len(response.data['results']) >= 0)
 
     def test_create_and_update_tolerance(self):
-        # Ensure ROUND tolerance object exists
         tol, created = DieTolerance.objects.get_or_create(
             die_type='ROUND',
             defaults={'max_wear_mm': Decimal('0.050'), 'warning_percentage': 70, 'critical_percentage': 90}
         )
-        
+
         url_detail = reverse('tolerance-detail', kwargs={'pk': tol.pk})
         data = {
             'die_type': 'ROUND',
@@ -306,7 +317,6 @@ class TolerancesAndAlertsAPITests(APITestCase):
         self.assertEqual(response.data['warning_percentage'], 60)
 
     def test_wear_alert_api(self):
-        # Trigger an alert via save signal
         self.rd_details.current_size = Decimal('10.040')
         self.rd_details.save()
 
@@ -317,7 +327,6 @@ class TolerancesAndAlertsAPITests(APITestCase):
         self.assertEqual(response.data['results'][0]['alert_level'], 'WARNING')
 
     def test_operator_cannot_update_tolerance(self):
-        # Create an Operator user
         operator_user = User.objects.create_user(
             username='operator_user',
             password='password123',
@@ -330,7 +339,6 @@ class TolerancesAndAlertsAPITests(APITestCase):
             token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
         )
 
-        # Set operator credentials
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
 
         tol, _ = DieTolerance.objects.get_or_create(
@@ -344,17 +352,14 @@ class TolerancesAndAlertsAPITests(APITestCase):
             'warning_percentage': 60,
             'critical_percentage': 85
         }
-        
-        # Read is allowed
+
         response_get = self.client.get(url_detail)
         self.assertEqual(response_get.status_code, status.HTTP_200_OK)
 
-        # Write is forbidden (403)
         response_put = self.client.put(url_detail, data)
         self.assertEqual(response_put.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_operator_cannot_view_wear_alerts(self):
-        # Create an Operator user
         operator_user = User.objects.create_user(
             username='operator_user_alerts',
             password='password123',
@@ -367,7 +372,6 @@ class TolerancesAndAlertsAPITests(APITestCase):
             token_hash=hashlib.sha256(operator_token.encode('utf-8')).hexdigest()
         )
 
-        # Set operator credentials
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {operator_token}')
 
         url = reverse('wear-alert-list')
@@ -378,34 +382,33 @@ class TolerancesAndAlertsAPITests(APITestCase):
         from django.core.cache import cache
         cache_key = f"die_wear_prediction_{self.round_die.id}"
         cache.delete(cache_key)
-        
+
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
         url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-TEST-ALERT'})
-        
+
         # 1. First request computes and populates cache
         res = self.client.get(url_wp)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        
+
         cached_data = cache.get(cache_key)
         self.assertIsNotNone(cached_data)
         self.assertEqual(cached_data['die_id'], 'R-TEST-ALERT')
-        
+
         # 2. Modify cache value to mock cache usage
         cached_data['overall_wear_percentage'] = 999.9
         cache.set(cache_key, cached_data, timeout=300)
-        
+
         # Request should return cached modified value
         res = self.client.get(url_wp)
         self.assertEqual(res.data['overall_wear_percentage'], 999.9)
-        
+
         # 3. Save the RoundDie to trigger signal which invalidates cache
         self.rd_details.current_size = Decimal('10.050')
         self.rd_details.save()
-        
+
         # Cache should be cleared/invalidated
         self.assertIsNone(cache.get(cache_key))
-        
+
         # Request should recompute and return original/fresh data (not 999.9)
         res = self.client.get(url_wp)
         self.assertNotEqual(res.data['overall_wear_percentage'], 999.9)
-

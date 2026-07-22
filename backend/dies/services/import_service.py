@@ -122,9 +122,9 @@ class ImportService:
         
         if rack_val:
             from machines.models import Rack
-            rack_name = str(rack_val).strip().upper()
+            rack_name = str(rack_val).strip()
             try:
-                rack = Rack.objects.get(name=rack_name)
+                rack = Rack.objects.get(name__iexact=rack_name)
             except Rack.DoesNotExist:
                 raise ValueError(f"Rack '{rack_name}' does not exist")
         

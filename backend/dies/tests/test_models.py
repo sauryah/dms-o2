@@ -1,17 +1,20 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from dies.models import Die, RoundDie, FlatDie
+from machines.models import Rack
 from history.models import DieHistory
 from decimal import Decimal
 
 class DieModelTests(TestCase):
     def test_create_round_die_with_location(self):
+        rack = Rack.objects.create(name="Rack A", row_count=4, column_count=3)
         die = Die.objects.create(
             die_id="ROUND-001",
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="Rack A - Shelf 3",
+            rack=rack,
+            shelf_number=3,
             remarks="Round die test"
         )
         round_die = RoundDie.objects.create(
@@ -20,7 +23,8 @@ class DieModelTests(TestCase):
             current_size=Decimal("12.345")
         )
         self.assertEqual(die.die_type, "ROUND")
-        self.assertEqual(die.location, "Rack A - Shelf 3")
+        self.assertEqual(die.rack.name, "Rack A")
+        self.assertEqual(die.shelf_number, 3)
         self.assertEqual(round_die.die, die)
         self.assertEqual(round_die.current_size, Decimal("12.345"))
 
@@ -30,18 +34,22 @@ class DieModelTests(TestCase):
             die_type="ROUND",
             casing="25x10",
             status="AVAILABLE",
-            location="",  # blank location
+            rack=None,
+            shelf_number=None,
             remarks=""
         )
-        self.assertEqual(die.location, "")
+        self.assertIsNone(die.rack)
+        self.assertIsNone(die.shelf_number)
 
     def test_create_flat_die(self):
+        rack = Rack.objects.create(name="Rack B", row_count=4, column_count=3)
         die = Die.objects.create(
             die_id="FLAT-001",
             die_type="FLAT",
             casing="30x15",
             status="AVAILABLE",
-            location="Rack B - Shelf 1",
+            rack=rack,
+            shelf_number=1,
             remarks="Flat die test"
         )
         flat_die = FlatDie.objects.create(

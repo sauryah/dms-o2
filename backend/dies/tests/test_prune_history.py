@@ -15,7 +15,7 @@ class PruneHistoryTests(TestCase):
             casing="20x20",
             status="AVAILABLE",
         )
-        
+
         # 1. Create a fresh record (within retention window)
         self.fresh_history = DieHistory.objects.create(
             die=self.die,
@@ -23,15 +23,15 @@ class PruneHistoryTests(TestCase):
             old_value="AVAILABLE",
             new_value="RUNNING",
         )
-        
+
         # 2. Create an old record (outside retention window)
         self.old_history = DieHistory.objects.create(
             die=self.die,
-            field_name="location",
-            old_value="Rack A",
-            new_value="Rack B",
+            field_name="rack_id",
+            old_value="1",
+            new_value="2",
         )
-        
+
         # Artificially age the old history record (e.g. 400 days old)
         retention_days = settings.HISTORY_RETENTION_DAYS
         old_time = timezone.now() - timedelta(days=retention_days + 10)
@@ -41,7 +41,7 @@ class PruneHistoryTests(TestCase):
         out = StringIO()
         call_command('prune_history', '--dry-run', stdout=out)
         output = out.getvalue()
-        
+
         self.assertIn("Would prune 1 records", output)
         # Verify no records were actually deleted
         self.assertTrue(DieHistory.objects.filter(pk=self.old_history.pk).exists())
@@ -51,7 +51,7 @@ class PruneHistoryTests(TestCase):
         out = StringIO()
         call_command('prune_history', stdout=out)
         output = out.getvalue()
-        
+
         self.assertIn("Pruned 1 records", output)
         # Verify old record is deleted
         self.assertFalse(DieHistory.objects.filter(pk=self.old_history.pk).exists())

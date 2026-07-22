@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from dies.services.validation_service import ValidationService
 from dies.services.import_service import ImportService
 from dies.models import Die, RoundDie
+from machines.models import Rack
 
 User = get_user_model()
 
@@ -61,8 +62,9 @@ class ImportServiceTests(TestCase):
         )
 
     def test_import_dies_service_directly(self):
-        content = """die_id,die_type,casing,status,location,remarks,punched_size,current_size
-R-SERV-1,ROUND,25x10,AVAILABLE,Rack D,rem,1.5,1.5
+        rack = Rack.objects.create(name="Rack D", row_count=4, column_count=3)
+        content = """die_id,die_type,casing,status,rack,shelf_number,remarks,punched_size,current_size
+R-SERV-1,ROUND,25x10,AVAILABLE,Rack D,1,rem,1.5,1.5
 """
         with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', encoding='utf-8') as temp_file:
             temp_file.write(content)
@@ -77,7 +79,8 @@ R-SERV-1,ROUND,25x10,AVAILABLE,Rack D,rem,1.5,1.5
             # Check database state
             die = Die.objects.get(die_id='R-SERV-1')
             self.assertEqual(die.status, 'AVAILABLE')
-            self.assertEqual(die.location, 'Rack D')
+            self.assertEqual(die.rack, rack)
+            self.assertEqual(die.shelf_number, 1)
             self.assertEqual(die.rounddie.current_size, Decimal('1.5'))
         finally:
             os.remove(temp_file_path)
