@@ -145,3 +145,57 @@ class MeilisearchTests(TransactionTestCase):
         results = index.search("ROUND-QUOTE", {"filter": "casing = '25\\'x10\\''"})
         self.assertEqual(len(results['hits']), 1)
         self.assertEqual(results['hits'][0]['die_id'], 'ROUND-QUOTE-1')
+
+    def test_outbox_task_signature_enforcement(self):
+        from dies.models import OutboxTask
+        from search.tasks import process_outbox_task
+        from django.utils import timezone
+        import hmac, hashlib, json
+        from django.conf import settings
+
+        # 1. Create a task with NO payload hash (unsigned)
+        unsigned_task = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload={'die_id': 99999}
+        )
+        # Clear out payload_hash to simulate bypass attempt (since save() auto-generates it if empty)
+        OutboxTask.objects.filter(pk=unsigned_task.pk).update(payload_hash="")
+        
+        # 2. Create a task with an INVALID payload hash
+        invalid_task = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload={'die_id': 88888},
+            payload_hash='invalidhashvalue'
+        )
+
+        # 3. Create a task with a VALID payload hash
+        valid_payload = {'die_id': 77777}
+        serialized = json.dumps(valid_payload, sort_keys=True)
+        valid_hash = hmac.new(
+            settings.SECRET_KEY.encode('utf-8'),
+            serialized.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        
+        valid_task = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload=valid_payload,
+            payload_hash=valid_hash
+        )
+
+        # 4. Run process_outbox_task
+        process_outbox_task()
+
+        # Reload tasks
+        unsigned_task.refresh_from_db()
+        invalid_task.refresh_from_db()
+        valid_task.refresh_from_db()
+
+        # All tasks should be marked processed (but unsigned/invalid tasks are skipped internally)
+        self.assertTrue(unsigned_task.is_processed)
+        self.assertTrue(invalid_task.is_processed)
+        self.assertTrue(valid_task.is_processed)
+        self.assertIsNotNone(unsigned_task.processed_at)
+        self.assertIsNotNone(invalid_task.processed_at)
+        self.assertIsNotNone(valid_task.processed_at)
+

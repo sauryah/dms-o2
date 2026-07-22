@@ -317,19 +317,25 @@ def process_outbox_task(self):
     from django.conf import settings
 
     for task in pending_tasks:
-        if task.payload_hash:
-            serialized = json.dumps(task.payload, sort_keys=True)
-            expected_hash = hmac.new(
-                settings.SECRET_KEY.encode('utf-8'),
-                serialized.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            if not hmac.compare_digest(task.payload_hash, expected_hash):
-                logger.error(f"Security Alert: OutboxTask {task.id} payload integrity hash mismatch! Skipping task processing.")
-                task.is_processed = True
-                task.processed_at = timezone.now()
-                task.save()
-                continue
+        if not task.payload_hash:
+            logger.error(f"Security Alert: OutboxTask {task.id} payload integrity hash is missing! Skipping task processing.")
+            task.is_processed = True
+            task.processed_at = timezone.now()
+            task.save()
+            continue
+
+        serialized = json.dumps(task.payload, sort_keys=True)
+        expected_hash = hmac.new(
+            settings.SECRET_KEY.encode('utf-8'),
+            serialized.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(task.payload_hash, expected_hash):
+            logger.error(f"Security Alert: OutboxTask {task.id} payload integrity hash mismatch! Skipping task processing.")
+            task.is_processed = True
+            task.processed_at = timezone.now()
+            task.save()
+            continue
 
         if task.task_type == 'SYNC_DIE':
             sync_tasks.append(task)
