@@ -73,16 +73,18 @@ Track implementation status across all phases.
 - OutboxTask payload signing
 - Go startup validation
 
-### Phase 2: Location Grid & Physical Schema 🔄
-**Status:** Ready to start
-**Target:** TBD
+### Phase 2: Location Grid & Physical Schema ✅
+**Status:** Complete
+**Commit:** TBD
+**Date:** 2026-07-22
 
-**Planned:**
-- Migrate free-text `Die.location` to structured table
-- Prevent tool assignment to non-existent layout spots
-- Update API endpoints
-- Update frontend components
-- Write tests
+**Completed:**
+- Migrated free-text `Die.location` to structured `rack` (FK) + `shelf_number` fields
+- Added validation to prevent assignment to non-existent layout spots
+- Updated API endpoints to use new location structure
+- Updated import template
+- Wrote tests for location validation
+- Updated documentation
 
 ### Phase 3: Wear Alert Automation & ML ⏳
 **Status:** Future phase

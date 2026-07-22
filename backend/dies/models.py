@@ -8,7 +8,6 @@ class Die(models.Model):
     die_type     = models.CharField(max_length=10, choices=DIE_TYPE_CHOICES)
     casing       = models.CharField(max_length=50)
     status       = models.CharField(max_length=20, choices=DIE_STATUS_CHOICES, default='AVAILABLE')
-    location     = models.CharField(max_length=200, blank=True)  # e.g. "Rack A - Shelf 3"
     rack         = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
     shelf_number = models.PositiveSmallIntegerField(null=True, blank=True)
     current_set  = models.ForeignKey('machines.Set', null=True, blank=True, on_delete=models.SET_NULL)
@@ -22,7 +21,6 @@ class Die(models.Model):
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['die_type']),
-            GinIndex(name='die_location_trgm_idx', fields=['location'], opclasses=['gin_trgm_ops']),
             GinIndex(name='die_casing_trgm_idx', fields=['casing'], opclasses=['gin_trgm_ops']),
         ]
 

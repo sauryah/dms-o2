@@ -104,7 +104,8 @@ class DieViewSet(viewsets.ModelViewSet):
         die_type = self.request.query_params.get('die_type')
         status_val = self.request.query_params.get('status')
         casing = self.request.query_params.get('casing')
-        location = self.request.query_params.get('location')
+        rack_id = self.request.query_params.get('rack_id')
+        shelf_number = self.request.query_params.get('shelf_number')
         
         # Range queries for ROUND size and FLAT width/thickness
         size_min = self.request.query_params.get('size_min')
@@ -121,8 +122,10 @@ class DieViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status_val)
         if casing:
             queryset = queryset.filter(casing=casing)
-        if location:
-            queryset = queryset.filter(location__icontains=location)
+        if rack_id:
+            queryset = queryset.filter(rack_id=rack_id)
+        if shelf_number:
+            queryset = queryset.filter(shelf_number=shelf_number)
             
         if size_min:
             queryset = queryset.filter(rounddie__current_size__gte=size_min)
@@ -314,12 +317,12 @@ class ImportTemplateView(APIView):
         ws1 = wb.active
         ws1.title = "Round Die"
         headers_round = [
-            "die_id", "die_type", "casing", "status", "location", "remarks", 
+            "die_id", "die_type", "casing", "status", "rack", "shelf_number", "remarks", 
             "current_set", "machine_name", "punched_size", "current_size"
         ]
         ws1.append(headers_round)
         example_round = [
-            "R-999", "ROUND", "25x10", "AVAILABLE", "Rack A - Shelf 3", "Example round die",
+            "R-999", "ROUND", "25x10", "AVAILABLE", "A", 3, "Example round die",
             "Set A", "Machine A", 12.345, 12.345
         ]
         ws1.append(example_round)
@@ -327,13 +330,13 @@ class ImportTemplateView(APIView):
         # Sheet 2: Flat Die
         ws2 = wb.create_sheet(title="Flat Die")
         headers_flat = [
-            "die_id", "die_type", "casing", "status", "location", "remarks",
+            "die_id", "die_type", "casing", "status", "rack", "shelf_number", "remarks",
             "current_set", "machine_name", "punched_width", "current_width",
             "punched_thickness", "current_thickness", "radius"
         ]
         ws2.append(headers_flat)
         example_flat = [
-            "F-999", "FLAT", "30x15", "AVAILABLE", "Rack B - Shelf 1", "Example flat die",
+            "F-999", "FLAT", "30x15", "AVAILABLE", "B", 1, "Example flat die",
             "Set B", "Machine B", 50.123, 50.123, 15.456, 15.456, 1.500
         ]
         ws2.append(example_flat)
@@ -346,7 +349,8 @@ class ImportTemplateView(APIView):
             ["die_type", "Required", "Both", "Must be 'ROUND' or 'FLAT'"],
             ["casing", "Required", "Both", "Physical casing dimensions (e.g., 25x10, 30x15)"],
             ["status", "Required", "Both", "Must be one of: AVAILABLE, RUNNING, CLEANING, DAMAGED, POLISHING, MEASURING, INACTIVE"],
-            ["location", "Optional", "Both", "Physical location of the die (e.g. Rack A - Shelf 2)"],
+            ["rack", "Optional", "Both", "Rack name (e.g., A, B, C) - must match existing rack"],
+            ["shelf_number", "Optional", "Both", "Shelf number within rack (must be within rack dimensions)"],
             ["remarks", "Optional", "Both", "Free-form text comments"],
             ["current_set", "Optional", "Both", "The Set name or Set ID the die belongs to"],
             ["machine_name", "Optional", "Both", "Machine name to resolve duplicate set names"],

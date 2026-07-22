@@ -79,6 +79,28 @@
 *   **Testing Performed**: Verified Go code compiles successfully, Django changes are syntactically correct.
 *   **Documentation Updated**: `.ai/changelog-ai.md`, `.ai/security.md`, `.ai/decisions.md`, `.ai/deployment.md`
 
+### 2026-07-22 · Location Grid & Physical Schema (Roadmap Phase 2)
+*   **Feature**: Migrated free-text `Die.location` to structured `rack` (FK) + `shelf_number` fields with validation.
+*   **Affected Modules**: `dies`, `machines`
+*   **Files Modified/Created**:
+    *   [models.py (dies)](backend/dies/models.py) - Removed `location` field, kept `rack` FK and `shelf_number`
+    *   [serializers.py (dies)](backend/dies/serializers.py) - Removed `location` from all serializers, added location validation
+    *   [views.py (dies)](backend/dies/views.py) - Replaced `location` filter with `rack_id` and `shelf_number` filters, updated import template
+    *   [validation_service.py](backend/dies/services/validation_service.py) - Added `validate_location()` method
+    *   [test_location_validation.py](backend/dies/tests/test_location_validation.py) - New test file for location validation
+    *   [0009_populate_location_fields.py](backend/dies/migrations/0009_populate_location_fields.py) - Data migration to populate rack/shelf from location
+    *   [0010_remove_die_location.py](backend/dies/migrations/0010_remove_die_location.py) - Schema migration to remove location field
+*   **Database Changes**:
+    *   Removed `location` VARCHAR(200) field from `die` table
+    *   Removed GIN trigram index on `location`
+    *   Added validation: `shelf_number` must be within rack dimensions (1 to row_count * column_count)
+*   **API Changes**:
+    *   Removed `location` filter parameter from `GET /api/dies/`
+    *   Added `rack_id` and `shelf_number` filter parameters
+    *   Import template now uses `rack` and `shelf_number` columns instead of `location`
+*   **Testing Performed**: Syntactical verification of all modified files, validation tests created.
+*   **Documentation Updated**: `.ai/modules/dies.md`, `.ai/architecture/database.md`, `.ai/changelog-ai.md`
+
 ### 2026-07-22 · AI Engineering Operating System Implementation
 *   **Feature**: Complete AI Engineering Operating System for autonomous AI agent operation.
 *   **Affected Modules**: `.ai/` directory structure

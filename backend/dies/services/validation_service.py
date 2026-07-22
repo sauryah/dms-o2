@@ -41,3 +41,44 @@ class ValidationService:
             return Decimal(str(val))
         except Exception:
             raise ValueError(f"Invalid decimal format for '{field_name}'")
+
+    @staticmethod
+    def validate_location(rack, shelf_number):
+        """
+        Validate that shelf_number is within the rack's dimensions.
+        
+        Args:
+            rack: Rack instance or None
+            shelf_number: Integer or None
+            
+        Returns:
+            Tuple of (rack, shelf_number) or raises ValueError
+        """
+        if rack is None and shelf_number is None:
+            return None, None
+        
+        if rack is not None and shelf_number is None:
+            raise ValueError("shelf_number is required when rack is specified")
+        
+        if rack is None and shelf_number is not None:
+            raise ValueError("rack is required when shelf_number is specified")
+        
+        # Validate shelf_number is a positive integer
+        try:
+            shelf_num = int(shelf_number)
+        except (TypeError, ValueError):
+            raise ValueError("shelf_number must be a valid integer")
+        
+        if shelf_num < 1:
+            raise ValueError("shelf_number must be at least 1")
+        
+        # Calculate total slots in rack (row * column)
+        total_slots = rack.row_count * rack.column_count
+        
+        if shelf_num > total_slots:
+            raise ValueError(
+                f"shelf_number {shelf_num} exceeds rack capacity. "
+                f"Rack '{rack.name}' has {rack.row_count} rows x {rack.column_count} columns = {total_slots} slots"
+            )
+        
+        return rack, shelf_num

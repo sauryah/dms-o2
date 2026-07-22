@@ -7,37 +7,43 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** AI Engineering Operating System Implementation
+**Task:** Location Grid & Physical Schema (Roadmap Phase 2)
 **Status:** Complete
-**Started:** 2026-07-20
+**Started:** 2026-07-22
 **Completed:** 2026-07-22
 **Confidence:** 100%
 
 ## Task Description
-Restructure `.ai/` directory into a complete AI Engineering Operating System that enables any AI agent to understand, continue, and maintain the DMS-O2 project autonomously.
+Migrate free-text `Die.location` to structured table (`rack_id` + `shelf_number`) and prevent tool assignment to non-existent layout spots.
 
 ## Implementation Progress
-- ✅ Phase 1: Directory structure created, files moved
-- ✅ Phase 2: Core documentation created
-- ✅ Phase 3: State and operations created
-- ⏳ Phase 4: Optional documentation (deferred)
+- ✅ Added location validation to ValidationService
+- ✅ Updated DieCreateSerializer to validate location
+- ✅ Created data migration to populate rack/shelf from location
+- ✅ Removed location field from Die model
+- ✅ Updated serializers to remove location references
+- ✅ Updated views to remove location filter
+- ✅ Updated import template
+- ✅ Wrote tests for location validation
+- ✅ Updated documentation
 
 ## Completion Summary
-- 34 files in final structure
-- 14 files moved, 12 new files, 2 merged, 2 removed
-- All documents answer: Why? Who reads it? When updated?
-- Lean documentation approach followed
-- Committed in 3 phases: `56207ff`, `0959f75`, `32c15f2`
+- Location field removed from Die model
+- Rack FK and shelf_number fields retained
+- Validation ensures shelf_number is within rack dimensions
+- API filters updated to use rack_id and shelf_number
+- Import template updated with new columns
+- All code syntactically verified
 
 ## Next Task
-**Task:** Implement Location Grid & Physical Schema (Roadmap Phase 2)
-**Status:** Ready to start
-**Confidence:** 95%
+**Task:** Wear Alert Automation & ML (Roadmap Phase 3)
+**Status:** Future phase
+**Confidence:** TBD
 
 ## Blockers
 None
 
 ## Notes
-- AI-EOS is now operational
-- Follow startup sequence for all future sessions
-- Execute task workflow for every implementation
+- Data migration parses "Rack X - Shelf Y" format
+- Default rack dimensions (10x10) created for unknown racks
+- Manual rack dimension updates may be needed

@@ -7,43 +7,41 @@ Define the current objective for AI sessions.
 **Updated:** When goal changes.
 
 ## Current Goal
-**Objective:** Implement Location Grid & Physical Schema (Roadmap Phase 2)
+**Objective:** Wear Alert Automation & ML (Roadmap Phase 3)
 **Target Date:** TBD
-**Priority:** High
+**Priority:** Medium
 
 ## Goal Description
-Migrate free-text `Die.location` to structured table (`rack_id` + `shelf_number`) and prevent tool assignment to non-existent layout spots.
+Build daily cron tasks executing wear predictions and train predictive models forecasting tool remaining lifetime.
 
 ## Success Criteria
-1. Location table created with rack_id and shelf_number
-2. Die model updated to reference Location table
-3. Validation prevents assignment to non-existent locations
-4. API endpoints updated to work with new structure
-5. Frontend updated to display location information
-6. All tests pass
-7. Documentation updated
+1. Daily cron tasks execute wear predictions
+2. Predictive models forecast tool remaining lifetime
+3. Alerts generated based on predictions
+4. Dashboard displays predictions
+5. All tests pass
+6. Documentation updated
 
 ## Current Progress
 - ✅ AI Engineering Operating System complete
 - ✅ Roadmap Phase 1 (Security) complete
-- 🔄 Roadmap Phase 2 (Location Grid) ready to start
+- ✅ Roadmap Phase 2 (Location Grid) complete
+- 🔄 Roadmap Phase 3 (Wear Alert Automation & ML) future phase
 
 ## How to Achieve
 1. Read affected module documentation
-2. Review existing location-related code
-3. Design Location model
-4. Create database migration
-5. Update Die model and views
-6. Add validation logic
-7. Update API endpoints
-8. Update frontend components
-9. Write tests
-10. Update documentation
+2. Review existing wear prediction code
+3. Design predictive models
+4. Implement daily cron tasks
+5. Integrate predictions with alerts
+6. Update dashboard
+7. Write tests
+8. Update documentation
 
 ## Definition of Done
-- Location table created and populated
-- Die.location field migrated to Location foreign key
-- Validation prevents invalid location assignments
-- All existing functionality preserved
+- Daily cron tasks executing wear predictions
+- Predictive models forecasting tool remaining lifetime
+- Alerts generated based on predictions
+- Dashboard displays predictions
 - All tests pass
 - Documentation updated

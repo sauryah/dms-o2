@@ -59,6 +59,16 @@ CREATE TABLE set (
 );
 ```
 
+### Rack
+```sql
+CREATE TABLE rack (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    row_count INTEGER NOT NULL,
+    column_count INTEGER NOT NULL
+);
+```
+
 ### Die
 ```sql
 CREATE TABLE die (
@@ -66,6 +76,8 @@ CREATE TABLE die (
     set_id INTEGER REFERENCES set(id),
     die_type VARCHAR(10) NOT NULL CHECK (die_type IN ('round', 'flat')),
     status VARCHAR(20) DEFAULT 'active',
+    rack_id INTEGER REFERENCES rack(id),
+    shelf_number SMALLINT CHECK (shelf_number >= 1),
     predicted_remaining_days INTEGER,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
