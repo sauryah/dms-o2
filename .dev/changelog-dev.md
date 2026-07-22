@@ -1,4 +1,4 @@
-# AI Implementation History (changelog-ai.md)
+# Engineering Implementation History (changelog-dev.md)
 
 ### 2026-07-22 · Fix Search Size Precision & Dimension Relevance Scoring
 *   **Feature**: Fixed false-positive size search results by replacing arbitrary string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix dimension matching, normalized `"mm"` unit suffixes for float parsing, enforced score > 50 filter on digit queries for Meilisearch hits, and updated PostgreSQL direct query builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric fields.
@@ -7,7 +7,7 @@
     *   [handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go)
     *   [database.go](file:///D:/DMS/dms-o2/go-api/internal/database/database.go)
     *   [handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go)
-*   **Documentation Updated**: `.ai/architecture/coding-standards.md`, `.ai/modules/go-api.md`, `CHANGELOG.md`
+*   **Documentation Updated**: `.dev/architecture/coding-standards.md`, `.dev/modules/go-api.md`, `CHANGELOG.md`
 *   **Testing Performed**: Ran Go test suite successfully (`go test ./...` in `go-api`), verified 100% test pass including new unit test cases.
 
 ### 2026-07-19 · Phase 1 Security Upgrades
@@ -87,7 +87,7 @@
     *   Added Redis maxmemory limit (256MB) with LRU eviction policy
     *   Added Docker resource limits to all services (memory and CPU)
 *   **Testing Performed**: Verified Go code compiles successfully, Django changes are syntactically correct.
-*   **Documentation Updated**: `.ai/changelog-ai.md`, `.ai/security.md`, `.ai/decisions.md`, `.ai/deployment.md`
+*   **Documentation Updated**: `.dev/changelog-dev.md`, `.dev/security.md`, `.dev/decisions.md`, `.dev/deployment.md`
 
 ### 2026-07-22 · Location Grid & Physical Schema (Roadmap Phase 2)
 *   **Feature**: Migrated free-text `Die.location` to structured `rack` (FK) + `shelf_number` fields with validation.
@@ -109,37 +109,38 @@
     *   Added `rack_id` and `shelf_number` filter parameters
     *   Import template now uses `rack` and `shelf_number` columns instead of `location`
 *   **Testing Performed**: Syntactical verification of all modified files, validation tests created.
-*   **Documentation Updated**: `.ai/modules/dies.md`, `.ai/architecture/database.md`, `.ai/changelog-ai.md`
+*   **Documentation Updated**: `.dev/modules/dies.md`, `.dev/architecture/database.md`, `.dev/changelog-dev.md`
 
-### 2026-07-22 · AI Engineering Operating System Implementation
-*   **Feature**: Complete AI Engineering Operating System for autonomous AI agent operation.
-*   **Affected Modules**: `.ai/` directory structure
+### 2026-07-22 · Engineering Operating System Implementation
+*   **Feature**: Complete Engineering Operating System for autonomous operation.
+*   **Affected Modules**: `.dev/` directory structure
 *   **Files Created/Modified**:
     *   [AGENTS.md](AGENTS.md) - Rewritten as lean entry point (65 lines)
-    *   [.ai/processes/engineering-workflow.md](.ai/processes/engineering-workflow.md) - Engineering workflow with implementation patterns
-    *   [.ai/processes/review-process.md](.ai/processes/review-process.md) - Review gates and checklists
-    *   [.ai/processes/definition-of-done.md](.ai/processes/definition-of-done.md) - Completion criteria
-    *   [.ai/operations/production-runbook.md](.ai/operations/production-runbook.md) - Operational procedures
-    *   [.ai/metrics/metrics.md](.ai/metrics/metrics.md) - Quality measurements
-    *   [.ai/state/active-task.md](.ai/state/active-task.md) - Current work tracking
-    *   [.ai/state/current-goal.md](.ai/state/current-goal.md) - Current objective
-    *   [.ai/state/progress.md](.ai/state/progress.md) - Implementation status
-    *   [.ai/state/technical-debt.md](.ai/state/technical-debt.md) - Known debt items
-    *   [.ai/risk-register.md](.ai/risk-register.md) - Project risks
-    *   [.ai/modules/backend.md](.ai/modules/backend.md) - Django backend overview
-    *   [.ai/architecture/api.md](.ai/architecture/api.md) - Expanded with full endpoint catalog
-    *   [.ai/architecture/database.md](.ai/architecture/database.md) - Expanded with full schema
-    *   [.ai/architecture/coding-standards.md](.ai/architecture/coding-standards.md) - Expanded with language standards
+    *   [.dev/processes/engineering-workflow.md](.dev/processes/engineering-workflow.md) - Engineering workflow with implementation patterns
+    *   [.dev/processes/review-process.md](.dev/processes/review-process.md) - Review gates and checklists
+    *   [.dev/processes/definition-of-done.md](.dev/processes/definition-of-done.md) - Completion criteria
+    *   [.dev/operations/production-runbook.md](.dev/operations/production-runbook.md) - Operational procedures
+    *   [.dev/metrics/metrics.md](.dev/metrics/metrics.md) - Quality measurements
+    *   [.dev/state/active-task.md](.dev/state/active-task.md) - Current work tracking
+    *   [.dev/state/current-goal.md](.dev/state/current-goal.md) - Current objective
+    *   [.dev/state/progress.md](.dev/state/progress.md) - Implementation status
+    *   [.dev/state/technical-debt.md](.dev/state/technical-debt.md) - Known debt items
+    *   [.dev/risk-register.md](.dev/risk-register.md) - Project risks
+    *   [.dev/modules/backend.md](.dev/modules/backend.md) - Django backend overview
+    *   [.dev/architecture/api.md](.dev/architecture/api.md) - Expanded with full endpoint catalog
+    *   [.dev/architecture/database.md](.dev/architecture/database.md) - Expanded with full schema
+    *   [.dev/architecture/coding-standards.md](.dev/architecture/coding-standards.md) - Expanded with language standards
 *   **Implementation Approach**:
     *   Phase 1: Directory restructure (14 files moved, 2 removed)
     *   Phase 2: Core documentation (AGENTS.md, processes, expanded architecture)
     *   Phase 3: State and operations (tracking, runbook, metrics, risks)
     *   Phase 4: Deferred (only when needed)
+    *   Phase 5: Renamed operating system folder to `.dev/` for clean developer workflow
 *   **Engineering Principles Applied**:
     *   Every document answers: Why? Who reads it? When updated?
     *   Fewer, richer documents over many small ones
     *   No placeholder files - all content useful from start
     *   Lean documentation approach
 *   **Testing Performed**: Verified directory structure, committed in 3 phases.
-*   **Documentation Updated**: `.ai/changelog-ai.md`
+*   **Documentation Updated**: `.dev/changelog-dev.md`
 

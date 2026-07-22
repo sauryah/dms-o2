@@ -1,16 +1,16 @@
-# DMS-O2 AI Engineering Operating System
+# DMS-O2 Engineering Operating System
 
 ## Mission
-Deliver production-grade software through autonomous AI engineering,
+Deliver production-grade software through autonomous engineering,
 maintaining quality, security, and documentation at every step.
 
 ## Startup Sequence
 1. Read this file
-2. Read `state/active-task.md` and `state/current-goal.md`
-3. Read `state/progress.md`
-4. Read `processes/engineering-workflow.md`
-5. Read affected module docs from `modules/`
-6. Read architecture context from `architecture/`
+2. Read `.dev/state/active-task.md` and `.dev/state/current-goal.md`
+3. Read `.dev/state/progress.md`
+4. Read `.dev/processes/engineering-workflow.md`
+5. Read affected module docs from `.dev/modules/`
+6. Read architecture context from `.dev/architecture/`
 7. Execute the task
 
 ## Technology Stack
@@ -62,13 +62,13 @@ Every implementation must pass:
 ## Quick Reference
 | Directory | Purpose |
 |-----------|---------|
-| `architecture/` | Technical design and constraints |
-| `business/` | Product vision and strategy |
-| `modules/` | Codebase navigation |
-| `processes/` | How to work |
-| `operations/` | Production procedures |
-| `metrics/` | Quality measurements |
-| `state/` | Current project status |
-| `templates/` | Reusable patterns |
-| `risk-register.md` | Project risks |
-| `changelog-ai.md` | Implementation history |
+| `.dev/architecture/` | Technical design and constraints |
+| `.dev/business/` | Product vision and strategy |
+| `.dev/modules/` | Codebase navigation |
+| `.dev/processes/` | How to work |
+| `.dev/operations/` | Production procedures |
+| `.dev/metrics/` | Quality measurements |
+| `.dev/state/` | Current project status |
+| `.dev/templates/` | Reusable patterns |
+| `.dev/risk-register.md` | Project risks |
+| `.dev/changelog-dev.md` | Implementation history |

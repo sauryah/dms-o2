@@ -34,13 +34,13 @@ Findings in reports are categorized under four severity tiers:
 ## Audit Workflow
 Before pushing changes or executing a release, perform the following steps:
 
-1. **Locate Current Audit**: Locate the existing report in `.ai/audits/latest.md`.
+1. **Locate Current Audit**: Locate the existing report in `.dev/audits/latest.md`.
 2. **Archive the Old Report**: 
-   - Move the current `latest.md` into the `.ai/audits/archive/` directory.
+   - Move the current `latest.md` into the `.dev/audits/archive/` directory.
    - Rename it using the format: `YYYY-MM-DD-<type>.md` (e.g., `2026-07-22-pre-push.md`, `2026-07-22-security.md`).
    - **Crucial Rule**: Never overwrite existing archives. If multiple audits happen on the same day, append an incremental counter (e.g., `YYYY-MM-DD-pre-push-2.md`).
 3. **Execute the Audit**: Analyze the codebase, containers, and configurations.
-4. **Create the New Report**: Copy the template structure from the README/latest files, fill in the findings, and save it as `.ai/audits/latest.md`.
+4. **Create the New Report**: Copy the template structure from the README/latest files, fill in the findings, and save it as `.dev/audits/latest.md`.
 5. **Commit**: Include the archived audit and the new `latest.md` in the pre-push commit.
 
 ---
