@@ -9,7 +9,8 @@ describe('RoundDieCard', () => {
     status: 'AVAILABLE',
     current_size: '2.500',
     casing: '25x10',
-    location: 'Rack A - Shelf 3',
+    rack_name: 'Rack A',
+    shelf: 3,
     set_name: 'Set Alpha',
     machine_name: 'Machine One'
   }

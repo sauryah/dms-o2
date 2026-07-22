@@ -11,7 +11,8 @@ describe('FlatDieCard', () => {
     current_thickness: '15.000',
     radius: '1.250',
     casing: '30x15',
-    location: 'Rack B - Shelf 1',
+    rack_name: 'Rack B',
+    shelf: 1,
     set_name: 'Set Beta',
     machine_name: 'Machine Two'
   }
