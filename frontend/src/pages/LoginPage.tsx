@@ -44,11 +44,16 @@ export function LoginPage() {
     try {
       const res = await fetch('/api/v1/auth/login/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ username: usernameInput, password: passwordInput })
       })
       if (!res.ok) {
-        throw new Error('Invalid username or password')
+        const errData = await res.json().catch(() => ({}))
+        const msg = errData.detail || (Array.isArray(errData.non_field_errors) ? errData.non_field_errors[0] : null) || errData.error || 'Invalid username or password'
+        throw new Error(msg)
       }
       const data = await res.json()
       login(data.token, data.refresh, data.role, usernameInput, undefined, data.is_authorized_for_tools, data.authorized_tools)
