@@ -64,6 +64,8 @@ class ValidationService:
             raise ValueError("rack is required when shelf_number is specified")
         
         # Validate shelf_number is a positive integer
+        if isinstance(shelf_number, float) and not shelf_number.is_integer():
+            raise ValueError("shelf_number must be a valid integer")
         try:
             shelf_num = int(shelf_number)
         except (TypeError, ValueError):
