@@ -132,6 +132,8 @@ func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func
 	go func() {
 		defer listener.Close()
 		slog.Info("Listening for database notifications on channel dms_events")
+		ticker := time.NewTicker(90 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case n := <-listener.Notify:
@@ -141,7 +143,7 @@ func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func
 				slog.Info("Received DB event, invalidating caches and broadcasting", "event", n.Extra)
 				onNotify()
 				manager.Broadcast(n.Extra)
-			case <-time.After(90 * time.Second):
+			case <-ticker.C:
 				go func() {
 					err := listener.Ping()
 					if err != nil {
