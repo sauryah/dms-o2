@@ -7,7 +7,7 @@ from users.context import get_current_user, get_current_ip, _thread_locals
 from dies.services.search_service import SearchService
 from dies.contracts import DIE_SAVE_ACTION
 
-DIE_WATCH_FIELDS = ['status', 'current_set_id', 'location', 'remarks', 'die_id', 'casing']
+DIE_WATCH_FIELDS = ['status', 'current_set_id', 'rack_id', 'shelf_number', 'remarks', 'die_id', 'casing']
 
 def _get_change_context():
     user = get_current_user()
@@ -18,37 +18,6 @@ def _get_change_context():
 
 @receiver(pre_save, sender=Die)
 def log_die_changes(sender, instance, **kwargs):
-    # 1. If rack and shelf_number are explicitly set, regenerate location from them
-    if instance.rack and instance.shelf_number is not None:
-        instance.location = f"{instance.rack.name} - Shelf {instance.shelf_number}"
-    # 2. If rack/shelf_number are not set, but a location string is provided, parse it
-    elif instance.location:
-        loc_str = instance.location.strip()
-        if loc_str.lower() in ('', 'general', 'none', 'unassigned'):
-            instance.rack = None
-            instance.shelf_number = None
-            instance.location = ''
-        else:
-            import re
-            from machines.models import Rack
-            match = re.match(r'Rack\s+([A-Za-z0-9]+)\s*-\s*Shelf\s*([0-9]+)', loc_str, re.IGNORECASE)
-            if match:
-                rack_name = match.group(1).strip()
-                shelf_num = int(match.group(2))
-                try:
-                    rack = Rack.objects.filter(name__iexact=rack_name).first()
-                    if rack:
-                        instance.rack = rack
-                        instance.shelf_number = shelf_num
-                        instance.location = f"{rack.name} - Shelf {shelf_num}"
-                except Exception:
-                    pass
-    # 3. Otherwise, if both are empty/null, clear everything
-    else:
-        instance.rack = None
-        instance.shelf_number = None
-        instance.location = ''
-
     if not instance.pk:
         return
     if getattr(_thread_locals, 'skip_single_sync', False):
