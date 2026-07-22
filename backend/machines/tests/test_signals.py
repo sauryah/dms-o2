@@ -53,3 +53,43 @@ class MachineHistorySignalsTests(TestCase):
             entity_id=set_id,
             entity_name=set_name
         ).exists())
+
+    def test_reorder_sets_logs_history(self):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from machines.views.set import SetViewSet
+        from django.contrib.auth import get_user_model
+        
+        User = get_user_model()
+        admin_user = User.objects.create_superuser(username='admin', email='admin@dms.com', password='password')
+        
+        # Create a second machine
+        machine2 = Machine.objects.create(category=self.category, name="Machine 2")
+        
+        # We want to reorder self.set_obj and assign it to machine2
+        factory = APIRequestFactory()
+        view = SetViewSet.as_view({'post': 'reorder'})
+        
+        request = factory.post('/api/sets/reorder/', {
+            'machine_id': machine2.id,
+            'ordered_set_ids': [self.set_obj.id]
+        }, format='json')
+        force_authenticate(request, user=admin_user)
+        
+        response = view(request)
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that the Set's machine was updated in the database
+        self.set_obj.refresh_from_db()
+        self.assertEqual(self.set_obj.machine_id, machine2.id)
+        self.assertEqual(self.set_obj.order, 0)
+        
+        # Check that MachineHistory logs the set update
+        history = MachineHistory.objects.filter(
+            entity_type='SET',
+            action='UPDATED',
+            field_name='machine'
+        ).first()
+        self.assertIsNotNone(history)
+        self.assertEqual(history.old_value, "Test Machine")
+        self.assertEqual(history.new_value, "Machine 2")
+

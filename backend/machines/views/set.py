@@ -60,7 +60,10 @@ class SetViewSet(viewsets.ModelViewSet):
                 set_obj.order = index
                 updated_sets.append(set_obj)
         
-        Set.objects.bulk_update(updated_sets, ['machine', 'order'])
+        from django.db import transaction
+        with transaction.atomic():
+            for set_obj in updated_sets:
+                set_obj.save()
         return Response({"status": "success"})
 
     def destroy(self, request, *args, **kwargs):
