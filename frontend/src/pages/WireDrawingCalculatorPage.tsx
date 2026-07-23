@@ -51,8 +51,8 @@ export function WireDrawingCalculatorPage() {
   };
 
   const isRoot = role === 'ROOT';
-  const canAccess3DHeatmap = (isRoot || authorizedTools.includes('3d-stress-heatmap')) && !isManuallyLocked;
-  const canAccessTheory = (isRoot || authorizedTools.includes('engineering-theory')) && !isManuallyLocked;
+  const canAccess3DHeatmap = isRoot || authorizedTools.includes('3d-stress-heatmap');
+  const canAccessTheory = isRoot || authorizedTools.includes('engineering-theory');
 
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
@@ -174,37 +174,11 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {/* Sub-Modules Container (Completely hidden if unauthorized or manually locked) */}
-        {(canAccess3DHeatmap || canAccessTheory) && (
-          <div className="space-y-6">
-            {/* Manual Lock/Unlock Switch for Authorized Users */}
-            <div className="flex items-center justify-between bg-slate-950/60 border border-slate-900 px-5 py-3 rounded-xl">
-              <div className="flex items-center space-x-2.5">
-                <div className={`w-2.5 h-2.5 rounded-full ${isManuallyLocked ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-                <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                  Advanced Engineering Sub-Modules: {isManuallyLocked ? 'Hidden' : 'Active & Visible'}
-                </span>
-              </div>
-              <button
-                onClick={toggleManualLock}
-                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition border cursor-pointer ${
-                  isManuallyLocked
-                    ? 'bg-amber-950/40 text-amber-300 border-amber-800/40 hover:bg-amber-900/40'
-                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-white'
-                }`}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>{isManuallyLocked ? 'Show Sub-Modules' : 'Hide Sub-Modules'}</span>
-              </button>
-            </div>
+        {/* 3D Stress Heatmap Module (Rendered directly for authorized users) */}
+        {canAccess3DHeatmap && passes.length > 0 && <StressHeatmap3D passes={passes} />}
 
-            {/* 3D Stress Heatmap Module */}
-            {canAccess3DHeatmap && passes.length > 0 && <StressHeatmap3D passes={passes} />}
-
-            {/* Theory & Fundamentals Module */}
-            {canAccessTheory && <TheoryPanel />}
-          </div>
-        )}
+        {/* Theory & Fundamentals Module (Rendered directly for authorized users) */}
+        {canAccessTheory && <TheoryPanel />}
       </div>
     </div>
   );
