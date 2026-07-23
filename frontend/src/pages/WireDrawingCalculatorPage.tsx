@@ -46,14 +46,8 @@ export function WireDrawingCalculatorPage() {
   };
 
   const isRoot = role === 'ROOT';
-  const hasSpecificToolAuth =
-    authorizedTools.includes('3d-stress-heatmap') ||
-    authorizedTools.includes('engineering-theory') ||
-    authorizedTools.includes('wire-drawing-calculator');
-
-  // ADMIN users are locked out by default unless ROOT explicitly assigns specific tool authorization!
-  const isAuthorizedRole = isRoot || hasSpecificToolAuth;
-  const isEngineeringAuthorized = isAuthorizedRole && !isManuallyLocked;
+  const canAccess3DHeatmap = (isRoot || authorizedTools.includes('3d-stress-heatmap')) && !isManuallyLocked;
+  const canAccessTheory = (isRoot || authorizedTools.includes('engineering-theory')) && !isManuallyLocked;
 
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
@@ -175,14 +169,15 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {isAuthorizedRole ? (
-          <div className="space-y-6">
-            {/* Workbench Section Header & Manual Lock/Unlock Switch */}
+        {/* Sub-Modules Access Container */}
+        <div className="space-y-6">
+          {/* Manual Lock/Unlock Switch for Authorized Users */}
+          {(isRoot || authorizedTools.includes('3d-stress-heatmap') || authorizedTools.includes('engineering-theory')) && (
             <div className="flex items-center justify-between bg-slate-950/60 border border-slate-900 px-5 py-3 rounded-xl">
               <div className="flex items-center space-x-2.5">
                 <div className={`w-2.5 h-2.5 rounded-full ${isManuallyLocked ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
                 <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                  Advanced Engineering Modules: {isManuallyLocked ? 'Locked' : 'Active & Unlocked'}
+                  Advanced Engineering Sub-Modules: {isManuallyLocked ? 'Locked' : 'Active & Unlocked'}
                 </span>
               </div>
               <button
@@ -194,36 +189,57 @@ export function WireDrawingCalculatorPage() {
                 }`}
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>{isManuallyLocked ? 'Unlock 3D & Theory' : 'Lock 3D & Theory'}</span>
+                <span>{isManuallyLocked ? 'Unlock Sub-Modules' : 'Lock Sub-Modules'}</span>
               </button>
             </div>
+          )}
 
-            {!isManuallyLocked && (
-              <>
-                {passes.length > 0 && <StressHeatmap3D passes={passes} />}
-                <TheoryPanel />
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="bg-[#050913]/90 border border-slate-900 rounded-xl p-8 text-center relative overflow-hidden shadow-2xl">
-            <div className="flex justify-center mb-4">
-              <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400">
-                <Lock className="w-6 h-6" />
+          {/* 3D Stress Heatmap Module */}
+          {canAccess3DHeatmap ? (
+            passes.length > 0 && <StressHeatmap3D passes={passes} />
+          ) : (
+            <div className="bg-[#050913]/90 border border-slate-900 rounded-xl p-6 text-center relative overflow-hidden shadow-2xl">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1 font-heading">
+                3D von Mises Stress Heatmap Module Locked
+              </h4>
+              <p className="text-slate-400 text-xs max-w-md mx-auto mb-3 leading-relaxed">
+                3D stress modeling is locked for this user account. Contact your ROOT Superadmin to enable <strong>"3D von Mises Stress Heatmap"</strong> tool authorization.
+              </p>
+              <div className="inline-flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-lg">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Sub-Feature Authorization Required: 3d-stress-heatmap</span>
               </div>
             </div>
-            <h3 className="text-base font-bold text-white mb-1 font-heading">
-              Advanced 3D Stress Model & Theory Engine Restricted
-            </h3>
-            <p className="text-slate-400 text-xs max-w-lg mx-auto mb-4 leading-relaxed">
-              Access to the 3D von Mises Stress Heatmap & Flow Visualizer and Theory & Fundamentals is locked. Admin and Operator accounts require explicit Tool Authorization granted by the ROOT Superadmin.
-            </p>
-            <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800 px-3.5 py-1.5 rounded-lg">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Authorization required: ROOT Superadmin or Explicit Tool Authorization</span>
+          )}
+
+          {/* Theory & Fundamentals Module */}
+          {canAccessTheory ? (
+            <TheoryPanel />
+          ) : (
+            <div className="bg-[#050913]/90 border border-slate-900 rounded-xl p-6 text-center relative overflow-hidden shadow-2xl">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1 font-heading">
+                Theory & Fundamentals Module Locked
+              </h4>
+              <p className="text-slate-400 text-xs max-w-md mx-auto mb-3 leading-relaxed">
+                Theoretical mechanics guides are locked for this user account. Contact your ROOT Superadmin to enable <strong>"Theory & Fundamentals"</strong> tool authorization.
+              </p>
+              <div className="inline-flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-lg">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Sub-Feature Authorization Required: engineering-theory</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

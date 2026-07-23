@@ -496,7 +496,9 @@ export function UserManager() {
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-550 mb-1">Select Accessible Tools</span>
                   {[
                     { id: 'sizing-calculator', label: 'Sizing & Elongation Calculator' },
-                    { id: 'wire-drawing-calculator', label: 'Wire Drawing Calculator' },
+                    { id: 'wire-drawing-calculator', label: 'Wire Drawing Calculator (Base)' },
+                    { id: '3d-stress-heatmap', label: '↳ 3D von Mises Stress Heatmap & Flow Model' },
+                    { id: 'engineering-theory', label: '↳ Theory & Fundamentals of Wire Drawing' },
                   ].map(tool => {
                     const isChecked = authorizedToolsInput.includes(tool.id)
                     return (
