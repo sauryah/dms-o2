@@ -27,10 +27,15 @@ const DEFAULT_DIES = [
 ];
 
 export function WireDrawingCalculatorPage() {
-  const { role, authorizedTools = [] } = useAuth();
+  const { role, authorizedTools = [], refetchPermissions } = useAuth();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Sync latest permissions on page load
+  useEffect(() => {
+    refetchPermissions?.();
+  }, [refetchPermissions]);
 
   // Manual Lock Toggle State (stored in localStorage)
   const [isManuallyLocked, setIsManuallyLocked] = useState<boolean>(() => {

@@ -31,6 +31,7 @@ interface AuthContextValue {
   authorizedTools: string[]
   login: (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean, authTools?: string[]) => void
   logout: () => void
+  refetchPermissions: () => Promise<void>
   setToken: React.Dispatch<React.SetStateAction<string | null>>
   setRefreshToken: React.Dispatch<React.SetStateAction<string | null>>
   handleRefreshFailure: () => number
@@ -67,6 +68,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return []
     }
   })
+
+  const refetchPermissions = React.useCallback(async () => {
+    const activeToken = localStorage.getItem('dms_token') || token
+    if (!activeToken) return
+    try {
+      const res = await fetch('/api/v1/auth/me/', {
+        headers: {
+          'Authorization': `Bearer ${activeToken}`,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+      if (res && res.ok && typeof res.json === 'function') {
+        const data = await res.json()
+        if (data.role) setRole(data.role)
+        if (typeof data.is_authorized_for_tools === 'boolean') {
+          setIsAuthorizedForTools(data.is_authorized_for_tools)
+        }
+        if (Array.isArray(data.authorized_tools)) {
+          setAuthorizedTools(data.authorized_tools)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to live-sync user permissions:', err)
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+
+    refetchPermissions()
+
+    const interval = setInterval(refetchPermissions, 10000)
+    const onFocus = () => refetchPermissions()
+
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [token, refetchPermissions])
 
   useEffect(() => {
     if (token) {
@@ -180,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authorizedTools: role === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator'] : authorizedTools,
       login,
       logout,
+      refetchPermissions,
       setToken,
       setRefreshToken,
       handleRefreshFailure,
