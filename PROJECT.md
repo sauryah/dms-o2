@@ -197,7 +197,16 @@ graph TD
 - Replaced string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix matching.
 - Added unit suffix normalization (`2.5mm` -> `2.5`) for exact float matching (score 100).
 - Enforced strict score > 50 filter on digit queries across both Meilisearch and direct SQL search paths.
-- Updated PostgreSQL search builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric dimension columns when query is numeric.
+### 2026-07-23 · feat: 3D von Mises Stress visualizer, live die sliders, cutaway slice plane, 3D chevron defect overlay, granular permissions tree, DOM hiding, and live auth sync (Release v1.9.2)
+- Implemented interactive 3D WebGL von Mises Stress Heatmap & Flow visualizer (`StressHeatmap3D.tsx`).
+- Added live Approach Angle ($2\alpha$) ($8^\circ \rightarrow 24^\circ$) and Bearing Length ($L_b$) ($20\% \rightarrow 60\%$) sliders that deform 3D cone geometry and recalculate stress gradients in real-time.
+- Added 3D cutaway slice angle slider ($90^\circ \rightarrow 360^\circ$) to inspect wire core stress vs surface friction.
+- Added 3D glowing internal chevron crack defect overlay (`>>>`) when Delta parameter $\Delta > 3.0$ or $2\alpha > 18^\circ$ alerts to central burst risk.
+- Added one-click high-res 3D Blueprint Snapshot image downloader (`DMS_3D_Stress_Heatmap_Pass_X.png`).
+- Fixed `TypeError: can't access property "toFixed", _ is undefined` crash by mapping `PassData.areaReduction` correctly and adding defensive nullish coalescing guards.
+- Redesigned User Manager (`UserManager.tsx`) tool authorization into an indented hierarchy tree with visual badges (`3D Model`, `Theory Docs`).
+- Completely hid unauthorized 3D Heatmap and Theory modules from DOM in `WireDrawingCalculatorPage.tsx`.
+- Implemented background permission polling (every 10s), window focus sync, and page-mount permission refetching via `/api/v1/auth/me/` in `AuthContext.tsx` so newly assigned permissions update live without requiring logout.
 
 ### 2026-07-08 · feat: implement real-time search indexing progress bar for bulk spreadsheet imports (Phase 20)
 - Modified `sync_dies_batch_task` in `backend/search/tasks.py` to upload document batches in chunks of 100, track the sync percentage, and write intermediate progress status to Redis.

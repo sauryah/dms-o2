@@ -85,7 +85,7 @@ Track implementation status across all phases.
 - Wrote tests for location validation
 - Updated documentation
 
-### Frontend Resilience, SSE & 3D Wire Drawing Workbench (v1.9.2) ✅
+### Frontend Resilience, 3D Stress Visualizer & Granular Auth (v1.9.2) ✅
 **Status:** Complete
 **Date:** 2026-07-23
 
@@ -93,9 +93,14 @@ Track implementation status across all phases.
 - Dynamic Chunk Import Failure Auto-Recovery (`lazyWithRetry.ts` + `ErrorBoundary.tsx`)
 - Fixed `/api/events` Vite dev server proxy target (`http://127.0.0.1:8080`)
 - Refactored `useRealtimeSync.ts` EventSource connection error logging
-- Implemented 3D von Mises Stress Heatmap & Flow Model (`StressHeatmap3D.tsx`)
-- Upgraded Theory & Fundamentals Workbench (`TheoryPanel.tsx`)
-- Updated documentation files (`CHANGELOG.md`, `PROJECT.md`, `.dev/changelog-dev.md`)
+- Implemented 3D von Mises Stress Heatmap & Flow Model (`StressHeatmap3D.tsx`) with live angle/bearing sliders, cutaway slice angle, 3D chevron crack defect overlay, and 3D snapshot export
+- Fixed `toFixed` areaReduction property access crash
+- Upgraded Theory & Fundamentals Workbench (`TheoryPanel.tsx`) with CAD die inspector SVG & deformation simulator
+- Formatted tool permissions into an indented tree hierarchy with visual badges (`3D Model`, `Theory Docs`) in `UserManager.tsx`
+- Completely hid unauthorized 3D Heatmap and Theory modules from DOM in `WireDrawingCalculatorPage.tsx`
+- Implemented live background permission auto-sync (10s polling, window focus sync) in `AuthContext.tsx`
+- Bumped package version to `v1.9.2`
+- Updated documentation files (`CHANGELOG.md`, `PROJECT.md`, `.dev/changelog-dev.md`, `.dev/state/active-task.md`, `.dev/state/progress.md`)
 
 ### Phase 3: Wear Alert Automation & ML ⏳
 **Status:** Future phase

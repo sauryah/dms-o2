@@ -1,19 +1,21 @@
 # Engineering Implementation History (changelog-dev.md)
 
-### 2026-07-23 · Dynamic Import Recovery, SSE Proxy Fix & 3D Stress Heatmap Workbench (v1.9.2)
-*   **Feature**: Implemented automatic recovery for dynamic import chunk load failures (`lazyWithRetry.ts`), updated `ErrorBoundary.tsx` with a page reload fallback, fixed missing `/api/events` Vite proxy rule pointing to Go API (`8080`), refactored `useRealtimeSync.ts` to suppress console error noise during SSE reconnects, created 3D von Mises Stress Heatmap visualizer (`StressHeatmap3D.tsx`), upgraded `TheoryPanel.tsx` with CAD Die Inspector and Deformation Simulator, and filtered Navbar tools dropdown by role.
+### 2026-07-23 · Advanced 3D Stress Visualizer, Granular Access Tree & Live Auth Sync (v1.9.2)
+*   **Feature**: Built 3D von Mises Stress Heatmap visualizer (`StressHeatmap3D.tsx`) with interactive die angle ($2\alpha$) & bearing ($L_b$) sliders, 3D cutaway slice angle plane ($90^\circ \rightarrow 360^\circ$), glowing 3D internal chevron crack defect overlay (`>>>`), helical shear lines, and 3D Blueprint Snapshot downloader. Fixed `toFixed` areaReduction property access crash. Redesigned User Manager (`UserManager.tsx`) tool permissions into an indented tree hierarchy with visual badges (`3D Model`, `Theory Docs`). Completely hid unauthorized sub-modules from DOM in `WireDrawingCalculatorPage.tsx`. Added background live permission auto-sync (10s polling, window focus sync) in `AuthContext.tsx`.
 *   **Affected Modules**: `frontend`
 *   **Files Modified/Created**:
+    *   [StressHeatmap3D.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/StressHeatmap3D.tsx)
+    *   [TheoryPanel.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/TheoryPanel.tsx)
+    *   [WireDrawingCalculatorPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/WireDrawingCalculatorPage.tsx)
+    *   [UserManager.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/users/UserManager.tsx)
+    *   [AuthContext.tsx](file:///D:/DMS/dms-o2/frontend/src/contexts/AuthContext.tsx)
     *   [lazyWithRetry.ts](file:///D:/DMS/dms-o2/frontend/src/utils/lazyWithRetry.ts)
     *   [lazyWithRetry.test.tsx](file:///D:/DMS/dms-o2/frontend/src/utils/lazyWithRetry.test.tsx)
     *   [App.tsx](file:///D:/DMS/dms-o2/frontend/src/App.tsx)
     *   [ErrorBoundary.tsx](file:///D:/DMS/dms-o2/frontend/src/components/ErrorBoundary.tsx)
     *   [vite.config.js](file:///D:/DMS/dms-o2/frontend/vite.config.js)
     *   [useRealtimeSync.ts](file:///D:/DMS/dms-o2/frontend/src/hooks/useRealtimeSync.ts)
-    *   [Navbar.tsx](file:///D:/DMS/dms-o2/frontend/src/components/Navbar.tsx)
-    *   [StressHeatmap3D.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/StressHeatmap3D.tsx)
-    *   [TheoryPanel.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/TheoryPanel.tsx)
-    *   [WireDrawingCalculatorPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/WireDrawingCalculatorPage.tsx)
+    *   [package.json](file:///D:/DMS/dms-o2/frontend/package.json)
 *   **Documentation Updated**: `.dev/changelog-dev.md`, `.dev/state/progress.md`, `.dev/state/active-task.md`, `CHANGELOG.md`, `PROJECT.md`
 *   **Testing Performed**: Ran 16 Vitest frontend tests (`npm test`) - 100% passed. Executed `npm run build` production build successfully.
 

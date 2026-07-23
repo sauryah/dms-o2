@@ -25,16 +25,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Wire Drawing Workbench & Interactive 3D Visualizer
 - **3D von Mises Stress Heatmap & Flow Model (`StressHeatmap3D.tsx`)**:
   - Implemented interactive 3D WebGL/Canvas visualizer for wire drawing pass deformation.
-  * Added 3D orbit controls (drag to rotate, pitch, zoom, preset angles).
-  * Color-coded von Mises stress heatmap spectrum (Blue low stress ➔ Emerald yield ➔ Amber/Pink peak stress $\ge 0.9\sigma_y$).
-  * Added animated micro-particle flow stream demonstrating velocity acceleration ($v_2 = v_1 \times (1 + E)$).
-  * Added pass selector to inspect individual draft physics metrics and high shear stress alerts.
+  - *Live Geometry Sliders*: Added interactive Approach Angle ($2\alpha$) ($8^\circ \rightarrow 24^\circ$) and Bearing Length ($L_b$) ($20\% \rightarrow 60\%$) sliders that deform 3D cone geometry and update stress gradients in real-time.
+  - *3D Cutaway Slice Plane*: Added slice angle slider ($90^\circ \rightarrow 360^\circ$) to open wire body cross-sections and inspect core stress vs surface friction.
+  - *3D Chevron Defect Overlay*: Added glowing 3D internal chevron crack mesh (`>>>`) when Delta parameter $\Delta > 3.0$ or $2\alpha > 18^\circ$ alerts to central burst risk.
+  - *Flow Vectors & Snapshot Downloader*: Added helical shear lines and one-click high-res 3D Blueprint Snapshot image downloader (`DMS_3D_Stress_Heatmap_Pass_X.png`).
+  - *Runtime Crash Fix*: Fixed `TypeError: can't access property "toFixed", _ is undefined` crash by mapping `PassData.areaReduction` correctly and adding defensive nullish coalescing guards.
 - **Interactive Theory & Fundamentals Module (`TheoryPanel.tsx`)**:
-  - Upgraded theory panel with 4 interactive sections:
-    1. *CAD Die Geometry Inspector*: Clickable SVG diagram of die zones (Entrance, Approach $2\alpha$, Bearing $Lb$, Back Relief $\gamma$) with optimal specs and misconfiguration risks.
-    2. *Live Deformation Mechanics Simulator*: Interactive sliders for $d_1$ and $d_2$ computing Area Reduction, Elongation, Capstan Speed Ratio, True Strain, and Draw Stress in real-time.
-    3. *Mathematical Equations & Physics*: Siebel's drawing force equation ($\sigma_d$), volume conservation, true strain additivity, and optimum die angle ($\alpha_{\text{opt}}$).
-    4. *Engineering Trade-Offs*: Detailed comparison matrix for Carbide vs PCD, Copper vs Steel, Dry vs Wet Lubrication, and Large vs Small Die Angles.
+  - Upgraded theory panel with CAD die inspector SVG, live deformation simulator, Siebel mathematical equations, and trade-off comparison matrix.
+
+### Granular Sub-Feature Access Control & Live Auth Sync
+- **Sub-Feature Permissions in User Manager (`UserManager.tsx`)**:
+  - Redesigned tool authorization in User Manager into an indented tree structure with visual badges (`3D Model`, `Theory Docs`).
+  - Allowed ROOT to grant base `wire-drawing-calculator` access while independently locking or unlocking `3d-stress-heatmap` and `engineering-theory` sub-features per user.
+- **DOM Hiding & Manual Lock Switch (`WireDrawingCalculatorPage.tsx`)**:
+  - Completely hid unauthorized 3D Heatmap and Theory modules from non-permitted users.
+  - Added an in-page manual *"Hide Sub-Modules / Show Sub-Modules"* toggle bar for authorized users.
+- **Live Permission Auto-Sync (`AuthContext.tsx`)**:
+  - Implemented background permission polling (every 10s), window focus sync, and page-mount permission refetching via `/api/v1/auth/me/`.
+  - Newly assigned tool permissions update live in the user's active session without requiring a logout/login cycle.
 
 ### Access Control
 - **Navbar Tools Authorization**:
