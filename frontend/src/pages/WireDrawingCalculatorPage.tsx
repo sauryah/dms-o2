@@ -27,20 +27,33 @@ const DEFAULT_DIES = [
 ];
 
 export function WireDrawingCalculatorPage() {
-  const { role, isAuthorizedForTools, authorizedTools = [] } = useAuth();
+  const { role, authorizedTools = [] } = useAuth();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const isRoot = role === 'ROOT';
-  const isAdmin = role === 'ADMIN';
-  const hasToolAuth =
-    isAuthorizedForTools ||
-    authorizedTools.includes('wire-drawing-calculator') ||
-    authorizedTools.includes('3d-stress-heatmap') ||
-    authorizedTools.includes('engineering-theory');
+  // Manual Lock Toggle State (stored in localStorage)
+  const [isManuallyLocked, setIsManuallyLocked] = useState<boolean>(() => {
+    return localStorage.getItem('dms_lock_3d_theory') === 'true';
+  });
 
-  const isEngineeringAuthorized = isRoot || isAdmin || hasToolAuth;
+  const toggleManualLock = () => {
+    setIsManuallyLocked((prev) => {
+      const next = !prev;
+      localStorage.setItem('dms_lock_3d_theory', String(next));
+      return next;
+    });
+  };
+
+  const isRoot = role === 'ROOT';
+  const hasSpecificToolAuth =
+    authorizedTools.includes('3d-stress-heatmap') ||
+    authorizedTools.includes('engineering-theory') ||
+    authorizedTools.includes('wire-drawing-calculator');
+
+  // ADMIN users are locked out by default unless ROOT explicitly assigns specific tool authorization!
+  const isAuthorizedRole = isRoot || hasSpecificToolAuth;
+  const isEngineeringAuthorized = isAuthorizedRole && !isManuallyLocked;
 
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
@@ -162,11 +175,36 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {isEngineeringAuthorized ? (
-          <>
-            {passes.length > 0 && <StressHeatmap3D passes={passes} />}
-            <TheoryPanel />
-          </>
+        {isAuthorizedRole ? (
+          <div className="space-y-6">
+            {/* Workbench Section Header & Manual Lock/Unlock Switch */}
+            <div className="flex items-center justify-between bg-slate-950/60 border border-slate-900 px-5 py-3 rounded-xl">
+              <div className="flex items-center space-x-2.5">
+                <div className={`w-2.5 h-2.5 rounded-full ${isManuallyLocked ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                  Advanced Engineering Modules: {isManuallyLocked ? 'Locked' : 'Active & Unlocked'}
+                </span>
+              </div>
+              <button
+                onClick={toggleManualLock}
+                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition border cursor-pointer ${
+                  isManuallyLocked
+                    ? 'bg-amber-950/40 text-amber-300 border-amber-800/40 hover:bg-amber-900/40'
+                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-white'
+                }`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>{isManuallyLocked ? 'Unlock 3D & Theory' : 'Lock 3D & Theory'}</span>
+              </button>
+            </div>
+
+            {!isManuallyLocked && (
+              <>
+                {passes.length > 0 && <StressHeatmap3D passes={passes} />}
+                <TheoryPanel />
+              </>
+            )}
+          </div>
         ) : (
           <div className="bg-[#050913]/90 border border-slate-900 rounded-xl p-8 text-center relative overflow-hidden shadow-2xl">
             <div className="flex justify-center mb-4">
@@ -178,11 +216,11 @@ export function WireDrawingCalculatorPage() {
               Advanced 3D Stress Model & Theory Engine Restricted
             </h3>
             <p className="text-slate-400 text-xs max-w-lg mx-auto mb-4 leading-relaxed">
-              Access to the 3D von Mises Stress Heatmap & Flow Visualizer and the Theory & Fundamentals of Wire Drawing is restricted to authorized Engineering & Admin roles.
+              Access to the 3D von Mises Stress Heatmap & Flow Visualizer and Theory & Fundamentals is locked. Admin and Operator accounts require explicit Tool Authorization granted by the ROOT Superadmin.
             </p>
             <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800 px-3.5 py-1.5 rounded-lg">
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Authorization required: ROOT, ADMIN, or Authorized Tool Permission</span>
+              <span>Authorization required: ROOT Superadmin or Explicit Tool Authorization</span>
             </div>
           </div>
         )}
