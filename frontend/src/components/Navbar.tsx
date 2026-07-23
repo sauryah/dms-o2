@@ -7,7 +7,7 @@ import { useNotifications } from '../contexts/NotificationContext'
 import { useApi } from '../hooks/useApi'
 
 export function Navbar() {
-  const { username, role, logout, isAuthorizedForTools } = useAuth()
+  const { username, role, logout, isAuthorizedForTools, authorizedTools } = useAuth()
   const { notifications, unreadCount, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
   const location = useLocation()
@@ -171,29 +171,33 @@ export function Navbar() {
                     <div className="absolute left-0 pt-2 w-60 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                       <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
                         <div className="p-1.5 space-y-0.5">
-                          <Link
-                            to="/calculator"
-                            onClick={() => setShowToolsDropdown(false)}
-                            className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
-                          >
-                            <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="font-semibold">Sizing Calculator</span>
-                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
-                            </div>
-                          </Link>
+                          {(role === 'ROOT' || (authorizedTools || []).includes('sizing-calculator')) && (
+                            <Link
+                              to="/calculator"
+                              onClick={() => setShowToolsDropdown(false)}
+                              className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
+                            >
+                              <Calculator className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-semibold">Sizing Calculator</span>
+                                <span className="text-[10px] text-slate-500 font-normal mt-0.5">Round & flat rectangular sizing</span>
+                              </div>
+                            </Link>
+                          )}
                           
-                          <Link
-                            to="/wire-drawing-calculator"
-                            onClick={() => setShowToolsDropdown(false)}
-                            className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
-                          >
-                            <Calculator className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="font-semibold">Wire Drawing Calculator</span>
-                              <span className="text-[10px] text-slate-500 font-normal mt-0.5">Precision elongation analysis</span>
-                            </div>
-                          </Link>
+                          {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
+                            <Link
+                              to="/wire-drawing-calculator"
+                              onClick={() => setShowToolsDropdown(false)}
+                              className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
+                            >
+                              <Calculator className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-semibold">Wire Drawing Calculator</span>
+                                <span className="text-[10px] text-slate-500 font-normal mt-0.5">Precision elongation analysis</span>
+                              </div>
+                            </Link>
+                          )}
                           
                           <div className="border-t border-slate-800/50 my-1" />
                           
@@ -412,22 +416,26 @@ export function Navbar() {
                 Tools
               </Link>
               <div className="space-y-1.5 pl-3 mt-1.5 border-l border-slate-850">
-                <Link 
-                  to="/calculator" 
-                  className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Calculator className="h-4 w-4 text-blue-500" />
-                  <span>Sizing Calculator</span>
-                </Link>
-                <Link 
-                  to="/wire-drawing-calculator" 
-                  className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Calculator className="h-4 w-4 text-indigo-500" />
-                  <span>Wire Drawing Calculator</span>
-                </Link>
+                {(role === 'ROOT' || (authorizedTools || []).includes('sizing-calculator')) && (
+                  <Link 
+                    to="/calculator" 
+                    className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Calculator className="h-4 w-4 text-blue-500" />
+                    <span>Sizing Calculator</span>
+                  </Link>
+                )}
+                {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
+                  <Link 
+                    to="/wire-drawing-calculator" 
+                    className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Calculator className="h-4 w-4 text-indigo-500" />
+                    <span>Wire Drawing Calculator</span>
+                  </Link>
+                )}
               </div>
             </div>
           )}
