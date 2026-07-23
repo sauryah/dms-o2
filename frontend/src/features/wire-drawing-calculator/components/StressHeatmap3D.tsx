@@ -39,14 +39,14 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     pass: 1,
     fromDie: 3.0,
     toDie: 2.5,
-    areaRed: 30.55,
+    areaReduction: 30.55,
     elongation: 44.0,
   };
 
-  const din = activePass.fromDie;
-  const dout = activePass.toDie;
-  const areaRed = activePass.areaRed;
-  const elongation = activePass.elongation;
+  const din = activePass?.fromDie ?? 3.0;
+  const dout = activePass?.toDie ?? 2.5;
+  const areaRed = activePass?.areaReduction ?? (activePass as any)?.areaRed ?? 0;
+  const elongation = activePass?.elongation ?? 0;
 
   // Animation Frame Loop
   useEffect(() => {
@@ -332,7 +332,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           >
             {passes.map((p, idx) => (
               <option key={idx} value={idx}>
-                Pass #{p.pass} (Ø {p.fromDie.toFixed(3)} ➔ {p.toDie.toFixed(3)} mm)
+                Pass #{p.pass} (Ø {(p.fromDie ?? 0).toFixed(3)} ➔ {(p.toDie ?? 0).toFixed(3)} mm)
               </option>
             ))}
           </select>
@@ -427,22 +427,22 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           <div className="space-y-3 font-mono text-xs">
             <div className="flex justify-between p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60">
               <span className="text-slate-400">Inlet Diameter:</span>
-              <span className="text-blue-400 font-bold">{din.toFixed(3)} mm</span>
+              <span className="text-blue-400 font-bold">{(din ?? 0).toFixed(3)} mm</span>
             </div>
 
             <div className="flex justify-between p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60">
               <span className="text-slate-400">Outlet Diameter:</span>
-              <span className="text-emerald-400 font-bold">{dout.toFixed(3)} mm</span>
+              <span className="text-emerald-400 font-bold">{(dout ?? 0).toFixed(3)} mm</span>
             </div>
 
             <div className="flex justify-between p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60">
               <span className="text-slate-400">Area Reduction:</span>
-              <span className="text-emerald-400 font-bold">{areaRed.toFixed(1)}%</span>
+              <span className="text-emerald-400 font-bold">{(areaRed ?? 0).toFixed(1)}%</span>
             </div>
 
             <div className="flex justify-between p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60">
               <span className="text-slate-400">Elongation Growth:</span>
-              <span className="text-amber-400 font-bold">+{elongation.toFixed(1)}%</span>
+              <span className="text-amber-400 font-bold">+{(elongation ?? 0).toFixed(1)}%</span>
             </div>
           </div>
 
@@ -455,7 +455,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   High Shear Stress Alert
                 </strong>
                 <p className="m-0 text-[11px] leading-snug">
-                  Area reduction of {areaRed.toFixed(1)}% produces elevated entry shear stress. Ensure high-pressure lubricant supply.
+                  Area reduction of {(areaRed ?? 0).toFixed(1)}% produces elevated entry shear stress. Ensure high-pressure lubricant supply.
                 </p>
               </div>
             </div>
