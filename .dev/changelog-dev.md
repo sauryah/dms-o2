@@ -1,5 +1,22 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-07-23 · Dynamic Import Recovery, SSE Proxy Fix & 3D Stress Heatmap Workbench (v1.9.2)
+*   **Feature**: Implemented automatic recovery for dynamic import chunk load failures (`lazyWithRetry.ts`), updated `ErrorBoundary.tsx` with a page reload fallback, fixed missing `/api/events` Vite proxy rule pointing to Go API (`8080`), refactored `useRealtimeSync.ts` to suppress console error noise during SSE reconnects, created 3D von Mises Stress Heatmap visualizer (`StressHeatmap3D.tsx`), upgraded `TheoryPanel.tsx` with CAD Die Inspector and Deformation Simulator, and filtered Navbar tools dropdown by role.
+*   **Affected Modules**: `frontend`
+*   **Files Modified/Created**:
+    *   [lazyWithRetry.ts](file:///D:/DMS/dms-o2/frontend/src/utils/lazyWithRetry.ts)
+    *   [lazyWithRetry.test.tsx](file:///D:/DMS/dms-o2/frontend/src/utils/lazyWithRetry.test.tsx)
+    *   [App.tsx](file:///D:/DMS/dms-o2/frontend/src/App.tsx)
+    *   [ErrorBoundary.tsx](file:///D:/DMS/dms-o2/frontend/src/components/ErrorBoundary.tsx)
+    *   [vite.config.js](file:///D:/DMS/dms-o2/frontend/vite.config.js)
+    *   [useRealtimeSync.ts](file:///D:/DMS/dms-o2/frontend/src/hooks/useRealtimeSync.ts)
+    *   [Navbar.tsx](file:///D:/DMS/dms-o2/frontend/src/components/Navbar.tsx)
+    *   [StressHeatmap3D.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/StressHeatmap3D.tsx)
+    *   [TheoryPanel.tsx](file:///D:/DMS/dms-o2/frontend/src/features/wire-drawing-calculator/components/TheoryPanel.tsx)
+    *   [WireDrawingCalculatorPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/WireDrawingCalculatorPage.tsx)
+*   **Documentation Updated**: `.dev/changelog-dev.md`, `.dev/state/progress.md`, `.dev/state/active-task.md`, `CHANGELOG.md`, `PROJECT.md`
+*   **Testing Performed**: Ran 16 Vitest frontend tests (`npm test`) - 100% passed. Executed `npm run build` production build successfully.
+
 ### 2026-07-22 · Fix Search Size Precision & Dimension Relevance Scoring
 *   **Feature**: Fixed false-positive size search results by replacing arbitrary string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix dimension matching, normalized `"mm"` unit suffixes for float parsing, enforced score > 50 filter on digit queries for Meilisearch hits, and updated PostgreSQL direct query builder `buildWhereClauses` to use prefix matching (`cleanQ%`) on numeric fields.
 *   **Affected Modules**: `go-api`

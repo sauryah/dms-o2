@@ -183,6 +183,15 @@ graph TD
 - Overhauled simple JWT token refresh handlers to automatically keep UserSession models, local cookies, and Redis cache entries synchronized.
 - Resolved and stabilized all unit test failures across Django (backend), Vitest (frontend), and added Go handlers fallback tests.
 
+### 2026-07-23 · feat: dynamic import recovery, SSE proxy fix, 3D stress heatmap & theory panel upgrade (v1.9.2)
+- Added `lazyWithRetry.ts` utility wrapper for `React.lazy()` to automatically reload the application once if a lazy-loaded route chunk fails (`InventoryPage-[hash].js`).
+- Updated `ErrorBoundary.tsx` to detect dynamic module import failures and present a user-friendly *"New Update Available"* screen with a reload action.
+- Added `/api/events` proxy rule in `vite.config.js` pointing to `GO_API_TARGET` (`http://127.0.0.1:8080`).
+- Refactored `useRealtimeSync.ts` to eliminate infinite console error spamming (`EventSource connection error`) when the SSE endpoint is unreachable.
+- Implemented `StressHeatmap3D.tsx` (3D WebGL/Canvas visualizer) with von Mises stress colormaps, interactive 3D orbit controls, and particle flow streams.
+- Upgraded `TheoryPanel.tsx` with CAD Die Geometry Inspector, Live Deformation Simulator, Siebel's force equations, and engineering trade-off comparison matrices.
+- Filtered Navbar tools dropdown links by user authorization.
+
 ### 2026-07-22 · fix: eliminate false-positive search results for size and dimension queries
 - Resolved irrelevant search results when searching for die sizes (e.g. searching `25` returned size `1.25`, `0.25`, and `12.5`).
 - Replaced string substring matching on numeric dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) with exact/prefix matching.

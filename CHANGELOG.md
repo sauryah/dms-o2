@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.9.2] - 2026-07-23
+
+### Frontend Resilience & Dynamic Imports
+- **Dynamic Chunk Import Auto-Recovery**:
+  - Created `lazyWithRetry.ts` utility wrapper for `React.lazy()` to automatically reload the application once if a lazy-loaded route chunk fails (e.g. `InventoryPage-[hash].js` missing after a build deployment).
+  - Wrapped lazy route declarations in `App.tsx` with `lazyWithRetry`.
+  - Updated `ErrorBoundary.tsx` to detect dynamic import failures and present a user-friendly *"New Update Available"* fallback screen with a one-click page reload action.
+  - Added unit test suite in `lazyWithRetry.test.tsx`.
+
+### Realtime Sync & SSE Proxy
+- **Vite Dev Server SSE Proxy**:
+  - Added `/api/events` proxy rule in `vite.config.js` pointing to `GO_API_TARGET` (`http://127.0.0.1:8080`).
+- **EventSource Reconnection Refactoring**:
+  - Refactored `useRealtimeSync.ts` to eliminate infinite console error spamming (`EventSource connection error`) when the SSE endpoint is unreachable.
+  - Implemented controlled exponential backoff retries (up to 5 attempts) and clean warnings when updates are suspended.
+
+### Wire Drawing Workbench & Interactive 3D Visualizer
+- **3D von Mises Stress Heatmap & Flow Model (`StressHeatmap3D.tsx`)**:
+  - Implemented interactive 3D WebGL/Canvas visualizer for wire drawing pass deformation.
+  * Added 3D orbit controls (drag to rotate, pitch, zoom, preset angles).
+  * Color-coded von Mises stress heatmap spectrum (Blue low stress ➔ Emerald yield ➔ Amber/Pink peak stress $\ge 0.9\sigma_y$).
+  * Added animated micro-particle flow stream demonstrating velocity acceleration ($v_2 = v_1 \times (1 + E)$).
+  * Added pass selector to inspect individual draft physics metrics and high shear stress alerts.
+- **Interactive Theory & Fundamentals Module (`TheoryPanel.tsx`)**:
+  - Upgraded theory panel with 4 interactive sections:
+    1. *CAD Die Geometry Inspector*: Clickable SVG diagram of die zones (Entrance, Approach $2\alpha$, Bearing $Lb$, Back Relief $\gamma$) with optimal specs and misconfiguration risks.
+    2. *Live Deformation Mechanics Simulator*: Interactive sliders for $d_1$ and $d_2$ computing Area Reduction, Elongation, Capstan Speed Ratio, True Strain, and Draw Stress in real-time.
+    3. *Mathematical Equations & Physics*: Siebel's drawing force equation ($\sigma_d$), volume conservation, true strain additivity, and optimum die angle ($\alpha_{\text{opt}}$).
+    4. *Engineering Trade-Offs*: Detailed comparison matrix for Carbide vs PCD, Copper vs Steel, Dry vs Wet Lubrication, and Large vs Small Die Angles.
+
+### Access Control
+- **Navbar Tools Authorization**:
+  - Filtered tools dropdown menu in `Navbar.tsx` based on user permissions.
+
 ## [1.9.1] - 2026-07-22
 
 ### Search & Read Microservice

@@ -7,36 +7,34 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Location Grid & Physical Schema (Roadmap Phase 2)
+**Task:** Dynamic Import Auto-Recovery, SSE Proxy Fix & 3D Stress Heatmap Workbench (v1.9.2)
 **Status:** Complete
-**Started:** 2026-07-22
-**Completed:** 2026-07-22
+**Started:** 2026-07-23
+**Completed:** 2026-07-23
 **Confidence:** 100%
 
 ## Task Description
-Migrate free-text `Die.location` to structured table (`rack_id` + `shelf_number`) and prevent tool assignment to non-existent layout spots.
+Implement dynamic import chunk recovery (`lazyWithRetry`), ErrorBoundary update fallback, Vite SSE proxy config (`/api/events`), EventSource reconnection refactoring, 3D von Mises Stress Heatmap visualizer (`StressHeatmap3D.tsx`), interactive CAD Die Inspector & Deformation Simulator (`TheoryPanel.tsx`), and documentation updates across all ledger files.
 
 ## Implementation Progress
-- ✅ Added location validation to ValidationService
-- ✅ Updated DieCreateSerializer to validate location
-- ✅ Created data migration to populate rack/shelf from location
-- ✅ Removed location field from Die model
-- ✅ Updated serializers to remove location references
-- ✅ Updated views to remove location filter
-- ✅ Updated import template
-- ✅ Wrote tests for location validation
-- ✅ Updated documentation
+- ✅ Implemented `lazyWithRetry.ts` to auto-reload on dynamic import chunk load errors
+- ✅ Updated `ErrorBoundary.tsx` with dynamic import failure detection & reload fallback
+- ✅ Added `/api/events` proxy rule targeting Go API (`8080`) in `vite.config.js`
+- ✅ Refactored `useRealtimeSync.ts` to suppress console error noise during SSE reconnects
+- ✅ Created 3D von Mises Stress Heatmap component (`StressHeatmap3D.tsx`)
+- ✅ Upgraded `TheoryPanel.tsx` with CAD Die Geometry Inspector & Live Simulator
+- ✅ Filtered Navbar tools dropdown links by user authorization
+- ✅ Passed 16 Vitest unit tests (`npm test`) & verified `npm run build`
+- ✅ Updated documentation files (`CHANGELOG.md`, `PROJECT.md`, `.dev/changelog-dev.md`, `.dev/state/progress.md`)
 
 ## Completion Summary
-- Location field removed from Die model
-- Rack FK and shelf_number fields retained
-- Validation ensures shelf_number is within rack dimensions
-- API filters updated to use rack_id and shelf_number
-- Import template updated with new columns
-- All code syntactically verified
+- Application automatically recovers from missing asset chunk hashes following new deployments
+- Realtime EventSource reconnection operates with controlled backoff and clean console logging
+- Wire Drawing Calculator now features interactive 3D WebGL stress visualizer, flow stream animation, CAD die inspector, and math deformation mechanics simulator
+- All test suites and production build verified 100% green
 
 ## Next Task
-**Task:** Wear Alert Automation & ML (Roadmap Phase 3)
+**Task:** Capstan Speed & Power Calculator / Wear Alert Automation (Roadmap Phase 3)
 **Status:** Future phase
 **Confidence:** TBD
 
