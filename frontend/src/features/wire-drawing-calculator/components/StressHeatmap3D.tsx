@@ -4,13 +4,13 @@ import {
   RotateCcw,
   Play,
   Pause,
-  Eye,
   Sliders,
   Sparkles,
-  Layers,
   Activity,
   AlertTriangle,
-  Info,
+  Camera,
+  Scissors,
+  Zap,
 } from 'lucide-react';
 import { PassData } from '../types';
 
@@ -24,7 +24,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const [rotationY, setRotationY] = useState<number>(-35);
   const [zoom, setZoom] = useState<number>(1.0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [renderMode, setRenderMode] = fontState<
+  const [renderMode, setRenderMode] = useState<
     'heatmap' | 'wireframe' | 'shear'
   >('heatmap');
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -32,6 +32,13 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     x: 0,
     y: 0,
   });
+
+  // Feature 1 Sliders: Live Die Geometry Tuning
+  const [approachAngle2Alpha, setApproachAngle2Alpha] = useState<number>(14); // 8 to 24 deg
+  const [bearingLengthLbRatio, setBearingLengthLbRatio] = useState<number>(35); // 20 to 60%
+
+  // Feature 2 Slider: Cutaway Slice Angle
+  const [sliceAngleDeg, setSliceAngleDeg] = useState<number>(270); // 90, 180, 270, 360
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -48,7 +55,24 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const areaRed = activePass?.areaReduction ?? (activePass as any)?.areaRed ?? 0;
   const elongation = activePass?.elongation ?? 0;
 
-  // Animation Frame Loop
+  // Calculate Delta parameter (Delta = (2alpha / r) * (1 + sqrt(1 - r)))
+  const rFrac = Math.max(0.01, Math.min(0.9, areaRed / 100));
+  const alphaRadHalf = ((approachAngle2Alpha / 2) * Math.PI) / 180;
+  const deltaParam = (approachAngle2Alpha * Math.PI / 180 / rFrac) * (1 + Math.sqrt(1 - rFrac));
+  const isCentralBurstRisk = deltaParam > 3.0 || approachAngle2Alpha > 18 || areaRed > 24;
+
+  // Feature 5: High-Res 3D Snapshot Downloader
+  const handleTakeSnapshot = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const imageURI = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `DMS_3D_Stress_Heatmap_Pass_${activePass.pass || 1}.png`;
+    link.href = imageURI;
+    link.click();
+  };
+
+  // Animation Frame Loop & 3D WebGL Canvas Render
   useEffect(() => {
     let animId: number;
     let particleOffset = 0;
@@ -63,7 +87,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
       const height = canvas.height;
       ctx.clearRect(0, 0, width, height);
 
-      // Background Grid & Lighting Gradient
+      // Background Grid & Radial Lighting Gradient
       const bgGrad = ctx.createRadialGradient(
         width / 2,
         height / 2,
@@ -77,7 +101,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Grid Lines
+      // Tech Grid Background Lines
       ctx.strokeStyle = 'rgba(30, 41, 59, 0.3)';
       ctx.lineWidth = 1;
       const gridSize = 40;
@@ -103,29 +127,30 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
       const radY = (rotationY * Math.PI) / 180;
 
       const project3D = (x: number, y: number, z: number) => {
-        // Rotate Y
+        // Rotate Y (Azimuth)
         const x1 = x * Math.cos(radY) + z * Math.sin(radY);
         const z1 = -x * Math.sin(radY) + z * Math.cos(radY);
-
-        // Rotate X
+        // Rotate X (Pitch)
         const y2 = y * Math.cos(radX) - z1 * Math.sin(radX);
-
         return { px: x1, py: y2 };
       };
 
-      // Geometry Scale
+      // Scale Factors
       const scaleR = 18;
       const rIn = (din / 2) * scaleR;
       const rOut = (dout / 2) * scaleR;
 
-      const xEntrance = -160;
-      const xConeStart = -60;
-      const xConeEnd = 40;
-      const xExit = 140;
+      // Dynamic Cone Length based on Approach Angle 2alpha
+      const coneLength = Math.max(30, Math.min(120, (rIn - rOut) / Math.tan(alphaRadHalf)));
+      const xEntrance = -180;
+      const xConeStart = -coneLength / 2;
+      const xConeEnd = coneLength / 2;
+      const xExit = xConeEnd + 100;
 
-      // Draw Cutaway Die Nib
-      const numSegments = 32;
+      const numSegments = 36;
+      const maxCutoffRad = (sliceAngleDeg * Math.PI) / 180;
 
+      // Render 3D Cylinder / Cone Mesh Sections
       const draw3DCylinderSection = (
         xStart: number,
         xEnd: number,
@@ -137,8 +162,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           const angle1 = (i / numSegments) * Math.PI * 2;
           const angle2 = ((i + 1) / numSegments) * Math.PI * 2;
 
-          // Upper Cutaway Shell (only draw top 270 deg)
-          if (angle1 > Math.PI * 0.25 && angle1 < Math.PI * 1.75 && isDie) {
+          // Apply Cutaway Slice Angle
+          if (isDie && angle1 > maxCutoffRad) {
             continue;
           }
 
@@ -165,40 +190,37 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           ctx.closePath();
 
           if (isDie) {
-            // Die Nib Mesh
             ctx.fillStyle =
               renderMode === 'wireframe'
-                ? 'rgba(15, 23, 42, 0.4)'
+                ? 'rgba(15, 23, 42, 0.35)'
                 : 'rgba(30, 41, 59, 0.65)';
             ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
             ctx.lineWidth = 1;
             ctx.fill();
             ctx.stroke();
           } else {
-            // Wire Deforming Body with Stress Heatmap Spectrum
-            // Calculate Von Mises Stress Gradient based on axial position (xStart)
-            let stressVal = 0.2; // 0 to 1
+            // Compute von Mises Stress Gradient along Axial Position
+            let stressVal = 0.2;
             if (xStart < xConeStart) {
-              stressVal = 0.25; // Elastic inlet
+              stressVal = 0.25;
             } else if (xStart >= xConeStart && xStart <= xConeEnd) {
-              // Peak stress at reduction cone entry shear plane
               const t = (xStart - xConeStart) / (xConeEnd - xConeStart);
               stressVal = 0.4 + 0.55 * Math.sin(t * Math.PI);
+              // Factor in Approach Angle & Bearing ratio
+              stressVal *= 1 + (approachAngle2Alpha - 14) * 0.02;
             } else {
               stressVal = 0.35 + 0.1 * (1 - (xStart - xConeEnd) / 100);
             }
 
-            // High Reduction Alert (>25% AR spikes stress into red/purple)
-            if (areaRed > 24) stressVal *= 1.15;
+            if (areaRed > 24) stressVal *= 1.12;
 
-            // Color Map Interpolation
-            let color = '#3B82F6'; // Blue (low)
+            let color = '#3B82F6';
             if (renderMode === 'heatmap') {
-              if (stressVal > 0.85) color = '#EC4899'; // Magenta / Peak Warning
-              else if (stressVal > 0.7) color = '#EF4444'; // Red (High)
-              else if (stressVal > 0.5) color = '#F59E0B'; // Amber (Medium)
-              else if (stressVal > 0.35) color = '#10B981'; // Green
-              else color = '#3B82F6'; // Blue
+              if (stressVal > 0.85) color = '#EC4899';
+              else if (stressVal > 0.7) color = '#EF4444';
+              else if (stressVal > 0.5) color = '#F59E0B';
+              else if (stressVal > 0.35) color = '#10B981';
+              else color = '#3B82F6';
             } else if (renderMode === 'shear') {
               color = `rgba(16, 185, 129, ${0.3 + stressVal * 0.6})`;
             } else {
@@ -217,15 +239,13 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         }
       };
 
-      // Draw Outer Die Shell
+      // Draw 3D Outer Die Nib Shell
       const rDieOuter = rIn + 45;
       draw3DCylinderSection(xEntrance, xExit, rDieOuter, rDieOuter, true);
 
       // Draw Wire Body Sections
-      // Section 1: Inlet Wire
       draw3DCylinderSection(xEntrance, xConeStart, rIn, rIn, false);
-      // Section 2: Taper Reduction Cone
-      const stepsCone = 8;
+      const stepsCone = 10;
       for (let s = 0; s < stepsCone; s++) {
         const x1 = xConeStart + (s / stepsCone) * (xConeEnd - xConeStart);
         const x2 =
@@ -234,12 +254,32 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         const r2 = rIn - ((s + 1) / stepsCone) * (rIn - rOut);
         draw3DCylinderSection(x1, x2, r1, r2, false);
       }
-      // Section 3: Outlet Bearing Wire
       draw3DCylinderSection(xConeEnd, xExit, rOut, rOut, false);
 
-      // Draw Flowing Particle Stream
+      // Feature 3: Internal 3D Chevron Crack Mesh Overlay (Central Burst Defect)
+      if (isCentralBurstRisk) {
+        ctx.strokeStyle = '#EC4899';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#EC4899';
+        ctx.shadowBlur = 10;
+
+        for (let cx = xConeStart + 10; cx <= xConeEnd; cx += 25) {
+          const pCenter = project3D(cx, 0, 0);
+          const pTop = project3D(cx - 15, -12, 0);
+          const pBot = project3D(cx - 15, 12, 0);
+
+          ctx.beginPath();
+          ctx.moveTo(pTop.px, pTop.py);
+          ctx.lineTo(pCenter.px, pCenter.py);
+          ctx.lineTo(pBot.px, pBot.py);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      // Feature 4: Flow Particles & Helical Surface Shear Vectors
       if (isPlaying) {
-        particleOffset = (particleOffset + 1.5) % 40;
+        particleOffset = (particleOffset + 1.8) % 40;
       }
 
       ctx.fillStyle = '#FFFFFF';
@@ -256,6 +296,18 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         ctx.beginPath();
         ctx.arc(p.px, p.py, 2.5, 0, Math.PI * 2);
         ctx.fill();
+
+        // Helical Friction Lines on Perimeter
+        if (renderMode === 'shear') {
+          const pPerim1 = project3D(px, currentR, 0);
+          const pPerim2 = project3D(px + 10, currentR * 0.9, 10);
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pPerim1.px, pPerim1.py);
+          ctx.lineTo(pPerim2.px, pPerim2.py);
+          ctx.stroke();
+        }
       }
 
       ctx.restore();
@@ -270,12 +322,21 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [selectedPassIdx, rotationX, rotationY, zoom, isPlaying, renderMode, din, dout, areaRed]);
-
-  // Helper helper to state setter
-  function fontState<T>(init: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-    return useState<T>(init);
-  }
+  }, [
+    selectedPassIdx,
+    rotationX,
+    rotationY,
+    zoom,
+    isPlaying,
+    renderMode,
+    din,
+    dout,
+    areaRed,
+    approachAngle2Alpha,
+    bearingLengthLbRatio,
+    sliceAngleDeg,
+    isCentralBurstRisk,
+  ]);
 
   // Mouse Drag to Orbit 3D
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -299,7 +360,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-6 relative overflow-hidden shadow-2xl space-y-4"
+      className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-6 relative overflow-hidden shadow-2xl space-y-5"
     >
       {/* Header & Controls */}
       <div className="flex flex-wrap justify-between items-center gap-4 pb-4 border-b border-slate-900">
@@ -317,25 +378,93 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               </span>
             </div>
             <p className="text-xs text-slate-400 m-0 mt-0.5">
-              Drag to orbit 3D view • Inspect internal plastic deformation stress & particle velocity
+              Drag to orbit 3D view • Tune die geometry & inspect core stress / internal defects
             </p>
           </div>
         </div>
 
-        {/* Pass Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-mono text-slate-400">Pass:</span>
-          <select
-            value={selectedPassIdx}
-            onChange={(e) => setSelectedPassIdx(parseInt(e.target.value))}
-            className="bg-slate-900 text-white text-xs font-mono font-bold border border-slate-800 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 cursor-pointer"
+        {/* Pass Selector & 3D Snapshot Button */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleTakeSnapshot}
+            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-purple-400 border border-purple-500/30 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition shadow-sm cursor-pointer"
+            title="Download High-Res 3D Blueprint Snapshot"
           >
-            {passes.map((p, idx) => (
-              <option key={idx} value={idx}>
-                Pass #{p.pass} (Ø {(p.fromDie ?? 0).toFixed(3)} ➔ {(p.toDie ?? 0).toFixed(3)} mm)
-              </option>
-            ))}
-          </select>
+            <Camera className="w-3.5 h-3.5" />
+            <span>3D Snapshot</span>
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-mono text-slate-400">Pass:</span>
+            <select
+              value={selectedPassIdx}
+              onChange={(e) => setSelectedPassIdx(parseInt(e.target.value))}
+              className="bg-slate-900 text-white text-xs font-mono font-bold border border-slate-800 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 cursor-pointer"
+            >
+              {passes.map((p, idx) => (
+                <option key={idx} value={idx}>
+                  Pass #{p.pass} (Ø {(p.fromDie ?? 0).toFixed(3)} ➔ {(p.toDie ?? 0).toFixed(3)} mm)
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature 1 & 2: Interactive Parameter Sliders Toolbar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/80 p-3.5 rounded-xl border border-slate-900 text-xs font-mono">
+        {/* Slider 1: Approach Angle 2alpha */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-slate-400">Approach Angle (2α):</span>
+            <span className="text-purple-400 font-bold">{approachAngle2Alpha}°</span>
+          </div>
+          <input
+            type="range"
+            min="8"
+            max="24"
+            step="1"
+            value={approachAngle2Alpha}
+            onChange={(e) => setApproachAngle2Alpha(parseInt(e.target.value))}
+            className="w-full accent-purple-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Slider 2: Bearing Length Lb Ratio */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-slate-400">Bearing Length (Lb):</span>
+            <span className="text-emerald-400 font-bold">{bearingLengthLbRatio}% d₂</span>
+          </div>
+          <input
+            type="range"
+            min="20"
+            max="60"
+            step="5"
+            value={bearingLengthLbRatio}
+            onChange={(e) => setBearingLengthLbRatio(parseInt(e.target.value))}
+            className="w-full accent-emerald-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Slider 3: Cutaway Slice Angle */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-slate-400 flex items-center gap-1">
+              <Scissors className="w-3 h-3 text-cyan-400" />
+              <span>Cutaway Slice:</span>
+            </span>
+            <span className="text-cyan-400 font-bold">{sliceAngleDeg}°</span>
+          </div>
+          <input
+            type="range"
+            min="90"
+            max="360"
+            step="90"
+            value={sliceAngleDeg}
+            onChange={(e) => setSliceAngleDeg(parseInt(e.target.value))}
+            className="w-full accent-cyan-500 cursor-pointer"
+          />
         </div>
       </div>
 
@@ -371,6 +500,9 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 setRotationX(20);
                 setRotationY(-35);
                 setZoom(1.0);
+                setApproachAngle2Alpha(14);
+                setBearingLengthLbRatio(35);
+                setSliceAngleDeg(270);
               }}
               className="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 transition"
               title="Reset 3D View"
@@ -385,7 +517,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               [
                 { id: 'heatmap', label: 'Stress Heatmap' },
                 { id: 'wireframe', label: 'Wireframe' },
-                { id: 'shear', label: 'Shear Lines' },
+                { id: 'shear', label: 'Shear Vectors' },
               ] as const
             ).map((m) => (
               <button
@@ -444,18 +576,25 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <span className="text-slate-400">Elongation Growth:</span>
               <span className="text-amber-400 font-bold">+{(elongation ?? 0).toFixed(1)}%</span>
             </div>
+
+            <div className="flex justify-between p-2.5 bg-slate-900/40 rounded-lg border border-slate-800/60">
+              <span className="text-slate-400">Delta Parameter (Δ):</span>
+              <span className={`font-bold ${deltaParam > 3.0 ? 'text-rose-400' : 'text-cyan-400'}`}>
+                {deltaParam.toFixed(2)}
+              </span>
+            </div>
           </div>
 
           {/* Stress Warning Alert */}
-          {areaRed > 24 ? (
-            <div className="p-3 bg-rose-950/30 border border-rose-900/40 rounded-xl text-rose-300 text-xs flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+          {isCentralBurstRisk ? (
+            <div className="p-3 bg-rose-950/40 border border-rose-900/50 rounded-xl text-rose-300 text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5 animate-pulse" />
               <div>
                 <strong className="block text-rose-200 font-bold uppercase text-[10px] tracking-wider mb-0.5">
-                  High Shear Stress Alert
+                  Central Burst / Chevron Risk (Δ = {deltaParam.toFixed(2)})
                 </strong>
                 <p className="m-0 text-[11px] leading-snug">
-                  Area reduction of {(areaRed ?? 0).toFixed(1)}% produces elevated entry shear stress. Ensure high-pressure lubricant supply.
+                  High Delta parameter detected! Glowing internal 3D chevron cracks rendered in core. Reduce approach angle 2α or increase reduction.
                 </p>
               </div>
             </div>
@@ -464,10 +603,10 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 <strong className="block text-emerald-200 font-bold uppercase text-[10px] tracking-wider mb-0.5">
-                  Optimal Yield Stress Zone
+                  Optimal Flow & Die Geometry Zone
                 </strong>
                 <p className="m-0 text-[11px] leading-snug">
-                  Draft reduction is within safe plastic flow boundaries for uniform wire drawing.
+                  Die angle 2α={approachAngle2Alpha}° and reduction {areaRed.toFixed(1)}% yield safe internal shear stress boundaries.
                 </p>
               </div>
             </div>
