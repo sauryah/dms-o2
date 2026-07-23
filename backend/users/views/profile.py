@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from users.models import User, UserActivityLog, UserSession
 from users.serializers import UserSerializer, UserActivityLogSerializer, UserSessionSerializer
 from users.permissions import IsRootOnly
@@ -55,6 +56,39 @@ class UserSessionViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         return UserSessionSerializer
+
+    @action(detail=False, methods=['delete'], url_path='all')
+    def destroy_all(self, request):
+        sessions = self.get_queryset()
+        count = sessions.count()
+        for session in sessions:
+            UserActivityLog.objects.create(
+                user=session.user,
+                username=session.user.username,
+                action='SESSION_EXPIRED',
+                ip_address=session.ip_address,
+                device=f"Forced clear all by admin ({request.user.username})"
+            )
+        sessions.delete()
+        return Response({'detail': f'Cleared {count} active session(s).'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='bulk')
+    def destroy_bulk(self, request):
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({'detail': 'No session IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        sessions = self.get_queryset().filter(id__in=ids)
+        count = sessions.count()
+        for session in sessions:
+            UserActivityLog.objects.create(
+                user=session.user,
+                username=session.user.username,
+                action='SESSION_EXPIRED',
+                ip_address=session.ip_address,
+                device=f"Forced bulk terminate by admin ({request.user.username})"
+            )
+        sessions.delete()
+        return Response({'detail': f'Cleared {count} selected session(s).'}, status=status.HTTP_200_OK)
 
     def perform_destroy(self, instance):
         from django.core.cache import cache
