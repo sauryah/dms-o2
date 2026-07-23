@@ -276,6 +276,7 @@ export function UserManager() {
                               ? user.authorized_tools.map((t: string) => {
                                   if (t === 'sizing-calculator') return 'Sizing'
                                   if (t === 'wire-drawing-calculator') return 'Wire Drawing'
+                                  if (t === 'die-series-generator') return 'Die Generator'
                                   return t
                                 }).join(', ')
                               : 'None'}
@@ -585,6 +586,26 @@ export function UserManager() {
                           </span>
                         </label>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="tool-die-series-generator"
+                        checked={authorizedToolsInput.includes('die-series-generator')}
+                        onChange={() => {
+                          const isChecked = authorizedToolsInput.includes('die-series-generator');
+                          setAuthorizedToolsInput(prev =>
+                            isChecked ? prev.filter(id => id !== 'die-series-generator') : [...prev, 'die-series-generator']
+                          );
+                        }}
+                        className="h-4 w-4 bg-slate-955 border border-slate-700 rounded text-violet-500 cursor-pointer"
+                      />
+                      <label htmlFor="tool-die-series-generator" className="font-semibold text-slate-200 cursor-pointer select-none">
+                        Die Series Generator
+                      </label>
                     </div>
                   </div>
                 </div>

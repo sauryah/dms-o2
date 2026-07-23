@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown } from 'lucide-react'
+import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../contexts/NotificationContext'
@@ -158,7 +158,7 @@ export function Navbar() {
                   <button
                     onClick={() => setShowToolsDropdown(!showToolsDropdown)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent flex items-center gap-1 cursor-pointer select-none focus:outline-none ${
-                      location.pathname.startsWith('/tools') || location.pathname === '/calculator' || location.pathname === '/wire-drawing-calculator'
+                      location.pathname.startsWith('/tools') || location.pathname === '/calculator' || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator'
                         ? 'bg-slate-900 text-white border-slate-800/80 shadow-inner'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/30'
                     }`}
@@ -195,6 +195,20 @@ export function Navbar() {
                               <div className="flex flex-col">
                                 <span className="font-semibold">Wire Drawing Calculator</span>
                                 <span className="text-[10px] text-slate-500 font-normal mt-0.5">Precision elongation analysis</span>
+                              </div>
+                            </Link>
+                          )}
+
+                          {(role === 'ROOT' || (authorizedTools || []).includes('die-series-generator')) && (
+                            <Link
+                              to="/die-series-generator"
+                              onClick={() => setShowToolsDropdown(false)}
+                              className="flex items-start gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/40 rounded-lg transition-all"
+                            >
+                              <Zap className="h-4 w-4 text-violet-500 mt-0.5 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-semibold">Die Series Generator</span>
+                                <span className="text-[10px] text-slate-500 font-normal mt-0.5">Generate die schedules from elongation targets</span>
                               </div>
                             </Link>
                           )}
@@ -434,6 +448,16 @@ export function Navbar() {
                   >
                     <Calculator className="h-4 w-4 text-indigo-500" />
                     <span>Wire Drawing Calculator</span>
+                  </Link>
+                )}
+                {(role === 'ROOT' || (authorizedTools || []).includes('die-series-generator')) && (
+                  <Link 
+                    to="/die-series-generator" 
+                    className="flex items-center gap-2 text-slate-400 hover:text-white py-1.5 text-sm font-medium transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Zap className="h-4 w-4 text-violet-500" />
+                    <span>Die Series Generator</span>
                   </Link>
                 )}
               </div>

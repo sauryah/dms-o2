@@ -23,6 +23,7 @@ const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m =
 const CalculatorPage = lazyWithRetry(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
 const ToolsPage = lazyWithRetry(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
 const WireDrawingCalculatorPage = lazyWithRetry(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
+const DieSeriesGeneratorPage = lazyWithRetry(() => import('./pages/DieSeriesGeneratorPage').then(m => ({ default: m.DieSeriesGeneratorPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -222,6 +223,13 @@ function AppContent() {
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
                   <WireDrawingCalculatorPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/die-series-generator" element={
+              <ErrorBoundary>
+                <ProtectedRoute requireToolAuth toolId="die-series-generator">
+                  <DieSeriesGeneratorPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />

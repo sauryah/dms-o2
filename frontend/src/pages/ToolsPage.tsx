@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Calculator, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Calculator, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ToolsPage() {
@@ -39,6 +39,24 @@ export function ToolsPage() {
         'Area reductions & elongation stats',
         'Interactive die list editing & undo/redo',
         'Export reports to PDF, Excel & CSV'
+      ]
+    },
+    {
+      id: 'die-series-generator',
+      title: 'Die Series Generator',
+      description: 'Generate optimized die drawing series from elongation targets, pass counts, or start/end diameter constraints. Preview results before loading into the calculator.',
+      icon: Zap,
+      color: 'from-violet-600/20 to-purple-600/20 border-violet-500/30 text-violet-400 shadow-violet-500/10',
+      active: true,
+      path: '/die-series-generator',
+      badge: 'Active & Ready',
+      statusIcon: CheckCircle2,
+      statusClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      features: [
+        'Generate by target diameter or pass count',
+        'Custom elongation % per pass',
+        'Live preview with stats',
+        'Load results into calculator'
       ]
     }
   ]
