@@ -9,19 +9,20 @@ import { SessionTimeoutManager } from './components/SessionTimeoutManager'
 import { Footer } from './components/Footer'
 import { AuthProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
+import { lazyWithRetry } from './utils/lazyWithRetry'
 
-const DashboardPage = React.lazy(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const InventoryPage = React.lazy(() => import('./features/inventory/components/InventoryPage').then(m => ({ default: m.InventoryPage })))
-const DieDetailPage = React.lazy(() => import('./features/inventory/components/DieDetailPage').then(m => ({ default: m.DieDetailPage })))
-const MachineSetsPage = React.lazy(() => import('./pages/MachineSetsPage').then(m => ({ default: m.MachineSetsPage })))
-const ImportPage = React.lazy(() => import('./pages/ImportPage').then(m => ({ default: m.ImportPage })))
-const UsersPage = React.lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })))
-const HistoryPage = React.lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
-const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
-const ToolsPage = React.lazy(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
-const WireDrawingCalculatorPage = React.lazy(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
+const DashboardPage = lazyWithRetry(() => import('./features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const InventoryPage = lazyWithRetry(() => import('./features/inventory/components/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const DieDetailPage = lazyWithRetry(() => import('./features/inventory/components/DieDetailPage').then(m => ({ default: m.DieDetailPage })))
+const MachineSetsPage = lazyWithRetry(() => import('./pages/MachineSetsPage').then(m => ({ default: m.MachineSetsPage })))
+const ImportPage = lazyWithRetry(() => import('./pages/ImportPage').then(m => ({ default: m.ImportPage })))
+const UsersPage = lazyWithRetry(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })))
+const HistoryPage = lazyWithRetry(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const CalculatorPage = lazyWithRetry(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
+const ToolsPage = lazyWithRetry(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
+const WireDrawingCalculatorPage = lazyWithRetry(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {

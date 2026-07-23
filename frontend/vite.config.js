@@ -21,8 +21,12 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
     proxy: {
+      '/api/events': {
+        target: process.env.GO_API_TARGET || 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
       '/api/go': {
-        target: process.env.GO_API_TARGET || 'http://127.0.0.1',
+        target: process.env.GO_API_TARGET || 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/api': {

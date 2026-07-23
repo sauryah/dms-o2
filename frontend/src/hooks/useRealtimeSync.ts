@@ -41,6 +41,17 @@ export function useRealtimeSync(options: {
     let consecutiveFailures = 0
     const MAX_RECONNECT_ATTEMPTS = 5
 
+    const scheduleReconnect = () => {
+      if (!isCancelled && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
+        reconnectTimer = setTimeout(() => {
+          reconnectDelay = Math.min(reconnectDelay * 2, 30000)
+          connectSSE()
+        }, reconnectDelay)
+      } else if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS) {
+        console.warn('EventSource max reconnection attempts reached. Realtime updates suspended.')
+      }
+    }
+
     const connectSSE = async () => {
       if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS) return
 
@@ -48,9 +59,11 @@ export function useRealtimeSync(options: {
         const res = await request('/api/auth/sse-ticket/', { method: 'POST' })
         if (isCancelled) return
 
-        const ticket = res.ticket
+        const ticket = res?.ticket
         if (!ticket) {
-          console.error('Failed to get SSE ticket from response:', res)
+          consecutiveFailures++
+          console.warn('Failed to get SSE ticket from response:', res)
+          scheduleReconnect()
           return
         }
 
@@ -143,22 +156,21 @@ export function useRealtimeSync(options: {
           }
         }
 
-        eventSource.onerror = (err) => {
+        eventSource.onerror = () => {
           consecutiveFailures++
-          console.error('EventSource connection error:', err)
+          if (consecutiveFailures === 1) {
+            console.warn('EventSource connection lost. Retrying...')
+          }
           if (eventSource) {
             eventSource.close()
             eventSource = null
           }
-          if (!isCancelled && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
-            reconnectTimer = setTimeout(() => {
-              reconnectDelay = Math.min(reconnectDelay * 2, 30000)
-              connectSSE()
-            }, reconnectDelay)
-          }
+          scheduleReconnect()
         }
       } catch (e) {
-        console.error('Failed to establish SSE ticket connection:', e)
+        consecutiveFailures++
+        console.warn('Failed to establish SSE ticket connection:', e)
+        scheduleReconnect()
       }
     }
 

@@ -35,6 +35,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isChunkError =
+        this.state.error?.name === 'ChunkLoadError' ||
+        /failed to fetch dynamically imported module/i.test(this.state.error?.message || '') ||
+        /error loading dynamically imported module/i.test(this.state.error?.message || '') ||
+        /importing a module script failed/i.test(this.state.error?.message || '')
+
       return (
         this.props.fallback || (
           <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-4">
@@ -45,9 +51,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 </div>
               </div>
               
-              <h1 className="text-2xl font-black text-white mb-2">Something went wrong</h1>
+              <h1 className="text-2xl font-black text-white mb-2">
+                {isChunkError ? 'New Update Available' : 'Something went wrong'}
+              </h1>
               <p className="text-slate-400 text-sm mb-6">
-                {this.state.error?.message || 'An unexpected error occurred'}
+                {isChunkError
+                  ? 'A new version of the application was deployed. Please reload the page to load the latest components.'
+                  : (this.state.error?.message || 'An unexpected error occurred')}
               </p>
               
               <details className="mb-6 text-left">
@@ -60,15 +70,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
               </details>
               
               <button
-                onClick={this.resetError}
+                onClick={() => (isChunkError ? window.location.reload() : this.resetError())}
                 className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Try Again
+                {isChunkError ? 'Reload Page' : 'Try Again'}
               </button>
               
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = '/')}
                 className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-4 rounded-lg transition-colors"
               >
                 Return Home
