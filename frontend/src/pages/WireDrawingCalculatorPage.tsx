@@ -15,6 +15,8 @@ import SaveLoad from '../features/wire-drawing-calculator/components/SaveLoad';
 import TargetChecker from '../features/wire-drawing-calculator/components/TargetChecker';
 import DieSuggester from '../features/wire-drawing-calculator/components/DieSuggester';
 import ComparePanel from '../features/wire-drawing-calculator/components/ComparePanel';
+import { useAuth } from '../contexts/AuthContext';
+import { Lock, ShieldAlert } from 'lucide-react';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
 import TheoryPanel from '../features/wire-drawing-calculator/components/TheoryPanel';
 import StressHeatmap3D from '../features/wire-drawing-calculator/components/StressHeatmap3D';
@@ -25,9 +27,20 @@ const DEFAULT_DIES = [
 ];
 
 export function WireDrawingCalculatorPage() {
+  const { role, isAuthorizedForTools, authorizedTools = [] } = useAuth();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const isRoot = role === 'ROOT';
+  const isAdmin = role === 'ADMIN';
+  const hasToolAuth =
+    isAuthorizedForTools ||
+    authorizedTools.includes('wire-drawing-calculator') ||
+    authorizedTools.includes('3d-stress-heatmap') ||
+    authorizedTools.includes('engineering-theory');
+
+  const isEngineeringAuthorized = isRoot || isAdmin || hasToolAuth;
 
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
@@ -149,9 +162,30 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {passes.length > 0 && <StressHeatmap3D passes={passes} />}
-
-        <TheoryPanel />
+        {isEngineeringAuthorized ? (
+          <>
+            {passes.length > 0 && <StressHeatmap3D passes={passes} />}
+            <TheoryPanel />
+          </>
+        ) : (
+          <div className="bg-[#050913]/90 border border-slate-900 rounded-xl p-8 text-center relative overflow-hidden shadow-2xl">
+            <div className="flex justify-center mb-4">
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400">
+                <Lock className="w-6 h-6" />
+              </div>
+            </div>
+            <h3 className="text-base font-bold text-white mb-1 font-heading">
+              Advanced 3D Stress Model & Theory Engine Restricted
+            </h3>
+            <p className="text-slate-400 text-xs max-w-lg mx-auto mb-4 leading-relaxed">
+              Access to the 3D von Mises Stress Heatmap & Flow Visualizer and the Theory & Fundamentals of Wire Drawing is restricted to authorized Engineering & Admin roles.
+            </p>
+            <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-400 bg-slate-900/60 border border-slate-800 px-3.5 py-1.5 rounded-lg">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Authorization required: ROOT, ADMIN, or Authorized Tool Permission</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
