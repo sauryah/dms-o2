@@ -492,36 +492,101 @@ export function UserManager() {
               </div>
 
               {isAuthorizedForToolsInput && roleInput !== 'ROOT' && (
-                <div className="pl-7 space-y-2 border-l border-slate-800 ml-2 pt-1 animate-fadeIn">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-550 mb-1">Select Accessible Tools</span>
-                  {[
-                    { id: 'sizing-calculator', label: 'Sizing & Elongation Calculator' },
-                    { id: 'wire-drawing-calculator', label: 'Wire Drawing Calculator (Base)' },
-                    { id: '3d-stress-heatmap', label: '↳ 3D von Mises Stress Heatmap & Flow Model' },
-                    { id: 'engineering-theory', label: '↳ Theory & Fundamentals of Wire Drawing' },
-                  ].map(tool => {
-                    const isChecked = authorizedToolsInput.includes(tool.id)
-                    return (
-                      <div key={tool.id} className="flex items-center space-x-3">
+                <div className="pl-4 space-y-3 border-l-2 border-slate-800 ml-2 pt-2 animate-fadeIn text-xs">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Tool & Feature Access Tree
+                  </span>
+
+                  {/* Top-Level Tool 1: Sizing Calculator */}
+                  <div className="flex items-center space-x-3 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
+                    <input
+                      type="checkbox"
+                      id="tool-sizing-calculator"
+                      checked={authorizedToolsInput.includes('sizing-calculator')}
+                      onChange={() => {
+                        const isChecked = authorizedToolsInput.includes('sizing-calculator');
+                        setAuthorizedToolsInput(prev =>
+                          isChecked ? prev.filter(id => id !== 'sizing-calculator') : [...prev, 'sizing-calculator']
+                        );
+                      }}
+                      className="h-4 w-4 bg-slate-955 border border-slate-700 rounded text-blue-500 cursor-pointer"
+                    />
+                    <label htmlFor="tool-sizing-calculator" className="font-semibold text-slate-200 cursor-pointer select-none">
+                      Sizing & Elongation Calculator
+                    </label>
+                  </div>
+
+                  {/* Top-Level Tool 2: Wire Drawing Calculator */}
+                  <div className="space-y-2 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="tool-wire-drawing-calculator"
+                        checked={authorizedToolsInput.includes('wire-drawing-calculator')}
+                        onChange={() => {
+                          const isChecked = authorizedToolsInput.includes('wire-drawing-calculator');
+                          setAuthorizedToolsInput(prev =>
+                            isChecked ? prev.filter(id => id !== 'wire-drawing-calculator') : [...prev, 'wire-drawing-calculator']
+                          );
+                        }}
+                        className="h-4 w-4 bg-slate-955 border border-slate-700 rounded text-blue-500 cursor-pointer"
+                      />
+                      <label htmlFor="tool-wire-drawing-calculator" className="font-semibold text-slate-200 cursor-pointer select-none">
+                        Wire Drawing Calculator (Base Workbench)
+                      </label>
+                    </div>
+
+                    {/* Sub-Features Tree Indented Right */}
+                    <div className="ml-6 pl-3.5 border-l-2 border-purple-500/40 space-y-2 pt-1 mt-1">
+                      <span className="block text-[9px] font-mono font-bold uppercase tracking-wider text-purple-400">
+                        ↳ Sub-Feature Module Locks (Wire Drawing)
+                      </span>
+
+                      {/* Sub-feature 1: 3D Stress Heatmap */}
+                      <div className="flex items-center space-x-2.5">
                         <input
                           type="checkbox"
-                          id={`tool-${tool.id}`}
-                          checked={isChecked}
+                          id="tool-3d-stress-heatmap"
+                          checked={authorizedToolsInput.includes('3d-stress-heatmap')}
                           onChange={() => {
-                            if (isChecked) {
-                              setAuthorizedToolsInput(prev => prev.filter(id => id !== tool.id))
-                            } else {
-                              setAuthorizedToolsInput(prev => [...prev, tool.id])
-                            }
+                            const isChecked = authorizedToolsInput.includes('3d-stress-heatmap');
+                            setAuthorizedToolsInput(prev =>
+                              isChecked ? prev.filter(id => id !== '3d-stress-heatmap') : [...prev, '3d-stress-heatmap']
+                            );
                           }}
-                          className="h-4 w-4 bg-slate-955 border border-slate-800 rounded focus:ring-0 text-blue-500 cursor-pointer"
+                          className="h-3.5 w-3.5 bg-slate-955 border border-slate-700 rounded text-purple-500 cursor-pointer"
                         />
-                        <label htmlFor={`tool-${tool.id}`} className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
-                          {tool.label}
+                        <label htmlFor="tool-3d-stress-heatmap" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none flex items-center gap-1.5">
+                          <span>3D von Mises Stress Heatmap</span>
+                          <span className="text-[9px] font-mono text-purple-400 bg-purple-950/60 border border-purple-800/50 px-1.5 py-0.5 rounded font-bold">
+                            3D Model
+                          </span>
                         </label>
                       </div>
-                    )
-                  })}
+
+                      {/* Sub-feature 2: Theory & Fundamentals */}
+                      <div className="flex items-center space-x-2.5">
+                        <input
+                          type="checkbox"
+                          id="tool-engineering-theory"
+                          checked={authorizedToolsInput.includes('engineering-theory')}
+                          onChange={() => {
+                            const isChecked = authorizedToolsInput.includes('engineering-theory');
+                            setAuthorizedToolsInput(prev =>
+                              isChecked ? prev.filter(id => id !== 'engineering-theory') : [...prev, 'engineering-theory']
+                            );
+                          }}
+                          className="h-3.5 w-3.5 bg-slate-955 border border-slate-700 rounded text-indigo-500 cursor-pointer"
+                        />
+                        <label htmlFor="tool-engineering-theory" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none flex items-center gap-1.5">
+                          <span>Theory & Fundamentals Guide</span>
+                          <span className="text-[9px] font-mono text-indigo-400 bg-indigo-950/60 border border-indigo-800/50 px-1.5 py-0.5 rounded font-bold">
+                            Theory Docs
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
