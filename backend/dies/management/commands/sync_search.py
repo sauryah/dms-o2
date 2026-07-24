@@ -18,9 +18,13 @@ class Command(BaseCommand):
             client.create_index(temp_index_name, {'primaryKey': 'id'})
             temp_idx = client.index(temp_index_name)
             temp_idx.update_settings({
-                'searchableAttributes': ['die_id', 'casing', 'status', 'rack', 'shelf_number', 'set', 'machine', 'size', 'width', 'thickness'],
+                'searchableAttributes': ['die_id', 'casing', 'status', 'rack', 'shelf_number', 'set', 'machine', 'size_str', 'width_str', 'thickness_str', 'size', 'width', 'thickness'],
                 'filterableAttributes': ['die_type', 'status', 'casing', 'rack', 'shelf_number', 'size', 'width', 'thickness', 'machine'],
                 'sortableAttributes':   ['die_id'],
+                'typoTolerance': {
+                    'enabled': True,
+                    'minWordSizeForTypos': {'oneTypo': 5, 'twoTypos': 9},
+                },
             })
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Failed to initialize temporary index: {e}"))
@@ -45,10 +49,16 @@ class Command(BaseCommand):
                 'machine':  die.current_set.machine.name if die.current_set else '',
             }
             if hasattr(die, 'rounddie') and die.rounddie:
-                doc['size'] = float(die.rounddie.current_size)
+                size_val = die.rounddie.current_size
+                doc['size'] = float(size_val)
+                doc['size_str'] = str(size_val)
             if hasattr(die, 'flatdie') and die.flatdie:
-                doc['width']     = float(die.flatdie.current_width)
-                doc['thickness'] = float(die.flatdie.current_thickness)
+                width_val = die.flatdie.current_width
+                thick_val = die.flatdie.current_thickness
+                doc['width']     = float(width_val)
+                doc['thickness'] = float(thick_val)
+                doc['width_str'] = str(width_val)
+                doc['thickness_str'] = str(thick_val)
             docs.append(doc)
 
         if docs:

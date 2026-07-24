@@ -471,6 +471,62 @@ func scoreDie(die database.DieRepresentation, q string) int {
 func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *SearchParams) ([]database.DieRepresentation, int, error) {
 	slog.Info("Received search query", "q", params.Q)
 
+	// Detect numeric queries (e.g. "1.6", "1.600", "25.4mm")
+	qClean := strings.TrimSpace(strings.Trim(params.Q, `"'`))
+	qNumStr := qClean
+	if strings.HasSuffix(strings.ToLower(qNumStr), "mm") {
+		qNumStr = strings.TrimSpace(qNumStr[:len(qNumStr)-2])
+	}
+	isNumericQuery := false
+	if _, err := strconv.ParseFloat(qNumStr, 64); err == nil {
+		isNumericQuery = true
+	}
+
+	// For numeric queries, use Postgres directly — it does correct ILIKE prefix
+	// matching on CAST(r.current_size AS TEXT), which Meilisearch float tokenization
+	// handles poorly (e.g. "1.6" misses "1.600" because Meilisearch normalizes floats).
+	if isNumericQuery {
+		slog.Info("Numeric query detected, using Postgres direct query", "query", params.Q, "numStr", qNumStr)
+		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Limit, params.Offset)
+		if err != nil {
+			slog.Error("Postgres direct query for numeric search failed", "error", err)
+			return nil, 0, err
+		}
+		// Still run scoreDie filtering/sorting on Postgres results
+		var filtered []database.DieRepresentation
+		var scores []int
+		for _, die := range postgresDies {
+			score := scoreDie(die, params.Q)
+			if score <= 50 {
+				continue
+			}
+			filtered = append(filtered, die)
+			scores = append(scores, score)
+		}
+		type scoredDie struct {
+			die   database.DieRepresentation
+			score int
+		}
+		scored := make([]scoredDie, len(filtered))
+		for i, die := range filtered {
+			scored[i] = scoredDie{die: die, score: scores[i]}
+		}
+		sort.SliceStable(scored, func(i, j int) bool {
+			return scored[i].score > scored[j].score
+		})
+		for i := range scored {
+			filtered[i] = scored[i].die
+		}
+		totalCount := len(filtered)
+		if params.Offset > 0 {
+			totalCount = params.Offset + len(filtered)
+		}
+		if len(filtered) > params.Limit {
+			filtered = filtered[:params.Limit]
+		}
+		return filtered, totalCount, nil
+	}
+
 	var filters []string
 	if params.DieType != "" {
 		filters = append(filters, fmt.Sprintf("die_type = '%s'", escapeMeiliFilterValue(params.DieType)))
@@ -580,7 +636,6 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 
 	slog.Info("Search results count before relevance sorting", "count", len(combined))
 
-	qClean := strings.TrimSpace(strings.Trim(params.Q, `"'`))
 	hasDigits := false
 	for _, char := range qClean {
 		if char >= '0' && char <= '9' {

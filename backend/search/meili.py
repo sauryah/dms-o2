@@ -22,9 +22,13 @@ def init_meilisearch():
     try:
         index = client.index(INDEX_NAME)
         index.update_settings({
-            'searchableAttributes': ['die_id', 'casing', 'status', 'rack', 'shelf_number', 'set', 'machine', 'size', 'width', 'thickness'],
+            'searchableAttributes': ['die_id', 'casing', 'status', 'rack', 'shelf_number', 'set', 'machine', 'size_str', 'width_str', 'thickness_str', 'size', 'width', 'thickness'],
             'filterableAttributes': ['die_type', 'status', 'casing', 'rack', 'shelf_number', 'size', 'width', 'thickness', 'machine'],
             'sortableAttributes':   ['die_id'],
+            'typoTolerance': {
+                'enabled': True,
+                'minWordSizeForTypos': {'oneTypo': 5, 'twoTypos': 9},
+            },
         })
         logger.info(f"Meilisearch index '{INDEX_NAME}' initialized successfully")
     except Exception as e:
