@@ -1,5 +1,5 @@
-import React from 'react'
-import { Search, Database, Cpu, Layers, Activity, Sliders, ChevronRight } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { Search, Database, Cpu, Layers, Activity, Sliders, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { isDieActive } from '../../../utils/dieHelpers'
 import { RackLayoutGrid } from './RackLayoutGrid'
 import { DieStats } from '../../dashboard/components/DieStats'
@@ -406,6 +406,25 @@ export function SetView({
   const columns = getInventoryColumns(navigate)
   const setDies = selectedSetData?.set.dies || []
 
+  const [sizeSort, setSizeSort] = useState<'none' | 'asc' | 'desc'>('none')
+
+  const getDieSize = (die: any) => {
+    if (die.die_type === 'ROUND') {
+      return parseFloat(die.current_size) || parseFloat(die.punched_size) || 0
+    } else {
+      return parseFloat(die.current_width) || parseFloat(die.punched_width) || 0
+    }
+  }
+
+  const sortedSetDies = useMemo(() => {
+    if (sizeSort === 'none') return setDies
+    return [...setDies].sort((a: any, b: any) => {
+      const sizeA = getDieSize(a)
+      const sizeB = getDieSize(b)
+      return sizeSort === 'desc' ? sizeB - sizeA : sizeA - sizeB
+    })
+  }, [setDies, sizeSort])
+
   return (
     <div className="space-y-8">
       {selectedSetData ? (
@@ -464,16 +483,36 @@ export function SetView({
           })()}
 
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2 select-none">
-              <Layers className="h-4 w-4 text-indigo-400" />
-              <span>
-                {viewMode === 'grid' ? 'Assigned Grid' : viewMode === 'list' ? 'Assigned Catalog' : 'Location Rack Placement'}
-              </span>
-            </h3>
+            <div className="flex justify-between items-center select-none">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="h-4 w-4 text-indigo-400" />
+                <span>
+                  {viewMode === 'grid' ? 'Assigned Grid' : viewMode === 'list' ? 'Assigned Catalog' : 'Location Rack Placement'}
+                </span>
+              </h3>
+              
+              {viewMode !== 'rack' && setDies.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSizeSort(prev => {
+                      if (prev === 'none') return 'desc'
+                      if (prev === 'desc') return 'asc'
+                      return 'none'
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 text-blue-500" />
+                  <span>
+                    Sort: {sizeSort === 'none' ? 'Default' : sizeSort === 'desc' ? 'Largest First' : 'Smallest First'}
+                  </span>
+                </button>
+              )}
+            </div>
             
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
-                {setDies.map(die => (
+                {sortedSetDies.map(die => (
                   <DieCard 
                     key={die.die_id} 
                     die={die} 
@@ -485,7 +524,7 @@ export function SetView({
               <div className="animate-fadeIn">
                 <DataTable 
                   columns={columns} 
-                  rows={setDies} 
+                  rows={sortedSetDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
                 />
               </div>
