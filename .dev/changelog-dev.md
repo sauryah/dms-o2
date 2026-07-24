@@ -1,5 +1,15 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-07-24 · Resolve Multi-Select Session Expiration & Implement Die Size-Sorting inside Toolsets
+*   **Feature**: Resolved issue where multi-select / bulk active sessions revoking did not evict tokens from Redis cache (resulting in revoked sessions remaining active in Redis), stringified payload body in bulk delete frontend requests to prevent JSON parser failures, and implemented interactive die size sorting (largest to smallest, smallest to largest, or default) for dies listed inside set detail views.
+*   **Affected Modules**: `backend`, `frontend`
+*   **Files Modified**:
+    *   [profile.py](file:///D:/DMS/dms-o2/backend/users/views/profile.py) - Updated `destroy_bulk` and `destroy_all` actions to evict token hashes from Redis cache on database delete.
+    *   [test_auth.py](file:///D:/DMS/dms-o2/backend/users/tests/test_auth.py) - Added unit tests validating cache eviction on bulk termination and clear-all operations.
+    *   [ActiveSessionsList.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/users/ActiveSessionsList.tsx) - Corrected request payload parameter structure by calling JSON.stringify.
+    *   [InventorySubViews.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/InventorySubViews.tsx) - Added sizeSort state hook, diameter/width parser utility, and sort order selector button in SetView.
+*   **Testing Performed**: Verified with production build checks, frontend Vitest checks, and Django unit test suites (all checks passed successfully).
+
 ### 2026-07-24 · Complete UI/UX Redesign of the Die Inventory Section
 *   **Feature**: Complete visual redesign, responsiveness enhancement, and UX hardening of the Die Inventory section. Redesigned list view with multi-view toggles (Grid/List/Rack layout), customized collapsible FilterPanel, step-by-step registration wizard guided by StepWizard component, dual-column asset detail workspace, slide-out edit form drawer, Meilisearch pagination matching, and styled Excel-import uploader dropzone with drag-and-drop support. Checked all changes against full test suite (53 tests passing) and verified Vite production compilation.
 *   **Affected Modules**: `frontend`

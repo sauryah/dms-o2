@@ -114,6 +114,7 @@ Track implementation status across all phases.
 - Created OS/Browser User-Agent parsers displaying clean device badges for logged-in users and log entries
 - Designed glassmorphic backup dashboard cards, interactive file upload dropzones, and sticky table layouts
 - Verified with full test suite pass and production Vite bundle compilation
+- Fixed active sessions multi-select / bulk logout payload structure and cache eviction keys purge from Redis
 
 ### Die Inventory Redesign & Hardening (v1.9.3) ✅
 **Status:** Complete
@@ -125,6 +126,7 @@ Track implementation status across all phases.
 - Screen 3 — Add Die StepWizard: Integrated step-by-step wizard guides using StepWizard component, with input validations disabling Next action.
 - Screen 5 — Import Page: Redesigned file import uploader dropzone with drag-and-drop support, progress mapping indicator, and structured errors list in DataTable.
 - Verified compilation and test suite (53 tests green).
+- Implemented interactive die sorting (largest to smallest / vice versa) by diameter/width for dies listed inside set detail views.
 
 ### Phase 3: Wear Alert Automation & ML ⏳
 
