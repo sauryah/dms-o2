@@ -17,7 +17,8 @@ export function useInventoryState() {
   const [searchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100000)
+  const [pageSize, setPageSize] = useState(25)
+
 
   // Search parameters states initialized from URL if present
   const [q, setQ] = useState(searchParams.get('q') || '')
@@ -33,6 +34,7 @@ export function useInventoryState() {
   const [widthMax, setWidthMax] = useState(searchParams.get('width_max') || '')
   const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
   const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
+  const [locationQuery, setLocationQuery] = useState('')
 
   const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(() => {
     const active = !!(
@@ -53,8 +55,8 @@ export function useInventoryState() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const isSearchActive = useMemo(() => {
-    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
-  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax])
+    return !!(q || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax || locationQuery)
+  }, [q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, locationQuery])
   
   const [showFilters, setShowFilters] = useState(!!(
     searchParams.get('die_type') || 
@@ -65,14 +67,16 @@ export function useInventoryState() {
     searchParams.get('width_min') || 
     searchParams.get('width_max') || 
     searchParams.get('thick_min') || 
-    searchParams.get('thick_max')
+    searchParams.get('thick_max') ||
+    locationQuery
   ))
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const hasActiveFilter = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax)
+  const hasActiveFilter = !!(debouncedQ || dieType || statusVal || casing || sizeMin || sizeMax || widthMin || widthMax || thickMin || thickMax || locationQuery)
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, selectedNode?.type, selectedNode?.id])
+  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, locationQuery, selectedNode?.type, selectedNode?.id])
+
 
   const [sortField, setSortField] = useState<string>('relevance')
   const [sortOrder, setSortOrder] = useState<string>('asc')
@@ -165,11 +169,20 @@ export function useInventoryState() {
   }, [searchData])
 
   const rawDies = searchData?.results || []
+
+  const filteredRawDies = useMemo(() => {
+    if (!locationQuery) return rawDies
+    return rawDies.filter((die: any) => {
+      const loc = (die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : die.location || '').toLowerCase()
+      return loc.includes(locationQuery.toLowerCase())
+    })
+  }, [rawDies, locationQuery])
+
   const sortedDies = useMemo(() => {
     if (sortField === 'relevance') {
-      return rawDies
+      return filteredRawDies
     }
-    return [...rawDies].sort((a, b) => {
+    return [...filteredRawDies].sort((a, b) => {
       let valA = a[sortField] || ''
       let valB = b[sortField] || ''
       
@@ -191,7 +204,8 @@ export function useInventoryState() {
         return sortOrder === 'asc' ? valA - valB : valB - valA
       }
     })
-  }, [rawDies, sortField, sortOrder])
+  }, [filteredRawDies, sortField, sortOrder])
+
 
   const dies = sortedDies
   const totalCount = searchData?.total ?? dies.length
@@ -443,6 +457,8 @@ export function useInventoryState() {
     setThickMin,
     thickMax,
     setThickMax,
+    locationQuery,
+    setLocationQuery,
     showFilters,
     setShowFilters,
     isCreateOpen,
@@ -499,4 +515,5 @@ export function useInventoryState() {
     pageSize,
     setPageSize
   }
+
 }

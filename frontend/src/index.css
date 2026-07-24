@@ -1,8 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
+:root {
+  /* Design system tokens */
+  --color-bg:          #0d1117;
+  --color-surface:     #161b22;
+  --color-surface-2:   #1c2330;
+  --color-border:      #2a3441;
+  --color-text:        #e6edf3;
+  --color-muted:       #7d8590;
+  --color-accent:      #f59e0b;
+
+  /* Status colors */
+  --color-available:   #3fb950;
+  --color-running:     #3b82f6;
+  --color-cleaning:    #f59e0b;
+  --color-polishing:   #bc8cff;
+  --color-damaged:     #f0883e;
+  --color-scrapped:    #f85149;
+  --color-missing:     #7d8590;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 /* Base Layout Modifications */
 body {
