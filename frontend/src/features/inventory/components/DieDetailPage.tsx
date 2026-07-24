@@ -7,8 +7,14 @@ import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
 import { DieBlueprint } from './CadRenderer'
 import { Timeline } from './Timeline'
-import { ConfirmDialog } from '../../../components/ConfirmDialog'
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
+import { Drawer } from '../../../components/ui/Drawer'
+import { DataTable } from '../../../components/ui/DataTable'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { Skeleton } from '../../../components/ui/Skeleton'
+import { PageHeader } from '../../../components/ui/PageHeader'
 import { SearchableSelect } from '../../../components/SearchableSelect'
+
 
 interface ChartPoint {
   date: string;
@@ -1102,6 +1108,9 @@ export function DieDetailPage() {
   const [currentThickness, setCurrentThickness] = useState('')
   const [highlightedDim, setHighlightedDim] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMoreActions, setShowMoreActions] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
+
 
   const [isRecutOpen, setIsRecutOpen] = useState(false)
   const [newSize, setNewSize] = useState('')
@@ -1423,15 +1432,21 @@ export function DieDetailPage() {
   };
 
   if (isLoading) return (
-    <div className="flex justify-center items-center py-24">
-      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-pulse">
+      <Skeleton width="w-48" height="h-6" />
+      <Skeleton width="w-full" height="h-20" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Skeleton width="w-full" height="h-48" />
+        <Skeleton width="w-full" height="h-48" />
+        <Skeleton width="w-full" height="h-48" />
+      </div>
     </div>
   )
 
-  if (error) return (
+  if (error || !die) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-        <p className="text-rose-400 font-semibold">Error: {error.message}</p>
+        <p className="text-rose-450 font-semibold">Error: {error?.message || 'Die not found'}</p>
         <Link to="/inventory" className="text-blue-400 hover:underline mt-4 inline-block">Back to Inventory</Link>
       </div>
     </div>
@@ -1439,431 +1454,170 @@ export function DieDetailPage() {
 
   const canEdit = role === 'ROOT' || role === 'ADMIN'
 
+  const sortedHistory = [...(die.history || [])].sort(
+    (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+  const historyTotal = sortedHistory.length
+  const paginatedHistory = sortedHistory.slice((historyPage - 1) * 20, historyPage * 20)
+
+  const breadcrumbs = [
+    { label: 'Inventory', href: '/inventory' },
+    { label: `Die ${die.die_id}` }
+  ]
+
+  const historyColumns = [
+    { key: 'timestamp', label: 'Timestamp', render: (row: any) => new Date(row.timestamp).toLocaleString() },
+    { key: 'changed_by_username', label: 'User' },
+    { key: 'field_name', label: 'Property', render: (row: any) => row.field_name.replace(/_/g, ' ').toUpperCase() },
+    { key: 'old_value', label: 'Previous Value', render: (row: any) => <span className="font-mono text-slate-400">{row.old_value || '—'}</span> },
+    { key: 'new_value', label: 'New Value', render: (row: any) => <span className="font-mono text-emerald-400">{row.new_value || '—'}</span> }
+  ]
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={handlePrint}
+        className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
+      >
+        <Printer className="h-4 w-4 text-blue-500" />
+        Print
+      </button>
+      <button 
+        onClick={downloadSvg}
+        className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
+      >
+        <Download className="h-4 w-4 text-emerald-500" />
+        Download SVG
+      </button>
+      {canEdit && (
+        <button 
+          onClick={() => setIsEditing(true)}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        >
+          <Wrench className="h-4 w-4" />
+          Edit Asset
+        </button>
+      )}
+      {role === 'ROOT' && (
+        <button 
+          onClick={() => setShowDeleteConfirm(true)}
+          className="bg-red-950/40 border border-red-900/60 hover:bg-red-900/40 text-red-400 hover:text-red-300 p-2.5 rounded-xl transition flex items-center"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:hidden">
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body, html {
-            background-color: white !important;
-            color: #0f172a !important; /* text-slate-900 */
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 print:hidden">
+        {/* Style block for print layout customization */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            body, html {
+              background-color: white !important;
+              color: #0f172a !important;
+              font-family: ui-sans-serif, system-ui, sans-serif !important;
+            }
+            nav, footer, .print\\:hidden {
+              display: none !important;
+            }
+            .print-container {
+              max-width: 100% !important;
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            .print-only-container {
+              display: block !important;
+            }
+            .print-only-container .glass-panel {
+              background: white !important;
+              border: 1px solid #e2e8f0 !important;
+              box-shadow: none !important;
+              border-radius: 12px !important;
+            }
           }
-          nav, footer, .print\\:hidden {
-            display: none !important;
-          }
-          .print-container {
-            max-width: 100% !important;
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .print-only-container {
-            display: block !important;
-          }
-          .print-only-container .glass-panel {
-            background: white !important;
-            border: 1px solid #e2e8f0 !important; /* border-slate-200 */
-            box-shadow: none !important;
-            border-radius: 12px !important;
-          }
-          .print-only-container .border-slate-800\\/80 {
-            border-color: #e2e8f0 !important;
-          }
-          .print-only-container .blueprint-grid {
-            background-color: #f8fafc !important; /* light slate background for grid */
-            background-image: 
-              linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px) !important;
-            background-size: 20px 20px !important;
-          }
-          .print-only-container .blueprint-axis {
-            stroke: #cbd5e1 !important; /* light gray grid axis */
-            stroke-dasharray: 4 4 !important;
-          }
-          .print-only-container .blueprint-outline {
-            stroke: #2563eb !important; /* darker blue for high contrast print */
-            filter: none !important;
-          }
-          .print-only-container .blueprint-outline-secondary {
-            stroke: #6366f1 !important; /* indigo */
-          }
-          .print-only-container .blueprint-dim-line {
-            stroke: #059669 !important; /* darker green */
-          }
-          .print-only-container .blueprint-dim-text {
-            fill: #059669 !important; /* darker green text */
-          }
-          .print-only-container svg rect {
-            fill: #0f172a !important; /* dark capsule background */
-          }
-          .print-only-container svg text {
-            fill: #10b981 !important; /* green text inside capsule */
-          }
-        }
-      `}} />
+        `}} />
 
+        <PageHeader 
+          title={`Die Asset: ${die.die_id}`} 
+          breadcrumbs={breadcrumbs}
+          actions={headerActions}
+        />
 
-
-      {/* Back Button and Breadcrumbs */}
-      <div className="flex items-center justify-between gap-4 mb-6 print:hidden">
-        <button 
-          onClick={() => navigate('/inventory')}
-          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-950 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl transition-all duration-300 hover:text-white"
-        >
-          <ArrowLeft className="h-3.5 w-3.5 text-blue-500 animate-pulse" />
-          <span>Back to Inventory</span>
-        </button>
-        
-        <div className="flex items-center space-x-2 text-sm text-slate-500">
-          <Link to="/inventory" className="hover:text-slate-300">Inventory</Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-slate-300 font-mono">{die.die_id}</span>
-        </div>
-      </div>
-
-      <div className="bg-slate-900 print:bg-transparent border border-slate-800 print:border-none rounded-2xl shadow-xl print:shadow-none overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-slate-950 print:from-transparent print:to-transparent p-8 border-b border-slate-800 print:border-b-2 print:border-black flex justify-between items-start gap-4">
-          <div>
-            <div className="flex items-center space-x-3 print:hidden">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
-                {die.die_type} DIE
-              </span>
-            </div>
-            <h1 className="text-3xl font-extrabold text-white print:text-black mt-3 print:mt-0">{die.die_id}</h1>
-            <p className="text-slate-400 print:text-slate-700 text-sm mt-1">Casing: {die.casing}</p>
-          </div>
+        {/* Double-column dashboard grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          <div className="flex space-x-2 print:hidden">
-            <button 
-              onClick={handlePrint}
-              className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
-            >
-              <Printer className="h-4 w-4 text-blue-500" />
-              <span className="hidden sm:inline">Print Blueprint</span>
-            </button>
-            <button 
-              onClick={downloadSvg}
-              className="bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
-            >
-              <Download className="h-4 w-4 text-emerald-500" />
-              <span className="hidden sm:inline">Download SVG</span>
-            </button>
-            {canEdit && (
-              <>
+          {/* LEFT COLUMN: Identity & Status (lg:span-5) */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Identity Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Asset Identity</h3>
+              <div className="space-y-3 font-sans text-sm">
+                <div className="flex justify-between py-1 border-b border-slate-800/40">
+                  <span className="text-slate-500">System Tag</span>
+                  <span className="font-mono text-slate-300">${die.die_id}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40">
+                  <span className="text-slate-500">Geometry Profile</span>
+                  <span className="font-bold text-slate-300">${die.die_type}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Casing Profile</span>
+                  <span className="font-semibold text-slate-300">${die.casing}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Operations Status</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`w-3 h-3 rounded-full ${
+                    die.status === 'AVAILABLE' ? 'bg-emerald-500 shadow-md shadow-emerald-500/20' : 'bg-amber-500 shadow-md shadow-amber-500/20'
+                  }`} />
+                  <span className="font-bold text-white text-base">${die.status}</span>
+                </div>
                 <button 
                   onClick={() => setIsRecutOpen(true)}
-                  className="bg-slate-950 hover:bg-slate-800 text-blue-400 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 animate-fadeIn"
+                  className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                 >
-                  <Wrench className="h-4 w-4" />
-                  <span>Recut</span>
+                  <Wrench className="h-3.5 w-3.5" />
+                  Recut / Re-bore
                 </button>
-                <button 
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="bg-slate-950 hover:bg-slate-800 text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
-                >
-                  {isEditing ? 'Cancel' : 'Edit'}
-                </button>
-                <button 
-                  onClick={handleDelete}
-                  className="bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-400 p-2.5 rounded-xl transition-all duration-300"
-                >
-                  <Trash2 className="h-4.5 w-4.5" />
-                </button>
-              </>
-            )}
+              </div>
+            </div>
+
+            {/* Physical Location mapping */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Warehouse Mapping</h3>
+              <div className="flex items-center gap-3 bg-slate-950/40 border border-slate-800/60 rounded-xl p-4">
+                <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Storage Slot</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-0.5">
+                    ${die.rack_name && die.shelf ? `${die.rack_name} — Shelf ${die.shelf}` : 'Unmapped / Floor'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
-        </div>
 
-        <div className="p-8">
-          {isEditing ? (
-            <form onSubmit={handleSave} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Die ID</label>
-                  <input 
-                    type="text"
-                    value={dieIdVal}
-                    onChange={(e) => setDieIdVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
-                  <input 
-                    type="text"
-                    value={casingVal}
-                    onChange={(e) => setCasingVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-                  <select 
-                    value={statusVal}
-                    onChange={(e) => setStatusVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="AVAILABLE">Available</option>
-                    <option value="RUNNING">Running</option>
-                    <option value="CLEANING">Cleaning</option>
-                    <option value="POLISHING">Polishing</option>
-                    <option value="DAMAGED">Damaged</option>
-                    <option value="SCRAPPED">Scrapped</option>
-                    <option value="MISSING">Missing</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select 
-                      value={rack}
-                      onChange={(e) => setRack(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="">Select Rack...</option>
-                      {racks.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
-                    <input 
-                      type="number" 
-                      min="1"
-                      placeholder="Shelf"
-                      value={shelf}
-                      onChange={(e) => setShelf(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Set</label>
-                  <SearchableSelect
-                    value={currentSetId}
-                    onChange={(val) => setCurrentSetId(String(val))}
-                    options={setsList?.map((s: any) => ({
-                      value: s.id,
-                      label: `${s.name} (${s.machine_name || 'No Machine'})`
-                    })) || []}
-                    placeholder="Select set to assign..."
-                    emptyLabel="— Unassigned —"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                {die.die_type === 'ROUND' ? (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Size (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={punchedSize}
-                        onChange={(e) => setPunchedSize(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Size (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={currentSize}
-                        onChange={(e) => setCurrentSize(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Width (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={punchedWidth}
-                        onChange={(e) => setPunchedWidth(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={currentWidth}
-                        onChange={(e) => setCurrentWidth(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Punched Thickness (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={punchedThickness}
-                        onChange={(e) => setPunchedThickness(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
-                      <input 
-                        type="number"
-                        step="0.001"
-                        value={currentThickness}
-                        onChange={(e) => setCurrentThickness(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-                  </>
-                )}
+          {/* RIGHT COLUMN: Visualizer Blueprint & Dims (lg:span-7) */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* Visualizer Blueprint Canvas */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center">
+              <div className="flex justify-between items-center w-full mb-4">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">CAD Visualizer</h3>
+                <span className="text-xxs font-mono text-slate-505">Orthographic Blueprint</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
-                <textarea 
-                  rows={3}
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800/80">
-                <button 
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-semibold"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
-                >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div>
-                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4">Specifications</h3>
-                <div className="bg-slate-950/50 print:bg-transparent rounded-xl p-5 border border-slate-850 print:border-black space-y-2">
-                  <div 
-                    className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                      highlightedDim === 'status' 
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
-                        : 'border-transparent'
-                    }`}
-                    onMouseEnter={() => setHighlightedDim('status')}
-                    onMouseLeave={() => setHighlightedDim(null)}
-                  >
-                    <span className={highlightedDim === 'status' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Status</span>
-                    <span className={`font-semibold ${highlightedDim === 'status' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.status}</span>
-                  </div>
-                  <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500 print:text-slate-800">Location</span>
-                    <span className="font-semibold text-slate-200 print:text-black">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
-                  </div>
-                  <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500 print:text-slate-800">Set Assignment</span>
-                    <span className="font-semibold text-slate-200 print:text-black">{die.set_name || '—'}</span>
-                  </div>
-                  <div className="flex justify-between px-2 py-1.5">
-                    <span className="text-slate-500 print:text-slate-800">Machine</span>
-                    <span className="font-semibold text-slate-200 print:text-black">{die.machine_name || '—'}</span>
-                  </div>
-                  <div 
-                    className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                      highlightedDim === 'casing' 
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
-                        : 'border-transparent'
-                    }`}
-                    onMouseEnter={() => setHighlightedDim('casing')}
-                    onMouseLeave={() => setHighlightedDim(null)}
-                  >
-                    <span className={highlightedDim === 'casing' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Casing</span>
-                    <span className={`font-semibold ${highlightedDim === 'casing' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.casing || '—'}</span>
-                  </div>
-
-                  {die.die_type === 'ROUND' ? (
-                    <>
-                      <div 
-                        className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'punched_size' 
-                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
-                            : 'border-transparent'
-                        }`}
-                        onMouseEnter={() => setHighlightedDim('punched_size')}
-                        onMouseLeave={() => setHighlightedDim(null)}
-                      >
-                        <span className={highlightedDim === 'punched_size' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Punched Size</span>
-                        <span className={`font-semibold ${highlightedDim === 'punched_size' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.punched_size} mm</span>
-                      </div>
-                      <div 
-                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'current_size' 
-                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
-                            : 'border-transparent'
-                        }`}
-                        onMouseEnter={() => setHighlightedDim('current_size')}
-                        onMouseLeave={() => setHighlightedDim(null)}
-                      >
-                        <span className={highlightedDim === 'current_size' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Current Size</span>
-                        <span className={`font-semibold ${highlightedDim === 'current_size' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.current_size} mm</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div 
-                        className={`flex justify-between border-t border-slate-800/80 print:border-t-black mt-2 pt-2 -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'punched_width_thickness' 
-                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.15)] border-t-indigo-500/30' 
-                            : 'border-transparent'
-                        }`}
-                        onMouseEnter={() => setHighlightedDim('punched_width_thickness')}
-                        onMouseLeave={() => setHighlightedDim(null)}
-                      >
-                        <span className={highlightedDim === 'punched_width_thickness' ? 'text-indigo-400' : 'text-slate-500 print:text-slate-800'}>Punched Size (W×T)</span>
-                        <span className={`font-semibold ${highlightedDim === 'punched_width_thickness' ? 'text-indigo-300' : 'text-slate-200 print:text-black'}`}>{die.punched_width} × {die.punched_thickness} mm</span>
-                      </div>
-                      <div 
-                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'width_thickness' 
-                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
-                            : 'border-transparent'
-                        }`}
-                        onMouseEnter={() => setHighlightedDim('width_thickness')}
-                        onMouseLeave={() => setHighlightedDim(null)}
-                      >
-                        <span className={highlightedDim === 'width_thickness' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Current Size (W×T)</span>
-                        <span className={`font-semibold ${highlightedDim === 'width_thickness' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.current_width} × {die.current_thickness} mm</span>
-                      </div>
-                      <div 
-                        className={`flex justify-between -mx-2 px-2 py-1.5 rounded-lg transition-all duration-300 border ${
-                          highlightedDim === 'radius' 
-                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
-                            : 'border-transparent'
-                        }`}
-                        onMouseEnter={() => setHighlightedDim('radius')}
-                        onMouseLeave={() => setHighlightedDim(null)}
-                      >
-                        <span className={highlightedDim === 'radius' ? 'text-blue-400' : 'text-slate-500 print:text-slate-800'}>Radius</span>
-                        <span className={`font-semibold ${highlightedDim === 'radius' ? 'text-blue-300' : 'text-slate-200 print:text-black'}`}>{die.radius} mm</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="cad-svg-container print:w-[350px] print:h-[350px] flex flex-col items-center">
-                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4 w-full text-left">CAD Blueprint</h3>
+              <div className="w-full flex justify-center py-4 bg-slate-950/30 rounded-xl border border-slate-850">
                 <DieBlueprint 
                   die={die} 
                   activeHighlight={highlightedDim}
@@ -1871,36 +1625,331 @@ export function DieDetailPage() {
                   prediction={prediction}
                 />
               </div>
+            </div>
 
-              <div className="md:col-span-2 lg:col-span-1">
-                <h3 className="text-sm font-bold text-slate-400 print:text-black uppercase tracking-wider mb-4">Remarks</h3>
-                <div className="bg-slate-950/50 print:bg-transparent rounded-xl p-5 border border-slate-850 print:border-black h-[calc(100%-2rem)]">
-                  <p className="text-slate-300 print:text-black whitespace-pre-line text-sm leading-relaxed">
-                    {die.remarks || 'No remarks recorded.'}
-                  </p>
+            {/* Dimensions Specifications Grid */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Measurements Profile (mm)</h3>
+              
+              {die.die_type === 'ROUND' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div 
+                    className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
+                      highlightedDim === 'punched_size' ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-slate-800/80'
+                    }`}
+                    onMouseEnter={() => setHighlightedDim('punched_size')}
+                    onMouseLeave={() => setHighlightedDim(null)}
+                  >
+                    <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Original Base Punched</span>
+                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">${die.punched_size} mm</p>
+                  </div>
+                  <div 
+                    className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
+                      highlightedDim === 'current_size' ? 'border-blue-500/40 bg-blue-500/5' : 'border-slate-800/80'
+                    }`}
+                    onMouseEnter={() => setHighlightedDim('current_size')}
+                    onMouseLeave={() => setHighlightedDim(null)}
+                  >
+                    <span className="text-xxs font-bold text-slate-505 uppercase tracking-wider">Current Wear Diameter</span>
+                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">${die.current_size} mm</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div 
+                      className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
+                        highlightedDim === 'punched_width_thickness' ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-slate-800/80'
+                      }`}
+                      onMouseEnter={() => setHighlightedDim('punched_width_thickness')}
+                      onMouseLeave={() => setHighlightedDim(null)}
+                    >
+                      <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Original Base Punched W×T</span>
+                      <p className="text-lg font-mono font-bold text-slate-202 mt-1">
+                        ${die.punched_width} × ${die.punched_thickness} mm
+                      </p>
+                    </div>
+                    <div 
+                      className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
+                        highlightedDim === 'width_thickness' ? 'border-blue-500/40 bg-blue-500/5' : 'border-slate-800/80'
+                      }`}
+                      onMouseEnter={() => setHighlightedDim('width_thickness')}
+                      onMouseLeave={() => setHighlightedDim(null)}
+                    >
+                      <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Current Width & Thickness</span>
+                      <p className="text-lg font-mono font-bold text-slate-200 mt-1">
+                        ${die.current_width} × ${die.current_thickness} mm
+                      </p>
+                    </div>
+                  </div>
+                  <div 
+                    className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
+                      highlightedDim === 'radius' ? 'border-blue-500/40 bg-blue-500/5' : 'border-slate-800/80'
+                    }`}
+                    onMouseEnter={() => setHighlightedDim('radius')}
+                    onMouseLeave={() => setHighlightedDim(null)}
+                  >
+                    <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Fillet Corner Radius</span>
+                    <p className="text-sm font-mono font-bold text-slate-202 mt-1">${die.radius} mm</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Set Assignment Info */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Production Line Assignment</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-4">
+                  <span className="text-xxs font-bold text-slate-505 uppercase tracking-wider">Active Set</span>
+                  <p className="text-sm font-bold text-slate-200 mt-1">${die.set_name || 'Stand-alone'}</p>
+                </div>
+                <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-4">
+                  <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Associated Machine</span>
+                  <p className="text-sm font-bold text-slate-202 mt-1">${die.machine_name || 'Unassigned'}</p>
                 </div>
               </div>
             </div>
+
+          </div>
+
+        </div>
+
+        {/* Remarks Section */}
+        {die.remarks && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Remarks</h3>
+            <p className="text-slate-350 text-sm whitespace-pre-line leading-relaxed">${die.remarks}</p>
+          </div>
+        )}
+
+        {/* Wear Prediction Section */}
+        {(role === 'ROOT' || role === 'ADMIN') && <WearPredictionSection die={die} />}
+
+        {/* Maintenance Log Form & Records */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Maintenance & Category Log</h3>
+          <MaintenanceLogSection dieId={die.die_id} canAdd={canEdit} />
+        </div>
+
+        {/* Industrial Audit Log (Paginated DataTable) */}
+        {(role === 'ROOT' || role === 'ADMIN') && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Change Audit History</h3>
+              <span className="text-xxs font-mono text-slate-500">Showing ${paginatedHistory.length} of ${historyTotal} updates</span>
+            </div>
+            
+            {historyTotal === 0 ? (
+              <EmptyState 
+                title="No changes recorded"
+                description="This die asset has not undergone any custom modification or update events since register."
+              />
+            ) : (
+              <div className="space-y-4">
+                <DataTable columns={historyColumns} rows={paginatedHistory} />
+                {historyTotal > 20 && (
+                  <div className="flex justify-between items-center pt-2">
+                    <button
+                      disabled={historyPage === 1}
+                      onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                      className="bg-slate-950 hover:bg-slate-900 disabled:opacity-40 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-xs text-slate-505 font-mono">Page ${historyPage} of ${Math.ceil(historyTotal / 20)}</span>
+                    <button
+                      disabled={historyPage * 20 >= historyTotal}
+                      onClick={() => setHistoryPage(prev => prev + 1)}
+                      className="bg-slate-955 hover:bg-slate-900 disabled:opacity-40 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* Slide-out Edit Form Drawer (Screen 4) */}
+      <Drawer open={isEditing} onClose={() => setIsEditing(false)} title={`Configure Die Asset: ${die.die_id}`}>
+        <form onSubmit={handleSave} className="space-y-6 pb-24 pr-1 pl-1">
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Die ID</label>
+            <input 
+              type="text"
+              value={dieIdVal}
+              onChange={(e) => setDieIdVal(e.target.value)}
+              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Casing Size</label>
+            <input 
+              type="text"
+              value={casingVal}
+              onChange={(e) => setCasingVal(e.target.value)}
+              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+            <select 
+              value={statusVal}
+              onChange={(e) => setStatusVal(e.target.value)}
+              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
+            >
+              <option value="AVAILABLE">Available</option>
+              <option value="RUNNING">Running</option>
+              <option value="CLEANING">Cleaning</option>
+              <option value="POLISHING">Polishing</option>
+              <option value="DAMAGED">Damaged</option>
+              <option value="SCRAPPED">Scrapped</option>
+              <option value="MISSING">Missing</option>
+              <option value="MAINTENANCE">Maintenance</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Location slot</label>
+            <div className="grid grid-cols-2 gap-2">
+              <select 
+                value={rack}
+                onChange={(e) => setRack(e.target.value)}
+                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
+              >
+                <option value="">Select Rack...</option>
+                {racks.map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+              <input 
+                type="number" 
+                min="1"
+                placeholder="Shelf"
+                value={shelf}
+                onChange={(e) => setShelf(e.target.value)}
+                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign to Production Set</label>
+            <SearchableSelect
+              value={currentSetId}
+              onChange={(val) => setCurrentSetId(String(val))}
+              options={setsList?.map((s: any) => ({
+                value: s.id,
+                label: `${s.name} (${s.machine_name || 'No Machine'})`
+              })) || []}
+              placeholder="Select set to assign..."
+              emptyLabel="— Unassigned —"
+              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+            />
+          </div>
+
+          {die.die_type === 'ROUND' ? (
+            <>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Diameter (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={punchedSize}
+                  onChange={(e) => setPunchedSize(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Diameter (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={currentSize}
+                  onChange={(e) => setCurrentSize(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Width (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={punchedWidth}
+                  onChange={(e) => setPunchedWidth(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={currentWidth}
+                  onChange={(e) => setCurrentWidth(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Thickness (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={punchedThickness}
+                  onChange={(e) => setPunchedThickness(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={currentThickness}
+                  onChange={(e) => setCurrentThickness(e.target.value)}
+                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+              </div>
+            </>
           )}
-        </div>
-      </div>
 
-      {/* Wear Prediction Section */}
-      {(role === 'ROOT' || role === 'ADMIN') && <WearPredictionSection die={die} />}
+          <div>
+            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Remarks & Quality logs</label>
+            <textarea 
+              rows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+            />
+          </div>
 
-      {/* Maintenance Logs */}
-      <div className="bg-slate-900 print:hidden border border-slate-800 rounded-2xl shadow-xl p-8 mb-8">
-        <h3 className="text-lg font-bold text-white mb-6">Maintenance Log</h3>
-        <MaintenanceLogSection dieId={die.die_id} canAdd={canEdit} />
-      </div>
+          <div className="flex justify-end space-x-3 pt-6 border-t border-slate-800/80">
+            <button 
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="bg-slate-955 border border-slate-800 hover:border-slate-700 text-slate-350 px-5 py-2.5 rounded-xl font-bold text-xs"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition"
+            >
+              ${updateMutation.isPending ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </form>
+      </Drawer>
 
-      {/* History timeline */}
-      {(role === 'ROOT' || role === 'ADMIN') && (
-        <div className="print:hidden">
-          <Timeline history={die.history} />
-        </div>
-      )}
-
+      {/* Confirm Action Dialogue */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         title="Delete Die Asset"
@@ -1918,9 +1967,7 @@ export function DieDetailPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-slate-950/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onClick={() => setIsRecutOpen(false)}></div>
-
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
             <div className="relative inline-block align-bottom bg-slate-900 border border-slate-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-slate-900 px-6 pt-6 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
@@ -1929,7 +1976,7 @@ export function DieDetailPage() {
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-bold text-white font-heading" id="modal-title">
-                      Recut / Re-bore Die: {die.die_id}
+                      Recut / Re-bore Die: ${die.die_id}
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-slate-400">
@@ -1952,12 +1999,9 @@ export function DieDetailPage() {
                             step="0.001"
                             value={newSize}
                             onChange={(e) => setNewSize(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-205 focus:border-blue-500 focus:outline-none"
                             placeholder="e.g. 12.000"
                           />
-                          <p className="mt-1 text-xs text-slate-500">
-                            Current size is {die.rounddie?.current_size} mm (original punched size: {die.rounddie?.punched_size} mm)
-                          </p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -1969,7 +2013,7 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newWidth}
                                 onChange={(e) => setNewWidth(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                             <div>
@@ -1979,7 +2023,7 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newThickness}
                                 onChange={(e) => setNewThickness(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-955 border border-slate-855 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                             <div>
@@ -1989,24 +2033,21 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newRadius}
                                 onChange={(e) => setNewRadius(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                           </div>
-                          <p className="text-xs text-slate-500">
-                            Current dims: {die.flatdie?.current_width} x {die.flatdie?.current_thickness} mm (fillet radius: {die.flatdie?.radius} mm)
-                          </p>
                         </div>
                       )}
 
                       <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Maintenance Note / Reason</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 font-mono">Maintenance Reason / Note</label>
                         <textarea
                           rows={3}
                           value={recutNote}
                           onChange={(e) => setRecutNote(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
-                          placeholder="Why is this die being recut? (e.g. Ring formation removed, recut to size 12.0)"
+                          className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                          placeholder="Why is this die being recut?"
                         />
                       </div>
                     </div>
@@ -2030,12 +2071,12 @@ export function DieDetailPage() {
                   }}
                   className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-base font-semibold text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:bg-blue-800 transition-colors"
                 >
-                  {recutMutation.isPending ? 'Processing...' : 'Confirm Recut'}
+                  ${recutMutation.isPending ? 'Processing...' : 'Confirm Recut'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsRecutOpen(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-800 shadow-sm px-4 py-2.5 bg-slate-900 text-base font-semibold text-slate-300 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
+                  className="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-800 shadow-sm px-4 py-2.5 bg-slate-900 text-base font-semibold text-slate-350 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
                 >
                   Cancel
                 </button>
@@ -2044,179 +2085,6 @@ export function DieDetailPage() {
           </div>
         </div>
       )}
-    </div>
-
-    {/* Print-only View */}
-    <div className="hidden print:block w-full text-slate-900 bg-white min-h-screen p-4 print-only-container">
-      {/* Header Row */}
-      <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">DMS DIE BLUEPRINT REPORT</h1>
-          <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            <span>Generated: {new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' })}</span>
-            <span className="text-slate-350">|</span>
-            <span>Die ID: {die.die_id}</span>
-          </p>
-        </div>
-        <span className={`px-4 py-1.5 rounded-full border text-xs font-bold ${
-          die.status === 'AVAILABLE' 
-            ? 'border-emerald-500 bg-emerald-50 text-emerald-700' 
-            : die.status === 'RUNNING'
-            ? 'border-blue-500 bg-blue-50 text-blue-700'
-            : 'border-amber-500 bg-amber-50 text-amber-700'
-        }`}>
-          {die.status}
-        </span>
-      </div>
-
-      {/* Title / Identity Row */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center shadow-sm">
-          <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <ellipse cx="12" cy="6" rx="6" ry="3" />
-            <path d="M6 6v12c0 1.66 2.69 3 6 3s6-1.34 6-3V6" />
-          </svg>
-        </div>
-        <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{die.die_id}</h2>
-          <p className="text-sm text-slate-500 mt-1">Casing: <span className="text-blue-600 font-semibold">{die.casing}</span></p>
-        </div>
-      </div>
-
-      {/* Section: Specifications */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
-          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Specifications</h3>
-        </div>
-        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-          {/* Status */}
-          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-            <span className="text-slate-500 flex items-center gap-2.5">
-              <Target className="h-4 w-4 text-slate-400" />
-              <span>Status</span>
-            </span>
-            <span className="font-semibold text-slate-900 flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${
-                die.status === 'AVAILABLE' ? 'bg-emerald-500' : 'bg-amber-500'
-              }`} />
-              <span className={die.status === 'AVAILABLE' ? 'text-emerald-600' : 'text-amber-600'}>{die.status}</span>
-            </span>
-          </div>
-          {/* Location */}
-          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-            <span className="text-slate-500 flex items-center gap-2.5">
-              <MapPin className="h-4 w-4 text-slate-400" />
-              <span>Location</span>
-            </span>
-            <span className="font-semibold text-slate-900">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</span>
-          </div>
-          {/* Set Assignment */}
-          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-            <span className="text-slate-500 flex items-center gap-2.5">
-              <Layers className="h-4 w-4 text-slate-400" />
-              <span>Set Assignment</span>
-            </span>
-            <span className="font-semibold text-slate-900">{die.set_name || '—'}</span>
-          </div>
-          {/* Machine */}
-          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-            <span className="text-slate-500 flex items-center gap-2.5">
-              <FileText className="h-4 w-4 text-slate-400" />
-              <span>Machine</span>
-            </span>
-            <span className="font-semibold text-slate-900">{die.machine_name || '—'}</span>
-          </div>
-          {/* Casing */}
-          <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-            <span className="text-slate-500 flex items-center gap-2.5">
-              <Target className="h-4 w-4 text-slate-400" />
-              <span>Casing</span>
-            </span>
-            <span className="font-semibold text-slate-900">{die.casing || '—'}</span>
-          </div>
-          
-          {die.die_type === 'ROUND' ? (
-            <>
-              {/* Punched Size */}
-              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-                <span className="text-slate-500 flex items-center gap-2.5">
-                  <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Punched Size</span>
-                </span>
-                <span className="font-semibold text-slate-900">{die.punched_size} mm</span>
-              </div>
-              {/* Current Size */}
-              <div className="flex justify-between items-center py-3 px-4 text-sm">
-                <span className="text-slate-500 flex items-center gap-2.5">
-                  <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Current Size</span>
-                </span>
-                <span className="font-semibold text-slate-900">{die.current_size} mm</span>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Punched Size WxT */}
-              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-                <span className="text-slate-500 flex items-center gap-2.5">
-                  <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Punched Size (W×T)</span>
-                </span>
-                <span className="font-semibold text-slate-900">{die.punched_width} × {die.punched_thickness} mm</span>
-              </div>
-              {/* Current Size WxT */}
-              <div className="flex justify-between items-center border-b border-slate-100 py-3 px-4 text-sm">
-                <span className="text-slate-500 flex items-center gap-2.5">
-                  <Ruler className="h-4 w-4 text-slate-400" />
-                  <span>Current Size (W×T)</span>
-                </span>
-                <span className="font-semibold text-slate-900">{die.current_width} × {die.current_thickness} mm</span>
-              </div>
-              {/* Radius */}
-              <div className="flex justify-between items-center py-3 px-4 text-sm">
-                <span className="text-slate-500 flex items-center gap-2.5">
-                  <Compass className="h-4 w-4 text-slate-400" />
-                  <span>Radius</span>
-                </span>
-                <span className="font-semibold text-slate-900">{die.radius} mm</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Section: CAD Blueprint */}
-      <div className="mb-8 break-inside-avoid">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
-          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">CAD Blueprint</h3>
-        </div>
-        <div className="flex justify-center items-center">
-          <div className="w-full max-w-lg">
-            <DieBlueprint 
-              die={die} 
-              activeHighlight={null}
-              onHoverDim={() => {}}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Section: Remarks */}
-      <div className="break-inside-avoid">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-blue-600 rounded-sm" />
-          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Remarks</h3>
-        </div>
-        <div className="border border-slate-200 rounded-xl p-5 bg-white min-h-[80px]">
-          <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
-            {die.remarks || 'No remarks recorded.'}
-          </p>
-        </div>
-      </div>
-    </div>
-  </>
-)
+    </>
+  )
 }
