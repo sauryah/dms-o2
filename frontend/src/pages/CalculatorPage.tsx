@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../hooks/useApi'
+import { useToast } from '../contexts'
 import { APP_VERSION } from '../version'
 import { 
   Calculator, 
@@ -18,11 +19,13 @@ import {
   BookOpen, 
   Info, 
   Zap, 
-  ChevronRight 
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react'
 
 export function CalculatorPage() {
   const { request } = useApi()
+  const { showToast } = useToast()
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState<'round' | 'sequence' | 'flat'>('round')
@@ -64,7 +67,54 @@ export function CalculatorPage() {
   // Formulas explanations
   const [showFormulaInfo, setShowFormulaInfo] = useState<boolean>(true)
 
-  // 1. Calculate Single Round
+  const getRoundValidationError = () => {
+    const inVal = parseFloat(roundInlet)
+    const outVal = parseFloat(roundOutlet)
+    const targetRed = parseFloat(roundTargetRed)
+    const targetElong = parseFloat(roundTargetElong)
+
+    if (isNaN(inVal) || inVal <= 0) return 'Inlet diameter (d₁) must be a positive number greater than 0 mm.'
+
+    if (roundCalcMode === 'forward') {
+      if (isNaN(outVal) || outVal <= 0) return 'Outlet diameter (d₂) must be a positive number greater than 0 mm.'
+      if (outVal >= inVal) return `Outlet diameter (${outVal} mm) must be strictly smaller than inlet diameter (${inVal} mm).`
+    } else if (roundCalcMode === 'backward_red') {
+      if (isNaN(targetRed) || targetRed <= 0 || targetRed >= 100) return 'Target area reduction % must be between 0% and 100%.'
+    } else if (roundCalcMode === 'backward_elong') {
+      if (isNaN(targetElong) || targetElong <= 0) return 'Target elongation % must be a positive number greater than 0%.'
+    }
+    return null
+  }
+
+  const getSequenceValidationError = () => {
+    const start = parseFloat(seqStart)
+    const end = parseFloat(seqEnd)
+    const avgRed = parseFloat(seqReduction)
+
+    if (isNaN(start) || start <= 0) return 'Start diameter must be a positive number greater than 0 mm.'
+    if (isNaN(end) || end <= 0) return 'End diameter must be a positive number greater than 0 mm.'
+    if (start <= end) return `Start diameter (${start} mm) must be strictly greater than target end diameter (${end} mm).`
+    if (isNaN(avgRed) || avgRed <= 0 || avgRed >= 100) return 'Average reduction % per pass must be between 0% and 100%.'
+    return null
+  }
+
+  const getFlatValidationError = () => {
+    const inW = parseFloat(flatInWidth)
+    const inT = parseFloat(flatInThick)
+    const outW = parseFloat(flatOutWidth)
+    const outT = parseFloat(flatOutThick)
+
+    if (isNaN(inW) || inW <= 0 || isNaN(inT) || inT <= 0) return 'Inlet width and thickness must be positive numbers greater than 0 mm.'
+    if (isNaN(outW) || outW <= 0 || isNaN(outT) || outT <= 0) return 'Outlet width and thickness must be positive numbers greater than 0 mm.'
+    const inArea = inW * inT
+    const outArea = outW * outT
+    if (outArea >= inArea) return `Finished outlet cross-section area (${outArea.toFixed(2)} mm²) must be smaller than inlet area (${inArea.toFixed(2)} mm²).`
+    return null
+  }
+
+  const roundValidationError = getRoundValidationError()
+  const sequenceValidationError = getSequenceValidationError()
+  const flatValidationError = getFlatValidationError()
   const getRoundResults = () => {
     const inVal = parseFloat(roundInlet)
     const outVal = parseFloat(roundOutlet)
@@ -319,10 +369,15 @@ export function CalculatorPage() {
     try {
       const sizeMin = (targetSize - 0.05).toFixed(3)
       const sizeMax = (targetSize + 0.05).toFixed(3)
-      const res = await request(`/api/go/search?die_type=ROUND&size_min=${sizeMin}&size_max=${sizeMax}&limit=3`)
-      setMatchingDies(prev => ({ ...prev, [passNo]: res.results || [] }))
-    } catch (err) {
+      const res = await request(`/api/go/search?die_type=ROUND&size_min=${sizeMin}&size_max=${sizeMax}&limit=3`, {
+        cancelKey: `matching_dies_round_${passNo}`
+      })
+      const results = (res && typeof res === 'object' && 'results' in res) ? res.results : (Array.isArray(res) ? res : [])
+      setMatchingDies(prev => ({ ...prev, [passNo]: results }))
+    } catch (err: any) {
+      if (err?.type === 'aborted') return
       console.error('Failed to fetch matching dies', err)
+      showToast('Failed to search matching dies inventory', 'error')
     } finally {
       setLoadingDies(prev => ({ ...prev, [passNo]: false }))
     }
@@ -335,10 +390,15 @@ export function CalculatorPage() {
       const widthMax = (width + 0.1).toFixed(3)
       const thickMin = (thickness - 0.05).toFixed(3)
       const thickMax = (thickness + 0.05).toFixed(3)
-      const res = await request(`/api/go/search?die_type=FLAT&width_min=${widthMin}&width_max=${widthMax}&thick_min=${thickMin}&thick_max=${thickMax}&limit=3`)
-      setMatchingDies(prev => ({ ...prev, [passNo]: res.results || [] }))
-    } catch (err) {
+      const res = await request(`/api/go/search?die_type=FLAT&width_min=${widthMin}&width_max=${widthMax}&thick_min=${thickMin}&thick_max=${thickMax}&limit=3`, {
+        cancelKey: `matching_dies_flat_${passNo}`
+      })
+      const results = (res && typeof res === 'object' && 'results' in res) ? res.results : (Array.isArray(res) ? res : [])
+      setMatchingDies(prev => ({ ...prev, [passNo]: results }))
+    } catch (err: any) {
+      if (err?.type === 'aborted') return
       console.error('Failed to fetch matching flat dies', err)
+      showToast('Failed to search matching flat dies inventory', 'error')
     } finally {
       setLoadingDies(prev => ({ ...prev, [passNo]: false }))
     }
@@ -1293,14 +1353,16 @@ export function CalculatorPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-20 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
-                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-[#1b253b] flex items-center justify-center text-slate-500">
-                        <Info className="h-6 w-6" />
+                    <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-16 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${roundValidationError ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-slate-900 border border-[#1b253b] text-slate-500'}`}>
+                        {roundValidationError ? <AlertTriangle className="h-6 w-6" /> : <Info className="h-6 w-6" />}
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-slate-300">Waiting for Sizing Parameters</h4>
-                        <p className="text-xs text-slate-500 max-w-sm">
-                          Please enter valid numeric input diameters and targets in the configurator panel to compute deformation stats.
+                      <div className="space-y-1 max-w-md">
+                        <h4 className={`text-sm font-bold ${roundValidationError ? 'text-amber-300' : 'text-slate-300'}`}>
+                          {roundValidationError ? 'Invalid Sizing Parameters' : 'Waiting for Sizing Parameters'}
+                        </h4>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {roundValidationError || 'Please enter valid numeric input diameters and targets in the configurator panel to compute deformation stats.'}
                         </p>
                       </div>
                     </div>
@@ -2172,14 +2234,16 @@ export function CalculatorPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-20 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
-                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-[#1b253b] flex items-center justify-center text-slate-500">
-                        <Info className="h-6 w-6" />
+                    <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-16 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner col-span-12">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${flatValidationError ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-slate-900 border border-[#1b253b] text-slate-500'}`}>
+                        {flatValidationError ? <AlertTriangle className="h-6 w-6" /> : <Info className="h-6 w-6" />}
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-slate-300">Awaiting Profile Parameters</h4>
-                        <p className="text-xs text-slate-500 max-w-sm">
-                          Please enter valid raw and finished dimensions in the configurator panel to generate deformation matrix graphs.
+                      <div className="space-y-1 max-w-md">
+                        <h4 className={`text-sm font-bold ${flatValidationError ? 'text-amber-300' : 'text-slate-300'}`}>
+                          {flatValidationError ? 'Invalid Flat Profile Parameters' : 'Awaiting Profile Parameters'}
+                        </h4>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {flatValidationError || 'Please enter valid raw and finished dimensions in the configurator panel to generate deformation matrix graphs.'}
                         </p>
                       </div>
                     </div>

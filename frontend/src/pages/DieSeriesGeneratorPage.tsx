@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Zap } from 'lucide-react';
+import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
 import DieSeriesGenerator from '../features/wire-drawing-calculator/components/DieSeriesGenerator';
 import { calculatePassData, calculateStatistics, calculateConsistency } from '../features/wire-drawing-calculator/utils/calculations';
 import ResultsTable from '../features/wire-drawing-calculator/components/ResultsTable';
@@ -12,7 +13,35 @@ import DieProgression from '../features/wire-drawing-calculator/components/DiePr
 
 export function DieSeriesGeneratorPage() {
   const navigate = useNavigate();
-  const [dies, setDies] = useState<number[]>([]);
+  const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>([]);
+
+  const handleApplyGenerated = useCallback((newDies: number[]) => {
+    if (dies.length > 0) {
+      const confirmOverwrite = window.confirm('Apply new die sequence? This will replace your current calculated schedule.');
+      if (!confirmOverwrite) return;
+    }
+    setDies(newDies);
+  }, [dies.length, setDies]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        const target = e.target as HTMLElement | null;
+        if (target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable
+        )) {
+          return;
+        }
+        e.preventDefault();
+        e.shiftKey ? redo() : undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
 
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
@@ -41,7 +70,7 @@ export function DieSeriesGeneratorPage() {
         </div>
 
         {/* Generator Input */}
-        <DieSeriesGenerator onApply={setDies} />
+        <DieSeriesGenerator onApply={handleApplyGenerated} />
 
         {/* Results (shown after generating) */}
         {passes.length > 0 && (
@@ -50,10 +79,10 @@ export function DieSeriesGeneratorPage() {
               passes={passes}
               dies={dies}
               onDiesChange={setDies}
-              canUndo={false}
-              canRedo={false}
-              onUndo={() => {}}
-              onRedo={() => {}}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
             />
 
             <DieProgression dies={dies} onDiesChange={setDies} />
