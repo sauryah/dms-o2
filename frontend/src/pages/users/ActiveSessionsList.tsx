@@ -40,7 +40,7 @@ export function ActiveSessionsList() {
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => request('/api/active-sessions/bulk/', { method: 'DELETE', body: { ids } }),
+    mutationFn: (ids: number[]) => request('/api/active-sessions/bulk/', { method: 'DELETE', body: JSON.stringify({ ids }) }),
     onSuccess: () => {
       setSelected(new Set())
       queryClient.invalidateQueries({ queryKey: ['activeSessions'] })

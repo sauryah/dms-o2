@@ -617,5 +617,72 @@ class UserActivityLogTests(APITestCase):
         ).first()
         self.assertIsNotNone(log)
 
+    def test_active_sessions_bulk_termination(self):
+        # Login regular user to create a session
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'regular_password_123'
+        })
+        
+        from users.models import UserSession
+        session = UserSession.objects.filter(user=self.regular_user).first()
+        self.assertIsNotNone(session)
+        
+        # Populate session cache key to simulate login cache
+        from django.core.cache import cache
+        cache_key = f"user_session:{session.user.id}:{session.token_hash}"
+        cache.set(cache_key, "active_session_data")
+        self.assertEqual(cache.get(cache_key), "active_session_data")
+
+        # Login root user
+        res_root = self.client.post(self.login_url, {
+            'username': 'root_test_audit',
+            'password': 'root_password_123'
+        })
+        root_token = res_root.data['token']
+
+        # Bulk terminate regular user session
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {root_token}')
+        res_bulk = self.client.delete('/api/v1/active-sessions/bulk/', {'ids': [session.id]}, format='json')
+        self.assertEqual(res_bulk.status_code, status.HTTP_200_OK)
+
+        # Verify session is deleted from DB and Cache
+        self.assertFalse(UserSession.objects.filter(id=session.id).exists())
+        self.assertIsNone(cache.get(cache_key))
+
+    def test_active_sessions_clear_all(self):
+        # Login regular user to create a session
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test_audit',
+            'password': 'regular_password_123'
+        })
+        
+        from users.models import UserSession
+        session = UserSession.objects.filter(user=self.regular_user).first()
+        self.assertIsNotNone(session)
+        
+        # Populate session cache key to simulate login cache
+        from django.core.cache import cache
+        cache_key = f"user_session:{session.user.id}:{session.token_hash}"
+        cache.set(cache_key, "active_session_data")
+        self.assertEqual(cache.get(cache_key), "active_session_data")
+
+        # Login root user
+        res_root = self.client.post(self.login_url, {
+            'username': 'root_test_audit',
+            'password': 'root_password_123'
+        })
+        root_token = res_root.data['token']
+
+        # Clear all active sessions
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {root_token}')
+        res_all = self.client.delete('/api/v1/active-sessions/all/')
+        self.assertEqual(res_all.status_code, status.HTTP_200_OK)
+
+        # Verify session is deleted from DB and Cache
+        self.assertFalse(UserSession.objects.filter(id=session.id).exists())
+        self.assertIsNone(cache.get(cache_key))
+
+
 
 

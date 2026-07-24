@@ -61,7 +61,10 @@ class UserSessionViewSet(viewsets.ModelViewSet):
     def destroy_all(self, request):
         sessions = self.get_queryset()
         count = sessions.count()
-        for session in sessions:
+        from django.core.cache import cache
+        for session in list(sessions):
+            cache_key = f"user_session:{session.user.id}:{session.token_hash}"
+            cache.delete(cache_key)
             UserActivityLog.objects.create(
                 user=session.user,
                 username=session.user.username,
@@ -69,7 +72,7 @@ class UserSessionViewSet(viewsets.ModelViewSet):
                 ip_address=session.ip_address,
                 device=f"Forced clear all by admin ({request.user.username})"
             )
-        sessions.delete()
+            session.delete()
         return Response({'detail': f'Cleared {count} active session(s).'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'], url_path='bulk')
@@ -79,7 +82,10 @@ class UserSessionViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'No session IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
         sessions = self.get_queryset().filter(id__in=ids)
         count = sessions.count()
-        for session in sessions:
+        from django.core.cache import cache
+        for session in list(sessions):
+            cache_key = f"user_session:{session.user.id}:{session.token_hash}"
+            cache.delete(cache_key)
             UserActivityLog.objects.create(
                 user=session.user,
                 username=session.user.username,
@@ -87,7 +93,7 @@ class UserSessionViewSet(viewsets.ModelViewSet):
                 ip_address=session.ip_address,
                 device=f"Forced bulk terminate by admin ({request.user.username})"
             )
-        sessions.delete()
+            session.delete()
         return Response({'detail': f'Cleared {count} selected session(s).'}, status=status.HTTP_200_OK)
 
     def perform_destroy(self, instance):
