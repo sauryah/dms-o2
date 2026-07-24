@@ -1,5 +1,19 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-07-24 · Complete UI/UX Redesign of the Die Inventory Section
+*   **Feature**: Complete visual redesign, responsiveness enhancement, and UX hardening of the Die Inventory section. Redesigned list view with multi-view toggles (Grid/List/Rack layout), customized collapsible FilterPanel, step-by-step registration wizard guided by StepWizard component, dual-column asset detail workspace, slide-out edit form drawer, Meilisearch pagination matching, and styled Excel-import uploader dropzone with drag-and-drop support. Checked all changes against full test suite (53 tests passing) and verified Vite production compilation.
+*   **Affected Modules**: `frontend`
+*   **Files Modified**:
+    *   [useInventoryState.ts](file:///D:/DMS/dms-o2/frontend/src/features/inventory/hooks/useInventoryState.ts) - Exposed location queries, adjusted defaults to 25 items.
+    *   [FilterPanel.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/FilterPanel.tsx) - Redesigned filtering widgets layout.
+    *   [InventoryPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/InventoryPage.tsx) - Swapped search layouts and integrated hotkey listener.
+    *   [InventorySubViews.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/InventorySubViews.tsx) - Swapped grid and rack results mapping.
+    *   [DieDetailPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/DieDetailPage.tsx) - Structured dual-column spec grids, paginated history logs table, and integrated slide-out edit drawer.
+    *   [CreateDieModal.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/CreateDieModal.tsx) - Rewrote forms into multi-step wizard step layouts.
+    *   [ImportPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/ImportPage.tsx) - Integrated drag-and-drop dropzones and formatted errors list.
+*   **Documentation Updated**: `.dev/changelog-dev.md`, `.dev/state/progress.md`
+*   **Testing Performed**: Verified with production build verify check and Vitest test suite runs (53 tests 100% green).
+
 ### 2026-07-24 · Complete UI/UX Redesign of the Users Admin Suite
 *   **Feature**: Complete visual redesign, responsiveness enhancement, and UX hardening of the administrative suite. Replaced browser native alerts with accessible custom modals, built local search and filters for users, implemented a timeline-style user activity log, parsed device user-agents into OS/browser badges, and styled an intuitive permissions tree with Framer Motion entry animations. Preserved 100% of existing functionality, APIs, and business logic.
 *   **Affected Modules**: `frontend`
