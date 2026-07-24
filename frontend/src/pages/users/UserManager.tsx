@@ -487,34 +487,34 @@ export function UserManager() {
 
       {/* Create / Edit User Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-805 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[16px] max-w-lg w-full shadow-xl overflow-hidden animate-fadeIn">
             
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800/80 flex justify-between items-center bg-slate-950/30">
+            <div className="bg-[var(--color-surface-2)] py-2 px-4 flex justify-between items-center border-b border-[var(--color-border)]">
               <div className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-blue-450" />
-                <h2 className="text-md font-bold text-white font-mono uppercase tracking-wide">
+                <Shield className="h-5 w-5 text-[var(--color-primary)]" />
+                <h2 className="text-base font-semibold text-[var(--color-primary)]">
                   {editingUser ? `Configure: ${editingUser.username}` : 'Create System Credentials'}
                 </h2>
               </div>
-              <button onClick={closeForm} className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition cursor-pointer">
+              <button onClick={closeForm} className="text-[var(--color-muted)] hover:text-[var(--color-text)] p-1 hover:bg-[var(--color-surface-2)] rounded-lg transition cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Scroll Container */}
-            <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-4 space-y-4">
               {formError && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-455 rounded-xl p-4 text-xs font-semibold font-mono flex items-center space-x-2">
-                  <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-rose-500" />
+                <div className="bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-xl p-4 text-xs font-semibold font-mono flex items-center space-x-2">
+                  <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-[var(--color-danger)]" />
                   <span>{formError}</span>
                 </div>
               )}
 
               {/* Username Input (Read-only if editing) */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider font-mono">Username Identity</label>
+                <label className="block text-xs text-[var(--color-muted)] font-medium">Username Identity</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
                     <User className="h-4 w-4" />
@@ -525,7 +525,7 @@ export function UserManager() {
                     disabled={!!editingUser}
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-950 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
                     placeholder="e.g. jdoe"
                   />
                 </div>
@@ -557,9 +557,7 @@ export function UserManager() {
 
               {/* Password */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider font-mono">
-                  Access Key {editingUser && <span className="text-slate-500 font-normal capitalize">(leave blank to keep current)</span>}
-                </label>
+                <label className="block text-xs text-[var(--color-muted)] font-medium">Access Key {editingUser && <span className="text-[var(--color-muted)] font-normal capitalize">(leave blank to keep current)</span>}</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
                     <Key className="h-4 w-4" />
@@ -569,7 +567,7 @@ export function UserManager() {
                     required={!editingUser}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
                     placeholder={editingUser ? "••••••••" : "Min 8 characters"}
                   />
                 </div>
@@ -594,16 +592,16 @@ export function UserManager() {
 
               {/* Email Input */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider font-mono">Email Address</label>
+                <label className="block text-xs text-[var(--color-muted)] font-medium">Email Address</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-muted)]">
                     <Mail className="h-4 w-4" />
                   </span>
                   <input 
                     type="email" 
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -611,12 +609,12 @@ export function UserManager() {
 
               {/* System role dropdown */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider font-mono">System authorization Role</label>
+                <label className="block text-xs text-[var(--color-muted)] font-medium">System authorization Role</label>
                 <select 
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
                   disabled={editingUser && (editingUser.role === 'ROOT' || editingUser.username === currentUsername)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-950 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all cursor-pointer font-semibold font-mono"
+                  className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] disabled:opacity-50 disabled:bg-[var(--color-surface)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all cursor-pointer"
                 >
                   {roleInput === 'ROOT' && (
                     <option value="ROOT">ROOT (SUPERUSER ACCESS)</option>
@@ -632,10 +630,10 @@ export function UserManager() {
                 
                 {/* Active Toggle Box */}
                 <div 
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer select-none ${
+                  className={`flex-1 flex items-center justify-between p-3.5 rounded-[12px] border transition cursor-pointer select-none ${
                     isActiveInput 
-                      ? 'border-emerald-500/20 bg-emerald-500/[0.02]' 
-                      : 'border-slate-800 bg-transparent'
+                      ? 'border-[var(--color-success)]/20 bg-[var(--color-success)]/[0.02]' 
+                      : 'border-[var(--color-border)] bg-transparent'
                   }`}
                   onClick={() => {
                     if (!(editingUser && editingUser.username === currentUsername)) {
@@ -658,10 +656,10 @@ export function UserManager() {
 
                 {/* Sizing Tools authorization Box */}
                 <div 
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer select-none ${
+                  className={`flex-1 flex items-center justify-between p-3.5 rounded-[12px] border transition cursor-pointer select-none ${
                     roleInput === 'ROOT' || isAuthorizedForToolsInput 
-                      ? 'border-blue-500/20 bg-blue-500/[0.02]' 
-                      : 'border-slate-800 bg-transparent'
+                      ? 'border-[var(--color-primary)]/20 bg-[var(--color-primary)]/[0.02]' 
+                      : 'border-[var(--color-border)] bg-transparent'
                   }`}
                   onClick={() => {
                     if (roleInput !== 'ROOT') {
@@ -696,7 +694,7 @@ export function UserManager() {
 
               {/* Interactive Module Tree Panel */}
               {isAuthorizedForToolsInput && roleInput !== 'ROOT' && (
-                <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-4 animate-fadeIn">
+                <div className="p-4 bg-[var(--color-surface-2)]/60 border-[var(--color-border)]/80 rounded-xl space-y-4 animate-fadeIn">
                   <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 mb-2">
                     <Shield className="h-4 w-4 text-blue-450" />
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 font-mono">
@@ -840,14 +838,14 @@ export function UserManager() {
                 <button 
                   type="button" 
                   onClick={closeForm}
-                  className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] text-[var(--color-muted)] border border-[var(--color-border)] hover:border-[var(--color-border-dark)] px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 cursor-pointer"
+                  className="bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-[var(--color-primary)]/10 hover:shadow-[var(--color-primary)]/20 cursor-pointer"
                 >
                   {editingUser ? 'Save Changes' : 'Create User'}
                 </button>

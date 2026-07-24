@@ -2,22 +2,22 @@
 
 :root {
   /* Design system tokens */
-  --color-bg:          #0d1117;
-  --color-surface:     #161b22;
-  --color-surface-2:   #1c2330;
-  --color-border:      #2a3441;
-  --color-text:        #e6edf3;
-  --color-muted:       #7d8590;
-  --color-accent:      #f59e0b;
+  --color-bg:          #070B17;
+  --color-surface:     #0B1220;
+  --color-surface-2:   #111827;
+  --color-border:      #1F2937;
+  --color-text:        #F8FAFC;
+  --color-muted:       #94A3B8;
+  --color-accent:      #3B82F6;
 
   /* Status colors */
-  --color-available:   #3fb950;
-  --color-running:     #3b82f6;
-  --color-cleaning:    #f59e0b;
-  --color-polishing:   #bc8cff;
-  --color-damaged:     #f0883e;
-  --color-scrapped:    #f85149;
-  --color-missing:     #7d8590;
+  --color-available:   #10B981;
+  --color-running:     #3B82F6;
+  --color-cleaning:    #38BDF8;
+  --color-polishing:   #BC8CFF;
+  --color-damaged:     #F59E0B;
+  --color-scrapped:    #EF4444;
+  --color-missing:     #7D8590;
 }
 
 @tailwind base;
