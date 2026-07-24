@@ -7,41 +7,35 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** 3D Stress Heatmap Workbench, Granular Tool Permissions & Live Auth Sync (v1.9.2)
+**Task:** Tools Suite Refactoring & Audit Implementation (Phase 1 – Critical Bugs)
 **Status:** Complete
-**Started:** 2026-07-23
-**Completed:** 2026-07-23
+**Started:** 2026-07-24
+**Completed:** 2026-07-24
 **Confidence:** 100%
 
 ## Task Description
-Implement dynamic import chunk recovery (`lazyWithRetry`), ErrorBoundary update fallback, Vite SSE proxy config (`/api/events`), EventSource reconnection refactoring, 3D von Mises Stress Heatmap visualizer (`StressHeatmap3D.tsx`) with live die angle sliders, cutaway slice plane, 3D chevron defect overlay, and snapshot export, fix `toFixed` property access crash, implement granular sub-feature tool permissions in `UserManager.tsx` with an indented permission tree, hide unauthorized sub-modules from DOM, add live permission auto-sync in `AuthContext.tsx`, and update repository documentation across all ledger files.
+Implement Phase 1 critical bug fixes across engineering tools suite: scope global `Ctrl+Z` event listener to exclude text inputs, integrate `useUndo` stack and overwrite confirmation modal in `DieSeriesGeneratorPage.tsx`, add `cancelKey` `AbortController` cancellation to inventory search API calls, render explicit validation warning banners for out-of-range inputs, and handle API errors gracefully.
 
 ## Implementation Progress
-- ✅ Implemented `lazyWithRetry.ts` to auto-reload on dynamic import chunk load errors
-- ✅ Updated `ErrorBoundary.tsx` with dynamic import failure detection & reload fallback
-- ✅ Added `/api/events` proxy rule targeting Go API (`8080`) in `vite.config.js`
-- ✅ Refactored `useRealtimeSync.ts` to suppress console error noise during SSE reconnects
-- ✅ Created 3D von Mises Stress Heatmap component (`StressHeatmap3D.tsx`) with live angle/bearing sliders, cutaway slice angle, 3D chevron defect overlay, and 3D snapshot export
-- ✅ Fixed `toFixed` property access crash by correctly mapping `PassData.areaReduction` and adding nullish coalescing guards
-- ✅ Upgraded `TheoryPanel.tsx` with CAD Die Geometry Inspector & Live Simulator
-- ✅ Formatted tool permissions into an indented tree hierarchy with visual badges (`3D Model`, `Theory Docs`) in `UserManager.tsx`
-- ✅ Completely hid unauthorized 3D Heatmap and Theory modules from DOM in `WireDrawingCalculatorPage.tsx`
-- ✅ Implemented live background permission auto-sync (10s polling, window focus sync, mount sync) in `AuthContext.tsx`
-- ✅ Bumped package version to `v1.9.2`
-- ✅ Passed 16 Vitest unit tests (`npm test`) & verified `npm run build`
-- ✅ Updated documentation files (`CHANGELOG.md`, `PROJECT.md`, `.dev/changelog-dev.md`, `.dev/state/progress.md`)
+- ✅ Fixed global `Ctrl+Z` keydown listener in `WireDrawingCalculatorPage.tsx` to preserve native input text undo
+- ✅ Replaced raw `useState` with `useUndo` hook in `DieSeriesGeneratorPage.tsx` to restore results table edit history
+- ✅ Added overwrite confirmation prompt before applying newly generated series over existing dies
+- ✅ Added `cancelKey` parameter to `/api/go/search` requests in `CalculatorPage.tsx` for request cancellation
+- ✅ Added inline `AlertTriangle` validation error callouts across single round, multi-sequence, and flat draft modes
+- ✅ Handled search API failure cases with user-facing toast notifications
+- ✅ Verified 16 Vitest unit tests (`npm test`) & production build (`npm run build`)
+- ✅ Committed changes under `290c6d9`
 
 ## Completion Summary
-- Application automatically recovers from missing asset chunk hashes following new deployments
-- Realtime EventSource reconnection operates with controlled backoff and clean console logging
-- Wire Drawing Calculator features interactive 3D WebGL stress visualizer, flow stream animation, CAD die inspector, math deformation mechanics simulator, and 3D blueprint snapshot downloader
-- ROOT can grant or restrict sub-feature tool permissions (`3d-stress-heatmap` and `engineering-theory`) per user in User Manager, which hide/reveal cleanly in the DOM without requiring a logout/login cycle
-- All test suites and production build verified 100% green
+- Global keyboard undo shortcuts no longer hijack focused form text fields.
+- Die Series Generator supports full undo/redo history and prevents accidental workspace overwrites.
+- Calculator displays clear actionable mathematical validation guidance on invalid parameter entries.
+- Search requests cancel redundant inflight fetches cleanly without unhandled rejections.
 
 ## Next Task
-**Task:** Capstan Speed & Power Calculator / Wear Alert Automation (Roadmap Phase 3)
-**Status:** Future phase
-**Confidence:** TBD
+**Task:** Phase 2 – Performance Optimization (Tools Suite Refactoring)
+**Status:** Pending Approval
+**Confidence:** 100%
 
 ## Blockers
 None

@@ -34,46 +34,51 @@ Django backend overview for write operations and business logic.
 ## Directory Structure
 ```
 backend/
-├── config/           # Django settings
-├── api/              # API routing
-├── authentication/   # Auth views and serializers
-├── dies/             # Dies module
-├── history/          # History module
-├── machines/         # Machines module
-├── sets/             # Sets module
-├── users/            # Users module
-├── outbox/           # Background task processing
-└── manage.py         # Django management
+├── dms/             # Core settings, main URLs, WSGI/ASGI, Celery config
+├── dies/            # Dies, RoundDie, FlatDie, WearAlert, DieTolerance, MaintenanceLog, ImportLog, OutboxTask
+├── history/         # DieHistory, MachineHistory models, signals, and views
+├── machines/        # MachineCategory, Machine, Set, Rack models and ViewSets
+├── search/          # Celery Meilisearch indexing tasks
+├── users/           # Custom User, UserSession, UserActivityLog, auth views & permissions
+└── manage.py        # Django management CLI script
 ```
 
 ## Key Models
 
 ### Die
 - `id`: Primary key
-- `set`: Foreign key to Set
-- `die_type`: 'round' or 'flat'
-- `status`: 'active', 'retired', 'maintenance'
-- `predicted_remaining_days`: Calculated field
+- `die_id`: Unique string identifier
+- `die_type`: Enum ('ROUND', 'FLAT')
+- `casing`: Dimensions envelope string (e.g. `25x10`)
+- `status`: Enum (`AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`)
+- `rack`: Foreign key to Rack (nullable)
+- `shelf_number`: Positive small int (nullable)
+- `current_set`: Foreign key to Set (nullable)
+- `remarks`: Maintenance notes text
+- `predicted_remaining_days`: Calculated lifetime integer
+- `version`: Optimistic locking integer
 
 ### RoundDie
-- `original_diameter`: Decimal(10,3)
-- `current_diameter`: Decimal(10,3)
-- `original_length`: Decimal(10,3)
-- `current_length`: Decimal(10,3)
+- `punched_size`: Decimal(7,3)
+- `current_size`: Decimal(7,3)
 
 ### FlatDie
-- `original_width`: Decimal(10,3)
-- `current_width`: Decimal(10,3)
-- `original_height`: Decimal(10,3)
-- `current_height`: Decimal(10,3)
+- `punched_width`: Decimal(7,3)
+- `current_width`: Decimal(7,3)
+- `punched_thickness`: Decimal(7,3)
+- `current_thickness`: Decimal(7,3)
+- `radius`: Decimal(7,3) fillet radius
 
 ### DieHistory
 - `die`: Foreign key to Die
-- `action`: Action type
-- `old_values`: JSONB
-- `new_values`: JSONB
+- `changed_by`: Foreign key to User (nullable)
 - `timestamp`: DateTime
-- `user`: Foreign key to User
+- `field_name`: String field name
+- `old_value`: Text old value
+- `new_value`: Text new value
+- `ip_address`: Client IP address
+- `note`: Change context note
+
 
 ## Key Views
 

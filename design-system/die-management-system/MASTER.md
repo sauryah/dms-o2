@@ -224,5 +224,5 @@ Designed to display status distribution charts, CAD drawings, and quick metrics 
 
 ## 6. See Also
 
-*   [README.md](file:///home/sahil/Projects/dms-o2/README.md) - System environment initialization and run instructions.
-*   [ARCHITECTURE.md](file:///home/sahil/Projects/dms-o2/docs/ARCHITECTURE.md) - Database connection specifications and search route logic.
+*   [README.md](file:///README.md) - System environment initialization and run instructions.
+*   [ARCHITECTURE.md](file:///docs/ARCHITECTURE.md) - Database connection specifications and search route logic.

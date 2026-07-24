@@ -75,7 +75,8 @@ Dies are modeled under a unified base model (`Die`) with type-specific attribute
 *   `die_id` (String, unique, alphanumeric)
 *   `casing` (String, dimensions envelope, e.g. `25x10`)
 *   `status` (Enum: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`)
-*   `location` (String, free-text physical rack placement, e.g., `Rack A - Shelf 3`, nullable)
+*   `rack` (Foreign Key → Rack, physical rack placement, nullable)
+*   `shelf_number` (Positive Small Integer, shelf position on rack, nullable)
 *   `current_set` (Foreign Key → Set, nullable)
 *   `remarks` (Text, notes or maintenance reports)
 

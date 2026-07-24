@@ -115,6 +115,10 @@ graph TD
 * **Immutable Auditing**: Database triggers and Django pre-save signals capture all modifications to die status, location, and dimensions.
 * **Session Management**: Concurrent session control with immediate eviction of previous logins upon new sign-ins.
 * **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
+* **3D von Mises Stress Heatmap & Flow Stream Visualizer**: Interactive WebGL 3D model visualizer (`StressHeatmap3D.tsx`) featuring real-time die angle/bearing sliders, cutaway slice plane, 3D chevron crack defect overlay, and 3D snapshot export.
+* **Theory & Fundamentals Workbench**: CAD Die Geometry Inspector SVG, math deformation simulator, Siebel's force calculations, and engineering trade-off comparison matrices (`TheoryPanel.tsx`).
+* **Granular Tool Permissions & Live Auth Sync**: Indented sub-feature tool permissions tree in `UserManager.tsx` (enabling/disabling individual calculation and 3D tools per user) with real-time background auto-sync in `AuthContext.tsx`.
+* **Frontend Resilience & Auto-Recovery**: Automatic dynamic import chunk load error recovery (`lazyWithRetry.ts`) and user-friendly update fallback screen (`ErrorBoundary.tsx`).
 * **Engineering Tools Suite**: Integrated die calculators, including the **Sizing & Elongation Calculator** and the high-fidelity **Wire Drawing Elongation Calculator** featuring interactive results tables, Suggesters, and PDF/Excel/CSV exports.
 
 ---

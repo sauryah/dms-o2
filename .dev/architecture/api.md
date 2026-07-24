@@ -6,111 +6,96 @@ Complete catalog of all API endpoints across Django and Go services.
 **Read by:** AI agents, engineers.
 **Updated:** When endpoints change.
 
-## Authentication API (Django Gunicorn)
+## Primary Routes (v1 API Prefix: `/api/v1/` & `/api/`)
 
-### Login
-- **Endpoint:** `POST /api/auth/login/`
-- **Purpose:** Validates credentials, issues JWT tokens inside HTTPOnly cookies, logs session
-- **Request:** `{"username": "...", "password": "..."}`
-- **Response:** `{"access": "...", "refresh": "..."}`
-- **Security:** Rate limited, audit logged
+### Authentication & User Management (Django Gunicorn)
 
-### Logout
-- **Endpoint:** `POST /api/auth/logout/`
-- **Purpose:** Evicts DB sessions and invalidates the Go cache
-- **Request:** Cookie-based authentication
-- **Response:** `{"detail": "Successfully logged out."}`
-- **Security:** Requires `X-Requested-With: XMLHttpRequest`
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/login/` | Public | Validates credentials, sets HTTPOnly cookies, logs session |
+| `POST` | `/api/v1/auth/logout/` | Authenticated | Evicts session record, invalidates Redis cache, clears cookies |
+| `GET` | `/api/v1/auth/me/` | Authenticated | Retrieves current user profile, role, and authorized tool permissions |
+| `POST` | `/api/v1/auth/change-password/` | Authenticated | Updates password with standard validation rules |
+| `POST` | `/api/v1/auth/keep-alive/` | Authenticated | Touches and extends current session activity timestamp |
+| `POST` | `/api/v1/auth/refresh/` | Authenticated | Issues updated access token using HTTPOnly refresh cookie |
+| `POST` | `/api/v1/auth/sse-ticket/` | Authenticated | Exchanges active JWT for single-use ticket to establish SSE stream |
 
-### Token Refresh
-- **Endpoint:** `POST /api/auth/token/refresh/`
-- **Purpose:** Requests access token updates via refresh keys
-- **Request:** `{"refresh": "..."}`
-- **Response:** `{"access": "..."}`
+### User Administration & Permissions (Django Gunicorn)
 
-## Tooling CRUD API (Django Gunicorn)
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET/POST` | `/api/v1/users/` | Root | List/create user accounts |
+| `GET/PATCH/DELETE` | `/api/v1/users/{id}/` | Root | Read/update/deactivate user account |
+| `GET` | `/api/v1/users/{id}/tools_permissions/` | Root | Fetch tool permission hierarchy tree for user |
+| `POST` | `/api/v1/users/{id}/toggle_permission/` | Root | Toggle specific sub-feature tool key (`3d-stress-heatmap`, `engineering-theory`, `die-wear`, etc.) |
+| `GET` | `/api/v1/active-sessions/` | Root | View active user sessions and devices |
+| `GET` | `/api/v1/activity-logs/` | Root | View user audit log history (login, failed login, logout, eviction) |
 
-### List Dies
-- **Endpoint:** `GET /api/dies/`
-- **Purpose:** Retrieve relational die details (admins/superusers)
-- **Query Params:** `?page=1&search=...&category=...`
-- **Response:** Paginated list of die objects
-- **Permissions:** Admin/Superuser only
+### Dies & Inventory Management (Django Gunicorn)
 
-### Recut Die
-- **Endpoint:** `POST /api/dies/{id}/recut/`
-- **Purpose:** Resets die size parameters and registers a measurement event
-- **Request:** `{"new_diameter": ..., "new_length": ...}`
-- **Response:** Updated die object
-- **Security:** Atomic transaction, audit logged
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/dies/` | Authenticated | Paginated list of dies with type and dimensions |
+| `POST` | `/api/v1/dies/` | Admin / Root | Register a new Round or Flat die |
+| `GET/PATCH/DELETE` | `/api/v1/dies/{id}/` | Authenticated/Admin | Details, partial update (Operator: rack/shelf; Admin: full), delete |
+| `POST` | `/api/v1/dies/{id}/recut/` | Admin / Root | Recut die (updates current size/width/thickness and logs measurement) |
+| `GET` | `/api/v1/dies/{id}/wear_prediction/` | Tool Authorized | Calculate linear wear prediction forecast for die |
+| `GET/POST` | `/api/v1/dies/{id}/maintenance_logs/` | Authenticated | List or append maintenance service records |
+| `GET` | `/api/v1/dies/{id}/history/` | Authenticated | View audit history logs for a single die |
 
-### Create Backup
-- **Endpoint:** `POST /api/backups/`
-- **Purpose:** Trigger backup file generation
-- **Request:** `{"backup_type": "full|incremental"}`
-- **Response:** `{"backup_id": "...", "status": "queued"}`
-- **Permissions:** Admin only
+### Physical Layout & Storage Grid (Django Gunicorn)
 
-## High-Performance API (Go Service)
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET/POST` | `/api/v1/categories/` | Public / Admin | List or create machine categories |
+| `GET/POST` | `/api/v1/machines/` | Public / Admin | List or create machines |
+| `GET/POST` | `/api/v1/sets/` | Public / Admin | List or create tool sets |
+| `GET/POST/PATCH/DELETE` | `/api/v1/racks/` | Authenticated / Admin | Manage physical storage racks (grid rows x columns) |
 
-### Search
-- **Endpoint:** `GET /api/go/search`
-- **Purpose:** High-speed text-based search queries using Meilisearch
-- **Query Params:** `?q=...&type=dies|machines|sets&limit=20`
-- **Response:** Search results with highlighting
-- **Security:** Input sanitized via `escapeMeiliFilterValue`
+### Wear Tolerances & Alerts (Django Gunicorn)
 
-### Server-Sent Events
-- **Endpoint:** `GET /api/events/`
-- **Purpose:** Open real-time SSE event connection
-- **Authentication:** Verified via short-lived UUID tickets
-- **Security:** Tickets prevent token exposure in access logs
-- **Events:** `die.updated`, `machine.created`, `set.modified`
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET/POST/PATCH` | `/api/v1/tolerances/` | Admin / Root | Configure maximum wear tolerances and alert percentages per die type |
+| `GET/PATCH` | `/api/v1/wear-alerts/` | Authenticated / Admin | List active wear alerts and mark alerts resolved |
 
-## Webhook API (Django Background Tasks)
+### Spreadsheet Imports & Data Tools (Django Gunicorn)
 
-### Outbox Processing
-- **Endpoint:** Internal only (not exposed)
-- **Purpose:** Process outbox tasks for async operations
-- **Security:** HMAC-SHA256 payload signatures
-- **Retry:** Exponential backoff with dead-letter queue
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/import/` | Admin / Root | Upload CSV/Excel spreadsheet for idempotent die import |
+| `GET` | `/api/v1/import/template/` | Admin / Root | Download standard Excel template for bulk imports |
+| `GET` | `/api/v1/import/logs/` | Admin / Root | View past bulk import execution logs and row validation errors |
 
-## API Response Format
+### Audit History & Monitoring (Django Gunicorn)
 
-### Success
-```json
-{
-  "status": "success",
-  "data": {...},
-  "meta": {
-    "page": 1,
-    "total": 100,
-    "per_page": 20
-  }
-}
-```
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/history/` | Authenticated | List die history audit logs |
+| `GET` | `/api/v1/history/machines/` | Authenticated | List machine/set/category/rack change logs |
+| `GET` | `/api/v1/history/dashboard/` | Authenticated | Dashboard recent history feed |
+| `GET` | `/api/v1/history/unified/` | Authenticated | Chronological unified timeline combining die and machine edits with diffs |
+| `GET` | `/api/v1/health/` | Public | System health check (database, redis, meilisearch status) |
+| `GET` | `/api/v1/server-info/` | Public | System hostname and detected LAN IP |
+| `GET/POST` | `/api/v1/backups/` | Root | List backups or trigger manual database backup dump |
+| `GET` | `/metrics` | Public / Monitor | Prometheus metrics export endpoint |
+| `POST` | `/internal/verify-token/` | Internal Secret | Go ↔ Django internal JWT verification endpoint |
 
-### Error
-```json
-{
-  "status": "error",
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input",
-    "details": {...}
-  }
-}
-```
+## High-Performance Read API (Go Microservice)
 
-## Rate Limiting
-- Login: 5 attempts per minute per IP
-- API: 100 requests per minute per user
-- Search: 60 requests per minute per user
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/go/health` | Public | Go microservice health check endpoint |
+| `GET` | `/api/go/search` | Authenticated | Sub-millisecond fuzzy search with Redis cache and Meilisearch query proxy |
+| `GET` | `/api/go/stats` | Authenticated | Real-time aggregate count metrics (total dies, available, running, scrapped) |
+| `GET` | `/api/events/` | Ticket Authorized | Server-Sent Events (SSE) stream for real-time inventory updates |
+| `GET` | `/api/go/index-status` | Authenticated | Meilisearch indexing status and document count |
+| `GET` | `/api/go/import-status` | Authenticated | Real-time status of ongoing bulk import tasks |
 
 ## Authentication Flow
-1. Client sends credentials to `/api/auth/login/`
-2. Server validates and issues JWT in HTTPOnly cookie
-3. Client includes cookie in subsequent requests
-4. Server validates JWT on each request
-5. Refresh token used to get new access tokens
-6. Logout invalidates all tokens and clears cache
+1. Client sends credentials to `/api/v1/auth/login/`
+2. Django validates credentials and sets HTTPOnly access and refresh cookies
+3. Client includes cookies in subsequent requests (or Bearer token for API tools)
+4. Go API validates JWT access tokens via Redis cache or `/internal/verify-token/`
+5. Concurrent logins evict older active sessions and emit eviction events
+

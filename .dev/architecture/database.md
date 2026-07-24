@@ -12,56 +12,49 @@ erDiagram
     MachineCategory ||--o{ Machine : "has many"
     Machine ||--o{ Set : "has many"
     Set ||--o{ Die : "has many"
+    Rack ||--o{ Die : "stores"
     Die ||--|| RoundDie : "type round"
     Die ||--|| FlatDie : "type flat"
     Die ||--o{ DieHistory : "audits"
+    Die ||--o{ MaintenanceLog : "logs"
     Die ||--o{ WearAlert : "alerts"
-    User ||--o{ Session : "has many"
-    OutboxTask ||--o{ OutboxLog : "has many"
+    User ||--o{ UserSession : "has many"
+    User ||--o{ UserActivityLog : "tracks"
 ```
 
 ## Core Tables
 
-### MachineCategory
+### MachineCategory (`machines_machinecategory`)
 ```sql
-CREATE TABLE machine_category (
+CREATE TABLE machines_machinecategory (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    name VARCHAR(100) NOT NULL UNIQUE
 );
 ```
 
-### Machine
+### Machine (`machines_machine`)
 ```sql
-CREATE TABLE machine (
+CREATE TABLE machines_machine (
     id SERIAL PRIMARY KEY,
-    category_id INTEGER REFERENCES machine_category(id),
+    category_id INTEGER NOT NULL REFERENCES machines_machinecategory(id),
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+```
+
+### Set (`machines_set`)
+```sql
+CREATE TABLE machines_set (
+    id SERIAL PRIMARY KEY,
+    machine_id INTEGER NOT NULL REFERENCES machines_machine(id),
     name VARCHAR(100) NOT NULL,
-    serial_number VARCHAR(50) UNIQUE,
-    location VARCHAR(200),
-    status VARCHAR(20) DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    "order" INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT machines_set_machine_id_name_key UNIQUE (machine_id, name)
 );
 ```
 
-### Set
+### Rack (`machines_rack`)
 ```sql
-CREATE TABLE set (
-    id SERIAL PRIMARY KEY,
-    machine_id INTEGER REFERENCES machine(id),
-    name VARCHAR(100) NOT NULL,
-    position INTEGER,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Rack
-```sql
-CREATE TABLE rack (
+CREATE TABLE machines_rack (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     row_count INTEGER NOT NULL,
@@ -69,65 +62,93 @@ CREATE TABLE rack (
 );
 ```
 
-### Die
+### Die (`dies_die`)
 ```sql
-CREATE TABLE die (
+CREATE TABLE dies_die (
     id SERIAL PRIMARY KEY,
-    set_id INTEGER REFERENCES set(id),
-    die_type VARCHAR(10) NOT NULL CHECK (die_type IN ('round', 'flat')),
-    status VARCHAR(20) DEFAULT 'active',
-    rack_id INTEGER REFERENCES rack(id),
+    die_id VARCHAR(50) NOT NULL UNIQUE,
+    die_type VARCHAR(10) NOT NULL CHECK (die_type IN ('ROUND', 'FLAT')),
+    casing VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+    rack_id INTEGER REFERENCES machines_rack(id) ON DELETE SET NULL,
     shelf_number SMALLINT CHECK (shelf_number >= 1),
+    current_set_id INTEGER REFERENCES machines_set(id) ON DELETE SET NULL,
+    remarks TEXT NOT NULL DEFAULT '',
     predicted_remaining_days INTEGER,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1
 );
 ```
 
-### RoundDie
+### RoundDie (`dies_rounddie`)
 ```sql
-CREATE TABLE round_die (
-    id INTEGER PRIMARY KEY REFERENCES die(id),
-    original_diameter DECIMAL(10,3) NOT NULL CHECK (original_diameter >= 0.001),
-    current_diameter DECIMAL(10,3) NOT NULL CHECK (current_diameter >= 0.001),
-    original_length DECIMAL(10,3) NOT NULL CHECK (original_length >= 0.001),
-    current_length DECIMAL(10,3) NOT NULL CHECK (current_length >= 0.001)
-);
-```
-
-### FlatDie
-```sql
-CREATE TABLE flat_die (
-    id INTEGER PRIMARY KEY REFERENCES die(id),
-    original_width DECIMAL(10,3) NOT NULL CHECK (original_width >= 0.001),
-    current_width DECIMAL(10,3) NOT NULL CHECK (current_width >= 0.001),
-    original_height DECIMAL(10,3) NOT NULL CHECK (original_height >= 0.001),
-    current_height DECIMAL(10,3) NOT NULL CHECK (current_height >= 0.001)
-);
-```
-
-### DieHistory
-```sql
-CREATE TABLE die_history (
+CREATE TABLE dies_rounddie (
     id SERIAL PRIMARY KEY,
-    die_id INTEGER REFERENCES die(id),
-    action VARCHAR(50) NOT NULL,
-    old_values JSONB,
-    new_values JSONB,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    user_id INTEGER REFERENCES auth_user(id)
+    die_id INTEGER NOT NULL UNIQUE REFERENCES dies_die(id) ON DELETE CASCADE,
+    punched_size NUMERIC(7,3) NOT NULL CHECK (punched_size >= 0.001),
+    current_size NUMERIC(7,3) NOT NULL CHECK (current_size >= 0.001)
 );
 ```
 
-### WearAlert
+### FlatDie (`dies_flatdie`)
 ```sql
-CREATE TABLE wear_alert (
+CREATE TABLE dies_flatdie (
     id SERIAL PRIMARY KEY,
-    die_id INTEGER REFERENCES die(id),
-    alert_type VARCHAR(50) NOT NULL,
-    threshold DECIMAL(10,3),
-    current_value DECIMAL(10,3),
-    is_resolved BOOLEAN DEFAULT FALSE,
+    die_id INTEGER NOT NULL UNIQUE REFERENCES dies_die(id) ON DELETE CASCADE,
+    punched_width NUMERIC(7,3) NOT NULL CHECK (punched_width >= 0.001),
+    current_width NUMERIC(7,3) NOT NULL CHECK (current_width >= 0.001),
+    punched_thickness NUMERIC(7,3) NOT NULL CHECK (punched_thickness >= 0.001),
+    current_thickness NUMERIC(7,3) NOT NULL CHECK (current_thickness >= 0.001),
+    radius NUMERIC(7,3) NOT NULL CHECK (radius >= 0.001)
+);
+```
+
+### DieHistory (`history_diehistory`)
+```sql
+CREATE TABLE history_diehistory (
+    id SERIAL PRIMARY KEY,
+    die_id INTEGER NOT NULL REFERENCES dies_die(id) ON DELETE CASCADE,
+    changed_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    field_name VARCHAR(50) NOT NULL,
+    old_value TEXT NOT NULL,
+    new_value TEXT NOT NULL,
+    ip_address INET,
+    note TEXT NOT NULL DEFAULT ''
+);
+```
+
+### MachineHistory (`history_machinehistory`)
+```sql
+CREATE TABLE history_machinehistory (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(10) NOT NULL CHECK (entity_type IN ('MACHINE', 'SET', 'CATEGORY', 'RACK')),
+    entity_id INTEGER NOT NULL,
+    entity_name VARCHAR(100) NOT NULL,
+    action VARCHAR(10) NOT NULL CHECK (action IN ('CREATED', 'UPDATED', 'DELETED')),
+    field_name VARCHAR(50),
+    old_value TEXT,
+    new_value TEXT,
+    changed_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ip_address INET
+);
+```
+
+### WearAlert (`dies_wearalert`)
+```sql
+CREATE TABLE dies_wearalert (
+    id SERIAL PRIMARY KEY,
+    die_id INTEGER NOT NULL REFERENCES dies_die(id) ON DELETE CASCADE,
+    alert_level VARCHAR(15) NOT NULL CHECK (alert_level IN ('WARNING', 'CRITICAL')),
+    message TEXT NOT NULL,
+    is_resolved BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ
+);
+```
+
     created_at TIMESTAMP DEFAULT NOW(),
     resolved_at TIMESTAMP
 );
