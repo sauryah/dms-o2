@@ -534,22 +534,22 @@ export function UserManager() {
               {/* First & Last Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider font-mono">First Name</label>
+                  <label className="block text-xs text-[var(--color-muted)] font-medium">First Name</label>
                   <input 
                     type="text" 
                     value={firstNameInput}
                     onChange={(e) => setFirstNameInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
                     placeholder="John"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider font-mono">Last Name</label>
+                  <label className="block text-xs text-[var(--color-muted)] font-medium">Last Name</label>
                   <input 
                     type="text" 
                     value={lastNameInput}
                     onChange={(e) => setLastNameInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-blue-950/20 transition-all"
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
                     placeholder="Doe"
                   />
                 </div>
