@@ -26,6 +26,7 @@ dist-ssr/
 .vscode/
 *.swp
 *.swo
+*.opencode/
 
 # Playwright
 test-results/

@@ -15,6 +15,9 @@ interface ViewProps {
   moveDieLocationMutation: any
   handleDragStartDie?: (id: string) => void
   handleDragEndDie?: () => void
+  selectedDieIds?: Set<string>
+  onSelectId?: (id: string, checked: boolean) => void
+  onSelectAll?: (checked: boolean) => void
 }
 
 // Helper to define table columns for reusability
@@ -124,7 +127,10 @@ export function SearchView({
   moveDieLocationMutation,
   page,
   setPage,
-  pageSize
+  pageSize,
+  selectedDieIds,
+  onSelectId,
+  onSelectAll
 }: SearchViewProps) {
   const columns = getInventoryColumns(navigate)
 
@@ -193,6 +199,9 @@ export function SearchView({
                   sortField={sortField}
                   sortOrder={sortOrder}
                   onSort={handleSort}
+                  selectedIds={selectedDieIds}
+                  onSelectId={onSelectId}
+                  onSelectAll={onSelectAll}
                 />
               </div>
             ) : (
@@ -277,7 +286,10 @@ export function MachineView({
   canCreate,
   navigate,
   setSelectedNode,
-  moveDieLocationMutation
+  moveDieLocationMutation,
+  selectedDieIds,
+  onSelectId,
+  onSelectAll
 }: MachineViewProps) {
   const columns = getInventoryColumns(navigate)
   const machineDies = selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
@@ -355,6 +367,9 @@ export function MachineView({
                   columns={columns} 
                   rows={machineDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
+                  selectedIds={selectedDieIds}
+                  onSelectId={onSelectId}
+                  onSelectAll={onSelectAll}
                 />
               </div>
             ) : (
@@ -401,7 +416,10 @@ export function SetView({
   navigate,
   handleDragStartDie,
   handleDragEndDie,
-  moveDieLocationMutation
+  moveDieLocationMutation,
+  selectedDieIds,
+  onSelectId,
+  onSelectAll
 }: SetViewProps) {
   const columns = getInventoryColumns(navigate)
   const setDies = selectedSetData?.set.dies || []
@@ -512,7 +530,7 @@ export function SetView({
             
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
-                {sortedSetDies.map(die => (
+                {sortedSetDies.map((die: any) => (
                   <DieCard 
                     key={die.die_id} 
                     die={die} 
@@ -526,6 +544,9 @@ export function SetView({
                   columns={columns} 
                   rows={sortedSetDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
+                  selectedIds={selectedDieIds}
+                  onSelectId={onSelectId}
+                  onSelectAll={onSelectAll}
                 />
               </div>
             ) : (
@@ -579,7 +600,10 @@ export function UnassignedView({
   totalCount,
   page,
   setPage,
-  pageSize
+  pageSize,
+  selectedDieIds,
+  onSelectId,
+  onSelectAll
 }: UnassignedViewProps) {
   const columns = getInventoryColumns(navigate)
 
@@ -645,6 +669,9 @@ export function UnassignedView({
                   columns={columns} 
                   rows={unassignedDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
+                  selectedIds={selectedDieIds}
+                  onSelectId={onSelectId}
+                  onSelectAll={onSelectAll}
                 />
               </div>
             ) : (

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react'
+import React, { useEffect, useRef, useMemo, useState } from 'react'
 import { 
   Plus, 
   ChevronRight, 
@@ -20,6 +20,9 @@ import { ExportMenu } from '../../../components/ui/ExportMenu'
 import { Skeleton } from '../../../components/ui/Skeleton'
 import { useInventoryState } from '../hooks/useInventoryState'
 import { SearchView, MachineView, SetView, UnassignedView } from './InventorySubViews'
+import { useApi } from '../../../hooks/useApi'
+import { useQueryClient } from '@tanstack/react-query'
+import { useToast } from '../../../contexts/ToastContext'
 
 export function InventoryPage() {
   const {
@@ -97,6 +100,107 @@ export function InventoryPage() {
     setPage,
     pageSize
   } = useInventoryState()
+
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+
+  const [selectedDieIds, setSelectedDieIds] = useState<Set<string>>(new Set())
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkLocation, setBulkLocation] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  const handleSelectId = (id: string, checked: boolean) => {
+    setSelectedDieIds(prev => {
+      const next = new Set(prev)
+      if (checked) {
+        next.add(id)
+      } else {
+        next.delete(id)
+      }
+      return next
+    })
+  }
+
+  const currentViewDies = useMemo(() => {
+    if (activeView === 'search') return dies || []
+    if (activeView === 'machine') {
+      return selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
+    }
+    if (activeView === 'set') return selectedSetData?.set.dies || []
+    if (activeView === 'unassigned') return activeDiesList || []
+    return []
+  }, [activeView, dies, selectedMachine, selectedSetData, activeDiesList])
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const ids = currentViewDies.map((d: any) => String(d.die_id))
+      setSelectedDieIds(new Set(ids))
+    } else {
+      setSelectedDieIds(new Set())
+    }
+  }
+
+  // Clear selections on search/filter/activeView changes
+  useEffect(() => {
+    setSelectedDieIds(new Set())
+    setBulkStatus('')
+    setBulkLocation('')
+  }, [activeView, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, locationQuery])
+
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkStatus) return
+    setIsUpdating(true)
+    try {
+      for (const dieId of selectedDieIds) {
+        await request(`/api/dies/${dieId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: bulkStatus })
+        })
+      }
+      const count = selectedDieIds.size
+      setSelectedDieIds(new Set())
+      setBulkStatus('')
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      showToast(`Successfully updated status of ${count} dies to "${bulkStatus}".`, "success")
+    } catch (err: any) {
+      console.error(err)
+      showToast(`Error updating status: ${err.message}`, "error")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleBulkLocationUpdate = async () => {
+    if (!bulkLocation.trim()) return
+    setIsUpdating(true)
+    try {
+      for (const dieId of selectedDieIds) {
+        await request(`/api/dies/${dieId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({ location: bulkLocation.trim() })
+        })
+      }
+      const count = selectedDieIds.size
+      setSelectedDieIds(new Set())
+      setBulkLocation('')
+      queryClient.invalidateQueries({ queryKey: ['dies'] })
+      queryClient.invalidateQueries({ queryKey: ['searchDies'] })
+      queryClient.invalidateQueries({ queryKey: ['machinesList'] })
+      queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
+      queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
+      showToast(`Successfully updated location of ${count} dies to "${bulkLocation}".`, "success")
+    } catch (err: any) {
+      console.error(err)
+      showToast(`Error updating locations: ${err.message}`, "error")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -472,6 +576,9 @@ export function InventoryPage() {
                       page={page}
                       setPage={setPage}
                       pageSize={pageSize}
+                      selectedDieIds={selectedDieIds}
+                      onSelectId={handleSelectId}
+                      onSelectAll={handleSelectAll}
                     />
                   )}
 
@@ -485,6 +592,9 @@ export function InventoryPage() {
                       navigate={navigate}
                       setSelectedNode={setSelectedNode}
                       moveDieLocationMutation={moveDieLocationMutation}
+                      selectedDieIds={selectedDieIds}
+                      onSelectId={handleSelectId}
+                      onSelectAll={handleSelectAll}
                     />
                   )}
 
@@ -499,6 +609,9 @@ export function InventoryPage() {
                       handleDragStartDie={handleDragStartDie}
                       handleDragEndDie={handleDragEndDie}
                       moveDieLocationMutation={moveDieLocationMutation}
+                      selectedDieIds={selectedDieIds}
+                      onSelectId={handleSelectId}
+                      onSelectAll={handleSelectAll}
                     />
                   )}
 
@@ -516,6 +629,9 @@ export function InventoryPage() {
                       page={page}
                       setPage={setPage}
                       pageSize={pageSize}
+                      selectedDieIds={selectedDieIds}
+                      onSelectId={handleSelectId}
+                      onSelectAll={handleSelectAll}
                     />
                   )}
                 </div>
@@ -526,6 +642,81 @@ export function InventoryPage() {
 
         </div>
       </div>
+
+      {/* Floating Bulk Action Bar */}
+      {selectedDieIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 border border-slate-800/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-2xl flex flex-wrap items-center gap-6 max-w-4xl animate-slideUp font-sans select-none">
+          <div className="flex items-center space-x-2.5">
+            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-200 tracking-wider">
+              {selectedDieIds.size} {selectedDieIds.size === 1 ? 'item' : 'items'} selected
+            </span>
+          </div>
+
+          <div className="h-5 w-[1px] bg-slate-800" />
+
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Status update group */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={bulkStatus}
+                disabled={isUpdating}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-slate-350 focus:outline-none"
+              >
+                <option value="">— Select Status —</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="RUNNING">Running</option>
+                <option value="CLEANING">Cleaning</option>
+                <option value="POLISHING">Polishing</option>
+                <option value="DAMAGED">Damaged</option>
+                <option value="SCRAPPED">Scrapped</option>
+                <option value="MISSING">Missing</option>
+              </select>
+
+              <button
+                onClick={handleBulkStatusUpdate}
+                disabled={!bulkStatus || isUpdating}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isUpdating ? 'Updating...' : 'Apply Status'}
+              </button>
+            </div>
+
+            <div className="h-5 w-[1px] bg-slate-800" />
+
+            {/* Location update group */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={bulkLocation}
+                disabled={isUpdating}
+                onChange={(e) => setBulkLocation(e.target.value)}
+                placeholder="e.g. Rack A - Shelf 3"
+                className="bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none w-44 font-semibold"
+              />
+
+              <button
+                onClick={handleBulkLocationUpdate}
+                disabled={!bulkLocation.trim() || isUpdating}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isUpdating ? 'Updating...' : 'Apply Location'}
+              </button>
+            </div>
+
+            <div className="h-5 w-[1px] bg-slate-800" />
+
+            <button
+              onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
+              disabled={isUpdating}
+              className="text-xs text-slate-400 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Die Modal Wizard */}
       <CreateDieModal 

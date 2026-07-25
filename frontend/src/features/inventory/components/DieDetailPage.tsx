@@ -1110,6 +1110,9 @@ export function DieDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMoreActions, setShowMoreActions] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
+  const [radiusVal, setRadiusVal] = useState('')
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false)
+  const [pendingPayload, setPendingPayload] = useState<any>(null)
 
 
   const [isRecutOpen, setIsRecutOpen] = useState(false)
@@ -1190,6 +1193,7 @@ export function DieDetailPage() {
       setPunchedSize(die.punched_size || '')
       setPunchedWidth(die.punched_width || '')
       setPunchedThickness(die.punched_thickness || '')
+      setRadiusVal(die.radius || '')
     }
   }, [die])
 
@@ -1305,8 +1309,16 @@ export function DieDetailPage() {
       payload.current_thickness = currentThickness
       payload.punched_width = punchedWidth
       payload.punched_thickness = punchedThickness
+      payload.radius = radiusVal
     }
-    updateMutation.mutate(payload)
+
+    const statusChanged = die && statusVal !== die.status
+    if (statusChanged) {
+      setPendingPayload(payload)
+      setShowStatusConfirm(true)
+    } else {
+      updateMutation.mutate(payload)
+    }
   }
 
   const handleDelete = () => {
@@ -1951,16 +1963,36 @@ export function DieDetailPage() {
 
       {/* Confirm Action Dialogue */}
       <ConfirmDialog
-        isOpen={showDeleteConfirm}
+        open={showDeleteConfirm}
         title="Delete Die Asset"
         message={`Are you absolutely sure you want to permanently delete die "${die?.die_id}"? This action is irreversible and all transaction history will be purged.`}
-        confirmText="Delete Die"
-        isDestructive={true}
+        confirmLabel="Delete Die"
+        danger={true}
         onConfirm={() => {
           deleteMutation.mutate()
           setShowDeleteConfirm(false)
         }}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={showStatusConfirm}
+        title="Confirm Status Change"
+        message={`Are you sure you want to change the status of die "${die?.die_id}" from "${die?.status}" to "${statusVal}"?`}
+        confirmLabel="Change Status"
+        cancelLabel="Keep Current Status"
+        danger={statusVal === 'SCRAPPED' || statusVal === 'DAMAGED'}
+        onConfirm={() => {
+          if (pendingPayload) {
+            updateMutation.mutate(pendingPayload)
+          }
+          setShowStatusConfirm(false)
+        }}
+        onCancel={() => {
+          setShowStatusConfirm(false)
+          setPendingPayload(null)
+          setStatusVal(die?.status || '')
+        }}
       />
 
       {isRecutOpen && die && (

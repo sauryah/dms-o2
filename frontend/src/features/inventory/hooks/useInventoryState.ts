@@ -15,7 +15,7 @@ export function useInventoryState() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [searchParams] = useSearchParams()
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'rack'>('grid')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
 
