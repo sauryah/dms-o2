@@ -13,6 +13,7 @@ interface SearchableSelectProps {
   onChange: (value: string | number) => void
   placeholder?: string
   emptyLabel?: string
+  emptyMessage?: string
   disabled?: boolean
   className?: string
 }
@@ -24,6 +25,7 @@ export function SearchableSelect({
   onChange,
   placeholder = 'Select option...',
   emptyLabel = '— None / Unassigned —',
+  emptyMessage = 'No matching items found',
   disabled = false,
   className = ''
 }: SearchableSelectProps) {
@@ -89,6 +91,13 @@ export function SearchableSelect({
     onChange(val)
     setIsOpen(false)
   }
+
+  const baseId = id || 'ss'
+  const activeDescendantId = highlightedIndex >= 0
+    ? (!searchQuery
+        ? (highlightedIndex === 0 ? `${baseId}-opt-empty` : `${baseId}-opt-${filteredOptions[highlightedIndex - 1].value}`)
+        : `${baseId}-opt-${filteredOptions[highlightedIndex].value}`)
+    : undefined
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return
@@ -160,6 +169,7 @@ export function SearchableSelect({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={placeholder}
+        aria-activedescendant={activeDescendantId || ''}
       >
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
@@ -169,7 +179,7 @@ export function SearchableSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-1.5 z-[100] rounded-xl border border-slate-800 bg-slate-950/95 backdrop-blur-md shadow-2xl overflow-hidden animate-fadeIn max-h-[300px] flex flex-col">
+        <div className="absolute left-0 right-0 mt-1.5 z-50 rounded-xl border border-slate-800 bg-slate-950/95 backdrop-blur-md shadow-2xl overflow-hidden animate-fadeIn max-h-[300px] flex flex-col">
           {/* Search Input Box */}
           <div className="p-2 border-b border-slate-900/60 flex items-center gap-2 bg-slate-900/20">
             <Search className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1.5" />
@@ -204,6 +214,7 @@ export function SearchableSelect({
             {!searchQuery && (
               <button
                 type="button"
+                id={`${baseId}-opt-empty`}
                 onClick={() => handleSelect('')}
                 role="option"
                 aria-selected={value === ''}
@@ -212,7 +223,7 @@ export function SearchableSelect({
                     ? 'bg-blue-600/20 text-blue-400 font-semibold' 
                     : highlightedIndex === 0
                       ? 'bg-slate-800/60 text-slate-200'
-                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-350'
+                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-300'
                 }`}
               >
                 {emptyLabel}
@@ -229,6 +240,7 @@ export function SearchableSelect({
                   <button
                     key={opt.value}
                     type="button"
+                    id={`${baseId}-opt-${opt.value}`}
                     onClick={() => handleSelect(opt.value)}
                     role="option"
                     aria-selected={isSelected}
@@ -245,8 +257,8 @@ export function SearchableSelect({
                 )
               })
             ) : (
-              <div className="px-3.5 py-3 text-xxs text-center text-slate-500">
-                No matching sets found
+              <div className="px-3.5 py-3 text-[10px] text-center text-slate-500">
+                {emptyMessage}
               </div>
             )}
           </div>

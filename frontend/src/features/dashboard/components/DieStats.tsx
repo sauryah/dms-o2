@@ -37,7 +37,7 @@ export function DieStats({
 
         {/* Active Dies Card */}
         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-450 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Active Dies</span>
+          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Active Dies</span>
           <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
             {activeDies}
           </span>
@@ -45,8 +45,8 @@ export function DieStats({
 
         {/* Inactive Dies Card */}
         <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-455 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Inactive Dies</span>
-          <span className="text-2xl md:text-3xl font-black text-rose-450 mt-2 relative z-10 font-heading">
+          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Inactive Dies</span>
+          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2 relative z-10 font-heading">
             {inactiveDies}
           </span>
         </div>

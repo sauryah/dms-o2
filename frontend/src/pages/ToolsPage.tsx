@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Calculator, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
+import { Calculator, ArrowRight, Zap, Lock } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ToolsPage() {
@@ -13,9 +13,7 @@ export function ToolsPage() {
       color: 'from-blue-600/20 to-indigo-600/20 border-blue-500/30 text-blue-400 shadow-blue-500/10',
       active: true,
       path: '/calculator',
-      badge: 'Active & Ready',
-      statusIcon: CheckCircle2,
-      statusClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      ctaLabel: 'Open Calculator',
       features: [
         'Forward & Backward round sizing',
         'Area reductions & elongation ratios',
@@ -31,9 +29,7 @@ export function ToolsPage() {
       color: 'from-indigo-600/20 to-purple-600/20 border-indigo-500/30 text-indigo-400 shadow-indigo-500/10',
       active: true,
       path: '/wire-drawing-calculator',
-      badge: 'Active & Ready',
-      statusIcon: CheckCircle2,
-      statusClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      ctaLabel: 'Launch Workbench',
       features: [
         'Multi-pass sequence calculation',
         'Area reductions & elongation stats',
@@ -49,9 +45,7 @@ export function ToolsPage() {
       color: 'from-violet-600/20 to-purple-600/20 border-violet-500/30 text-violet-400 shadow-violet-500/10',
       active: true,
       path: '/die-series-generator',
-      badge: 'Active & Ready',
-      statusIcon: CheckCircle2,
-      statusClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      ctaLabel: 'Generate Series',
       features: [
         'Generate by target diameter or pass count',
         'Custom elongation % per pass',
@@ -64,6 +58,7 @@ export function ToolsPage() {
   const { role, authorizedTools } = useAuth()
   const isRoot = role === 'ROOT'
   const userTools = authorizedTools || []
+  const filteredTools = tools.filter((tool) => isRoot || userTools.includes(tool.id))
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-slate-950 text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -92,23 +87,29 @@ export function ToolsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {tools.filter((tool) => isRoot || userTools.includes(tool.id)).map((tool) => {
+          {filteredTools.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl mb-6">
+                <Lock className="h-10 w-10 text-slate-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-300 mb-2">No tools available for your role</h3>
+              <p className="text-sm text-slate-500 max-w-md">
+                No tools available for your role. Contact an administrator to request access.
+              </p>
+            </div>
+          ) : filteredTools.map((tool) => {
             const Icon = tool.icon
-            const StatusIcon = tool.statusIcon
             return (
-              <div
+              <Link
                 key={tool.id}
+                to={tool.path}
                 className="relative flex flex-col justify-between p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 bg-slate-900/40 border-slate-800/80 hover:border-blue-500/30 hover:bg-slate-900/60 hover:shadow-[0_0_30px_rgba(59,130,246,0.04)] hover:-translate-y-1.5 group"
               >
                 <div>
-                  {/* Icon & Status */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className={`p-3 bg-gradient-to-tr ${tool.color} rounded-xl border`}>
+                  {/* Icon */}
+                  <div className="mb-6">
+                    <div className={`p-3 bg-gradient-to-tr ${tool.color} rounded-xl border inline-flex`}>
                       <Icon className="h-6 w-6" />
-                    </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide uppercase ${tool.statusClass}`}>
-                      <StatusIcon className="h-3 w-3 shrink-0" />
-                      <span>{tool.badge}</span>
                     </div>
                   </div>
 
@@ -136,15 +137,12 @@ export function ToolsPage() {
 
                 {/* Footer Action */}
                 <div className="pt-6 mt-6 border-t border-slate-800/40">
-                  <Link
-                    to={tool.path}
-                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-500/10 hover:shadow-blue-500/25 hover:glow-blue transition-all duration-300"
-                  >
-                    <span>Launch Workbench</span>
+                  <span className="flex items-center justify-center gap-2 w-full bg-blue-600 group-hover:bg-blue-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-500/10 group-hover:shadow-blue-500/25 transition-all duration-300">
+                    <span>{tool.ctaLabel}</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Link>
+                  </span>
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>

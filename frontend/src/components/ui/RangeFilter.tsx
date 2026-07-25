@@ -42,7 +42,7 @@ export function RangeFilter({
           )}
         </div>
 
-        <span className="text-xxs font-bold text-[var(--color-muted)] font-mono uppercase tracking-widest shrink-0 px-0.5">
+        <span className="text-[10px] font-bold text-[var(--color-muted)] font-mono uppercase tracking-widest shrink-0 px-0.5">
           to
         </span>
 

@@ -15,11 +15,11 @@ export interface PageHeaderProps {
 
 export function PageHeader({ title, breadcrumbs = [], actions }: PageHeaderProps) {
   return (
-    <div className="border-b border-[var(--color-border)] pb-5 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4 select-none">
+    <div className="border-b border-[var(--color-border)] pb-5 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
       <div className="space-y-1.5">
         {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="flex items-center space-x-1.5 text-xxs font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono">
             {breadcrumbs.map((item, idx) => {
               const isLast = idx === breadcrumbs.length - 1
               return (

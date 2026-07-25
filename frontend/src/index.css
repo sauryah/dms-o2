@@ -18,6 +18,43 @@
   --color-damaged:     #f0883e;   /* DAMAGED */
   --color-scrapped:    #f85149;   /* SCRAPPED */
   --color-missing:     #7d8590;   /* MISSING */
+  --color-maintenance: #f59e0b;   /* MAINTENANCE */
+
+  /* Status badge background/border (compatible with all browsers) */
+  --color-available-bg:   rgba(63, 185, 80, 0.1);
+  --color-available-bdr:  rgba(63, 185, 80, 0.25);
+  --color-running-bg:     rgba(59, 130, 246, 0.1);
+  --color-running-bdr:    rgba(59, 130, 246, 0.25);
+  --color-cleaning-bg:    rgba(245, 158, 11, 0.1);
+  --color-cleaning-bdr:   rgba(245, 158, 11, 0.25);
+  --color-polishing-bg:   rgba(188, 140, 255, 0.1);
+  --color-polishing-bdr:  rgba(188, 140, 255, 0.25);
+  --color-damaged-bg:     rgba(240, 136, 62, 0.1);
+  --color-damaged-bdr:    rgba(240, 136, 62, 0.25);
+  --color-scrapped-bg:    rgba(248, 81, 73, 0.1);
+  --color-scrapped-bdr:   rgba(248, 81, 73, 0.25);
+  --color-missing-bg:     rgba(125, 133, 144, 0.1);
+  --color-missing-bdr:    rgba(125, 133, 144, 0.25);
+  --color-maintenance-bg: rgba(245, 158, 11, 0.1);
+  --color-maintenance-bdr:rgba(245, 158, 11, 0.25);
+  --color-default-bg:     rgba(125, 133, 144, 0.1);
+  --color-default-bdr:    rgba(125, 133, 144, 0.25);
+
+  /* Wire Drawing Calculator tokens */
+  --wdc-primary: #3B82F6;
+  --wdc-primary-light: #60A5FA;
+  --wdc-primary-dark: #2563EB;
+  --wdc-card: #111827;
+  --wdc-card-hover: #151D2E;
+  --wdc-input: #0F172A;
+  --wdc-success: #22C55E;
+  --wdc-warning: #F59E0B;
+  --wdc-danger: #EF4444;
+  --wdc-text-secondary: #94A3B8;
+  --wdc-border-focus: rgba(59, 130, 246, 0.5);
+  --wdc-glass: rgba(17, 24, 39, 0.6);
+  --wdc-steel: #1E293B;
+  --wdc-steel-light: #334155;
 }
 
 @tailwind base;
@@ -274,7 +311,7 @@ textarea:focus {
   }
   to {
     opacity: 1;
-    max-height: 100px;
+    max-height: 500px;
     margin-top: 6px;
   }
 }
@@ -340,29 +377,8 @@ textarea:focus {
 }
 
 /* Wire Drawing Calculator Styles */
-:root {
-  --color-primary: #3B82F6;
-  --color-primary-light: #60A5FA;
-  --color-primary-dark: #2563EB;
-  --color-bg: #0B1220;
-  --color-card: #111827;
-  --color-card-hover: #151D2E;
-  --color-input: #0F172A;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-text: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-muted: #64748B;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-focus: rgba(59, 130, 246, 0.5);
-  --color-glass: rgba(17, 24, 39, 0.6);
-  --color-steel: #1E293B;
-  --color-steel-light: #334155;
-}
-
 .wdc-panel {
-  background: var(--color-card);
+  background: var(--wdc-card);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 20px;
@@ -391,7 +407,7 @@ textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Fira Sans', system-ui, sans-serif;
   letter-spacing: 0.01em;
 }
 
@@ -406,19 +422,19 @@ textarea:focus {
 }
 
 .wdc-btn-primary {
-  background: var(--color-primary);
+  background: var(--wdc-primary);
   color: white;
 }
 .wdc-btn-primary:hover { background: #4B8EF7; }
 .wdc-btn-primary:active { transform: scale(0.97); }
 
 .wdc-btn-secondary {
-  background: var(--color-steel);
-  color: var(--color-text-secondary);
+  background: var(--wdc-steel);
+  color: var(--wdc-text-secondary);
   border: 1px solid var(--color-border);
 }
 .wdc-btn-secondary:hover {
-  background: var(--color-steel-light);
+  background: var(--wdc-steel-light);
   color: var(--color-text);
 }
 
@@ -429,7 +445,7 @@ textarea:focus {
 }
 .wdc-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.04);
-  color: var(--color-text-secondary);
+  color: var(--wdc-text-secondary);
   border-color: var(--color-border);
 }
 
@@ -447,15 +463,15 @@ textarea:focus {
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--color-border);
-  background: var(--color-input);
+  background: var(--wdc-input);
   color: var(--color-text);
   font-size: 14px;
   outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Fira Sans', system-ui, sans-serif;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .wdc-input:focus {
-  border-color: var(--color-border-focus);
+  border-color: var(--wdc-border-focus);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
@@ -464,9 +480,9 @@ textarea:focus {
   padding: 16px;
   border-radius: 10px;
   border: 1px solid var(--color-border);
-  background: var(--color-input);
+  background: var(--wdc-input);
   color: var(--color-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Fira Code', monospace;
   font-size: 13px;
   line-height: 1.7;
   outline: none;
@@ -475,7 +491,7 @@ textarea:focus {
   letter-spacing: 0.02em;
 }
 .wdc-textarea:focus {
-  border-color: var(--color-border-focus);
+  border-color: var(--wdc-border-focus);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
@@ -506,10 +522,19 @@ textarea:focus {
 }
 
 .wdc-glass {
-  background: var(--color-glass);
+  background: var(--wdc-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slideInFromRight {
+  animation: slideInFromRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes wdcFadeInUp {

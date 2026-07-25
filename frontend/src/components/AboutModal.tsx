@@ -52,7 +52,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Sahil</h3>
-                <p className="text-xs text-slate-405 font-medium mt-0.5">Lead Developer & Architect</p>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Lead Developer & Architect</p>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">Responsible for core system architecture, Django backend APIs, PostgreSQL integration, and responsive React frontend components.</p>
                 
                 <div className="mt-4 flex items-center gap-1.5">
@@ -71,7 +71,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">Antigravity</h3>
-                <p className="text-xs text-slate-405 font-medium mt-0.5">AI Assistant & Integration Partner</p>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">AI Assistant & Integration Partner</p>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">Powered by Google DeepMind. Assists in code generation, test writing, performance optimizations, bug resolution, and real-time support.</p>
                 
                 <div className="mt-4 flex items-center gap-1.5">

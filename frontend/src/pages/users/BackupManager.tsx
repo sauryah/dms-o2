@@ -130,7 +130,7 @@ export function BackupManager() {
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/10 transition-all" />
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="p-1.5 bg-blue-500/10 border border-blue-500/25 text-blue-450 rounded-lg">
+              <div className="p-1.5 bg-blue-500/10 border border-blue-500/25 text-blue-400 rounded-lg">
                 <Database className="h-4.5 w-4.5" />
               </div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Database Snapshot Tool</h3>
@@ -156,7 +156,7 @@ export function BackupManager() {
 
             {/* Nightly alert banner */}
             <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/60 text-xs">
-              <Info className="h-4 w-4 text-blue-450 shrink-0 mt-0.5" />
+              <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-slate-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -194,7 +194,7 @@ export function BackupManager() {
             onClick={() => !isUploading && document.getElementById('backup-file-input-manager')?.click()}
           >
             {isUploading ? (
-              <RefreshCw className="h-6 w-6 text-blue-450 mx-auto mb-2 animate-spin" />
+              <RefreshCw className="h-6 w-6 text-blue-400 mx-auto mb-2 animate-spin" />
             ) : (
               <Upload className="h-6 w-6 text-slate-500 mx-auto mb-2 group-hover:text-slate-400 transition" />
             )}
@@ -224,7 +224,7 @@ export function BackupManager() {
             <ShieldCheck className="h-4 w-4 text-emerald-450" />
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Stored Snapshots Registry</h4>
           </div>
-          <span className="text-xs text-slate-450 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {backups && Array.isArray(backups) ? `${backups.length} archives available` : '0 archives'}
           </span>
         </div>
@@ -240,7 +240,7 @@ export function BackupManager() {
             ))}
           </div>
         ) : backupsError ? (
-          <div className="text-center py-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 font-mono text-xs text-rose-450">
+          <div className="text-center py-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 font-mono text-xs text-rose-400">
             Error loading backups index: {backupsError.message}
           </div>
         ) : !Array.isArray(backups) || backups.length === 0 ? (
@@ -256,7 +256,7 @@ export function BackupManager() {
             <div className="overflow-x-auto max-h-[450px]">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-450 text-xs font-bold uppercase tracking-wider">
+                  <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-xs font-bold uppercase tracking-wider">
                     <th className="py-4 px-6 font-mono">Backup File</th>
                     <th className="py-4 px-6 font-mono">Date Created</th>
                     <th className="py-4 px-6 font-mono">Size</th>
@@ -282,7 +282,7 @@ export function BackupManager() {
                           
                           <td className="py-3.5 px-6 text-slate-400">
                             <div className="flex items-center space-x-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-slate-655" />
+                              <Calendar className="h-3.5 w-3.5 text-slate-600" />
                               <span>{dateStr}</span>
                             </div>
                           </td>
@@ -321,7 +321,7 @@ export function BackupManager() {
                             <button
                               onClick={() => setBackupToDelete(backup.filename)}
                               disabled={deleteBackupMutation.isPending}
-                              className="bg-slate-955/40 hover:bg-rose-500/10 text-slate-450 hover:text-rose-455 border border-slate-800/80 p-1.5 rounded-xl transition disabled:opacity-40 cursor-pointer"
+                              className="bg-slate-950/40 hover:bg-rose-500/10 text-slate-400 hover:text-rose-455 border border-slate-800/80 p-1.5 rounded-xl transition disabled:opacity-40 cursor-pointer"
                               title="Delete backup from disk"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

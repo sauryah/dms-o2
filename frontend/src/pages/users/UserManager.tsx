@@ -236,7 +236,7 @@ export function UserManager() {
         
         {/* Search */}
         <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
             <Search className="h-4 w-4" />
           </span>
           <input
@@ -309,7 +309,7 @@ export function UserManager() {
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto shadow-xl select-none">
-          <User className="h-12 w-12 text-slate-655 mx-auto mb-4" />
+          <User className="h-12 w-12 text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-white mb-1 font-mono">No Users Match</h3>
           <p className="text-slate-400 text-sm">Adjust search keywords or role filters to find accounts.</p>
         </div>
@@ -318,7 +318,7 @@ export function UserManager() {
           <div className="overflow-x-auto max-h-[600px]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-450 text-[10px] font-bold uppercase tracking-wider select-none">
+                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-[10px] font-bold uppercase tracking-wider select-none">
                   <th className="py-4.5 px-6 font-mono">Username Identity</th>
                   <th className="py-4.5 px-6 hidden sm:table-cell font-mono">Full Name</th>
                   <th className="py-4.5 px-6 hidden md:table-cell font-mono">Email Address</th>
@@ -363,7 +363,7 @@ export function UserManager() {
                         </td>
                         
                         {/* Email */}
-                        <td className="py-3.5 px-6 text-slate-350 hidden md:table-cell font-mono text-xs">
+                        <td className="py-3.5 px-6 text-slate-300 hidden md:table-cell font-mono text-xs">
                           {user.email || '—'}
                         </td>
                         
@@ -469,7 +469,7 @@ export function UserManager() {
                       {/* Expanded Activity Logs */}
                       {expandedUserLogs === user.username && (
                         <tr>
-                          <td colSpan={7} className="p-0 bg-slate-950/20 border-t border-b border-slate-850/60">
+                          <td colSpan={7} className="p-0 bg-slate-950/20 border-t border-b border-slate-800/60">
                             <div className="px-6 py-4 bg-slate-950/40">
                               <UserActivityLogSection username={user.username} />
                             </div>
@@ -516,7 +516,7 @@ export function UserManager() {
               <div className="space-y-1.5">
                 <label className="block text-xs text-[var(--color-muted)] font-medium">Username Identity</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                     <User className="h-4 w-4" />
                   </span>
                   <input 
@@ -559,7 +559,7 @@ export function UserManager() {
               <div className="space-y-1.5">
                 <label className="block text-xs text-[var(--color-muted)] font-medium">Access Key {editingUser && <span className="text-[var(--color-muted)] font-normal capitalize">(leave blank to keep current)</span>}</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-550">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                     <Key className="h-4 w-4" />
                   </span>
                   <input 
@@ -696,7 +696,7 @@ export function UserManager() {
               {isAuthorizedForToolsInput && roleInput !== 'ROOT' && (
                 <div className="p-4 bg-[var(--color-surface-2)]/60 border-[var(--color-border)]/80 rounded-xl space-y-4 animate-fadeIn">
                   <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 mb-2">
-                    <Shield className="h-4 w-4 text-blue-450" />
+                    <Shield className="h-4 w-4 text-blue-400" />
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 font-mono">
                       Engineering Permission Matrix Tree
                     </span>
@@ -758,7 +758,7 @@ export function UserManager() {
                       </div>
 
                       {/* Sub-feature 1: 3D Stress Heatmap */}
-                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-850 rounded-lg">
+                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-800 rounded-lg">
                         <div className="flex items-center space-x-2.5">
                           <input
                             type="checkbox"
@@ -772,7 +772,7 @@ export function UserManager() {
                             }}
                             className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-purple-500 cursor-pointer"
                           />
-                          <label htmlFor="tool-3d-stress-heatmap" className="text-xs text-slate-350 hover:text-white cursor-pointer select-none">
+                          <label htmlFor="tool-3d-stress-heatmap" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
                             3D von Mises Stress Heatmap
                           </label>
                         </div>
@@ -782,7 +782,7 @@ export function UserManager() {
                       </div>
 
                       {/* Sub-feature 2: Theory & Fundamentals */}
-                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-850 rounded-lg">
+                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-800 rounded-lg">
                         <div className="flex items-center space-x-2.5">
                           <input
                             type="checkbox"
@@ -796,7 +796,7 @@ export function UserManager() {
                             }}
                             className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 cursor-pointer"
                           />
-                          <label htmlFor="tool-engineering-theory" className="text-xs text-slate-350 hover:text-white cursor-pointer select-none">
+                          <label htmlFor="tool-engineering-theory" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
                             Theory & Fundamentals Guide
                           </label>
                         </div>
@@ -947,7 +947,7 @@ function UserActivityLogSection({ username }: { username: string }) {
           const client = parseUserAgent(log.device)
           
           return (
-            <div key={log.id} className="relative flex justify-between items-start gap-4 p-3 bg-slate-900 border border-slate-850 hover:border-slate-800 rounded-xl transition">
+            <div key={log.id} className="relative flex justify-between items-start gap-4 p-3 bg-slate-900 border border-slate-800 hover:border-slate-800 rounded-xl transition">
               
               {/* Event indicator dot */}
               <div className={`absolute -left-[14px] top-4.5 w-2 h-2 rounded-full border border-slate-950 ${
@@ -970,7 +970,7 @@ function UserActivityLogSection({ username }: { username: string }) {
                     {log.action}
                   </span>
                   {log.ip_address && (
-                    <span className="text-[10px] text-slate-450 font-bold">IP: {log.ip_address}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">IP: {log.ip_address}</span>
                   )}
                 </div>
                 {log.device && (

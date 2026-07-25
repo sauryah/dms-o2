@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Zap } from 'lucide-react';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
@@ -10,18 +10,31 @@ import PassConsistency from '../features/wire-drawing-calculator/components/Pass
 import ElongationChart from '../features/wire-drawing-calculator/components/ElongationChart';
 import AreaReductionChart from '../features/wire-drawing-calculator/components/AreaReductionChart';
 import DieProgression from '../features/wire-drawing-calculator/components/DieProgression';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 export function DieSeriesGeneratorPage() {
   const navigate = useNavigate();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>([]);
+  const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDies, setPendingDies] = useState<number[] | null>(null);
 
   const handleApplyGenerated = useCallback((newDies: number[]) => {
     if (dies.length > 0) {
-      const confirmOverwrite = window.confirm('Apply new die sequence? This will replace your current calculated schedule.');
-      if (!confirmOverwrite) return;
+      setPendingDies(newDies);
+      setConfirmOpen(true);
+      return;
     }
     setDies(newDies);
   }, [dies.length, setDies]);
+
+  const handleConfirmApply = useCallback(() => {
+    if (pendingDies) {
+      setDies(pendingDies);
+      setPendingDies(null);
+    }
+    setConfirmOpen(false);
+  }, [pendingDies, setDies]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -64,7 +77,7 @@ export function DieSeriesGeneratorPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white m-0">Die Series Generator</h1>
-              <p className="text-xs text-[#475569] m-0">Generate optimized die schedules from elongation targets</p>
+              <p className="text-xs text-slate-400 m-0">Generate optimized die schedules from elongation targets</p>
             </div>
           </div>
         </div>
@@ -83,6 +96,8 @@ export function DieSeriesGeneratorPage() {
               canRedo={canRedo}
               onUndo={undo}
               onRedo={redo}
+              selectedPassIdx={selectedPassIdx}
+              onSelectPass={setSelectedPassIdx}
             />
 
             <DieProgression dies={dies} onDiesChange={setDies} />
@@ -99,6 +114,17 @@ export function DieSeriesGeneratorPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Overwrite Die Sequence?"
+        message="Apply new die sequence? This will replace your current calculated schedule."
+        confirmLabel="Apply"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={handleConfirmApply}
+        onCancel={() => { setConfirmOpen(false); setPendingDies(null); }}
+      />
     </div>
   );
 }

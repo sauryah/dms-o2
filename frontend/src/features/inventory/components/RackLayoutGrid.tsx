@@ -249,7 +249,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
             {/* Grid Layout Table */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `80px repeat(${allRacks.length}, minmax(120px, 1fr))` }}>
               {/* Header Row */}
-              <div className="flex items-center justify-end pr-3 text-slate-500 font-bold text-xxs tracking-wider uppercase">
+              <div className="flex items-center justify-end pr-3 text-slate-500 font-bold text-[10px] tracking-wider uppercase">
                 Shelf
               </div>
               {allRacks.map(rack => (
@@ -288,7 +288,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                         }`}
                       >
                         {cellDies.length === 0 ? (
-                          <div className="flex-1 flex items-center justify-center text-slate-650 text-[10px] italic select-none">
+                          <div className="flex-1 flex items-center justify-center text-slate-600 text-[10px] italic select-none">
                             Empty Slot
                           </div>
                         ) : (
@@ -309,7 +309,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                             >
                             <div className="flex items-center space-x-1.5 min-w-0">
                               <span className={`h-2 w-2 rounded-full shrink-0 ${getStatusDotColor(die.status)}`} />
-                              <span className="text-[10px] font-bold font-mono text-slate-205 truncate">
+                              <span className="text-[10px] font-bold font-mono text-slate-200 truncate">
                                 {die.die_id}
                               </span>
                             </div>
@@ -320,12 +320,12 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                             </span>
 
                             {/* Floating Card Tooltip */}
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 bg-slate-955/95 border border-slate-800 shadow-2xl p-2.5 rounded-lg text-[10px] w-48 text-left leading-relaxed">
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 bg-slate-950/95 border border-slate-800 shadow-2xl p-2.5 rounded-lg text-[10px] w-48 text-left leading-relaxed">
                               <div className="font-bold text-white mb-1 border-b border-slate-800 pb-1">
                                 Die {die.die_id}
                               </div>
                               <div>Type: {die.die_type}</div>
-                              <div>Status: <span className="font-semibold text-slate-350">{die.status}</span></div>
+                              <div>Status: <span className="font-semibold text-slate-300">{die.status}</span></div>
                               {die.casing && <div>Casing: {die.casing}</div>}
                               <div className="mt-1 text-slate-500 italic">Click to view detail specifications</div>
                             </div>
@@ -377,7 +377,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
             </button>
           </div>
           
-          <p className="text-slate-500 text-xxs mb-4 leading-relaxed font-sans">
+          <p className="text-slate-500 text-[10px] mb-4 leading-relaxed font-sans">
             Dies not mapped to standard rack locations. Click a die to assign to a cell, or drag-and-drop onto map.
           </p>
 
@@ -386,7 +386,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDropUnallocated}
-              className="mb-4 p-3 bg-amber-500/10 border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 rounded-xl text-center text-xxs font-bold text-amber-400 animate-pulse transition cursor-pointer flex items-center justify-center space-x-1"
+              className="mb-4 p-3 bg-amber-500/10 border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 rounded-xl text-center text-[10px] font-bold text-amber-400 animate-pulse transition cursor-pointer flex items-center justify-center space-x-1"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" />
               <span>Drop here to deallocate</span>
@@ -395,7 +395,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
 
           <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
             {unallocatedDies.length === 0 ? (
-              <div className="text-center py-12 text-slate-550 text-xs italic border border-slate-850 rounded-xl">
+              <div className="text-center py-12 text-slate-500 text-xs italic border border-slate-800 rounded-xl">
                 All dies are mapped to standard racks.
               </div>
             ) : (
@@ -451,7 +451,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                     {/* Inline Set Location selector */}
                     {isAssigning && (
                       <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3 animate-fadeIn">
-                        <div className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Assign to Cell:</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign to Cell:</div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-[9px] font-bold text-slate-500 block mb-1">RACK</label>

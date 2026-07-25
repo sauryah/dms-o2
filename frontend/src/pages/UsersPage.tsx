@@ -20,7 +20,17 @@ export function UsersPage() {
   }, [role, navigate])
 
   if (role !== 'ROOT') {
-    return null
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen text-slate-100 font-sans">
+        <div className="flex flex-col items-center justify-center text-center p-16 space-y-4">
+          <Shield className="h-12 w-12 text-slate-600" />
+          <h2 className="text-lg font-bold text-slate-300">Access Denied</h2>
+          <p className="text-sm text-slate-500 max-w-md">
+            You do not have sufficient privileges to view this page. Root authorization is required.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   const tabs = [
@@ -42,7 +52,7 @@ export function UsersPage() {
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2.5">
-              <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-450">
+              <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400">
                 <Shield className="h-5 w-5" />
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight font-mono">
@@ -70,10 +80,13 @@ export function UsersPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`panel-${tab.id}`}
               className={`relative flex items-center space-x-2 px-4 py-3 text-xs md:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 isActive 
                   ? 'text-white font-bold' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Icon className={`h-4 w-4 ${isActive ? 'text-blue-400' : 'text-slate-500'}`} />
@@ -100,10 +113,10 @@ export function UsersPage() {
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           >
-            {activeTab === 'users' && <UserManager />}
-            {activeTab === 'backups' && <BackupManager />}
-            {activeTab === 'logs' && <SessionAuditLogs />}
-            {activeTab === 'sessions' && <ActiveSessionsList />}
+            {activeTab === 'users' && <div id="panel-users" role="tabpanel"><UserManager /></div>}
+            {activeTab === 'backups' && <div id="panel-backups" role="tabpanel"><BackupManager /></div>}
+            {activeTab === 'logs' && <div id="panel-logs" role="tabpanel"><SessionAuditLogs /></div>}
+            {activeTab === 'sessions' && <div id="panel-sessions" role="tabpanel"><ActiveSessionsList /></div>}
           </motion.div>
         </AnimatePresence>
       </div>

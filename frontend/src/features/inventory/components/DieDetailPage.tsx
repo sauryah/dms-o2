@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench, ArrowLeft, TrendingUp, TrendingDown, ShieldCheck, AlertTriangle, AlertCircle, Gauge, Clock } from 'lucide-react'
@@ -93,7 +93,7 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
   const yTicksVals = Array.from({ length: yTicks }, (_, i) => yMin + (i / (yTicks - 1)) * yRange);
 
   return (
-    <div className="relative w-full bg-slate-950/40 rounded-xl p-5 border border-slate-850">
+    <div className="relative w-full bg-slate-950/40 rounded-xl p-5 border border-slate-800">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
         {/* Grid lines & Y-axis labels */}
         {yTicksVals.map((val, idx) => {
@@ -219,17 +219,17 @@ function DimensionWearChart({ data, dieType }: { data: ChartPoint[]; dieType: st
         {isRound ? (
           <div className="flex items-center space-x-2">
             <span className="h-3 w-3 rounded-full bg-blue-500" />
-            <span className="text-slate-350 font-bold">Size (mm)</span>
+            <span className="text-slate-300 font-bold">Size (mm)</span>
           </div>
         ) : (
           <>
             <div className="flex items-center space-x-2">
               <span className="h-3 w-3 rounded-full bg-blue-500" />
-              <span className="text-slate-350 font-bold">Width (mm)</span>
+              <span className="text-slate-300 font-bold">Width (mm)</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="h-3 w-3 rounded-full bg-purple-500" />
-              <span className="text-slate-350 font-bold">Thickness (mm)</span>
+              <span className="text-slate-300 font-bold">Thickness (mm)</span>
             </div>
           </>
         )}
@@ -771,7 +771,7 @@ function WearPredictionSection({ die }: { die: any }) {
                 <span className="text-rose-500/80">Critical (90-100%)</span>
               </div>
               
-              <div className="relative h-4 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-850 p-0.5">
+              <div className="relative h-4 w-full bg-slate-950 rounded-lg overflow-hidden border border-slate-800 p-0.5">
                 {/* Segments background */}
                 <div className="absolute inset-y-0.5 left-0.5 right-0.5 flex rounded-md overflow-hidden opacity-10">
                   <div className="w-[70%] bg-emerald-500"></div>
@@ -840,7 +840,7 @@ function WearPredictionSection({ die }: { die: any }) {
                 <p className="text-base font-bold text-white leading-relaxed font-sans">
                   {recommendation.title}
                 </p>
-                <p className="text-sm font-medium text-slate-355 leading-relaxed font-sans">
+                <p className="text-sm font-medium text-slate-300 leading-relaxed font-sans">
                   {recommendation.message}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800/40 text-xs">
@@ -921,7 +921,7 @@ function WearPredictionSection({ die }: { die: any }) {
 
                     {/* Mini Gauge bar */}
                     <div className="flex items-center gap-3 pt-1">
-                      <div className="flex-1 bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-850 p-0.5">
+                      <div className="flex-1 bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800 p-0.5">
                         <div 
                           className={`h-full rounded-full transition-all duration-500 ${
                             isLimitExceeded ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-blue-500'
@@ -978,7 +978,7 @@ function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boole
       showToast('Maintenance log added', 'success')
     },
     onError: (err: any) => {
-      showToast(`Failed to add log: ${err.message}`, 'error')
+      showToast('Failed to add log. Please try again.', 'error')
     }
   })
 
@@ -1167,7 +1167,7 @@ export function DieDetailPage() {
       setRecutError(null)
     },
     onError: (err: any) => {
-      setRecutError(err.message || 'An error occurred during recutting.')
+      setRecutError('An error occurred during recutting. Please try again.')
     }
   })
 
@@ -1177,9 +1177,12 @@ export function DieDetailPage() {
   })
   const racks = racksList || []
 
-  // Populate form states once data loads or changes
+  // Populate form states only when navigating to a different die (not on refetch)
+  const prevDieIdRef = useRef<string | null>(null)
   useEffect(() => {
     if (die) {
+      if (prevDieIdRef.current === String(die.die_id)) return
+      prevDieIdRef.current = String(die.die_id)
       setDieIdVal(die.die_id || '')
       setCasingVal(die.casing || '')
       setStatusVal(die.status || 'AVAILABLE')
@@ -1255,7 +1258,7 @@ export function DieDetailPage() {
           context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
         }
       }
-      showToast(`Failed to update die: ${err.message}`, 'error')
+      showToast('Failed to update die. Please try again.', 'error')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['die', id] })
@@ -1458,7 +1461,7 @@ export function DieDetailPage() {
   if (error || !die) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-        <p className="text-rose-450 font-semibold">Error: {error?.message || 'Die not found'}</p>
+        <p className="text-rose-400 font-semibold">An error occurred. Please try again.</p>
         <Link to="/inventory" className="text-blue-400 hover:underline mt-4 inline-block">Back to Inventory</Link>
       </div>
     </div>
@@ -1489,14 +1492,14 @@ export function DieDetailPage() {
     <div className="flex items-center gap-2">
       <button 
         onClick={handlePrint}
-        className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
       >
         <Printer className="h-4 w-4 text-blue-500" />
         Print
       </button>
       <button 
         onClick={downloadSvg}
-        className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2"
       >
         <Download className="h-4 w-4 text-emerald-500" />
         Download SVG
@@ -1571,15 +1574,15 @@ export function DieDetailPage() {
               <div className="space-y-3 font-sans text-sm">
                 <div className="flex justify-between py-1 border-b border-slate-800/40">
                   <span className="text-slate-500">System Tag</span>
-                  <span className="font-mono text-slate-300">${die.die_id}</span>
+                  <span className="font-mono text-slate-300">{die.die_id}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40">
                   <span className="text-slate-500">Geometry Profile</span>
-                  <span className="font-bold text-slate-300">${die.die_type}</span>
+                  <span className="font-bold text-slate-300">{die.die_type}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-500">Casing Profile</span>
-                  <span className="font-semibold text-slate-300">${die.casing}</span>
+                  <span className="font-semibold text-slate-300">{die.casing}</span>
                 </div>
               </div>
             </div>
@@ -1592,11 +1595,11 @@ export function DieDetailPage() {
                   <span className={`w-3 h-3 rounded-full ${
                     die.status === 'AVAILABLE' ? 'bg-emerald-500 shadow-md shadow-emerald-500/20' : 'bg-amber-500 shadow-md shadow-amber-500/20'
                   }`} />
-                  <span className="font-bold text-white text-base">${die.status}</span>
+                  <span className="font-bold text-white text-base">{die.status}</span>
                 </div>
                 <button 
                   onClick={() => setIsRecutOpen(true)}
-                  className="bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                  className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                 >
                   <Wrench className="h-3.5 w-3.5" />
                   Recut / Re-bore
@@ -1612,7 +1615,7 @@ export function DieDetailPage() {
                 <div>
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Storage Slot</p>
                   <p className="text-sm font-semibold text-slate-200 mt-0.5">
-                    ${die.rack_name && die.shelf ? `${die.rack_name} — Shelf ${die.shelf}` : 'Unmapped / Floor'}
+                    {die.rack_name && die.shelf ? `${die.rack_name} — Shelf ${die.shelf}` : 'Unmapped / Floor'}
                   </p>
                 </div>
               </div>
@@ -1627,9 +1630,9 @@ export function DieDetailPage() {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center">
               <div className="flex justify-between items-center w-full mb-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">CAD Visualizer</h3>
-                <span className="text-xxs font-mono text-slate-505">Orthographic Blueprint</span>
+                <span className="text-[10px] font-mono text-slate-500">Orthographic Blueprint</span>
               </div>
-              <div className="w-full flex justify-center py-4 bg-slate-950/30 rounded-xl border border-slate-850">
+              <div className="w-full flex justify-center py-4 bg-slate-950/30 rounded-xl border border-slate-800">
                 <DieBlueprint 
                   die={die} 
                   activeHighlight={highlightedDim}
@@ -1652,8 +1655,8 @@ export function DieDetailPage() {
                     onMouseEnter={() => setHighlightedDim('punched_size')}
                     onMouseLeave={() => setHighlightedDim(null)}
                   >
-                    <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Original Base Punched</span>
-                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">${die.punched_size} mm</p>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Original Base Punched</span>
+                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">{die.punched_size} mm</p>
                   </div>
                   <div 
                     className={`bg-slate-950/30 border rounded-xl p-4 transition-all duration-300 ${
@@ -1662,8 +1665,8 @@ export function DieDetailPage() {
                     onMouseEnter={() => setHighlightedDim('current_size')}
                     onMouseLeave={() => setHighlightedDim(null)}
                   >
-                    <span className="text-xxs font-bold text-slate-505 uppercase tracking-wider">Current Wear Diameter</span>
-                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">${die.current_size} mm</p>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current Wear Diameter</span>
+                    <p className="text-xl font-mono font-bold text-slate-200 mt-1">{die.current_size} mm</p>
                   </div>
                 </div>
               ) : (
@@ -1676,9 +1679,9 @@ export function DieDetailPage() {
                       onMouseEnter={() => setHighlightedDim('punched_width_thickness')}
                       onMouseLeave={() => setHighlightedDim(null)}
                     >
-                      <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Original Base Punched W×T</span>
-                      <p className="text-lg font-mono font-bold text-slate-202 mt-1">
-                        ${die.punched_width} × ${die.punched_thickness} mm
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Original Base Punched W×T</span>
+                      <p className="text-lg font-mono font-bold text-slate-200 mt-1">
+                        {die.punched_width} × {die.punched_thickness} mm
                       </p>
                     </div>
                     <div 
@@ -1688,9 +1691,9 @@ export function DieDetailPage() {
                       onMouseEnter={() => setHighlightedDim('width_thickness')}
                       onMouseLeave={() => setHighlightedDim(null)}
                     >
-                      <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Current Width & Thickness</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current Width & Thickness</span>
                       <p className="text-lg font-mono font-bold text-slate-200 mt-1">
-                        ${die.current_width} × ${die.current_thickness} mm
+                        {die.current_width} × {die.current_thickness} mm
                       </p>
                     </div>
                   </div>
@@ -1701,8 +1704,8 @@ export function DieDetailPage() {
                     onMouseEnter={() => setHighlightedDim('radius')}
                     onMouseLeave={() => setHighlightedDim(null)}
                   >
-                    <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Fillet Corner Radius</span>
-                    <p className="text-sm font-mono font-bold text-slate-202 mt-1">${die.radius} mm</p>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fillet Corner Radius</span>
+                    <p className="text-sm font-mono font-bold text-slate-200 mt-1">{die.radius} mm</p>
                   </div>
                 </div>
               )}
@@ -1713,12 +1716,12 @@ export function DieDetailPage() {
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Production Line Assignment</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-4">
-                  <span className="text-xxs font-bold text-slate-505 uppercase tracking-wider">Active Set</span>
-                  <p className="text-sm font-bold text-slate-200 mt-1">${die.set_name || 'Stand-alone'}</p>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Set</span>
+                   <p className="text-sm font-bold text-slate-200 mt-1">{die.set_name || 'Stand-alone'}</p>
                 </div>
                 <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-4">
-                  <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">Associated Machine</span>
-                  <p className="text-sm font-bold text-slate-202 mt-1">${die.machine_name || 'Unassigned'}</p>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Associated Machine</span>
+                   <p className="text-sm font-bold text-slate-200 mt-1">{die.machine_name || 'Unassigned'}</p>
                 </div>
               </div>
             </div>
@@ -1731,7 +1734,7 @@ export function DieDetailPage() {
         {die.remarks && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Remarks</h3>
-            <p className="text-slate-350 text-sm whitespace-pre-line leading-relaxed">${die.remarks}</p>
+            <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed">{die.remarks}</p>
           </div>
         )}
 
@@ -1749,7 +1752,7 @@ export function DieDetailPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Change Audit History</h3>
-              <span className="text-xxs font-mono text-slate-500">Showing ${paginatedHistory.length} of ${historyTotal} updates</span>
+               <span className="text-[10px] font-mono text-slate-500">Showing {paginatedHistory.length} of {historyTotal} updates</span>
             </div>
             
             {historyTotal === 0 ? (
@@ -1769,11 +1772,11 @@ export function DieDetailPage() {
                     >
                       Previous
                     </button>
-                    <span className="text-xs text-slate-505 font-mono">Page ${historyPage} of ${Math.ceil(historyTotal / 20)}</span>
+                     <span className="text-xs text-slate-500 font-mono">Page {historyPage} of {Math.ceil(historyTotal / 20)}</span>
                     <button
                       disabled={historyPage * 20 >= historyTotal}
                       onClick={() => setHistoryPage(prev => prev + 1)}
-                      className="bg-slate-955 hover:bg-slate-900 disabled:opacity-40 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                      className="bg-slate-950 hover:bg-slate-900 disabled:opacity-40 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
                     >
                       Next
                     </button>
@@ -1790,31 +1793,31 @@ export function DieDetailPage() {
       <Drawer open={isEditing} onClose={() => setIsEditing(false)} title={`Configure Die Asset: ${die.die_id}`}>
         <form onSubmit={handleSave} className="space-y-6 pb-24 pr-1 pl-1">
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Die ID</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Die ID</label>
             <input 
               type="text"
               value={dieIdVal}
               onChange={(e) => setDieIdVal(e.target.value)}
-              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
               required
             />
           </div>
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Casing Size</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Casing Size</label>
             <input 
               type="text"
               value={casingVal}
               onChange={(e) => setCasingVal(e.target.value)}
-              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-semibold text-xs"
               required
             />
           </div>
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
             <select 
               value={statusVal}
               onChange={(e) => setStatusVal(e.target.value)}
-              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
             >
               <option value="AVAILABLE">Available</option>
               <option value="RUNNING">Running</option>
@@ -1827,12 +1830,12 @@ export function DieDetailPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Location slot</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Location slot</label>
             <div className="grid grid-cols-2 gap-2">
               <select 
                 value={rack}
                 onChange={(e) => setRack(e.target.value)}
-                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs cursor-pointer"
               >
                 <option value="">Select Rack...</option>
                 {racks.map((r: any) => (
@@ -1845,12 +1848,12 @@ export function DieDetailPage() {
                 placeholder="Shelf"
                 value={shelf}
                 onChange={(e) => setShelf(e.target.value)}
-                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign to Production Set</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Assign to Production Set</label>
             <SearchableSelect
               value={currentSetId}
               onChange={(val) => setCurrentSetId(String(val))}
@@ -1860,85 +1863,85 @@ export function DieDetailPage() {
               })) || []}
               placeholder="Select set to assign..."
               emptyLabel="— Unassigned —"
-              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
             />
           </div>
 
           {die.die_type === 'ROUND' ? (
             <>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Diameter (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Diameter (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={punchedSize}
                   onChange={(e) => setPunchedSize(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Diameter (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Current Diameter (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={currentSize}
                   onChange={(e) => setCurrentSize(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
             </>
           ) : (
             <>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Width (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Width (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={punchedWidth}
                   onChange={(e) => setPunchedWidth(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Current Width (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={currentWidth}
                   onChange={(e) => setCurrentWidth(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Thickness (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Punched Thickness (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={punchedThickness}
                   onChange={(e) => setPunchedThickness(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Current Thickness (mm)</label>
                 <input 
                   type="number"
                   step="0.001"
                   value={currentThickness}
                   onChange={(e) => setCurrentThickness(e.target.value)}
-                  className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none font-mono text-xs"
                 />
               </div>
             </>
           )}
 
           <div>
-            <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">Remarks & Quality logs</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Remarks & Quality logs</label>
             <textarea 
               rows={3}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-xs"
             />
           </div>
 
@@ -1946,7 +1949,7 @@ export function DieDetailPage() {
             <button 
               type="button"
               onClick={() => setIsEditing(false)}
-              className="bg-slate-955 border border-slate-800 hover:border-slate-700 text-slate-350 px-5 py-2.5 rounded-xl font-bold text-xs"
+              className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 px-5 py-2.5 rounded-xl font-bold text-xs"
             >
               Cancel
             </button>
@@ -1955,7 +1958,7 @@ export function DieDetailPage() {
               disabled={updateMutation.isPending}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition"
             >
-              ${updateMutation.isPending ? 'Saving...' : 'Save Configuration'}
+              {updateMutation.isPending ? 'Saving...' : 'Save Configuration'}
             </button>
           </div>
         </form>
@@ -2008,7 +2011,7 @@ export function DieDetailPage() {
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-bold text-white font-heading" id="modal-title">
-                      Recut / Re-bore Die: ${die.die_id}
+                      Recut / Re-bore Die: {die.die_id}
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-slate-400">
@@ -2031,7 +2034,7 @@ export function DieDetailPage() {
                             step="0.001"
                             value={newSize}
                             onChange={(e) => setNewSize(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-205 focus:border-blue-500 focus:outline-none"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none"
                             placeholder="e.g. 12.000"
                           />
                         </div>
@@ -2045,7 +2048,7 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newWidth}
                                 onChange={(e) => setNewWidth(e.target.value)}
-                                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                             <div>
@@ -2055,7 +2058,7 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newThickness}
                                 onChange={(e) => setNewThickness(e.target.value)}
-                                className="w-full bg-slate-955 border border-slate-855 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                             <div>
@@ -2065,7 +2068,7 @@ export function DieDetailPage() {
                                 step="0.001"
                                 value={newRadius}
                                 onChange={(e) => setNewRadius(e.target.value)}
-                                className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-202 focus:border-blue-500 focus:outline-none text-sm"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                               />
                             </div>
                           </div>
@@ -2078,7 +2081,7 @@ export function DieDetailPage() {
                           rows={3}
                           value={recutNote}
                           onChange={(e) => setRecutNote(e.target.value)}
-                          className="w-full bg-slate-955 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
                           placeholder="Why is this die being recut?"
                         />
                       </div>
@@ -2103,12 +2106,12 @@ export function DieDetailPage() {
                   }}
                   className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-base font-semibold text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:bg-blue-800 transition-colors"
                 >
-                  ${recutMutation.isPending ? 'Processing...' : 'Confirm Recut'}
+                  {recutMutation.isPending ? 'Processing...' : 'Confirm Recut'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsRecutOpen(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-800 shadow-sm px-4 py-2.5 bg-slate-900 text-base font-semibold text-slate-350 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
+                  className="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-800 shadow-sm px-4 py-2.5 bg-slate-900 text-base font-semibold text-slate-300 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all"
                 >
                   Cancel
                 </button>

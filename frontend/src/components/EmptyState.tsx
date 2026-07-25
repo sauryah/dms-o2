@@ -19,7 +19,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="text-center py-16 px-6 bg-slate-900/40 border border-slate-800 rounded-2xl p-8 shadow-xl flex flex-col justify-center items-center max-w-lg mx-auto animate-fadeIn">
-      <div className="p-4 bg-slate-950 border border-slate-850 rounded-full mb-4 flex items-center justify-center">
+      <div className="p-4 bg-slate-950 border border-slate-800 rounded-full mb-4 flex items-center justify-center">
         {icon}
       </div>
       <h3 className="text-lg font-bold text-white mb-2 font-heading">{title}</h3>

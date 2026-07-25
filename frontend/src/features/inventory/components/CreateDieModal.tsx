@@ -294,7 +294,7 @@ export function CreateDieModal({
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
           <div>
-            <label htmlFor="form-die-id" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label htmlFor="form-die-id" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               Die ID (Unique Identifier) <span className="text-rose-500">*</span>
             </label>
             <input 
@@ -313,15 +313,15 @@ export function CreateDieModal({
               aria-invalid={!!getFieldError('die_id')}
             />
             {checkingUniqueness && (
-              <p className="text-xxs text-blue-400 mt-1.5 animate-pulse">Verifying ID uniqueness...</p>
+              <p className="text-[10px] text-blue-400 mt-1.5 animate-pulse">Verifying ID uniqueness...</p>
             )}
             {getFieldError('die_id') && (
-              <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('die_id')}</p>
+              <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('die_id')}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="form-casing" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label htmlFor="form-casing" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               Casing Size (mm) <span className="text-rose-500">*</span>
             </label>
             <input 
@@ -332,19 +332,19 @@ export function CreateDieModal({
               placeholder="e.g. 25x10"
               value={casing}
               onChange={(e) => handleFieldChange('casing', e.target.value, setCasing)}
-              className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
+              className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring ${
                 getFieldError('casing') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
               }`}
               aria-invalid={!!getFieldError('casing')}
             />
             {getFieldError('casing') && (
-              <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('casing')}</p>
+              <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('casing')}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="form-rack" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <label htmlFor="form-rack" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Storage Rack (optional)
               </label>
               <select 
@@ -361,7 +361,7 @@ export function CreateDieModal({
               </select>
             </div>
             <div>
-              <label htmlFor="form-shelf" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <label htmlFor="form-shelf" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Shelf (optional)
               </label>
               <input 
@@ -378,7 +378,7 @@ export function CreateDieModal({
           </div>
 
           <div>
-            <label htmlFor="form-remarks" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label htmlFor="form-remarks" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               Remarks (optional)
             </label>
             <input 
@@ -401,7 +401,7 @@ export function CreateDieModal({
           {dieType === 'ROUND' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
               <div>
-                <label htmlFor="form-round-punched" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-round-punched" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Original / Punched Diameter (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -412,18 +412,18 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={originalSize}
                   onChange={(e) => handleFieldChange('punched_size', e.target.value, setOriginalSize)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('punched_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 2.400"
                   aria-invalid={!!getFieldError('punched_size')}
                 />
                 {getFieldError('punched_size') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_size')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('punched_size')}</p>
                 )}
               </div>
               <div>
-                <label htmlFor="form-round-current" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-round-current" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Current Measured Diameter (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -434,21 +434,21 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={currentSize}
                   onChange={(e) => handleFieldChange('current_size', e.target.value, setCurrentSize)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('current_size') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 2.420"
                   aria-invalid={!!getFieldError('current_size')}
                 />
                 {getFieldError('current_size') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_size')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('current_size')}</p>
                 )}
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
               <div>
-                <label htmlFor="form-flat-punched-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-flat-punched-width" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Original / Punched Width (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -459,19 +459,19 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={originalWidth}
                   onChange={(e) => handleFieldChange('punched_width', e.target.value, setOriginalWidth)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('punched_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 10.000"
                   aria-invalid={!!getFieldError('punched_width')}
                 />
                 {getFieldError('punched_width') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_width')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('punched_width')}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="form-flat-curr-width" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-flat-curr-width" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Current Measured Width (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -482,19 +482,19 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={currentWidth}
                   onChange={(e) => handleFieldChange('current_width', e.target.value, setCurrentWidth)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('current_width') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 10.020"
                   aria-invalid={!!getFieldError('current_width')}
                 />
                 {getFieldError('current_width') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_width')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('current_width')}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="form-flat-punched-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-flat-punched-thick" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Original / Punched Thickness (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -505,19 +505,19 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={originalThickness}
                   onChange={(e) => handleFieldChange('punched_thickness', e.target.value, setOriginalThickness)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('punched_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 3.000"
                   aria-invalid={!!getFieldError('punched_thickness')}
                 />
                 {getFieldError('punched_thickness') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('punched_thickness')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('punched_thickness')}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="form-flat-curr-thick" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-flat-curr-thick" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Current Measured Thickness (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -528,19 +528,19 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={currentThickness}
                   onChange={(e) => handleFieldChange('current_thickness', e.target.value, setCurrentThickness)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('current_thickness') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 3.010"
                   aria-invalid={!!getFieldError('current_thickness')}
                 />
                 {getFieldError('current_thickness') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('current_thickness')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('current_thickness')}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="form-flat-radius" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <label htmlFor="form-flat-radius" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Corner Radius (mm) <span className="text-rose-500">*</span>
                 </label>
                 <input 
@@ -551,14 +551,14 @@ export function CreateDieModal({
                   disabled={isSubmitting}
                   value={radius}
                   onChange={(e) => handleFieldChange('radius', e.target.value, setRadius)}
-                  className={`w-full bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
+                  className={`w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus-ring font-mono ${
                     getFieldError('radius') ? 'border-rose-500 bg-rose-950/10 focus:border-rose-500' : ''
                   }`}
                   placeholder="e.g. 0.500"
                   aria-invalid={!!getFieldError('radius')}
                 />
                 {getFieldError('radius') && (
-                  <p className="text-xxs text-rose-400 mt-1.5 font-medium">{getFieldError('radius')}</p>
+                  <p className="text-[10px] text-rose-400 mt-1.5 font-medium">{getFieldError('radius')}</p>
                 )}
               </div>
             </div>
@@ -571,7 +571,7 @@ export function CreateDieModal({
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
           <div>
-            <label htmlFor="form-set" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label htmlFor="form-set" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               Select Production Set
             </label>
             <SearchableSelect
@@ -590,7 +590,7 @@ export function CreateDieModal({
             <p className="text-[10px] text-slate-500 mt-2">Optional assignment to set. You can click Next or Skip to bypass.</p>
           </div>
           <div>
-            <label htmlFor="form-set-machine" className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label htmlFor="form-set-machine" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               Assigned Machine Name (Read-Only)
             </label>
             <input 
@@ -598,7 +598,7 @@ export function CreateDieModal({
               type="text" 
               readOnly
               value={machineName || 'Unassigned / Stand-alone'}
-              className="w-full bg-slate-955/50 border border-slate-800/80 text-slate-500 rounded-xl py-2.5 px-3.5 text-xs font-mono font-medium outline-none"
+              className="w-full bg-slate-950/50 border border-slate-800/80 text-slate-500 rounded-xl py-2.5 px-3.5 text-xs font-mono font-medium outline-none"
               placeholder="Machine name auto-populates"
             />
           </div>
@@ -608,57 +608,57 @@ export function CreateDieModal({
     {
       label: 'Review',
       content: (
-        <div className="bg-slate-950/30 border border-slate-850 rounded-2xl overflow-hidden font-sans text-xs">
+        <div className="bg-slate-950/30 border border-slate-800 rounded-2xl overflow-hidden font-sans text-xs">
           <table className="w-full text-left border-collapse">
             <tbody>
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)] w-1/3">Die Type</td>
                 <td className="p-3.5 font-mono text-white">{dieType}</td>
               </tr>
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)]">Die ID</td>
                 <td className="p-3.5 font-mono text-white font-bold">{dieId}</td>
               </tr>
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)]">Casing Size</td>
                 <td className="p-3.5 font-mono text-white">{casing} mm</td>
               </tr>
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)]">Status</td>
                 <td className="p-3.5 text-white font-semibold">{status}</td>
               </tr>
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)]">Physical Location</td>
                 <td className="p-3.5 text-white font-semibold">{displayLocation}</td>
               </tr>
               {dieType === 'ROUND' ? (
                 <>
-                  <tr className="border-b border-slate-850">
+                  <tr className="border-b border-slate-800">
                     <td className="p-3.5 font-bold text-[var(--color-muted)]">Nominal / Punched Size</td>
                     <td className="p-3.5 font-mono text-white">{originalSize} mm</td>
                   </tr>
-                  <tr className="border-b border-slate-850">
+                  <tr className="border-b border-slate-800">
                     <td className="p-3.5 font-bold text-[var(--color-muted)]">Current Size</td>
                     <td className="p-3.5 font-mono text-white">{currentSize} mm</td>
                   </tr>
                 </>
               ) : (
                 <>
-                  <tr className="border-b border-slate-850">
+                  <tr className="border-b border-slate-800">
                     <td className="p-3.5 font-bold text-[var(--color-muted)]">Punched Width × Thickness</td>
                     <td className="p-3.5 font-mono text-white">{originalWidth} × {originalThickness} mm</td>
                   </tr>
-                  <tr className="border-b border-slate-850">
+                  <tr className="border-b border-slate-800">
                     <td className="p-3.5 font-bold text-[var(--color-muted)]">Current Width × Thickness</td>
                     <td className="p-3.5 font-mono text-white">{currentWidth} × {currentThickness} mm</td>
                   </tr>
-                  <tr className="border-b border-slate-850">
+                  <tr className="border-b border-slate-800">
                     <td className="p-3.5 font-bold text-[var(--color-muted)]">Fillet Radius</td>
                     <td className="p-3.5 font-mono text-white">{radius} mm</td>
                   </tr>
                 </>
               )}
-              <tr className="border-b border-slate-850">
+              <tr className="border-b border-slate-800">
                 <td className="p-3.5 font-bold text-[var(--color-muted)]">Production Assignment</td>
                 <td className="p-3.5 text-white">
                   {selectedSetObj ? `${selectedSetObj.name} (${selectedSetObj.machine_name})` : 'Floor Stock (Unassigned)'}
@@ -679,7 +679,7 @@ export function CreateDieModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-slate-955/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-die-modal-title"
@@ -703,7 +703,7 @@ export function CreateDieModal({
             <h2 id="create-die-modal-title" className="text-lg font-bold text-white tracking-tight font-heading">
               Register New Die Asset
             </h2>
-            <p className="text-xxs text-slate-400 uppercase font-semibold tracking-wider mt-1">Multi-Step Precision wizard</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider mt-1">Multi-Step Precision wizard</p>
           </div>
           <button 
             onClick={onClose} 

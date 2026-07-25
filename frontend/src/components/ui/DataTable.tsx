@@ -59,7 +59,7 @@ export function DataTable({
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="sticky top-0 z-10 bg-slate-955 border-b border-[var(--color-border)] select-none">
+            <tr className="sticky top-0 z-10 bg-slate-950 border-b border-[var(--color-border)] select-none">
               {selectedIds && onSelectAll && (
                 <th className="py-4 px-5 w-12 text-center align-middle">
                   <input

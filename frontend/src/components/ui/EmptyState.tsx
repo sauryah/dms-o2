@@ -8,11 +8,11 @@ export interface EmptyStateProps {
 
 export function EmptyState({ message, actionLabel, onAction }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 select-none">
+    <div className="flex flex-col items-center justify-center text-center p-8">
       {/* Muted message text */}
-      <p className="text-xs sm:text-sm font-semibold text-[var(--color-muted)] font-sans max-w-sm leading-relaxed">
+      <h3 className="text-xs sm:text-sm font-semibold text-[var(--color-muted)] font-sans max-w-sm leading-relaxed">
         {message}
-      </p>
+      </h3>
 
       {/* Action button if provided */}
       {actionLabel && onAction && (

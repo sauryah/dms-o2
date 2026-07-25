@@ -143,7 +143,7 @@ export function WireDrawingCalculatorPage() {
                       />
                       <div className="bg-[#0b1428]/45 border border-slate-800/40 p-4 rounded-xl text-xs space-y-2">
                         <h4 className="font-bold text-slate-300 font-sans uppercase tracking-wider text-[10px]">Simulated Pass Operations</h4>
-                        <p className="text-slate-450 leading-relaxed font-sans text-[11px]">
+                        <p className="text-slate-400 leading-relaxed font-sans text-[11px]">
                           Visualizing the draft progression geometry for **Pass #{selectedPass?.pass}**. 
                           Click any row in the results table to select that draft, zoom/pan the viewport, or view the internal cross-sectional channel.
                         </p>

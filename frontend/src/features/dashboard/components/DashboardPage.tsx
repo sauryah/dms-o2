@@ -67,7 +67,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
 
       {total === 0 ? (
         <div className="flex-grow flex flex-col items-center justify-center py-6">
-          <div className="w-16 h-16 rounded-full border-4 border-slate-850 border-t-blue-500 animate-spin mb-4" />
+          <div className="w-16 h-16 rounded-full border-4 border-slate-800 border-t-blue-500 animate-spin mb-4" />
           <span className="text-slate-500 text-sm">No dies loaded</span>
         </div>
       ) : (
@@ -322,12 +322,15 @@ export function DashboardPage() {
             const countVal = count as number
             const baselineCount = trendBaseline ? (trendBaseline[statusKey] as number || 0) : countVal
             const diff = countVal - baselineCount
-            
+
             return (
-              <div 
+              <div
                 key={statusKey}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/inventory?status=${statusKey}`)}
-                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 ${statusColors[statusKey]}`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/inventory?status=${statusKey}`) } }}
+                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 focus-ring ${statusColors[statusKey]}`}
               >
                 <div className="flex items-center justify-between opacity-80 gap-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider">{statusKey}</span>
@@ -336,7 +339,7 @@ export function DashboardPage() {
                       ▲ +{diff}
                     </span>
                   ) : diff < 0 ? (
-                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-550/10 px-1 rounded" title="Down from 24h baseline">
+                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-500/10 px-1 rounded" title="Down from 24h baseline">
                       ▼ {diff}
                     </span>
                   ) : null}
@@ -437,7 +440,7 @@ export function DashboardPage() {
                                   {die.die_type} • {die.die_id} • {die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : 'No Location'}
                                 </span>
                               </div>
-                              <span className={`px-2 py-0.5 text-xxs font-bold rounded-full border ${
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
                                 die.status === 'AVAILABLE' 
                                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                                   : die.status === 'RUNNING'
@@ -453,13 +456,14 @@ export function DashboardPage() {
                           Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓/↑</kbd> or <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Tab</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to open
                         </div>
                         {searchDiesData && searchDiesData.total > 6 && (
-                          <div 
+                          <div
                             onClick={() => {
                               setShowDropdown(false)
+                              document.getElementById('search-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                             }}
                             className="p-3 bg-slate-950/40 text-center text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
                           >
-                            Scroll down to view all {searchDiesData.total} results
+                            View all {searchDiesData.total} results below ↓
                           </div>
                         )}
                       </>
@@ -619,7 +623,7 @@ export function DashboardPage() {
       </div>
 
       {hasActiveFilter && (
-        <div className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
+        <div id="search-results" className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
           <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
             <h3 className="text-lg font-semibold text-slate-300">
               {q ? (
@@ -636,9 +640,9 @@ export function DashboardPage() {
                   onChange={(e) => setSortOption(e.target.value as any)}
                   className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
                 >
-                  <option value="default" className="bg-slate-950 text-slate-350">Relevance</option>
-                  <option value="size_asc" className="bg-slate-950 text-slate-350">Size: Small to Large</option>
-                  <option value="size_desc" className="bg-slate-950 text-slate-350">Size: Large to Small</option>
+                  <option value="default" className="bg-slate-950 text-slate-300">Relevance</option>
+                  <option value="size_asc" className="bg-slate-950 text-slate-300">Size: Small to Large</option>
+                  <option value="size_desc" className="bg-slate-950 text-slate-300">Size: Large to Small</option>
                 </select>
               </div>
 
@@ -701,7 +705,7 @@ export function DashboardPage() {
                     <span className="font-bold text-slate-200">
                       {Math.min(page * pageSize, searchDiesData.total)}
                     </span>{' '}
-                    of <span className="font-bold text-slate-200">{searchDiesData.total}</span> tools
+                    of <span className="font-bold text-slate-200">{searchDiesData.total}</span> dies
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -817,7 +821,7 @@ function MaintenanceQueue() {
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
-            <table className="w-full text-left text-xs font-sans text-slate-350">
+            <table className="w-full text-left text-xs font-sans text-slate-300">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
                   <th className="py-2.5 px-3">Die ID</th>
@@ -829,9 +833,12 @@ function MaintenanceQueue() {
               </thead>
               <tbody className="divide-y divide-slate-850">
                 {maintenanceList.map((die: any) => (
-                  <tr 
+                  <tr
                     key={die.die_id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/dies/${die.die_id}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${die.die_id}`) } }}
                     className="hover:bg-slate-800/35 transition duration-150 cursor-pointer group"
                   >
                     <td className="py-3 px-3 font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
@@ -848,7 +855,7 @@ function MaintenanceQueue() {
                       </span>
                     </td>
                     <td className="py-3 px-3 font-mono text-slate-400">{die.durationStr}</td>
-                    <td className="py-3 px-3 text-slate-450">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</td>
+                    <td className="py-3 px-3 text-slate-400">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -906,9 +913,12 @@ function RecentActivityFeed() {
           </div>
         ) : (
           historyItems.map((item: any) => (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/dies/${item.die_id}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${item.die_id}`) } }}
               className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-850/50 transition duration-150 cursor-pointer group"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
@@ -917,7 +927,7 @@ function RecentActivityFeed() {
                   <span className="font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
                   <span className="text-[9px] font-mono text-slate-500 shrink-0">{getRelativeTime(item.timestamp)}</span>
                 </div>
-                <p className="text-slate-350 mt-1">
+                <p className="text-slate-300 mt-1">
                   Updated <span className="font-semibold text-slate-200">{item.field_name}</span> from <span className="font-mono text-slate-400">"{item.old_value || '—'}"</span> to <span className="font-mono text-slate-300 font-bold">"{item.new_value || '—'}"</span>
                 </p>
                 <p className="text-[10px] text-slate-500 mt-0.5">

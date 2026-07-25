@@ -117,7 +117,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
         {isSetsLoading ? (
           <div className="text-center py-6 text-slate-400">Loading tool sets...</div>
         ) : filteredSets.length === 0 ? (
-          <p className="text-slate-505 text-sm py-4 text-center">No matching tool sets found.</p>
+          <p className="text-slate-500 text-sm py-4 text-center">No matching tool sets found.</p>
         ) : (
           <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
             {filteredSets.map((s: any) => (
@@ -128,7 +128,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
                   </div>
                   <div>
                     <span className="font-semibold text-slate-200 block">{s.name}</span>
-                    <span className="text-xs text-slate-455">Machine: <span className="text-slate-300 font-medium">{s.machine_name}</span> <span className="text-slate-500">({s.category_name})</span></span>
+                    <span className="text-xs text-slate-400">Machine: <span className="text-slate-300 font-medium">{s.machine_name}</span> <span className="text-slate-500">({s.category_name})</span></span>
                   </div>
                 </div>
                 {isWritable && (

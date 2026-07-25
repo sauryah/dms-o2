@@ -130,7 +130,7 @@ export function Timeline({ history }: TimelineProps) {
                 </div>
                 
                 {/* Timeline card */}
-                <div className="bg-slate-955/60 border border-slate-850 hover:border-slate-800 rounded-xl p-5 hover:scale-[1.001] transition-all duration-200 shadow-md">
+                <div className="bg-slate-950/60 border border-slate-800 hover:border-slate-800 rounded-xl p-5 hover:scale-[1.001] transition-all duration-200 shadow-md">
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-bold text-white tracking-tight">{actionTitle}</span>
@@ -140,7 +140,7 @@ export function Timeline({ history }: TimelineProps) {
                     </div>
                     
                     {/* Metadata */}
-                    <div className="flex items-center gap-4 text-xxs text-slate-500 font-semibold uppercase tracking-wider">
+                    <div className="flex items-center gap-4 text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                       <span>{new Date(hist.timestamp).toLocaleString()}</span>
                       <span>•</span>
                       <span>IP: {hist.ip_address || '127.0.0.1'}</span>
@@ -152,7 +152,7 @@ export function Timeline({ history }: TimelineProps) {
                     <div className="flex flex-col min-w-[120px] max-w-[200px]">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Previous</span>
                       <span className="text-xs text-rose-400 font-mono font-bold select-all truncate" title={hist.old_value || 'Empty'}>
-                        {hist.old_value || <span className="text-slate-650 italic font-sans font-normal">empty</span>}
+                        {hist.old_value || <span className="text-slate-600 italic font-sans font-normal">empty</span>}
                       </span>
                     </div>
                     
@@ -161,19 +161,19 @@ export function Timeline({ history }: TimelineProps) {
                     <div className="flex flex-col min-w-[120px] max-w-[200px]">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Updated</span>
                       <span className="text-xs text-emerald-400 font-mono font-bold select-all truncate" title={hist.new_value || 'Empty'}>
-                        {hist.new_value || <span className="text-slate-650 italic font-sans font-normal">empty</span>}
+                        {hist.new_value || <span className="text-slate-600 italic font-sans font-normal">empty</span>}
                       </span>
                     </div>
                   </div>
 
                   {/* Operator signature footer */}
-                  <div className="mt-4 pt-3 border-t border-slate-900/60 flex items-center justify-between text-xxs text-slate-500 font-semibold tracking-wide">
+                  <div className="mt-4 pt-3 border-t border-slate-900/60 flex items-center justify-between text-[10px] text-slate-500 font-semibold tracking-wide">
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
                       <span>Operator Signature: <span className="text-slate-400">{hist.changed_by_username || 'System Daemon'}</span></span>
                     </div>
                     {hist.note && (
-                      <span className="italic text-slate-450">Note: {hist.note}</span>
+                      <span className="italic text-slate-400">Note: {hist.note}</span>
                     )}
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export function Timeline({ history }: TimelineProps) {
           })}
         </div>
       ) : (
-        <div className="text-center py-12 bg-slate-955/40 border border-slate-850 rounded-xl flex flex-col justify-center items-center">
+        <div className="text-center py-12 bg-slate-950/40 border border-slate-800 rounded-xl flex flex-col justify-center items-center">
           <History className="h-8 w-8 text-slate-700 mb-2 animate-pulse" />
           <p className="text-slate-500 text-sm">No state modifications recorded for this die.</p>
         </div>

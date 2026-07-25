@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { FileSpreadsheet, ArrowLeft, Download, UploadCloud, CheckCircle, AlertTriangle, AlertCircle, FileText } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -97,11 +97,24 @@ export function ImportPage() {
   }, [])
 
   useEffect(() => {
-    if (importStatus?.status === 'importing') {
-      const interval = setInterval(() => checkStatus(false), 1000)
-      return () => clearInterval(interval)
-    }
+    if (importStatus?.status !== 'importing') return
+    const interval = setInterval(() => checkStatus(false), 1000)
+    return () => clearInterval(interval)
   }, [importStatus?.status])
+
+  const closeModal = useCallback(() => {
+    setShowPreviewModal(false)
+    setDryRunResult(null)
+  }, [])
+
+  useEffect(() => {
+    if (!showPreviewModal) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeModal()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [showPreviewModal, closeModal])
 
   const downloadTemplate = async () => {
     try {
@@ -238,7 +251,7 @@ export function ImportPage() {
 
   const errorColumns = [
     { key: 'row', label: 'Row #', render: (row: any) => <span className="font-mono text-slate-400 font-bold">{row.row}</span> },
-    { key: 'die_id', label: 'Die ID', render: (row: any) => <span className="font-mono text-blue-450 font-semibold">{row.die_id ?? 'N/A'}</span> },
+    { key: 'die_id', label: 'Die ID', render: (row: any) => <span className="font-mono text-blue-400 font-semibold">{row.die_id ?? 'N/A'}</span> },
     { key: 'field', label: 'Field', render: (row: any) => <span className="font-bold text-slate-300">{row.field ?? 'General'}</span> },
     { key: 'error', label: 'Error Message', render: (row: any) => <span className="text-rose-400 whitespace-normal font-mono text-[11px] block max-w-md">{row.error}</span> }
   ]
@@ -363,7 +376,7 @@ export function ImportPage() {
           <div className={`mt-8 p-5 rounded-2xl border flex items-start gap-3 animate-fadeIn ${
             statusMsg.type === 'success' 
               ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-450'
+              : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
           }`}>
             {statusMsg.type === 'success' ? <CheckCircle className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
             <p className="font-bold text-sm leading-relaxed">{statusMsg.text}</p>
@@ -412,28 +425,36 @@ export function ImportPage() {
       </div>
 
       {showPreviewModal && dryRunResult && (
-        <div className="fixed inset-0 bg-slate-955/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 relative overflow-hidden shadow-2xl space-y-6 animate-fadeIn">
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dry-run-title"
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 relative overflow-hidden shadow-2xl space-y-6 animate-fadeIn"
+          >
             <div>
-              <h2 className="text-lg font-bold text-white font-heading">Import Preview (Dry Run)</h2>
+              <h2 id="dry-run-title" className="text-lg font-bold text-white font-heading">Import Preview (Dry Run)</h2>
               <p className="text-slate-400 text-xs mt-1">Review the results of the simulated import before writing to database.</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-xxs text-slate-500 font-bold uppercase tracking-wider block">To Create</span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Create</span>
                 <span className="text-xl font-mono font-bold text-emerald-400 mt-1 block">{dryRunResult.created}</span>
               </div>
               <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-xxs text-slate-500 font-bold uppercase tracking-wider block">To Update</span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Update</span>
                 <span className="text-xl font-mono font-bold text-blue-400 mt-1 block">{dryRunResult.updated}</span>
               </div>
-              <div className="bg-slate-955/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-xxs text-slate-505 font-bold uppercase tracking-wider block">To Skip</span>
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Skip</span>
                 <span className="text-xl font-mono font-bold text-slate-400 mt-1 block">{dryRunResult.skipped}</span>
               </div>
-              <div className="bg-slate-955/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-xxs text-slate-500 font-bold uppercase tracking-wider block">Errors</span>
+              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Errors</span>
                 <span className={`text-xl font-mono font-bold mt-1 block ${dryRunResult.errors.length > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
                   {dryRunResult.errors.length}
                 </span>
@@ -456,11 +477,8 @@ export function ImportPage() {
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-800/80">
               <button
                 type="button"
-                onClick={() => {
-                  setShowPreviewModal(false)
-                  setDryRunResult(null)
-                }}
-                className="px-6 py-2.5 bg-slate-955 hover:bg-slate-900 border border-slate-800 text-slate-350 hover:text-white rounded-xl text-xs font-bold transition"
+                onClick={closeModal}
+                className="px-6 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition"
               >
                 Cancel
               </button>

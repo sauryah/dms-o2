@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Folder, Cpu, Layers } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
+import { Skeleton } from '../components/ui/Skeleton'
 import { CategoriesTab } from './machinesets/CategoriesTab'
 import { MachinesTab } from './machinesets/MachinesTab'
 import { SetsTab } from './machinesets/SetsTab'
@@ -44,7 +45,7 @@ export function MachineSetsPage() {
           <div className="flex justify-between items-center relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Categories</p>
-              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{categories?.length || 0}</h3>
+              {isCatsLoading ? <Skeleton width="w-16" height="h-8" /> : <h3 className="text-2xl font-bold text-white mt-2 font-heading">{categories?.length || 0}</h3>}
             </div>
             <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
               <Folder className="h-6 w-6" />
@@ -56,7 +57,7 @@ export function MachineSetsPage() {
           <div className="flex justify-between items-center relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Machines</p>
-              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{machines?.length || 0}</h3>
+              {isMachsLoading ? <Skeleton width="w-16" height="h-8" /> : <h3 className="text-2xl font-bold text-white mt-2 font-heading">{machines?.length || 0}</h3>}
             </div>
             <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
               <Cpu className="h-6 w-6" />
@@ -68,7 +69,7 @@ export function MachineSetsPage() {
           <div className="flex justify-between items-center relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Tool Sets</p>
-              <h3 className="text-2xl font-bold text-white mt-2 font-heading">{sets?.length || 0}</h3>
+              {isSetsLoading ? <Skeleton width="w-16" height="h-8" /> : <h3 className="text-2xl font-bold text-white mt-2 font-heading">{sets?.length || 0}</h3>}
             </div>
             <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
               <Layers className="h-6 w-6" />
@@ -82,13 +83,13 @@ export function MachineSetsPage() {
         <button 
           onClick={() => setActiveTab('categories')}
           className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
-            activeTab === 'categories' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
+            activeTab === 'categories' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
           <Folder className="h-4 w-4" />
           <span>Machine Categories</span>
           <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
-            activeTab === 'categories' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+            activeTab === 'categories' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800/40 text-slate-500'
           }`}>
             {categories?.length || 0}
           </span>
@@ -96,13 +97,13 @@ export function MachineSetsPage() {
         <button 
           onClick={() => setActiveTab('machines')}
           className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
-            activeTab === 'machines' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
+            activeTab === 'machines' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
           <Cpu className="h-4 w-4" />
           <span>Machines</span>
           <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
-            activeTab === 'machines' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+            activeTab === 'machines' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800/40 text-slate-500'
           }`}>
             {machines?.length || 0}
           </span>
@@ -110,13 +111,13 @@ export function MachineSetsPage() {
         <button 
           onClick={() => setActiveTab('sets')}
           className={`pb-4 text-md font-semibold border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
-            activeTab === 'sets' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-350'
+            activeTab === 'sets' ? 'border-blue-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
           <Layers className="h-4 w-4" />
           <span>Tool Sets</span>
           <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-all ${
-            activeTab === 'sets' ? 'bg-blue-500/20 text-blue-450' : 'bg-slate-800/40 text-slate-500'
+            activeTab === 'sets' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800/40 text-slate-500'
           }`}>
             {sets?.length || 0}
           </span>

@@ -108,7 +108,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
         {isMachsLoading ? (
           <div className="text-center py-6 text-slate-400">Loading machines...</div>
         ) : filteredMachines.length === 0 ? (
-          <p className="text-slate-505 text-sm py-4 text-center">No matching machines found.</p>
+          <p className="text-slate-500 text-sm py-4 text-center">No matching machines found.</p>
         ) : (
           <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
             {filteredMachines.map((mach: any) => (
@@ -119,7 +119,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
                   </div>
                   <div>
                     <span className="font-semibold text-slate-200 block">{mach.name}</span>
-                    <span className="text-xs text-slate-450">Category: <span className="text-slate-300 font-medium">{mach.category_name}</span></span>
+                    <span className="text-xs text-slate-400">Category: <span className="text-slate-300 font-medium">{mach.category_name}</span></span>
                   </div>
                 </div>
                 {isWritable && (

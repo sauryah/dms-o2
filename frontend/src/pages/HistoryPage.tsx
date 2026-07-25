@@ -194,6 +194,16 @@ export function HistoryPage() {
   const handleTabChange = (tab: 'timeline' | 'dies' | 'machines') => {
     setActiveTab(tab)
     setPage(1)
+    setUserInput('')
+    setFieldInput('')
+    setIpInput('')
+    setSearchTextInput('')
+    setFromDate('')
+    setToDate('')
+    setDieIdInput('')
+    setEntityNameInput('')
+    setEntityTypeInput('')
+    setActionInput('')
   }
 
   const isCurrentLoading = activeTab === 'timeline' ? isLoadingUnified : (activeTab === 'dies' ? isLoadingDies : isLoadingMachines)
@@ -309,7 +319,7 @@ export function HistoryPage() {
             type="button"
             disabled={currentList.length === 0}
             onClick={exportToCSV}
-            className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-950 text-slate-300 hover:text-white disabled:text-slate-650 border border-slate-800 hover:border-slate-700 disabled:border-slate-950 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-md shadow-slate-950/20"
+            className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-950 text-slate-300 hover:text-white disabled:text-slate-600 border border-slate-800 hover:border-slate-700 disabled:border-slate-950 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-md shadow-slate-950/20"
           >
             <Download className="h-4.5 w-4.5 text-blue-500" />
             <span>Export to CSV</span>
@@ -378,7 +388,7 @@ export function HistoryPage() {
                     placeholder="Search name..."
                     value={entityNameInput}
                     onChange={(e) => { setEntityNameInput(e.target.value); setPage(1); }}
-                    className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                    className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
                   />
                 </div>
               </div>
@@ -423,7 +433,7 @@ export function HistoryPage() {
                 placeholder="Username..."
                 value={userInput}
                 onChange={(e) => { setUserInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
               />
             </div>
           </div>
@@ -437,7 +447,7 @@ export function HistoryPage() {
                 placeholder="e.g. status..."
                 value={fieldInput}
                 onChange={(e) => { setFieldInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
               />
             </div>
           </div>
@@ -451,7 +461,7 @@ export function HistoryPage() {
                 placeholder="e.g. 192.168..."
                 value={ipInput}
                 onChange={(e) => { setIpInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
               />
             </div>
           </div>
@@ -465,7 +475,7 @@ export function HistoryPage() {
                 placeholder="Search notes or values..."
                 value={searchTextInput}
                 onChange={(e) => { setSearchTextInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
               />
             </div>
           </div>
@@ -478,7 +488,7 @@ export function HistoryPage() {
               type="date"
               value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-              className="px-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition [color-scheme:dark] focus-ring"
+              className="px-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition [color-scheme:dark] focus-ring"
             />
           </div>
 
@@ -488,7 +498,7 @@ export function HistoryPage() {
               type="date"
               value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-              className="px-4 py-2.5 bg-slate-955/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition [color-scheme:dark] focus-ring"
+              className="px-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition [color-scheme:dark] focus-ring"
             />
           </div>
         </div>
@@ -497,7 +507,7 @@ export function HistoryPage() {
       {/* Table Container */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
         {isCurrentLoading ? (
-          <div className="p-24 text-center text-slate-400">
+          <div className="p-20 text-center text-slate-400">
             <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -529,7 +539,7 @@ export function HistoryPage() {
                     </div>
                     
                     {/* Card container */}
-                    <div className="flex-1 bg-slate-900/60 border border-slate-850 hover:border-slate-800 rounded-2xl p-5 shadow-md hover:shadow-lg transition duration-200">
+                    <div className="flex-1 bg-slate-900/60 border border-slate-800 hover:border-slate-800 rounded-2xl p-5 shadow-md hover:shadow-lg transition duration-200">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 border-b border-slate-800/50 pb-3">
                         <div>
                           <div className="flex items-center flex-wrap gap-2 text-xs">
@@ -548,7 +558,7 @@ export function HistoryPage() {
                           </div>
                           
                           {group.note && (
-                            <div className="mt-2 text-xs text-slate-400 italic bg-slate-950/40 px-3 py-1.5 rounded-lg border border-slate-850 max-w-xl">
+                            <div className="mt-2 text-xs text-slate-400 italic bg-slate-950/40 px-3 py-1.5 rounded-lg border border-slate-800 max-w-xl">
                               &ldquo;{group.note}&rdquo;
                             </div>
                           )}
@@ -580,7 +590,7 @@ export function HistoryPage() {
                         </div>
                       ) : (
                         <div className="text-xs text-slate-500 font-mono">
-                          Performed action: <span className="font-bold text-slate-350">{group.action}</span>
+                          Performed action: <span className="font-bold text-slate-300">{group.action}</span>
                         </div>
                       )}
                     </div>
@@ -623,13 +633,13 @@ export function HistoryPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-blue-450 font-bold font-mono text-xs">
+                          <td className="px-6 py-4 whitespace-nowrap text-blue-400 font-bold font-mono text-xs">
                             {log.die_id}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-300">
                             {log.field_name}
                           </td>
-                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-455" title={log.old_value}>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-400" title={log.old_value}>
                             {log.old_value || <span className="text-slate-700 font-mono italic">empty</span>}
                           </td>
                           <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
@@ -653,7 +663,7 @@ export function HistoryPage() {
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-xs">
-                            <span className={`px-2.5 py-0.5 text-xxs font-bold rounded-full border ${
+                            <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
                               log.entity_type === 'MACHINE'
                                 ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
                                 : log.entity_type === 'SET'
@@ -667,20 +677,20 @@ export function HistoryPage() {
                             {log.entity_name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-xs">
-                            <span className={`px-2 py-0.5 text-xxs font-bold rounded ${
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                               log.action === 'CREATED'
                                 ? 'bg-emerald-500/15 text-emerald-450'
                                 : log.action === 'DELETED'
-                                ? 'bg-rose-500/15 text-rose-450'
+                                ? 'bg-rose-500/15 text-rose-400'
                                 : 'bg-amber-500/15 text-amber-450'
                             }`}>
                               {log.action}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-350">
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-300">
                             {log.field_name || '—'}
                           </td>
-                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-455" title={log.old_value}>
+                          <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-400" title={log.old_value}>
                             {log.old_value || '—'}
                           </td>
                           <td className="px-6 py-4 max-w-xs truncate text-xs text-slate-200" title={log.new_value}>
@@ -711,14 +721,14 @@ export function HistoryPage() {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-650 border border-slate-750 disabled:border-transparent rounded-xl transition"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border border-slate-750 disabled:border-transparent rounded-xl transition"
                   >
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-650 border border-slate-750 disabled:border-transparent rounded-xl transition"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border border-slate-750 disabled:border-transparent rounded-xl transition"
                   >
                     <ArrowRight className="h-4.5 w-4.5" />
                   </button>

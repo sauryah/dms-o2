@@ -135,7 +135,7 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
                 <button 
                   type="button"
                   onClick={() => { setEditingCat(null); setCatName(''); }}
-                  className="bg-slate-955 hover:bg-slate-800 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
+                  className="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-medium transition"
                 >
                   Cancel
                 </button>

@@ -3,6 +3,8 @@ import {
   Plus, 
   ChevronRight, 
   ChevronLeft, 
+  ChevronDown,
+  ChevronUp,
   Menu, 
   SlidersHorizontal,
   Table2,
@@ -327,15 +329,17 @@ export function InventoryPage() {
       <button
         type="button"
         onClick={handleExpandAll}
-        className="bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
+        className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
       >
+        <ChevronDown className="h-3.5 w-3.5" />
         Expand Tree
       </button>
       <button
         type="button"
         onClick={handleCollapseAll}
-        className="bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
+        className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
       >
+        <ChevronUp className="h-3.5 w-3.5" />
         Collapse Tree
       </button>
       <ExportMenu options={exportOptions} />
@@ -423,7 +427,7 @@ export function InventoryPage() {
               className={`flex items-center space-x-2 px-4 py-3 rounded-xl border text-xs font-bold transition w-full sm:w-auto shrink-0 justify-center cursor-pointer ${
                 showFilters 
                   ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
-                  : 'bg-slate-950/40 text-slate-350 border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-950/40 text-slate-300 border-slate-800 hover:border-slate-700'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -443,7 +447,7 @@ export function InventoryPage() {
               ))}
               <button
                 onClick={clearAllFilters}
-                className="text-xxs font-extrabold uppercase tracking-widest text-blue-400 hover:text-blue-300 transition shrink-0 ml-1 py-1"
+                className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 hover:text-blue-300 transition shrink-0 ml-1 py-1.5"
               >
                 Clear all
               </button>
@@ -486,7 +490,7 @@ export function InventoryPage() {
               
               {/* Secondary view controls bar */}
               <div className="flex items-center justify-between select-none">
-                <div className="flex items-center space-x-2 text-xxs font-extrabold uppercase tracking-widest text-slate-500 font-mono">
+                <div className="flex items-center space-x-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 font-mono">
                   <Compass className="h-4 w-4 text-blue-500" />
                   <span>
                     {isLoading ? 'Scanning Registry...' : `${totalCount} ${totalCount === 1 ? 'die' : 'dies'} registered`}
@@ -498,7 +502,7 @@ export function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`px-3 py-1.5 rounded-lg text-xxs font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
                       viewMode === 'grid' 
                         ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-slate-400 hover:text-white'
@@ -511,7 +515,7 @@ export function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`px-3 py-1.5 rounded-lg text-xxs font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
                       viewMode === 'list' 
                         ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-slate-400 hover:text-white'
@@ -524,7 +528,7 @@ export function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('rack' as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xxs font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
                       viewMode === ('rack' as any) 
                         ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-slate-400 hover:text-white'
@@ -662,7 +666,7 @@ export function InventoryPage() {
                 value={bulkStatus}
                 disabled={isUpdating}
                 onChange={(e) => setBulkStatus(e.target.value)}
-                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-slate-350 focus:outline-none"
+                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="">— Select Status —</option>
                 <option value="AVAILABLE">Available</option>
@@ -672,6 +676,7 @@ export function InventoryPage() {
                 <option value="DAMAGED">Damaged</option>
                 <option value="SCRAPPED">Scrapped</option>
                 <option value="MISSING">Missing</option>
+                <option value="MAINTENANCE">Maintenance</option>
               </select>
 
               <button
@@ -693,7 +698,7 @@ export function InventoryPage() {
                 disabled={isUpdating}
                 onChange={(e) => setBulkLocation(e.target.value)}
                 placeholder="e.g. Rack A - Shelf 3"
-                className="bg-slate-955 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none w-44 font-semibold"
+                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none w-44 font-semibold"
               />
 
               <button

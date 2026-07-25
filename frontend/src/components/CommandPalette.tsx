@@ -67,7 +67,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Dashboard',
         subtitle: 'View general statistics, activity logs, and status circles',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-blue-400" />,
+        icon: <Compass className="h-4 w-4 text-blue-400" />,
         perform: () => { navigate('/'); onClose() }
       },
       {
@@ -75,7 +75,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Wire Drawing Calculator',
         subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-indigo-400" />,
+        icon: <Compass className="h-4 w-4 text-indigo-400" />,
         perform: () => { navigate('/wire-drawing-calculator'); onClose() }
       },
       {
@@ -83,7 +83,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Die Inventory',
         subtitle: 'Browse and filter all extrusion dies in the catalog',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-indigo-400" />,
+        icon: <Compass className="h-4 w-4 text-indigo-400" />,
         perform: () => { navigate('/inventory'); onClose() }
       },
       {
@@ -91,7 +91,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Machine Sets',
         subtitle: 'Configure categories, machines, and die sets mapping',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-violet-400" />,
+        icon: <Compass className="h-4 w-4 text-violet-400" />,
         perform: () => { navigate('/machines'); onClose() }
       }
     ]
@@ -102,7 +102,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Audit History',
         subtitle: 'View detailed system logs and operator audit trails',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-emerald-400" />,
+        icon: <Compass className="h-4 w-4 text-emerald-400" />,
         perform: () => { navigate('/history'); onClose() }
       })
       list.push({
@@ -110,7 +110,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Bulk Import',
         subtitle: 'Upload CSV/XLSX spreadsheets to create or update dies',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-amber-400" />,
+        icon: <Compass className="h-4 w-4 text-amber-400" />,
         perform: () => { navigate('/import'); onClose() }
       })
     }
@@ -121,7 +121,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: 'Go to Users & Backups',
         subtitle: 'Administer user accounts and manage database backups',
         category: 'Navigation',
-        icon: <Compass className="h-4.5 w-4.5 text-rose-400" />,
+        icon: <Compass className="h-4 w-4 text-rose-400" />,
         perform: () => { navigate('/users'); onClose() }
       })
     }
@@ -149,7 +149,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           title: `Set die ${targetDieId} to ${targetStatus}`,
           subtitle: `Execute status change operation immediately`,
           category: 'Status Updates',
-          icon: <Settings className="h-4.5 w-4.5 text-amber-400 animate-spin-slow" />,
+          icon: <Settings className="h-4 w-4 text-amber-400" />,
           perform: async () => {
             try {
               await request(`/api/dies/${targetDieId}/`, {
@@ -174,12 +174,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         title: `Go to Die: ${die.die_id}`,
         subtitle: `Type: ${die.die_type} | Casing: ${die.casing || 'N/A'} | Status: ${die.status}`,
         category: 'Search Results',
-        icon: <Search className="h-4.5 w-4.5 text-blue-400" />,
+        icon: <Search className="h-4 w-4 text-blue-400" />,
         perform: () => { navigate(`/dies/${die.die_id}`); onClose() }
       })
 
-      // If operator/admin, append status change suggestions for this die
-      if (canChangeStatus && qLower.includes(die.die_id.toLowerCase())) {
+      // Only show per-die status change suggestions when user types "status:" trigger
+      if (canChangeStatus && /status\s*:/i.test(query)) {
         validStatuses.forEach(st => {
           if (st !== die.status) {
             list.push({
@@ -187,7 +187,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               title: `Set ${die.die_id} to ${st}`,
               subtitle: `Change state from current status (${die.status})`,
               category: 'Status Updates',
-              icon: <Settings className="h-4.5 w-4.5 text-violet-400" />,
+              icon: <Settings className="h-4 w-4 text-violet-400" />,
               perform: async () => {
                 try {
                   await request(`/api/dies/${die.die_id}/`, {
@@ -226,6 +226,15 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     if (!isOpen) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.getAttribute('contenteditable') === 'true') {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          onClose()
+        }
+        return
+      }
+
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setActiveIndex(prev => (prev + 1) % Math.max(1, actions.length))
@@ -260,35 +269,48 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   if (!isOpen) return null
 
   // Group actions by category
-  const categories = ['Status Updates', 'Search Results', 'Navigation'] as const
+  const categories = ['Navigation', 'Search Results', 'Status Updates'] as const
   const groupedActions = categories.reduce((acc, cat) => {
     acc[cat] = actions.filter(a => a.category === cat)
     return acc
   }, {} as Record<string, PaletteAction[]>)
 
-  // Flat actions list reference indexes for grouping layout selection mapping
-  let flatIndexCounter = 0
+  // Compute stable per-category offset so each action gets a deterministic flat index
+  const categoryOffsets = useMemo(() => {
+    const offsets: Record<string, number> = {}
+    let counter = 0
+    for (const cat of categories) {
+      offsets[cat] = counter
+      counter += groupedActions[cat].length
+    }
+    return offsets
+  }, [groupedActions])
+
   const renderedCategories = categories.map(cat => {
     const catActions = groupedActions[cat]
     if (catActions.length === 0) return null
+    const catOffset = categoryOffsets[cat]
 
     return (
-      <div key={cat} className="space-y-1.5 pb-3">
+      <div key={cat} className="space-y-1.5 pb-3" role="group" aria-label={cat}>
         <h4 className="text-[10px] font-bold font-mono tracking-widest text-slate-500 uppercase px-4 pt-2">
           {cat}
         </h4>
         <div className="space-y-0.5">
-          {catActions.map(action => {
-            const currentFlatIndex = flatIndexCounter++
+          {catActions.map((action, localIdx) => {
+            const currentFlatIndex = catOffset + localIdx
             const isActive = currentFlatIndex === activeIndex
             return (
               <div
                 key={action.id}
+                role="option"
+                aria-selected={isActive}
+                id={`palette-option-${currentFlatIndex}`}
                 onClick={() => action.perform()}
                 className={`flex items-center justify-between px-4 py-2.5 mx-2 rounded-xl transition-all duration-200 cursor-pointer select-none group border-l-4 ${
                   isActive
                     ? 'bg-blue-600/15 border-blue-500 text-white shadow-lg shadow-blue-950/20'
-                    : 'border-transparent text-slate-350 hover:bg-slate-800/40 hover:text-slate-200'
+                    : 'border-transparent text-slate-300 hover:bg-slate-800/40 hover:text-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -323,7 +345,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   })
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/65 backdrop-blur-md pt-20 p-4">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/65 backdrop-blur-md pt-12 sm:pt-20 p-4" role="dialog" aria-modal="true" aria-label="Command palette">
       {/* Backdrop Dismiss Click Area */}
       <div className="absolute inset-0 cursor-default" onClick={onClose} />
       
@@ -334,31 +356,43 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 shadow-[0_1px_10px_rgba(59,130,246,0.5)]" />
         
         {/* Search Bar Input section */}
-        <div className="flex items-center border-b border-slate-800/80 px-4 py-4.5 gap-3.5 relative z-10">
+        <div className="flex items-center border-b border-slate-800/80 px-4 py-4 gap-3.5 relative z-10">
           <Search className="h-5 w-5 text-slate-400 shrink-0" />
           <input
             type="text"
             autoFocus
+            role="combobox"
+            aria-expanded={actions.length > 0}
+            aria-controls="palette-listbox"
+            aria-activedescendant={activeIndex >= 0 ? `palette-option-${activeIndex}` : undefined}
+            aria-label="Search commands and dies"
             placeholder="Type a command or die ID (e.g. R-101, 'Set die R-101 to RUNNING')..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none text-base font-medium tracking-wide"
           />
-          <button 
+          <button
+            type="button"
             onClick={onClose}
-            className="p-1 text-slate-500 hover:text-slate-350 rounded-lg hover:bg-slate-800/60 transition cursor-pointer"
+            aria-label="Close command palette"
+            className="p-1 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800/60 transition cursor-pointer"
           >
             <span className="text-xs font-mono font-bold border border-slate-800 px-1.5 py-0.5 rounded bg-slate-950/80">ESC</span>
           </button>
         </div>
 
+        {/* Status syntax hint */}
+        <div className="px-5 py-1.5 text-[10px] font-medium text-slate-500 border-b border-slate-800/50">
+          Type <span className="font-mono text-slate-400">status:name</span> to change status (e.g. <span className="font-mono text-slate-400">status:RUNNING</span>)
+        </div>
+
         {/* Content Action Items List */}
-        <div className="flex-1 overflow-y-auto py-2 divide-y divide-slate-800/30" ref={listRef}>
+        <div id="palette-listbox" role="listbox" className="flex-1 overflow-y-auto py-2 divide-y divide-slate-800/30" ref={listRef}>
           {actions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <HelpCircle className="h-10 w-10 text-slate-500 animate-pulse mb-3" />
+              <HelpCircle className="h-10 w-10 text-slate-500 mb-3" />
               <p className="text-sm font-bold text-slate-300">No matching commands or dies found</p>
-              <p className="text-xs text-slate-450 mt-1 max-w-xs leading-normal">
+              <p className="text-xs text-slate-400 mt-1 max-w-xs leading-normal">
                 Try searching for existing die IDs, common navigation keywords, or use the status syntax: 'Set die ID to STATUS'.
               </p>
             </div>
@@ -368,7 +402,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </div>
 
         {/* Footer shortcuts helper panel */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 text-[11px] font-medium font-sans text-slate-450 tracking-wide select-none">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 text-[11px] font-medium font-sans text-slate-400 tracking-wide select-none">
           <div className="flex items-center gap-4.5">
             <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">↑↓</span> Move</span>
             <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">Enter</span> Select</span>

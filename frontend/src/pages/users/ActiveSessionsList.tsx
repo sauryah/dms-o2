@@ -138,7 +138,7 @@ export function ActiveSessionsList() {
         <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 shadow-lg max-w-xl mx-auto">
           <ShieldAlert className="h-10 w-10 text-rose-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-          <p className="text-rose-450 font-mono text-sm">{(error as any).message}</p>
+          <p className="text-rose-400 font-mono text-sm">{(error as any).message}</p>
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 shadow-xl max-w-lg mx-auto select-none">
@@ -151,7 +151,7 @@ export function ActiveSessionsList() {
           {/* Action Header */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 px-6 py-4 bg-slate-950/40 border-b border-slate-800/80">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-350 font-mono">
+              <span className="text-sm font-semibold text-slate-300 font-mono">
                 {sessions.length} Client Session{sessions.length !== 1 ? 's' : ''}
               </span>
               {selected.size > 0 && (
@@ -179,7 +179,7 @@ export function ActiveSessionsList() {
               <button
                 onClick={handleClearAll}
                 disabled={clearAllMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-450 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-semibold transition cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
                 <Zap className="h-3.5 w-3.5" />
                 <span>Force Logout All</span>
@@ -191,7 +191,7 @@ export function ActiveSessionsList() {
           <div className="overflow-x-auto max-h-[500px]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-450 text-xs font-bold uppercase tracking-wider select-none">
+                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
                   <th className="py-4 px-6 w-12">
                     <input
                       type="checkbox"
@@ -241,9 +241,9 @@ export function ActiveSessionsList() {
                       <td className="py-4 px-6 text-slate-300 text-xs font-mono">
                         {new Date(sess.created_at).toLocaleString()}
                       </td>
-                      <td className="py-4 px-6 text-slate-350 text-xs font-mono">
+                      <td className="py-4 px-6 text-slate-300 text-xs font-mono">
                         <div className="flex items-center space-x-1.5">
-                          <Clock className="h-3.5 w-3.5 text-blue-450" />
+                          <Clock className="h-3.5 w-3.5 text-blue-400" />
                           <span>{new Date(sess.last_seen).toLocaleString()}</span>
                         </div>
                       </td>
@@ -264,7 +264,7 @@ export function ActiveSessionsList() {
                         <button
                           onClick={() => handleRevoke(sess.id, sess.username)}
                           disabled={revokeMutation.isPending}
-                          className="p-2 bg-slate-950/20 group-hover:bg-rose-500/10 text-slate-500 group-hover:text-rose-450 border border-slate-800/80 group-hover:border-rose-500/20 rounded-xl transition-all duration-200 disabled:opacity-40 cursor-pointer"
+                          className="p-2 bg-slate-950/20 group-hover:bg-rose-500/10 text-slate-500 group-hover:text-rose-400 border border-slate-800/80 group-hover:border-rose-500/20 rounded-xl transition-all duration-200 disabled:opacity-40 cursor-pointer"
                           title="Force log out device"
                         >
                           <Trash2 className="h-4 w-4" />

@@ -193,7 +193,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
             {/* Close button for mobile */}
             <button 
               onClick={() => setIsSidebarOpen(false)}
-              className="md:hidden p-1.5 bg-slate-955 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+              className="md:hidden p-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -213,7 +213,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
 
           {/* Toggle to show/hide empty nodes */}
           <div 
-            className="flex items-center justify-between px-1 mt-1 text-slate-455 hover:text-slate-200 transition-colors select-none cursor-pointer" 
+            className="flex items-center justify-between px-1 mt-1 text-slate-400 hover:text-slate-200 transition-colors select-none cursor-pointer" 
             onClick={() => setShowEmptyNodes(!showEmptyNodes)}
           >
             <span className="text-[10px] font-medium tracking-wider uppercase text-slate-400">Show empty machines & sets</span>
@@ -237,9 +237,9 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                   }`}
                 >
-                  <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-505'}`} />
+                  <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
                   <span className="text-xs font-bold truncate flex-1">Search Results</span>
-                  <span className="bg-slate-955 text-blue-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                  <span className="bg-slate-950 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
                     {dies?.length || 0}
                   </span>
                 </div>
@@ -253,7 +253,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
             
             <div className="space-y-1 mt-2">
               {filteredMachines.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-slate-505 italic">No matches found</div>
+                <div className="px-3 py-2 text-xs text-slate-500 italic">No matches found</div>
               ) : (
                 filteredMachines.map((machine: any) => {
                   const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
@@ -291,9 +291,9 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                             <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                           )}
                         </button>
-                        <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-505'}`} />
+                        <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-500'}`} />
                         <span className="text-xs font-semibold truncate flex-1">{machine.name}</span>
-                        <span className="bg-slate-950 text-slate-500 text-xxs px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
+                        <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
                           {machine.totalDies}
                         </span>
                       </div>
@@ -338,9 +338,9 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                                         : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                                   }`}
                                 >
-                                  <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-505'}`} />
+                                  <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
                                   <span className="text-xs font-medium truncate flex-1">{set.name}</span>
-                                  <span className="flex items-center gap-1.5 text-indigo-400 text-xxs font-bold px-1.5 py-0.5 rounded-full bg-slate-955 border border-slate-800 shrink-0">
+                                  <span className="flex items-center gap-1.5 text-indigo-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
                                     {set.die_count > 0 && (
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
                                     )}
@@ -378,9 +378,9 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                             : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
                       }`}
                     >
-                      <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-505'}`} />
+                      <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
                       <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
-                      <span className="bg-slate-950 text-amber-400 text-xxs font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                      <span className="bg-slate-950 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
                         {unassignedCount}
                       </span>
                     </div>

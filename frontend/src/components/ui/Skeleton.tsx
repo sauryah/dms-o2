@@ -13,6 +13,7 @@ export function Skeleton({
 }: SkeletonProps) {
   return (
     <div 
+      aria-hidden="true"
       className={`bg-slate-800/45 animate-pulse shrink-0 ${width} ${height} ${
         rounded ? 'rounded-xl' : 'rounded-none'
       }`}

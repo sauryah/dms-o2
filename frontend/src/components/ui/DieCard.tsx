@@ -18,10 +18,20 @@ export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
     ? `${die.rack_name} - S${die.shelf}`
     : die.location || 'Unassigned'
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick?.()
+    }
+  }
+
   if (viewMode === 'list') {
     return (
-      <div 
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
         className={`w-full bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors duration-150 cursor-pointer focus-ring select-none border-l-4 ${
           isRound ? 'border-l-blue-500' : 'border-l-purple-500'
         }`}
@@ -72,8 +82,11 @@ export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
 
   // Default Grid Layout
   return (
-    <div 
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className={`bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-2xl p-5 flex flex-col justify-between h-48 transition-colors duration-150 cursor-pointer focus-ring select-none border-l-4 ${
         isRound ? 'border-l-blue-500' : 'border-l-purple-500'
       }`}
@@ -85,7 +98,7 @@ export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
         </div>
 
         {/* Secondary Info Line */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xxs text-[var(--color-muted)] font-bold tracking-wide uppercase">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[var(--color-muted)] font-bold tracking-wide uppercase">
           <span className="flex items-center font-mono">
             <Hash className="h-3 w-3 mr-0.5 shrink-0" />
             {die.die_id}
@@ -98,13 +111,13 @@ export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
           <span>·</span>
           <span className="flex items-center">
             <MapPin className="h-3 w-3 mr-0.5 shrink-0" />
-            <span className="truncate max-w-[100px]">{locationText}</span>
+            <span className="truncate max-w-[120px]" title={locationText}>{locationText}</span>
           </span>
         </div>
       </div>
 
       {/* Footer Row */}
-      <div className="border-t border-[var(--color-border)]/65 pt-3.5 flex items-center justify-between gap-2 mt-auto">
+      <div className="border-t border-[var(--color-border)] pt-3.5 flex items-center justify-between gap-2 mt-auto">
         <div className="flex flex-col text-[10px] text-[var(--color-muted)] font-bold uppercase tracking-wider min-w-0">
           <span className="truncate flex items-center">
             <Database className="h-3 w-3 mr-1 text-slate-500 shrink-0" />

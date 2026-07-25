@@ -19,7 +19,7 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function CardSkeleton() {
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-xl space-y-4 h-full">
+    <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-6 rounded-xl space-y-4 h-full">
       <div className="flex justify-between items-start">
         <div className="space-y-2 flex-1">
           <Skeleton className="h-3 w-16" />

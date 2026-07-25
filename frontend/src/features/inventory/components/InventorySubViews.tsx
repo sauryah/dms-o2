@@ -70,12 +70,12 @@ const getInventoryColumns = (navigate: any): Column[] => [
   {
     key: 'set_name',
     label: 'Set',
-    render: (row: any) => <span className="text-slate-350">{row.set_name || '—'}</span>
+    render: (row: any) => <span className="text-slate-300">{row.set_name || '—'}</span>
   },
   {
     key: 'machine_name',
     label: 'Machine',
-    render: (row: any) => <span className="text-slate-350">{row.machine_name || '—'}</span>
+    render: (row: any) => <span className="text-slate-300">{row.machine_name || '—'}</span>
   },
   {
     key: 'status',
@@ -92,7 +92,7 @@ const getInventoryColumns = (navigate: any): Column[] => [
           e.stopPropagation()
           navigate(`/dies/${row.die_id}`)
         }}
-        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-350 hover:text-white px-3 py-1 rounded-xl text-[11px] font-bold transition focus-ring cursor-pointer"
+        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1 rounded-xl text-[11px] font-bold transition focus-ring cursor-pointer"
       >
         Details
       </button>
@@ -244,7 +244,7 @@ export function SearchView({
                       )
                     }
                     if (pageNum === 2 || pageNum === Math.ceil(totalCount / pageSize) - 1) {
-                      return <span key={pageNum} className="text-slate-650 text-xs px-1 select-none">...</span>
+                      return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
                     }
                     return null
                   })}
@@ -392,7 +392,7 @@ export function MachineView({
             <h2 className="text-2xl md:text-3xl font-black text-white">{rawMachine?.name || 'Machine'}</h2>
           </div>
           <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-            <Cpu className="h-12 w-12 text-slate-650 mb-4 animate-pulse" />
+            <Cpu className="h-12 w-12 text-slate-600 mb-4 animate-pulse" />
             <p className="text-slate-400 font-medium">No dies assigned to this machine match the filters.</p>
           </div>
         </div>
@@ -492,7 +492,7 @@ export function SetView({
                   <span className="text-emerald-400">Active: {active} ({activePct}%)</span>
                   <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
                 </div>
-                <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-855 p-0.5">
+                <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-800 p-0.5">
                   <div className="bg-gradient-to-r from-emerald-600 to-emerald-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
                   <div className="bg-gradient-to-r from-rose-600 to-rose-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
                 </div>
@@ -570,7 +570,7 @@ export function SetView({
             <h2 className="text-2xl md:text-3xl font-black text-white">{rawSetData?.set?.name || 'Set'}</h2>
           </div>
           <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-            <Layers className="h-12 w-12 text-slate-650 mb-4 animate-pulse" />
+            <Layers className="h-12 w-12 text-slate-600 mb-4 animate-pulse" />
             <p className="text-slate-400 font-medium">No dies assigned to this set match the filters.</p>
           </div>
         </div>
@@ -714,7 +714,7 @@ export function UnassignedView({
                       )
                     }
                     if (pageNum === 2 || pageNum === Math.ceil(totalCount / pageSize) - 1) {
-                      return <span key={pageNum} className="text-slate-650 text-xs px-1 select-none">...</span>
+                      return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
                     }
                     return null
                   })}

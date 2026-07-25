@@ -26,7 +26,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-900/60">
         <div>
           <h3 className="text-sm font-semibold text-[#F8FAFC] tracking-tight block">Schematic Drafting Pipeline</h3>
-          <span className="text-slate-450 text-xs block mt-1 font-mono">
+          <span className="text-slate-400 text-xs block mt-1 font-mono">
             Drag to sequence passes • Hover node to delete • Hover taper connector to insert inline die
           </span>
         </div>

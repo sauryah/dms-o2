@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { X, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
 
 export interface ToastProps {
@@ -8,16 +8,18 @@ export interface ToastProps {
 }
 
 export function Toast({ message, variant = 'info', onDismiss }: ToastProps) {
-  // Auto-dismiss logic
+  const onDismissRef = useRef(onDismiss)
+  onDismissRef.current = onDismiss
+
   useEffect(() => {
     if (variant === 'error') return
 
     const timer = setTimeout(() => {
-      onDismiss()
+      onDismissRef.current()
     }, 4000)
 
     return () => clearTimeout(timer)
-  }, [variant, onDismiss])
+  }, [variant])
 
   const iconMap = {
     success: <CheckCircle2 className="h-5 w-5 text-emerald-450 shrink-0" />,
@@ -33,7 +35,7 @@ export function Toast({ message, variant = 'info', onDismiss }: ToastProps) {
 
   return (
     <div 
-      className={`max-w-sm w-full border rounded-2xl p-4 flex items-start gap-3 shadow-xl transition-all duration-300 transform translate-x-0 slide-in-from-right select-none ${
+      className={`max-w-sm w-full border rounded-2xl p-4 flex items-start gap-3 shadow-xl animate-slideInFromRight select-none ${
         borderBgColor[variant]
       }`}
       role="status"
@@ -50,7 +52,7 @@ export function Toast({ message, variant = 'info', onDismiss }: ToastProps) {
       <button
         type="button"
         onClick={onDismiss}
-        className="text-[var(--color-muted)] hover:text-white p-1 hover:bg-slate-900 rounded-lg transition shrink-0"
+        className="text-[var(--color-muted)] hover:text-white p-1 hover:bg-slate-800 rounded-lg transition shrink-0"
         aria-label="Dismiss notification"
       >
         <X className="h-3.5 w-3.5" />

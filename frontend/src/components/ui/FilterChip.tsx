@@ -8,7 +8,7 @@ export interface FilterChipProps {
 
 export function FilterChip({ label, onRemove }: FilterChipProps) {
   return (
-    <span className="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-800/80 text-xs text-[var(--color-text)] font-semibold px-2.5 py-1 rounded-xl transition duration-150 select-none">
+    <span className="inline-flex items-center gap-1.5 bg-slate-900/60 border border-slate-800/80 text-xs text-[var(--color-text)] font-semibold px-2.5 py-1 rounded-xl transition duration-150 select-none">
       <span>{label}</span>
       <button
         type="button"

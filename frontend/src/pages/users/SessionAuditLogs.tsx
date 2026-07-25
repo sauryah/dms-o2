@@ -134,7 +134,7 @@ export function SessionAuditLogs() {
       case 'LOGGED_OUT':
         return (
           <span className="flex items-center space-x-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-slate-800 text-slate-400 border border-slate-700/80 w-fit">
-            <LogOut className="h-3 w-3 text-slate-450" />
+            <LogOut className="h-3 w-3 text-slate-400" />
             <span>Logged Out</span>
           </span>
         )
@@ -225,7 +225,7 @@ export function SessionAuditLogs() {
           <select
             value={actionFilter}
             onChange={handleActionChange}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-350 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all cursor-pointer font-mono"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all cursor-pointer font-mono"
           >
             <option value="" className="bg-slate-950">All Actions Filter</option>
             <option value="LOGIN" className="bg-slate-950">Login Sessions Only</option>
@@ -263,11 +263,11 @@ export function SessionAuditLogs() {
         <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto">
           <ShieldAlert className="h-10 w-10 text-rose-550 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-          <p className="text-rose-450 font-mono text-sm">{(error as any).message}</p>
+          <p className="text-rose-400 font-mono text-sm">{(error as any).message}</p>
         </div>
       ) : groupedSessions.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto select-none">
-          <Info className="h-10 w-10 text-slate-655 mx-auto mb-4" />
+          <Info className="h-10 w-10 text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-white mb-1 font-mono">No Audit Logs</h3>
           <p className="text-slate-400 text-sm">No user session activities match the query filter criteria.</p>
         </div>
@@ -276,7 +276,7 @@ export function SessionAuditLogs() {
           <div className="overflow-x-auto max-h-[500px]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-450 text-xs font-bold uppercase tracking-wider select-none">
+                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
                   <th className="py-4 px-6 font-mono">User Identity</th>
                   <th className="py-4 px-6 font-mono">Session State</th>
                   <th className="py-4 px-6 font-mono">Session Start</th>
@@ -285,7 +285,7 @@ export function SessionAuditLogs() {
                   <th className="py-4 px-6 font-mono">Client Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-850/60 font-mono text-xs text-slate-350 select-none">
+              <tbody className="divide-y divide-slate-850/60 font-mono text-xs text-slate-300 select-none">
                 {groupedSessions.map((session: any) => {
                   const loginStr = session.login_time ? new Date(session.login_time).toLocaleString() : '—'
                   const logoutStr = session.status === 'ACTIVE' 
@@ -334,21 +334,21 @@ export function SessionAuditLogs() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/60 text-xs select-none">
-              <div className="text-slate-450 font-mono">
+              <div className="text-slate-400 font-mono">
                 Showing page <span className="font-semibold text-white">{page}</span> of <span className="font-semibold text-white">{totalPages}</span> (<span className="text-slate-300">{count}</span> entries)
               </div>
               <div className="flex space-x-2 font-mono">
                 <button
                   onClick={() => setPage(p => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className="px-3.5 py-2 bg-slate-950 text-slate-350 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setPage(p => Math.min(p + 1, totalPages))}
                   disabled={page === totalPages}
-                  className="px-3.5 py-2 bg-slate-950 text-slate-350 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
                 >
                   Next
                 </button>

@@ -47,6 +47,16 @@ export function SettingsPage() {
     }
   }, [role])
 
+  // Auto-dismiss tolerance messages after 5 seconds
+  useEffect(() => {
+    if (!tolSuccess && !tolError) return
+    const timer = setTimeout(() => {
+      setTolSuccess('')
+      setTolError('')
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [tolSuccess, tolError])
+
   const getToleranceField = (type: 'ROUND' | 'FLAT', field: 'max_wear_mm' | 'warning_percentage' | 'critical_percentage') => {
     const existing = tolerances.find(t => t.die_type === type)
     if (existing) {
@@ -159,7 +169,9 @@ export function SettingsPage() {
           new_password: newPassword,
         }),
       })
-      login(data.token, data.refresh || '', role || '', username || '', undefined, isAuthorizedForTools)
+      if (data.token) {
+        login(data.token, data.refresh || '', role || '', username || '', undefined, isAuthorizedForTools)
+      }
       setSuccess('Password changed successfully.')
       setCurrentPassword('')
       setNewPassword('')
@@ -193,6 +205,9 @@ export function SettingsPage() {
         <div className="lg:col-span-3 space-y-2 select-none">
           <button
             onClick={() => setActiveTab('account')}
+            role="tab"
+            aria-selected={activeTab === 'account'}
+            aria-controls="panel-account"
             className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
               activeTab === 'account'
                 ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
@@ -209,6 +224,9 @@ export function SettingsPage() {
           {(role === 'ADMIN' || role === 'ROOT') && (
             <button
               onClick={() => setActiveTab('tolerances')}
+              role="tab"
+              aria-selected={activeTab === 'tolerances'}
+              aria-controls="panel-tolerances"
               className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
                 activeTab === 'tolerances'
                   ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
@@ -226,6 +244,9 @@ export function SettingsPage() {
           {role === 'ROOT' && (
             <button
               onClick={() => setActiveTab('backups')}
+              role="tab"
+              aria-selected={activeTab === 'backups'}
+              aria-controls="panel-backups"
               className={`w-full text-left p-3.5 rounded-xl border flex items-center gap-3.5 transition cursor-pointer ${
                 activeTab === 'backups'
                   ? 'bg-blue-600/10 border-blue-900/30 text-blue-400 font-semibold shadow-[0_0_12px_rgba(59,130,246,0.1)]'
@@ -245,7 +266,7 @@ export function SettingsPage() {
         <div className="lg:col-span-9 bg-[#060a13]/85 backdrop-blur-md border border-slate-900 rounded-xl p-6 sm:p-8 shadow-2xl relative min-h-[420px]">
           
           {activeTab === 'account' && (
-            <div className="space-y-6 animate-fadeIn">
+            <div id="panel-account" role="tabpanel" className="space-y-6 animate-fadeIn">
               <div className="pb-4 border-b border-slate-900/60">
                 <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Update Password</h2>
                 <span className="text-slate-500 text-xs block mt-1 font-mono">Ensure a strong authentication secret to protect your account session</span>
@@ -254,11 +275,11 @@ export function SettingsPage() {
               {/* Profile metadata panel */}
               <div className="bg-slate-950/50 border border-slate-900/80 rounded-xl p-4 grid grid-cols-2 gap-4 text-xs font-mono select-none">
                 <div>
-                  <span className="text-slate-550 block uppercase font-bold text-[10px] tracking-wider">Active Operator</span>
+                  <span className="text-slate-500 block uppercase font-bold text-[10px] tracking-wider">Active Operator</span>
                   <span className="text-[#F8FAFC] font-bold mt-1 block">{username}</span>
                 </div>
                 <div>
-                  <span className="text-slate-550 block uppercase font-bold text-[10px] tracking-wider">Access Authorization</span>
+                  <span className="text-slate-500 block uppercase font-bold text-[10px] tracking-wider">Access Authorization</span>
                   <span className="text-blue-400 font-bold mt-1 block">{role}</span>
                 </div>
               </div>
@@ -279,6 +300,7 @@ export function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowCurrent(!showCurrent)}
+                      aria-label={showCurrent ? 'Hide password' : 'Show password'}
                       className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
                     >
                       {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -301,11 +323,31 @@ export function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowNew(!showNew)}
+                      aria-label={showNew ? 'Hide password' : 'Show password'}
                       className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
                     >
                       {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {newPassword.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Password requirements</p>
+                      <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                        <span className={`flex items-center gap-1 ${newPassword.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          <Check className={`h-3 w-3 ${newPassword.length >= 8 ? 'opacity-100' : 'opacity-30'}`} />
+                          Min 8 characters
+                        </span>
+                        <span className={`flex items-center gap-1 ${/\d/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          <Check className={`h-3 w-3 ${/\d/.test(newPassword) ? 'opacity-100' : 'opacity-30'}`} />
+                          At least 1 number
+                        </span>
+                        <span className={`flex items-center gap-1 ${/[a-zA-Z]/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          <Check className={`h-3 w-3 ${/[a-zA-Z]/.test(newPassword) ? 'opacity-100' : 'opacity-30'}`} />
+                          At least 1 letter
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -346,7 +388,7 @@ export function SettingsPage() {
           )}
 
           {activeTab === 'tolerances' && (role === 'ADMIN' || role === 'ROOT') && (
-            <div className="space-y-6 animate-fadeIn">
+            <div id="panel-tolerances" role="tabpanel" className="space-y-6 animate-fadeIn">
               <div className="pb-4 border-b border-slate-900/60">
                 <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Die Tolerance Configurations</h2>
                 <span className="text-slate-500 text-xs block mt-1 font-mono">Configure maximum wear thresholds and warning limits per die profile type</span>
@@ -467,7 +509,7 @@ export function SettingsPage() {
           )}
 
           {activeTab === 'backups' && role === 'ROOT' && (
-            <div className="space-y-6 animate-fadeIn">
+            <div id="panel-backups" role="tabpanel" className="space-y-6 animate-fadeIn">
               <div className="pb-4 border-b border-slate-900/60">
                 <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight uppercase">Database Backup & Recovery</h2>
                 <span className="text-slate-500 text-xs block mt-1 font-mono">Generate PostgreSQL backup archives, upload dumps, or restore physical states</span>

@@ -67,7 +67,7 @@ export function FilterPanel({
     { value: 'DAMAGED', label: 'Damaged', color: 'var(--color-damaged)' },
     { value: 'SCRAPPED', label: 'Scrapped', color: 'var(--color-scrapped)' },
     { value: 'MISSING', label: 'Missing', color: 'var(--color-missing)' },
-    { value: 'MAINTENANCE', label: 'Maintenance', color: 'var(--color-cleaning)' }
+    { value: 'MAINTENANCE', label: 'Maintenance', color: 'var(--color-maintenance)' }
   ]
 
   const handleStatusToggle = (status: string) => {
@@ -79,7 +79,7 @@ export function FilterPanel({
   }
 
   return (
-    <div className="flex flex-col space-y-6 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-5 select-none shrink-0 font-sans">
+    <div className="flex flex-col space-y-6 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-5 shrink-0 font-sans">
       
       {/* 1. Die Type Toggles */}
       <div className="space-y-2.5">
@@ -91,7 +91,7 @@ export function FilterPanel({
           <button
             type="button"
             onClick={() => handleDieTypeChange('')}
-            className={`flex-1 py-1.5 rounded-lg text-xxs font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
               dieType === ''
                 ? 'bg-slate-800 text-white shadow'
                 : 'text-[var(--color-muted)] hover:text-white'
@@ -102,7 +102,7 @@ export function FilterPanel({
           <button
             type="button"
             onClick={() => handleDieTypeChange('ROUND')}
-            className={`flex-1 py-1.5 rounded-lg text-xxs font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
               dieType === 'ROUND'
                 ? 'bg-blue-600 text-white shadow'
                 : 'text-[var(--color-muted)] hover:text-white'
@@ -113,7 +113,7 @@ export function FilterPanel({
           <button
             type="button"
             onClick={() => handleDieTypeChange('FLAT')}
-            className={`flex-1 py-1.5 rounded-lg text-xxs font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
               dieType === 'FLAT'
                 ? 'bg-purple-600 text-white shadow'
                 : 'text-[var(--color-muted)] hover:text-white'

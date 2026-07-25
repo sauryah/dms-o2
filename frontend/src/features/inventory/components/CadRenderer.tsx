@@ -121,7 +121,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                 className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   viewMode === 'extrusion'
                     ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                    : 'text-slate-500 hover:text-slate-350'
+                    : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 Extrusion 2D
@@ -131,7 +131,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                 className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   viewMode === 'cross_section'
                     ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                    : 'text-slate-500 hover:text-slate-350'
+                    : 'text-slate-500 hover:text-slate-300'
               }`}
               >
                 Cross-Section
@@ -773,7 +773,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
               )}
               <button 
                 onClick={() => setActiveTooltip(null)} 
-                className="text-slate-450 hover:text-white transition-colors font-bold text-sm leading-none"
+                className="text-slate-400 hover:text-white transition-colors font-bold text-sm leading-none"
                 aria-label="Close tooltip"
               >
                 &times;

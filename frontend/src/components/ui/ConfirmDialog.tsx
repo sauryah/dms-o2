@@ -23,6 +23,7 @@ export function ConfirmDialog({
   danger = false
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const cancelBtnRef = useRef<HTMLButtonElement>(null)
   const confirmBtnRef = useRef<HTMLButtonElement>(null)
 
   // Escape key listener & Focus Trap
@@ -61,21 +62,25 @@ export function ConfirmDialog({
 
     window.addEventListener('keydown', handleKeyDown)
     
-    // Autofocus confirm button
+    // Autofocus: cancel button for danger dialogs, confirm for safe dialogs
     const focusTimer = setTimeout(() => {
-      confirmBtnRef.current?.focus()
+      if (danger) {
+        cancelBtnRef.current?.focus()
+      } else {
+        confirmBtnRef.current?.focus()
+      }
     }, 50)
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       clearTimeout(focusTimer)
     }
-  }, [open, onCancel])
+  }, [open, onCancel, danger])
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop overlay */}
       <div 
         onClick={onCancel}
@@ -112,9 +117,10 @@ export function ConfirmDialog({
         {/* Buttons footer */}
         <div className="mt-6 flex justify-end space-x-3">
           <button
+            ref={cancelBtnRef}
             type="button"
             onClick={onCancel}
-            className="bg-slate-950 hover:bg-slate-900 text-slate-350 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold transition focus-ring"
+            className="bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold transition focus-ring"
           >
             {cancelLabel}
           </button>
