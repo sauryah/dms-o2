@@ -52,6 +52,22 @@ export function ToolsPage() {
         'Live preview with stats',
         'Load results into calculator'
       ]
+    },
+    {
+      id: 'pass-optimizer',
+      title: 'Pass Assignment Optimizer',
+      description: 'Bridge physics engine with live inventory data. Auto-assign dies to each drawing pass with stress analysis, temperature estimation, and gap detection.',
+      icon: Zap,
+      color: 'from-emerald-600/20 to-teal-600/20 border-emerald-500/30 text-emerald-400 shadow-emerald-500/10',
+      active: true,
+      path: '/pass-optimizer',
+      ctaLabel: 'Optimize Passes',
+      features: [
+        'Auto-assign dies from inventory',
+        'Drawing stress & temperature analysis',
+        'Central burst risk detection',
+        'Export job sheet as CSV'
+      ]
     }
   ]
 
