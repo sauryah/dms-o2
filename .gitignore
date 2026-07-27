@@ -60,6 +60,8 @@ certs/*.cer
 certs/*.pfx
 certs/*.p12
 certs/*-INSTRUCTIONS.txt
+certs/*-install.bat
+certs/*-install.sh
 certs/cert_check.der
 certs/served_cert.der
 

@@ -50,24 +50,40 @@ if [ -n "$LAN_IP_CERT" ] && command -v mkcert &> /dev/null; then
     mkdir -p certs
     mkcert -install 2>/dev/null || true
     mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 "$LAN_IP_CERT" ::1
-    # Copy root CA for distribution
     CAROOT=$(mkcert -CAROOT 2>/dev/null || true)
     if [ -n "$CAROOT" ] && [ -f "$CAROOT/rootCA.pem" ]; then
         cp "$CAROOT/rootCA.pem" certs/rootCA.pem
         echo ">>> Root CA copied: certs/rootCA.pem"
+        if command -v openssl &> /dev/null; then
+            openssl x509 -outform der -in certs/rootCA.pem -out certs/rootCA.cer
+            echo ">>> Root CA exported in DER format: certs/rootCA.cer"
+        fi
     fi
     echo ">>> TLS certificates generated for $LAN_IP_CERT"
 
     # Automatically generate a client certificate if mTLS is enabled in dynamic.yml
     auto_client_cert_generated=false
     if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
-        echo ">>> mTLS is enabled. Auto-generating a client certificate for this device..."
-        CLIENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]')
+        echo ">>> mTLS is enabled. Auto-generating a universal client certificate..."
+        CLIENT_NAME="universal"
         mkcert -client -cert-file "certs/client-$CLIENT_NAME.pem" -key-file "certs/client-$CLIENT_NAME-key.pem" localhost 127.0.0.1 ::1
         
         if command -v openssl &> /dev/null; then
             openssl pkcs12 -export -out "certs/client-$CLIENT_NAME.p12" -inkey "certs/client-$CLIENT_NAME-key.pem" -in "certs/client-$CLIENT_NAME.pem" -certfile "certs/rootCA.pem" -passout pass:
-            echo ">>> Auto-generated client certificate: certs/client-$CLIENT_NAME.p12"
+            
+            # Generate companion instructions and installer scripts
+            if [ -f scripts/client-instructions-template.txt ]; then
+                sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" scripts/client-instructions-template.txt > "certs/client-$CLIENT_NAME-INSTRUCTIONS.txt"
+            fi
+            if [ -f scripts/client-install-template.bat ]; then
+                sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" scripts/client-install-template.bat > "certs/client-$CLIENT_NAME-install.bat"
+            fi
+            if [ -f scripts/client-install-template.sh ]; then
+                sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" scripts/client-install-template.sh > "certs/client-$CLIENT_NAME-install.sh"
+                chmod +x "certs/client-$CLIENT_NAME-install.sh"
+            fi
+            
+            echo ">>> Auto-generated universal client certificate: certs/client-$CLIENT_NAME.p12"
             auto_client_cert_generated=true
         else
             echo ">>> WARNING: openssl not found. Could not auto-generate .p12 client certificate bundle."
@@ -187,19 +203,20 @@ echo ""
 if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
     echo ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!"
     if [ "$auto_client_cert_generated" = true ]; then
-        CLIENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]')
-        echo "    We auto-generated a client certificate for this device:"
-        echo "      certs/client-$CLIENT_NAME.p12"
-        echo "    Please import this file into your browser to gain access."
+        echo "    We auto-generated a universal client certificate and installers for you:"
+        echo "      certs/client-universal.p12 (Universal certificate)"
+        echo "      certs/client-universal-install.bat (Windows installer)"
+        echo "      certs/client-universal-install.sh (macOS/Linux installer)"
+        echo "    Please run the installer script on your client device to gain access."
     else
-        echo "    To access the application, you must generate and install a client certificate."
-        echo "    Generate your client certificate by running:"
-        echo "      ./scripts/generate-client-cert.sh <your-device-name>"
-        echo "    Then import the generated .p12 certificate file into your browser."
+        echo "    To access the application, you must install a client certificate."
+        echo "    Refer to README.md for instructions on certificate setup."
     fi
     echo ""
 fi
-echo ">>> To access from another computer without warnings:"
-echo "    Copy certs/rootCA.pem to the other PC, convert to .cer and install as trusted root CA"
+echo ">>> To access from another computer:"
+echo "    Copy the client-universal files and rootCA.cer/rootCA.pem to the other PC."
+echo "    Run the installer script on the client machine to trust the CA and install the cert."
+echo "    See README.md for instructions"
 echo "======================================================"
 

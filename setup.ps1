@@ -86,9 +86,9 @@ if ($certsLanIp) {
     if (Test-Path "dynamic.yml") {
         $dynamicYml = Get-Content "dynamic.yml" -Raw
         if ($dynamicYml -match "clientAuth:") {
-            Write-Host ">>> mTLS is enabled. Auto-generating a client certificate for this device..." -ForegroundColor Cyan
-            $compName = $env:COMPUTERNAME.ToLower()
-            & mkcert -client -cert-file "certs\client-$compName.pem" -key-file "certs\client-$compName-key.pem" localhost 127.0.0.1 ::1
+            Write-Host ">>> mTLS is enabled. Auto-generating a universal client certificate..." -ForegroundColor Cyan
+            $clientName = "universal"
+            & mkcert -client -cert-file "certs\client-$clientName.pem" -key-file "certs\client-$clientName-key.pem" localhost 127.0.0.1 ::1
             
             $openssl = Get-Command openssl -ErrorAction SilentlyContinue
             if (-not $openssl) {
@@ -99,8 +99,23 @@ if ($certsLanIp) {
                 }
             }
             if ($openssl) {
-                & $openssl pkcs12 -export -out "certs\client-$compName.p12" -inkey "certs\client-$compName-key.pem" -in "certs\client-$compName.pem" -certfile "certs\rootCA.pem" -passout pass:
-                Write-Host ">>> Auto-generated client certificate: certs\client-$compName.p12" -ForegroundColor Green
+                & $openssl pkcs12 -export -out "certs\client-$clientName.p12" -inkey "certs\client-$clientName-key.pem" -in "certs\client-$clientName.pem" -certfile "certs\rootCA.pem" -passout pass:
+                
+                # Generate companion instructions and installer scripts
+                if (Test-Path "scripts\client-instructions-template.txt") {
+                    $inst = [System.IO.File]::ReadAllText("scripts\client-instructions-template.txt").Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText("certs\client-$clientName-INSTRUCTIONS.txt", $inst)
+                }
+                if (Test-Path "scripts\client-install-template.bat") {
+                    $bat = [System.IO.File]::ReadAllText("scripts\client-install-template.bat").Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText("certs\client-$clientName-install.bat", $bat)
+                }
+                if (Test-Path "scripts\client-install-template.sh") {
+                    $sh = [System.IO.File]::ReadAllText("scripts\client-install-template.sh").Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText("certs\client-$clientName-install.sh", $sh)
+                }
+                
+                Write-Host ">>> Auto-generated universal client certificate: certs\client-$clientName.p12" -ForegroundColor Green
                 $autoClientCertGenerated = $true
             } else {
                 Write-Host ">>> WARNING: openssl not found. Could not auto-generate .p12 client certificate bundle." -ForegroundColor Yellow
@@ -241,20 +256,20 @@ if (Test-Path "dynamic.yml") {
 if ($dynamicYml -match "clientAuth:") {
     Write-Host ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!" -ForegroundColor Yellow
     if ($autoClientCertGenerated) {
-        $compName = $env:COMPUTERNAME.ToLower()
-        Write-Host "    We auto-generated a client certificate for this device:" -ForegroundColor Green
-        Write-Host "      certs\client-$compName.p12" -ForegroundColor Green
-        Write-Host "    Please import this file into your browser to gain access."
+        Write-Host "    We auto-generated a universal client certificate and installers for you:" -ForegroundColor Green
+        Write-Host "      certs\client-universal.p12 (Universal certificate)" -ForegroundColor Green
+        Write-Host "      certs\client-universal-install.bat (Windows installer)" -ForegroundColor Green
+        Write-Host "      certs\client-universal-install.sh (macOS/Linux installer)" -ForegroundColor Green
+        Write-Host "    Please run the installer script on your client device to gain access."
     } else {
-        Write-Host "    To access the application, you must generate and install a client certificate."
-        Write-Host "    Generate your client certificate by running:"
-        Write-Host "      scripts\generate-client-cert.bat <your-device-name>"
-        Write-Host "    Then import the generated .p12 certificate file into your browser."
+        Write-Host "    To access the application, you must install a client certificate."
+        Write-Host "    Refer to README.md for instructions on certificate setup."
     }
     Write-Host ""
 }
 Write-Host ">>> To access from another computer:" -ForegroundColor Cyan
-Write-Host "    Copy certs\rootCA.pem to the other PC, convert and install as trusted root CA"
+Write-Host "    Copy the client-universal files and rootCA.cer/rootCA.pem to the other PC."
+Write-Host "    Run the installer script on the client machine to trust the CA and install the cert."
 Write-Host "    See README.md for instructions"
 Write-Host "======================================================" -ForegroundColor Green
 

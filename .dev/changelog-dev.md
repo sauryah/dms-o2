@@ -1,21 +1,23 @@
 # Engineering Implementation History (changelog-dev.md)
 
 ### 2026-07-27 · Implement Mutual TLS (mTLS) Client Certificate Authentication
-*   **Feature**: Configured Traefik gateway to require Mutual TLS (mTLS) client certificate authentication. Created cross-platform client certificate generation scripts that issue client certificates signed by the local root CA and export them to PKCS#12 (`.p12`) format for installation on authorized devices. Updated setup scripts to dynamically detect if mTLS is enabled, auto-generate a client certificate (`.p12` bundle) for the host machine, and make the Postgres database readiness check dynamic. Added certificate uninstallation and cleanup scripts for Unix and Windows systems.
+*   **Feature**: Configured Traefik gateway to require Mutual TLS (mTLS) client certificate authentication. Created cross-platform client certificate generation scripts that issue client certificates signed by the local root CA and export them to PKCS#12 (`.p12`) format for installation on authorized devices. Added Windows and macOS/Linux automated one-click installation helper scripts (`client-*-install.bat` and `client-*-install.sh`) to eliminate manual GUI certificate store selection. Updated setup scripts to dynamically detect if mTLS is enabled, auto-generate a client certificate (`.p12` bundle) for the host machine, and make the Postgres database readiness check dynamic. Added certificate uninstallation and cleanup scripts for Unix and Windows systems.
 *   **Affected Modules**: `gateway`, `scripts`, `makefile`
 *   **Files Modified/Created**:
-    *   [dynamic.yml](file:///D:/DMS/dms-o2/dynamic.yml) - Configured default TLS options to require client certificates and verify them against `/certs/rootCA.pem`.
-    *   [scripts/generate-client-cert.bat](file:///D:/DMS/dms-o2/scripts/generate-client-cert.bat) - Added Windows script to generate client certificates with server-side safety checks and companion user instruction file generation.
-    *   [scripts/generate-client-cert.sh](file:///D:/DMS/dms-o2/scripts/generate-client-cert.sh) - Added Linux/macOS script to generate client certificates with server-side safety checks and companion user instruction file generation.
-    *   [scripts/client-instructions-template.txt](file:///D:/DMS/dms-o2/scripts/client-instructions-template.txt) - Created standard client-side certificate installation template for distribution.
-    *   [scripts/uninstall-certs.bat](file:///D:/DMS/dms-o2/scripts/uninstall-certs.bat) - Added Windows script to completely uninstall root CA from system trust store and delete all local certificates.
-    *   [scripts/uninstall-certs.sh](file:///D:/DMS/dms-o2/scripts/uninstall-certs.sh) - Added Linux/macOS script to completely uninstall root CA from system trust store and delete all local certificates.
-    *   [setup.ps1](file:///D:/DMS/dms-o2/setup.ps1) - Configured automatic detection of mTLS configuration, auto-generation of client certificate bundle (`client-<hostname>.p12`), and dynamic db healthcheck.
-    *   [setup.sh](file:///D:/DMS/dms-o2/setup.sh) - Configured automatic detection of mTLS configuration, auto-generation of client certificate bundle (`client-<hostname>.p12`), and dynamic db healthcheck.
-    *   [Makefile](file:///D:/DMS/dms-o2/Makefile) - Added `uninstall-certs` target to automate certificate cleanup.
-    *   [.gitignore](file:///D:/DMS/dms-o2/.gitignore) - Configured Git to exclude local `.p12` certificates and generated client `-INSTRUCTIONS.txt` files.
-*   **Documentation Updated**: `.dev/changelog-dev.md`, [README.md](file:///D:/DMS/dms-o2/README.md)
-*   **Testing Performed**: Successfully executed `generate-client-cert.bat toolroom` which generated valid `.pem`, `-key.pem`, and `.p12` certificates and instructions inside the certs/ directory.
+    *   [dynamic.yml](file:///C:/Users/sahil/Desktop/Projects/dms-o2/dynamic.yml) - Configured default TLS options to require client certificates and verify them against `/certs/rootCA.pem`.
+    *   [scripts/generate-client-cert.bat](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/generate-client-cert.bat) - Added Windows script to generate client certificates and client-specific automated installers.
+    *   [scripts/generate-client-cert.sh](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/generate-client-cert.sh) - Added Linux/macOS script to generate client certificates and client-specific automated installers.
+    *   [scripts/client-install-template.bat](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/client-install-template.bat) - Created Windows auto-installer template (PowerShell import logic inside bat).
+    *   [scripts/client-install-template.sh](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/client-install-template.sh) - Created macOS/Linux keychain/trust-store installer shell script template.
+    *   [scripts/client-instructions-template.txt](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/client-instructions-template.txt) - Created standard client-side certificate installation template for distribution.
+    *   [scripts/uninstall-certs.bat](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/uninstall-certs.bat) - Added Windows script to completely uninstall root CA from system trust store and delete all local certificates.
+    *   [scripts/uninstall-certs.sh](file:///C:/Users/sahil/Desktop/Projects/dms-o2/scripts/uninstall-certs.sh) - Added Linux/macOS script to completely uninstall root CA from system trust store and delete all local certificates.
+    *   [setup.ps1](file:///C:/Users/sahil/Desktop/Projects/dms-o2/setup.ps1) - Configured automatic detection of mTLS configuration, auto-generation of the `universal` client certificate and its installer scripts, and dynamic db healthcheck.
+    *   [setup.sh](file:///C:/Users/sahil/Desktop/Projects/dms-o2/setup.sh) - Configured automatic detection of mTLS configuration, auto-generation of the `universal` client certificate and its installer scripts, and dynamic db healthcheck.
+    *   [Makefile](file:///C:/Users/sahil/Desktop/Projects/dms-o2/Makefile) - Added `uninstall-certs` target to automate certificate cleanup.
+    *   [.gitignore](file:///C:/Users/sahil/Desktop/Projects/dms-o2/.gitignore) - Configured Git to exclude local `.p12` certificates and generated client `-INSTRUCTIONS.txt` and installer scripts.
+*   **Documentation Updated**: `.dev/changelog-dev.md`, [README.md](file:///C:/Users/sahil/Desktop/Projects/dms-o2/README.md)
+*   **Testing Performed**: Successfully executed `generate-client-cert.bat toolroom` which generated valid `.pem`, `-key.pem`, and `.p12` certificates, automated installers, and instructions inside the certs/ directory.
 
 ### 2026-07-24 · Resolve Multi-Select Session Expiration & Implement Die Size-Sorting inside Toolsets
 *   **Feature**: Resolved issue where multi-select / bulk active sessions revoking did not evict tokens from Redis cache (resulting in revoked sessions remaining active in Redis), stringified payload body in bulk delete frontend requests to prevent JSON parser failures, and implemented interactive die size sorting (largest to smallest, smallest to largest, or default) for dies listed inside set detail views.

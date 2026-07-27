@@ -301,10 +301,10 @@ dms-o2/
 ├── scripts/                   # Utility scripts
 │   ├── generate-certs.sh      # Auto-generate TLS certs (Linux/macOS)
 │   ├── generate-certs.bat     # Auto-generate TLS certs (Windows)
-│   ├── generate-client-cert.sh # Generate client mTLS cert (Linux/macOS)
-│   ├── generate-client-cert.bat # Generate client mTLS cert (Windows)
 │   ├── uninstall-certs.sh     # Uninstall Root CA and delete certs (Linux/macOS)
 │   ├── uninstall-certs.bat    # Uninstall Root CA and delete certs (Windows)
+│   ├── client-install-template.bat # Windows installer script template
+│   ├── client-install-template.sh # macOS/Linux installer script template
 │   ├── client-instructions-template.txt # Client cert installation instructions template
 │   ├── install-cert.bat       # Install rootCA on Windows clients
 │   ├── backup_db.sh           # Database backup script
@@ -452,7 +452,7 @@ DMS-O2 is built with security-first practices to protect industrial assets and m
 DMS enforces **Mutual TLS (mTLS)** for all network connections. In addition to the server proving its identity, each client device must present a valid client certificate to access the application.
 
 *   **Server Certificates**: Auto-generated for your machine's LAN IP address during `setup.sh` / `setup.ps1` using [mkcert](https://github.com/FiloSottile/mkcert), stored locally in `certs/` (excluded from git), and valid for 2 years. Regenerable using `scripts/generate-certs.sh` or `scripts/generate-certs.bat`.
-*   **Client Certificates**: Required for each browser/client device. The setup scripts automatically generate a client certificate bundle (`client-<hostname>.p12`) for the host machine. Additional certificates can be issued using the client generation scripts.
+*   **Client Certificates**: Required for each browser/client device. The setup scripts automatically generate a universal client certificate bundle (`client-universal.p12`) and its installer scripts. Additional certificates can be issued using the client generation scripts.
 
 *If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting.*
 
@@ -467,15 +467,22 @@ To grant a device access, run the generator script on the **server** machine, sp
 *   **Windows**: `scripts\generate-client-cert.bat toolroom`
 *   **Linux/macOS**: `./scripts/generate-client-cert.sh toolroom`
 
-This generates two files in your `certs/` directory:
+This generates four files in your `certs/` directory:
 1.  `client-toolroom.p12`: The client certificate bundle (contains private key and certificate).
-2.  `client-toolroom-INSTRUCTIONS.txt`: A custom step-by-step installation sheet for the end user.
+2.  `client-toolroom-install.bat`: One-click automated installer for Windows devices.
+3.  `client-toolroom-install.sh`: Automated installer script for macOS/Linux devices.
+4.  `client-toolroom-INSTRUCTIONS.txt`: A custom step-by-step manual installation sheet.
 
 ### 2. Install the Certificate on the Client Device
-Copy the `.p12` file and the companion `-INSTRUCTIONS.txt` file securely to the client device. Follow these brief instructions:
-*   **Windows (Chrome/Edge)**: Double-click the `.p12` file -> select **Current User** -> click Next -> leave the password **blank** -> choose **Place all certificates in the following store** -> click Browse -> select **Personal** (CRITICAL: Do not use Automatic) -> click OK -> Finish.
-*   **Firefox (All Platforms)**: Go to Settings -> Privacy & Security -> View Certificates -> **Your Certificates** tab -> click Import -> select the `.p12` file (leave the password blank).
-*   **macOS (Safari/Chrome)**: Double-click the `.p12` file -> import into the **login** keychain (leave the password blank).
+Copy the `.p12` certificate file, the appropriate installer script (`-install.bat` or `-install.sh`), and the server's root CA certificate (`rootCA.cer` or `rootCA.pem` from the `certs/` directory) to the client device.
+
+*   **Automated Installation (Recommended):**
+    *   **Windows**: Double-click `client-toolroom-install.bat`. It will request administrator privileges to automatically register the Root CA and install the client certificate.
+    *   **macOS/Linux**: Open terminal in the directory and run `./client-toolroom-install.sh` (which requests sudo privileges to register the Root CA).
+*   **Manual Installation (Fallback):**
+    *   **Windows (Chrome/Edge)**: Double-click the `.p12` file -> select **Current User** -> click Next -> leave the password **blank** -> choose **Place all certificates in the following store** -> click Browse -> select **Personal** (CRITICAL: Do not use Automatic) -> click OK -> Finish.
+    *   **Firefox (All Platforms)**: Go to Settings -> Privacy & Security -> View Certificates -> **Your Certificates** tab -> click Import -> select the `.p12` file (leave the password blank).
+    *   **macOS (Safari/Chrome)**: Double-click the `.p12` file -> import into the **login** keychain (leave the password blank).
 
 *Note: Restart your browser completely after installation. You will be prompted to select the client certificate when visiting the app.*
 
