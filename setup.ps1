@@ -283,9 +283,9 @@ if ($dynamicYml -match "clientAuth:") {
     Write-Host ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!" -ForegroundColor Yellow
     if ($autoClientCertGenerated) {
         Write-Host "    We auto-generated a universal client certificate and installers for you:" -ForegroundColor Green
-        Write-Host "      certs\client-universal.p12 (Universal certificate)" -ForegroundColor Green
-        Write-Host "      certs\client-universal-install.bat (Windows installer)" -ForegroundColor Green
-        Write-Host "      certs\client-universal-install.sh (macOS/Linux installer)" -ForegroundColor Green
+        Write-Host "      certs\client-$MTLS_CLIENT_NAME.p12 (Universal certificate)" -ForegroundColor Green
+        Write-Host "      certs\client-$MTLS_CLIENT_NAME-install.bat (Windows installer)" -ForegroundColor Green
+        Write-Host "      certs\client-$MTLS_CLIENT_NAME-install.sh (macOS/Linux installer)" -ForegroundColor Green
         Write-Host "    Please run the installer script on your client device to gain access."
     } else {
         Write-Host "    To access the application, you must install a client certificate."
@@ -294,7 +294,7 @@ if ($dynamicYml -match "clientAuth:") {
     Write-Host ""
 }
 Write-Host ">>> To access from another computer:" -ForegroundColor Cyan
-Write-Host "    Copy the client-universal files and rootCA.cer/rootCA.pem to the other PC."
+Write-Host "    Copy the client-$MTLS_CLIENT_NAME files and rootCA.cer/rootCA.pem to the other PC."
 Write-Host "    Run the installer script on the client machine to trust the CA and install the cert."
 Write-Host "    See README.md for instructions"
 Write-Host "======================================================" -ForegroundColor Green

@@ -207,9 +207,9 @@ if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
     echo ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!"
     if [ "$auto_client_cert_generated" = true ]; then
         echo "    We auto-generated a universal client certificate and installers for you:"
-        echo "      certs/client-universal.p12 (Universal certificate)"
-        echo "      certs/client-universal-install.bat (Windows installer)"
-        echo "      certs/client-universal-install.sh (macOS/Linux installer)"
+        echo "      certs/client-$MTLS_CLIENT_NAME.p12 (Universal certificate)"
+        echo "      certs/client-$MTLS_CLIENT_NAME-install.bat (Windows installer)"
+        echo "      certs/client-$MTLS_CLIENT_NAME-install.sh (macOS/Linux installer)"
         echo "    Please run the installer script on your client device to gain access."
     else
         echo "    To access the application, you must install a client certificate."
@@ -218,7 +218,7 @@ if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
     echo ""
 fi
 echo ">>> To access from another computer:"
-echo "    Copy the client-universal files and rootCA.cer/rootCA.pem to the other PC."
+echo "    Copy the client-$MTLS_CLIENT_NAME files and rootCA.cer/rootCA.pem to the other PC."
 echo "    Run the installer script on the client machine to trust the CA and install the cert."
 echo "    See README.md for instructions"
 echo "======================================================"
