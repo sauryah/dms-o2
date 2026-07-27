@@ -458,33 +458,46 @@ DMS enforces **Mutual TLS (mTLS)** for all network connections. In addition to t
 
 ---
 
-## 🔑 Generating and Installing Client Certificates (mTLS)
+## 🔑 Installing the Universal Client Certificate (mTLS)
 
 Since mTLS is active, any device attempting to connect without a client certificate will receive an `ERR_BAD_SSL_CLIENT_AUTH_CERT` error and be blocked at the TLS handshake level.
 
-### 1. Generate a Client Certificate (On the Server)
-To grant a device access, run the generator script on the **server** machine, specifying a unique name (e.g. `toolroom`, `john-laptop`):
-*   **Windows**: `scripts\generate-client-cert.bat toolroom`
-*   **Linux/macOS**: `./scripts/generate-client-cert.sh toolroom`
+The setup scripts automatically generate a universal client certificate in your `certs/` directory:
+1.  `client-universal.p12`: The client certificate bundle (contains private key and certificate).
+2.  `client-universal-install.bat`: One-click automated installer for Windows devices.
+3.  `client-universal-install.sh`: Automated installer script for macOS/Linux devices.
+4.  `client-universal-INSTRUCTIONS.txt`: A custom step-by-step manual installation sheet.
 
-This generates four files in your `certs/` directory:
-1.  `client-toolroom.p12`: The client certificate bundle (contains private key and certificate).
-2.  `client-toolroom-install.bat`: One-click automated installer for Windows devices.
-3.  `client-toolroom-install.sh`: Automated installer script for macOS/Linux devices.
-4.  `client-toolroom-INSTRUCTIONS.txt`: A custom step-by-step manual installation sheet.
-
-### 2. Install the Certificate on the Client Device
+### 1. Install the Certificate on the Client Device
 Copy the `.p12` certificate file, the appropriate installer script (`-install.bat` or `-install.sh`), and the server's root CA certificate (`rootCA.cer` or `rootCA.pem` from the `certs/` directory) to the client device.
 
 *   **Automated Installation (Recommended):**
-    *   **Windows**: Double-click `client-toolroom-install.bat`. It will request administrator privileges to automatically register the Root CA and install the client certificate.
-    *   **macOS/Linux**: Open terminal in the directory and run `./client-toolroom-install.sh` (which requests sudo privileges to register the Root CA).
+    *   **Windows**: Double-click `client-universal-install.bat`. It will request administrator privileges to automatically register the Root CA and install the client certificate.
+    *   **macOS/Linux**: Open terminal in the directory and run `./client-universal-install.sh` (which requests sudo privileges to register the Root CA).
 *   **Manual Installation (Fallback):**
     *   **Windows (Chrome/Edge)**: Double-click the `.p12` file -> select **Current User** -> click Next -> leave the password **blank** -> choose **Place all certificates in the following store** -> click Browse -> select **Personal** (CRITICAL: Do not use Automatic) -> click OK -> Finish.
     *   **Firefox (All Platforms)**: Go to Settings -> Privacy & Security -> View Certificates -> **Your Certificates** tab -> click Import -> select the `.p12` file (leave the password blank).
     *   **macOS (Safari/Chrome)**: Double-click the `.p12` file -> import into the **login** keychain (leave the password blank).
 
 *Note: Restart your browser completely after installation. You will be prompted to select the client certificate when visiting the app.*
+
+---
+
+### ⚠️ Troubleshooting mTLS Issues
+
+#### A. Firefox shows "Security Issue" or does not prompt for a certificate
+Mozilla Firefox uses an independent certificate store and ignores the Windows system store configured by the automated installer script.
+1. **Trust the Server CA:** Open Firefox -> Settings -> Search "Certificates" -> click **View Certificates...** -> select **Authorities** tab -> click **Import...** -> select `rootCA.pem` -> check **"Trust this CA to identify websites"** -> click **OK**.
+2. **Import the Client Cert:** In the same **View Certificates...** window, go to **Your Certificates** tab -> click **Import...** -> select `client-universal.p12` -> leave the password **blank** -> click **OK**.
+3. **Restart:** Fully restart Firefox.
+
+#### B. ERR_BAD_SSL_CLIENT_AUTH_CERT Error
+This occurs if the browser did not present a client certificate or presented a certificate that does not match the server's Root CA.
+1. **Clear SSL Cache (Windows):** Open the Start Menu -> search for **Internet Options** -> go to the **Content** tab -> click **Clear SSL State**.
+2. **Restart Browser:** Fully close all browser tabs and windows (check Task Manager for background browser processes) and reopen.
+3. **Mismatched Server CA:** If you re-ran setup and generated a new CA key:
+   * Restart Traefik on the server: `docker compose restart traefik`
+   * Run the client installer script (`install.bat` / `install.sh`) again on the client device to register the new certificates.
 
 ---
 
