@@ -73,12 +73,12 @@ func (c *Cache) Invalidate(ctx context.Context) {
 		return
 	}
 
-	// Delete stats key
-	err := c.client.Del(ctx, "stats").Err()
+	// Delete stats:fresh key to mark stats cache as stale
+	err := c.client.Del(ctx, "stats:fresh").Err()
 	if err != nil {
-		slog.Warn("Failed to delete stats cache", "error", err)
+		slog.Warn("Failed to delete stats:fresh cache key", "error", err)
 	} else {
-		slog.Info("Successfully invalidated stats cache")
+		slog.Info("Successfully invalidated stats cache (marked stale)")
 	}
 
 	// Retrieve all tracked search keys from the Set

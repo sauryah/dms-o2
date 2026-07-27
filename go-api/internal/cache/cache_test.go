@@ -51,9 +51,9 @@ func TestCacheOperations(t *testing.T) {
 	}
 
 	// Test Invalidate
-	err = c.Set(ctx, "stats", []byte("stats_val"), 5*time.Second)
+	err = c.Set(ctx, "stats:fresh", []byte("stats_val"), 5*time.Second)
 	if err != nil {
-		t.Fatalf("failed to set stats key: %v", err)
+		t.Fatalf("failed to set stats:fresh key: %v", err)
 	}
 	err = c.Set(ctx, "search:another_key", []byte("search_val"), 5*time.Second)
 	if err != nil {
@@ -62,9 +62,9 @@ func TestCacheOperations(t *testing.T) {
 
 	c.Invalidate(ctx)
 
-	_, err = c.Get(ctx, "stats")
+	_, err = c.Get(ctx, "stats:fresh")
 	if err == nil {
-		t.Errorf("expected stats to be invalidated")
+		t.Errorf("expected stats:fresh to be invalidated")
 	}
 	_, err = c.Get(ctx, "search:another_key")
 	if err == nil {

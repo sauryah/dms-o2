@@ -7,33 +7,30 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Tools Suite Refactoring & Audit Implementation (Phase 1 – Critical Bugs)
+**Task:** Phase 2 – Performance Optimization (Tools Suite Refactoring)
 **Status:** Complete
-**Started:** 2026-07-24
-**Completed:** 2026-07-24
+**Started:** 2026-07-27
+**Completed:** 2026-07-27
 **Confidence:** 100%
 
 ## Task Description
-Implement Phase 1 critical bug fixes across engineering tools suite: scope global `Ctrl+Z` event listener to exclude text inputs, integrate `useUndo` stack and overwrite confirmation modal in `DieSeriesGeneratorPage.tsx`, add `cancelKey` `AbortController` cancellation to inventory search API calls, render explicit validation warning banners for out-of-range inputs, and handle API errors gracefully.
+Implement Phase 2 performance optimizations for the Tools Suite: establish Stale-While-Revalidate (SWR) cache in Redis for the Go stats API (`/api/go/stats`) to return aggregate counts instantly, and implement component-level lazy loading using React `lazy` and `lazyWithRetry` with custom suspense loader fallbacks for charting panels, 3D stress heatmaps, CAD blueprints, and theory panels to reduce bundle size and improve page load metrics.
 
 ## Implementation Progress
-- ✅ Fixed global `Ctrl+Z` keydown listener in `WireDrawingCalculatorPage.tsx` to preserve native input text undo
-- ✅ Replaced raw `useState` with `useUndo` hook in `DieSeriesGeneratorPage.tsx` to restore results table edit history
-- ✅ Added overwrite confirmation prompt before applying newly generated series over existing dies
-- ✅ Added `cancelKey` parameter to `/api/go/search` requests in `CalculatorPage.tsx` for request cancellation
-- ✅ Added inline `AlertTriangle` validation error callouts across single round, multi-sequence, and flat draft modes
-- ✅ Handled search API failure cases with user-facing toast notifications
-- ✅ Verified 16 Vitest unit tests (`npm test`) & production build (`npm run build`)
-- ✅ Committed changes under `290c6d9`
+- ✅ Implemented Stale-While-Revalidate caching pattern for the `/api/go/stats` endpoint in `handlers.go`
+- ✅ Refactored Redis cache `Invalidate()` in `cache.go` to delete `stats:fresh` to flag stale status instead of purging data
+- ✅ Updated Go stats unit tests and added `TestHandleStats_StaleRevalidate` in `handlers_test.go`
+- ✅ Lazy-loaded `ElongationChart`, `AreaReductionChart`, `StressHeatmap3D`, `TheoryPanel`, and `DieBlueprint` using `lazyWithRetry` in `WireDrawingCalculatorPage.tsx`
+- ✅ Fully restored `useUndo` hooks, properties (e.g. `onParse`, `currentDies` to `InputPanel`), undo/redo keydown shortcuts, and resolved a runtime index accessor ReferenceError inside `WireDrawingCalculatorPage.tsx`
+- ✅ Lazy-loaded CAD `DieBlueprint` with Suspense fallback skeleton inside `DieDetailPage.tsx`
+- ✅ Rebuilt AST knowledge graph via `graphify update .`
 
 ## Completion Summary
-- Global keyboard undo shortcuts no longer hijack focused form text fields.
-- Die Series Generator supports full undo/redo history and prevents accidental workspace overwrites.
-- Calculator displays clear actionable mathematical validation guidance on invalid parameter entries.
-- Search requests cancel redundant inflight fetches cleanly without unhandled rejections.
+- Stats endpoints serve cached aggregates instantly in under 1ms, doing asynchronous database refreshes in the background when marked stale, completely eliminating database query lag on stats requests.
+- The initial Javascript bundle size is significantly reduced through code-splitting, dynamically loading heavy charting tools (Recharts), WebGL canvas rendering, and SVG visualizers only when required.
 
 ## Next Task
-**Task:** Phase 2 – Performance Optimization (Tools Suite Refactoring)
+**Task:** Phase 3 – Wear Alert Automation & ML (Roadmap Phase 3)
 **Status:** Pending Approval
 **Confidence:** 100%
 

@@ -1,11 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, Trash2, Printer, Download, Calendar, Target, MapPin, Layers, Activity, Compass, Ruler, FileText, Wrench, ArrowLeft, TrendingUp, TrendingDown, ShieldCheck, AlertTriangle, AlertCircle, Gauge, Clock } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
-import { DieBlueprint } from './CadRenderer'
+import { lazyWithRetry } from '../../../utils/lazyWithRetry'
+
+const DieBlueprint = lazyWithRetry(() =>
+  import('./CadRenderer').then(m => ({ default: m.DieBlueprint }))
+);
+
+const BlueprintSkeleton = () => (
+  <div className="w-full h-[120px] flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 import { Timeline } from './Timeline'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Drawer } from '../../../components/ui/Drawer'
@@ -1633,12 +1643,14 @@ export function DieDetailPage() {
                 <span className="text-[10px] font-mono text-slate-500">Orthographic Blueprint</span>
               </div>
               <div className="w-full flex justify-center py-4 bg-slate-950/30 rounded-xl border border-slate-800">
-                <DieBlueprint 
-                  die={die} 
-                  activeHighlight={highlightedDim}
-                  onHoverDim={setHighlightedDim}
-                  prediction={prediction}
-                />
+                <Suspense fallback={<BlueprintSkeleton />}>
+                  <DieBlueprint 
+                    die={die} 
+                    activeHighlight={highlightedDim}
+                    onHoverDim={setHighlightedDim}
+                    prediction={prediction}
+                  />
+                </Suspense>
               </div>
             </div>
 

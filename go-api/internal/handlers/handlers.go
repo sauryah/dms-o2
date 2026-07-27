@@ -271,6 +271,43 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	if h.cache.Enabled() {
 		cachedBytes, err := h.cache.Get(r.Context(), "stats")
 		if err == nil {
+			// Check if stats are fresh
+			_, errFresh := h.cache.Get(r.Context(), "stats:fresh")
+			if errFresh != nil {
+				// Cache is stale! Set stats:fresh immediately as a short-lived lock (5s) to prevent concurrent refreshes
+				_ = h.cache.Set(r.Context(), "stats:fresh", []byte("locked"), 5*time.Second)
+
+				// Trigger background refresh
+				go func() {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+
+					stats, total, err := h.db.GetStats(bgCtx)
+					if err != nil {
+						slog.Error("Background stats refresh failed", "error", err)
+						_ = h.cache.Delete(bgCtx, "stats:fresh")
+						return
+					}
+
+					response := map[string]interface{}{
+						"total": total,
+						"stats": stats,
+					}
+
+					respBytes, err := json.Marshal(response)
+					if err != nil {
+						slog.Error("Background stats marshal failed", "error", err)
+						_ = h.cache.Delete(bgCtx, "stats:fresh")
+						return
+					}
+
+					// Update stats (24h) and stats:fresh (15s)
+					_ = h.cache.Set(bgCtx, "stats", respBytes, 24*time.Hour)
+					_ = h.cache.Set(bgCtx, "stats:fresh", []byte("true"), 15*time.Second)
+					slog.Info("Successfully refreshed stats cache asynchronously")
+				}()
+			}
+
 			w.WriteHeader(http.StatusOK)
 			w.Write(cachedBytes)
 			return
@@ -299,12 +336,10 @@ func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Cache in Redis for 15 seconds
+	// Cache in Redis for 24 hours (stats) and 15 seconds (stats:fresh)
 	if h.cache.Enabled() {
-		err = h.cache.Set(r.Context(), "stats", respBytes, 15*time.Second)
-		if err != nil {
-			slog.Warn("Failed to save stats to Redis", "error", err)
-		}
+		_ = h.cache.Set(r.Context(), "stats", respBytes, 24*time.Hour)
+		_ = h.cache.Set(r.Context(), "stats:fresh", []byte("true"), 15*time.Second)
 	}
 
 	w.WriteHeader(http.StatusOK)

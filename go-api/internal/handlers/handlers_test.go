@@ -200,6 +200,9 @@ func TestHandleStats_CacheHit(t *testing.T) {
 			if key == "stats" {
 				return cachedBytes, nil
 			}
+			if key == "stats:fresh" {
+				return []byte("true"), nil
+			}
 			return nil, errors.New("key not found")
 		},
 	}
@@ -267,6 +270,80 @@ func TestHandleStats_CacheMiss(t *testing.T) {
 
 	if !cacheSetCalled {
 		t.Error("expected stats to be saved in cache on cache miss")
+	}
+}
+
+func TestHandleStats_StaleRevalidate(t *testing.T) {
+	cfg := &config.Config{}
+	expectedStats := map[string]interface{}{
+		"total": 10,
+		"stats": map[string]int{"AVAILABLE": 10},
+	}
+	cachedBytes, _ := json.Marshal(expectedStats)
+
+	dbGetStatsCalled := make(chan bool, 1)
+	mockDb := &MockDatabase{
+		GetStatsFn: func(ctx context.Context) (map[string]int, int, error) {
+			dbGetStatsCalled <- true
+			return map[string]int{"AVAILABLE": 10}, 10, nil
+		},
+	}
+
+	cacheSetCalled := make(chan bool, 5)
+	mockCache := &MockCache{
+		EnabledFn: func() bool { return true },
+		GetFn: func(ctx context.Context, key string) ([]byte, error) {
+			if key == "stats" {
+				return cachedBytes, nil
+			}
+			// stats:fresh is missing to trigger revalidation
+			return nil, errors.New("miss")
+		},
+		SetFn: func(ctx context.Context, key string, val []byte, expiration time.Duration) error {
+			if key == "stats:fresh" || key == "stats" {
+				cacheSetCalled <- true
+			}
+			return nil
+		},
+		DeleteFn: func(ctx context.Context, key string) error {
+			return nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, mockCache, &MockSearch{}, nil)
+
+	req := httptest.NewRequest("GET", "/api/go/stats", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleStats(w, req)
+
+	// Verify we got 200 OK and cached data immediately
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status OK, got %v", w.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["total"].(float64) != 10 {
+		t.Errorf("expected total 10, got %v", resp["total"])
+	}
+
+	// Verify background goroutine executed DB query
+	select {
+	case <-dbGetStatsCalled:
+		// Success
+	case <-time.After(1 * time.Second):
+		t.Error("timeout waiting for background database query")
+	}
+
+	// Verify background goroutine updated cache
+	select {
+	case <-cacheSetCalled:
+		// Success
+	case <-time.After(1 * time.Second):
+		t.Error("timeout waiting for background cache set")
 	}
 }
 

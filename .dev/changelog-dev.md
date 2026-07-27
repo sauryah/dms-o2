@@ -200,3 +200,17 @@
 *   **Testing Performed**: Verified directory structure, committed in 3 phases.
 *   **Documentation Updated**: `.dev/changelog-dev.md`
 
+### 2026-07-27 · Phase 2 – Performance Optimization (Tools Suite Refactoring)
+*   **Feature**: Implement SWR caching for Go Stats API and React bundle component-level code-splitting.
+*   **Affected Modules**: `go-api`, `frontend`
+*   **Files Modified/Created**:
+    *   [handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go) - Updated `HandleStats` to implement Stale-While-Revalidate pattern using `stats:fresh` lock-key and async background DB refreshes.
+    *   [cache.go](file:///D:/DMS/dms-o2/go-api/internal/cache/cache.go) - Modified `Invalidate()` to delete `stats:fresh` instead of deleting `stats` data, keeping stale data cached for instant return.
+    *   [cache_test.go](file:///D:/DMS/dms-o2/go-api/internal/cache/cache_test.go) - Updated `TestInvalidate` to verify `stats:fresh` key deletion.
+    *   [handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go) - Updated existing stats handler unit tests and added `TestHandleStats_StaleRevalidate` to test full async revalidation.
+    *   [WireDrawingCalculatorPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/WireDrawingCalculatorPage.tsx) - Lazy-loaded charts (`ElongationChart`, `AreaReductionChart`), 3D stress visualizer (`StressHeatmap3D`), CAD blueprinter (`DieBlueprint`), and `TheoryPanel` with custom premium loader skeletons. Fully restored the original `useUndo` hooks, properties (e.g. `onParse`, `currentDies` to `InputPanel`), global shortcuts, and resolved a runtime index accessor ReferenceError.
+    *   [DieDetailPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/DieDetailPage.tsx) - Lazy-loaded the CAD `DieBlueprint` renderer with a suspense skeleton block.
+*   **Testing Performed**: AST graph updated successfully via Graphify. Verified code structures manually.
+*   **Documentation Updated**: `.dev/changelog-dev.md`, `.dev/state/active-task.md`
+
+

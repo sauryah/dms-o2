@@ -1,13 +1,10 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
 import { calculatePassData, calculateStatistics, calculateConsistency } from '../features/wire-drawing-calculator/utils/calculations';
 import Header from '../features/wire-drawing-calculator/components/Header';
-import { DieBlueprint } from '../features/inventory/components/CadRenderer';
 import InputPanel from '../features/wire-drawing-calculator/components/InputPanel';
 import ResultsTable from '../features/wire-drawing-calculator/components/ResultsTable';
-import ElongationChart from '../features/wire-drawing-calculator/components/ElongationChart';
-import AreaReductionChart from '../features/wire-drawing-calculator/components/AreaReductionChart';
 import DieProgression from '../features/wire-drawing-calculator/components/DieProgression';
 import StatisticsPanel from '../features/wire-drawing-calculator/components/StatisticsPanel';
 import ExportPanel from '../features/wire-drawing-calculator/components/ExportPanel';
@@ -18,8 +15,47 @@ import ComparePanel from '../features/wire-drawing-calculator/components/Compare
 import { useAuth } from '../contexts/AuthContext';
 import { Lock, ShieldAlert } from 'lucide-react';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
-import TheoryPanel from '../features/wire-drawing-calculator/components/TheoryPanel';
-import StressHeatmap3D from '../features/wire-drawing-calculator/components/StressHeatmap3D';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
+
+// Premium skeleton loading fallbacks for async component resolution
+const ChartSkeleton = () => (
+  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[300px] flex flex-col justify-between animate-pulse">
+    <div className="h-4 w-1/3 bg-slate-800 rounded" />
+    <div className="h-40 bg-slate-900/50 rounded flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+    <div className="h-4 w-2/3 bg-slate-800 rounded" />
+  </div>
+);
+
+const BlueprintSkeleton = () => (
+  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[280px] flex items-center justify-center animate-pulse">
+    <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+const PanelSkeleton = () => (
+  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[400px] flex items-center justify-center animate-pulse">
+    <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+// Lazy components using our automatic chunk failure recovery wrapper
+const DieBlueprint = lazyWithRetry(() =>
+  import('../features/inventory/components/CadRenderer').then(m => ({ default: m.DieBlueprint }))
+);
+const ElongationChart = lazyWithRetry(() =>
+  import('../features/wire-drawing-calculator/components/ElongationChart')
+);
+const AreaReductionChart = lazyWithRetry(() =>
+  import('../features/wire-drawing-calculator/components/AreaReductionChart')
+);
+const TheoryPanel = lazyWithRetry(() =>
+  import('../features/wire-drawing-calculator/components/TheoryPanel')
+);
+const StressHeatmap3D = lazyWithRetry(() =>
+  import('../features/wire-drawing-calculator/components/StressHeatmap3D')
+);
 
 const DEFAULT_DIES = [
   2.490, 2.217, 1.974, 1.757, 1.564, 1.392, 1.239, 1.103, 0.982, 0.874,
@@ -37,19 +73,6 @@ export function WireDrawingCalculatorPage() {
     refetchPermissions?.();
   }, [refetchPermissions]);
 
-  // Manual Lock Toggle State (stored in localStorage)
-  const [isManuallyLocked, setIsManuallyLocked] = useState<boolean>(() => {
-    return localStorage.getItem('dms_lock_3d_theory') === 'true';
-  });
-
-  const toggleManualLock = () => {
-    setIsManuallyLocked((prev) => {
-      const next = !prev;
-      localStorage.setItem('dms_lock_3d_theory', String(next));
-      return next;
-    });
-  };
-
   const isRoot = role === 'ROOT';
   const canAccess3DHeatmap = isRoot || authorizedTools.includes('3d-stress-heatmap');
   const canAccessTheory = isRoot || authorizedTools.includes('engineering-theory');
@@ -57,6 +80,7 @@ export function WireDrawingCalculatorPage() {
   const passes = calculatePassData(dies);
   const stats = calculateStatistics(dies, passes);
   const consistency = calculateConsistency(passes);
+  
   const handleParse = useCallback((d: number[]) => setDies(d), [setDies]);
   const handleDiesChange = useCallback((d: number[]) => setDies(d), [setDies]);
 
@@ -136,11 +160,13 @@ export function WireDrawingCalculatorPage() {
                         <div className="w-1 h-5 bg-blue-600 rounded-sm" />
                         <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-heading">Pass CAD Visualizer</h3>
                       </div>
-                      <DieBlueprint 
-                        die={simulatedDie}
-                        activeHighlight={null}
-                        onHoverDim={() => {}}
-                      />
+                      <Suspense fallback={<BlueprintSkeleton />}>
+                        <DieBlueprint 
+                          die={simulatedDie as any}
+                          activeHighlight={null}
+                          onHoverDim={() => {}}
+                        />
+                      </Suspense>
                       <div className="bg-[#0b1428]/45 border border-slate-800/40 p-4 rounded-xl text-xs space-y-2">
                         <h4 className="font-bold text-slate-300 font-sans uppercase tracking-wider text-[10px]">Simulated Pass Operations</h4>
                         <p className="text-slate-400 leading-relaxed font-sans text-[11px]">
@@ -161,8 +187,12 @@ export function WireDrawingCalculatorPage() {
             <DieProgression dies={dies} onDiesChange={handleDiesChange} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ElongationChart passes={passes} />
-              <AreaReductionChart passes={passes} />
+              <Suspense fallback={<ChartSkeleton />}>
+                <ElongationChart passes={passes} />
+              </Suspense>
+              <Suspense fallback={<ChartSkeleton />}>
+                <AreaReductionChart passes={passes} />
+              </Suspense>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -183,11 +213,19 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {/* 3D Stress Heatmap Module (Rendered directly for authorized users) */}
-        {canAccess3DHeatmap && passes.length > 0 && <StressHeatmap3D passes={passes} />}
+        {/* 3D Stress Heatmap Module (Rendered dynamically for authorized users) */}
+        {canAccess3DHeatmap && passes.length > 0 && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <StressHeatmap3D passes={passes} />
+          </Suspense>
+        )}
 
-        {/* Theory & Fundamentals Module (Rendered directly for authorized users) */}
-        {canAccessTheory && <TheoryPanel />}
+        {/* Theory & Fundamentals Module (Rendered dynamically for authorized users) */}
+        {canAccessTheory && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <TheoryPanel />
+          </Suspense>
+        )}
       </div>
     </div>
   );
