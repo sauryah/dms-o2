@@ -57,6 +57,22 @@ if [ -n "$LAN_IP_CERT" ] && command -v mkcert &> /dev/null; then
         echo ">>> Root CA copied: certs/rootCA.pem"
     fi
     echo ">>> TLS certificates generated for $LAN_IP_CERT"
+
+    # Automatically generate a client certificate if mTLS is enabled in dynamic.yml
+    auto_client_cert_generated=false
+    if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
+        echo ">>> mTLS is enabled. Auto-generating a client certificate for this device..."
+        CLIENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]')
+        mkcert -client -cert-file "certs/client-$CLIENT_NAME.pem" -key-file "certs/client-$CLIENT_NAME-key.pem" localhost 127.0.0.1 ::1
+        
+        if command -v openssl &> /dev/null; then
+            openssl pkcs12 -export -out "certs/client-$CLIENT_NAME.p12" -inkey "certs/client-$CLIENT_NAME-key.pem" -in "certs/client-$CLIENT_NAME.pem" -certfile "certs/rootCA.pem" -passout pass:
+            echo ">>> Auto-generated client certificate: certs/client-$CLIENT_NAME.p12"
+            auto_client_cert_generated=true
+        else
+            echo ">>> WARNING: openssl not found. Could not auto-generate .p12 client certificate bundle."
+        fi
+    fi
     if [ -f .env ] && ! grep -q "$LAN_IP_CERT" .env; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             sed -i '' "s/DJANGO_ALLOWED_HOSTS=.*/&,$LAN_IP_CERT/" .env
@@ -113,7 +129,7 @@ docker compose up -d --build
 # 4. Wait for the database container to become healthy
 echo ">>> Waiting for PostgreSQL database container to pass health checks..."
 RETRIES=30
-until [ $RETRIES -eq 0 ] || docker compose exec db pg_isready -U dms_user -d dms &> /dev/null; do
+until [ $RETRIES -eq 0 ] || docker compose exec db pg_isready &> /dev/null; do
     echo "Waiting for database... ($RETRIES retries left)"
     sleep 2
     RETRIES=$((RETRIES-1))
@@ -168,6 +184,21 @@ else
     echo "    2. Run: sudo systemctl restart avahi-daemon"
 fi
 echo ""
+if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
+    echo ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!"
+    if [ "$auto_client_cert_generated" = true ]; then
+        CLIENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]')
+        echo "    We auto-generated a client certificate for this device:"
+        echo "      certs/client-$CLIENT_NAME.p12"
+        echo "    Please import this file into your browser to gain access."
+    else
+        echo "    To access the application, you must generate and install a client certificate."
+        echo "    Generate your client certificate by running:"
+        echo "      ./scripts/generate-client-cert.sh <your-device-name>"
+        echo "    Then import the generated .p12 certificate file into your browser."
+    fi
+    echo ""
+fi
 echo ">>> To access from another computer without warnings:"
 echo "    Copy certs/rootCA.pem to the other PC, convert to .cer and install as trusted root CA"
 echo "======================================================"

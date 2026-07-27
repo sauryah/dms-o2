@@ -1,0 +1,57 @@
+========================================================================
+INSTALLATION INSTRUCTIONS FOR: client-{{CLIENT_NAME}}.p12
+========================================================================
+
+To access the DMS application securely, you must install both this client
+certificate and the Root CA certificate on your computer.
+
+------------------------------------------------------------------------
+STEP 1: INSTALL THE CLIENT CERTIFICATE (client-{{CLIENT_NAME}}.p12)
+------------------------------------------------------------------------
+Allows the server to recognize and authenticate your device.
+
+On Windows (Chrome, Edge, Opera):
+1. Double-click "client-{{CLIENT_NAME}}.p12".
+2. Select "Current User" and click "Next".
+3. Click "Next" on the file path screen.
+4. Leave the Password field BLANK and click "Next".
+5. Select "Place all certificates in the following store", click "Browse",
+   select "Personal", and click "OK". (CRITICAL: Do not use Automatic).
+6. Click "Next" and then "Finish".
+
+On macOS (Safari, Chrome, Edge):
+1. Double-click "client-{{CLIENT_NAME}}.p12" to open Keychain Access.
+2. Select the "login" keychain.
+3. Leave the password BLANK and click "OK".
+
+On Firefox (All platforms):
+1. Open Firefox and go to Settings -> Privacy & Security.
+2. Scroll to "Certificates" and click "View Certificates...".
+3. Under the "Your Certificates" tab, click "Import...".
+4. Select "client-{{CLIENT_NAME}}.p12", leave the password BLANK and click "OK".
+
+------------------------------------------------------------------------
+STEP 2: INSTALL THE ROOT CA (rootCA.cer / rootCA.pem)
+------------------------------------------------------------------------
+Tells your browser that the server is safe, removing warning screens.
+
+On Windows (Chrome, Edge):
+1. Double-click "rootCA.cer".
+2. Click "Install Certificate...", select "Local Machine" and click "Next".
+3. Choose "Place all certificates in the following store", click "Browse",
+   select "Trusted Root Certification Authorities", and click "OK".
+4. Click "Next" and then "Finish".
+
+On Firefox:
+1. Open Firefox -> Settings -> Privacy & Security -> View Certificates.
+2. Go to the "Authorities" tab (CRITICAL: Not "Your Certificates").
+3. Click "Import..." and select "rootCA.pem".
+4. Check the box "Trust this CA to identify websites" and click "OK".
+
+------------------------------------------------------------------------
+STEP 3: RESTART YOUR BROWSER
+------------------------------------------------------------------------
+Close all open browser windows completely and reopen them.
+Navigate to the server's URL. When prompted, select the certificate
+named "client-{{CLIENT_NAME}}".
+========================================================================

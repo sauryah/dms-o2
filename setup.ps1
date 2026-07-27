@@ -81,6 +81,33 @@ if ($certsLanIp) {
     }
     Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
 
+    # Automatically generate a client certificate if mTLS is enabled in dynamic.yml
+    $autoClientCertGenerated = $false
+    if (Test-Path "dynamic.yml") {
+        $dynamicYml = Get-Content "dynamic.yml" -Raw
+        if ($dynamicYml -match "clientAuth:") {
+            Write-Host ">>> mTLS is enabled. Auto-generating a client certificate for this device..." -ForegroundColor Cyan
+            $compName = $env:COMPUTERNAME.ToLower()
+            & mkcert -client -cert-file "certs\client-$compName.pem" -key-file "certs\client-$compName-key.pem" localhost 127.0.0.1 ::1
+            
+            $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+            if (-not $openssl) {
+                if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") {
+                    $openssl = "C:\Program Files\Git\usr\bin\openssl.exe"
+                } elseif (Test-Path "C:\Program Files (x86)\Git\usr\bin\openssl.exe") {
+                    $openssl = "C:\Program Files (x86)\Git\usr\bin\openssl.exe"
+                }
+            }
+            if ($openssl) {
+                & $openssl pkcs12 -export -out "certs\client-$compName.p12" -inkey "certs\client-$compName-key.pem" -in "certs\client-$compName.pem" -certfile "certs\rootCA.pem" -passout pass:
+                Write-Host ">>> Auto-generated client certificate: certs\client-$compName.p12" -ForegroundColor Green
+                $autoClientCertGenerated = $true
+            } else {
+                Write-Host ">>> WARNING: openssl not found. Could not auto-generate .p12 client certificate bundle." -ForegroundColor Yellow
+            }
+        }
+    }
+
     # Automatically add detected LAN IP and hostname to DJANGO_ALLOWED_HOSTS in .env
     if (Test-Path .env) {
         $envContent = [System.IO.File]::ReadAllText(".env")
@@ -133,7 +160,7 @@ Write-Host ">>> Waiting for PostgreSQL database container to pass health checks.
 $retries = 30
 while ($retries -gt 0) {
     # Run pg_isready inside the db container
-    $null = docker compose exec db pg_isready -U dms_user -d dms
+    $null = docker compose exec db pg_isready
     if ($LASTEXITCODE -eq 0) {
         break
     }
@@ -207,6 +234,25 @@ if ($lanIps) {
 }
 Write-Host "    - LAN mDNS URL:   https://$computerName"
 Write-Host ""
+$dynamicYml = ""
+if (Test-Path "dynamic.yml") {
+    $dynamicYml = Get-Content "dynamic.yml" -Raw
+}
+if ($dynamicYml -match "clientAuth:") {
+    Write-Host ">>> IMPORTANT: Mutual TLS (mTLS) is enabled!" -ForegroundColor Yellow
+    if ($autoClientCertGenerated) {
+        $compName = $env:COMPUTERNAME.ToLower()
+        Write-Host "    We auto-generated a client certificate for this device:" -ForegroundColor Green
+        Write-Host "      certs\client-$compName.p12" -ForegroundColor Green
+        Write-Host "    Please import this file into your browser to gain access."
+    } else {
+        Write-Host "    To access the application, you must generate and install a client certificate."
+        Write-Host "    Generate your client certificate by running:"
+        Write-Host "      scripts\generate-client-cert.bat <your-device-name>"
+        Write-Host "    Then import the generated .p12 certificate file into your browser."
+    }
+    Write-Host ""
+}
 Write-Host ">>> To access from another computer:" -ForegroundColor Cyan
 Write-Host "    Copy certs\rootCA.pem to the other PC, convert and install as trusted root CA"
 Write-Host "    See README.md for instructions"

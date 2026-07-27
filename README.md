@@ -29,40 +29,41 @@
 
 ## 📖 Table of Contents
 
-- [Overview \& Architecture](#overview--architecture)
-- [Key Features](#key-features)
-- [Technology Stack](#technology-stack)
-- [Quick Start](#quick-start)
+- [Overview & Architecture](#-overview--architecture)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [Quick Start](#-quick-start)
   - [Prerequisites](#prerequisites)
-  - [Installing `mkcert`](#installing-mkcert)
+  - [Installing mkcert](#installing-mkcert)
   - [Automated Setup](#automated-setup)
   - [Manual Setup (Alternative)](#manual-setup-alternative)
   - [Access Interfaces](#access-interfaces)
-- [Deploy with Docker (No Source Code)](#deploy-with-docker-no-source-code)
-- [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Usage Guide](#usage-guide)
+- [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
+- [Configuration](#-configuration)
+- [Project Structure](#-project-structure)
+- [Usage Guide](#-usage-guide)
   - [Using Make (Recommended)](#using-make-recommended)
   - [Common Container Tasks](#common-container-tasks)
-  - [Keyboard Navigation](#keyboard-navigation)
-- [Deployment \& Upgrades](#deployment--upgrades)
-- [Backup \& Recovery](#backup--recovery)
-  - [Command Utility (`dms-backup.sh`)](#command-utility-dms-backupsh)
-- [Security](#security)
-  - [TLS Certificates](#tls-certificates)
-- [LAN HTTPS Access from Other Computers](#lan-https-access-from-other-computers)
+  - [Keyboard Navigation](#-keyboard-navigation)
+- [Deployment & Upgrades](#-deployment--upgrades)
+- [Backup & Recovery](#-backup--recovery)
+  - [Command Utility (dms-backup.sh)](#command-utility-dms-backupsh)
+- [Security](#-security)
+  - [TLS Certificates & Mutual TLS (mTLS)](#tls-certificates--mutual-tls-mtls)
+- [Generating and Installing Client Certificates (mTLS)](#-generating-and-installing-client-certificates-mtls)
+- [LAN HTTPS Access from Other Computers](#-lan-https-access-from-other-computers)
   - [Step 1: Copy the Root CA](#step-1-copy-the-root-ca)
-  - [Step 2: Install the Certificate](#step-2-install-the-certificate)
-  - [Step 3: Verify](#step-3-verify)
+  - [Step 2: Install the Certificate on the Client](#step-2-install-the-certificate-on-the-client)
+  - [Step 3: Verify the Connection](#step-3-verify-the-connection)
   - [Regenerating Certificates](#regenerating-certificates)
-- [Roadmap](#roadmap)
-- [FAQ](#faq)
-- [Troubleshooting](#troubleshooting)
-  - [Full Docker Reset (Nuclear Option)](#full-docker-reset-nuclear-option)
-- [Licensing \& Compliance](#licensing--compliance)
-- [Contributing](#contributing)
-- [Support](#support)
-- [Credits](#credits)
+- [Roadmap](#-roadmap)
+- [FAQ](#-faq)
+- [Troubleshooting](#-troubleshooting)
+  - [Full Docker Reset (Nuclear Option)](#-full-docker-reset-nuclear-option)
+- [Licensing & Compliance](#-licensing--compliance)
+- [Contributing](#-contributing)
+- [Support](#-support)
+- [Credits](#-credits)
 
 ---
 
@@ -300,6 +301,9 @@ dms-o2/
 ├── scripts/                   # Utility scripts
 │   ├── generate-certs.sh      # Auto-generate TLS certs (Linux/macOS)
 │   ├── generate-certs.bat     # Auto-generate TLS certs (Windows)
+│   ├── generate-client-cert.sh # Generate client mTLS cert (Linux/macOS)
+│   ├── generate-client-cert.bat # Generate client mTLS cert (Windows)
+│   ├── client-instructions-template.txt # Client cert installation instructions template
 │   ├── install-cert.bat       # Install rootCA on Windows clients
 │   ├── backup_db.sh           # Database backup script
 │   └── prune_history.sh       # Audit history retention cleanup
@@ -440,15 +444,37 @@ DMS-O2 is built with security-first practices to protect industrial assets and m
 
 ---
 
-### TLS Certificates
+### TLS Certificates & Mutual TLS (mTLS)
 
-DMS generates TLS certificates automatically during setup using [mkcert](https://github.com/FiloSottile/mkcert). Certificates are:
-* **Auto-generated** for your machine's LAN IP address during `setup.sh` / `setup.ps1`.
-* **Stored locally** in `certs/` (excluded from git via `.gitignore`).
-* **Valid for 2 years** from the date of generation.
-* **Regenerable** by running `scripts/generate-certs.sh` (Linux/macOS) or `scripts/generate-certs.bat` (Windows).
+DMS enforces **Mutual TLS (mTLS)** for all network connections. In addition to the server proving its identity, each client device must present a valid client certificate to access the application.
+
+*   **Server Certificates**: Auto-generated for your machine's LAN IP address during `setup.sh` / `setup.ps1` using [mkcert](https://github.com/FiloSottile/mkcert), stored locally in `certs/` (excluded from git), and valid for 2 years. Regenerable using `scripts/generate-certs.sh` or `scripts/generate-certs.bat`.
+*   **Client Certificates**: Required for each browser/client device. The setup scripts automatically generate a client certificate bundle (`client-<hostname>.p12`) for the host machine. Additional certificates can be issued using the client generation scripts.
 
 *If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting.*
+
+---
+
+## 🔑 Generating and Installing Client Certificates (mTLS)
+
+Since mTLS is active, any device attempting to connect without a client certificate will receive an `ERR_BAD_SSL_CLIENT_AUTH_CERT` error and be blocked at the TLS handshake level.
+
+### 1. Generate a Client Certificate (On the Server)
+To grant a device access, run the generator script on the **server** machine, specifying a unique name (e.g. `toolroom`, `john-laptop`):
+*   **Windows**: `scripts\generate-client-cert.bat toolroom`
+*   **Linux/macOS**: `./scripts/generate-client-cert.sh toolroom`
+
+This generates two files in your `certs/` directory:
+1.  `client-toolroom.p12`: The client certificate bundle (contains private key and certificate).
+2.  `client-toolroom-INSTRUCTIONS.txt`: A custom step-by-step installation sheet for the end user.
+
+### 2. Install the Certificate on the Client Device
+Copy the `.p12` file and the companion `-INSTRUCTIONS.txt` file securely to the client device. Follow these brief instructions:
+*   **Windows (Chrome/Edge)**: Double-click the `.p12` file -> select **Current User** -> click Next -> leave the password **blank** -> choose **Place all certificates in the following store** -> click Browse -> select **Personal** (CRITICAL: Do not use Automatic) -> click OK -> Finish.
+*   **Firefox (All Platforms)**: Go to Settings -> Privacy & Security -> View Certificates -> **Your Certificates** tab -> click Import -> select the `.p12` file (leave the password blank).
+*   **macOS (Safari/Chrome)**: Double-click the `.p12` file -> import into the **login** keychain (leave the password blank).
+
+*Note: Restart your browser completely after installation. You will be prompted to select the client certificate when visiting the app.*
 
 ---
 
