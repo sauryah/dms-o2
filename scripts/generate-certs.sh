@@ -27,6 +27,31 @@ mkcert -cert-file "$CERTS_DIR/cert.pem" -key-file "$CERTS_DIR/key.pem" \
 
 # Copy root CA for distribution to other machines
 cp "$(mkcert -CAROOT)/rootCA.pem" "$CERTS_DIR/rootCA.pem" 2>/dev/null || true
+openssl x509 -inform PEM -in "$CERTS_DIR/rootCA.pem" -outform DER -out "$CERTS_DIR/rootCA.cer" 2>/dev/null || true
+
+# Automatically generate client certificate if mTLS is active
+DYNAMIC_YML="$(dirname "$0")/../dynamic.yml"
+if [ -f "$DYNAMIC_YML" ] && grep -q "clientAuth:" "$DYNAMIC_YML"; then
+    echo "Generating client certificate (lihas.dms)..."
+    CLIENT_NAME="lihas.dms"
+    mkcert -client -cert-file "$CERTS_DIR/client-$CLIENT_NAME.pem" -key-file "$CERTS_DIR/client-$CLIENT_NAME-key.pem" localhost 127.0.0.1 ::1
+    
+    if command -v openssl &> /dev/null; then
+        openssl pkcs12 -export -out "$CERTS_DIR/client-$CLIENT_NAME.p12" -inkey "$CERTS_DIR/client-$CLIENT_NAME-key.pem" -in "$CERTS_DIR/client-$CLIENT_NAME.pem" -certfile "$CERTS_DIR/rootCA.pem" -passout pass:
+        
+        SCRIPTS_DIR="$(dirname "$0")"
+        if [ -f "$SCRIPTS_DIR/client-install-template.bat" ]; then
+            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-install-template.bat" > "$CERTS_DIR/client-$CLIENT_NAME-install.bat"
+        fi
+        if [ -f "$SCRIPTS_DIR/client-install-template.sh" ]; then
+            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-install-template.sh" > "$CERTS_DIR/client-$CLIENT_NAME-install.sh"
+            chmod +x "$CERTS_DIR/client-$CLIENT_NAME-install.sh"
+        fi
+        if [ -f "$SCRIPTS_DIR/client-instructions-template.txt" ]; then
+            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-instructions-template.txt" > "$CERTS_DIR/client-$CLIENT_NAME-INSTRUCTIONS.txt"
+        fi
+    fi
+fi
 
 echo ""
 echo "Certificates generated in $CERTS_DIR/"

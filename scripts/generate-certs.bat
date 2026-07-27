@@ -32,6 +32,37 @@ if exist "%CAROOT%\rootCA.pem" (
     echo   WARNING: Could not find rootCA.pem in mkcert CA store
 )
 
+rem Automatically generate client certificate if mTLS is active
+set DYNAMIC_YML=%~dp0..\dynamic.yml
+if exist "%DYNAMIC_YML%" (
+    findstr /c:"clientAuth" "%DYNAMIC_YML%" >nul
+    if not errorlevel 1 (
+        echo Generating client certificate (lihas.dms)...
+        call mkcert -client -cert-file "%CERTS_DIR%\client-lihas.dms.pem" -key-file "%CERTS_DIR%\client-lihas.dms-key.pem" localhost 127.0.0.1 ::1
+        
+        rem Find OpenSSL and export to PKCS12
+        set OPENSSL_BIN=openssl
+        where openssl >nul 2>&1
+        if errorlevel 1 (
+            if exist "C:\Program Files\Git\usr\bin\openssl.exe" set OPENSSL_BIN="C:\Program Files\Git\usr\bin\openssl.exe"
+            if exist "C:\Program Files (x86)\Git\usr\bin\openssl.exe" set OPENSSL_BIN="C:\Program Files (x86)\Git\usr\bin\openssl.exe"
+        )
+        call %OPENSSL_BIN% pkcs12 -export -out "%CERTS_DIR%\client-lihas.dms.p12" -inkey "%CERTS_DIR%\client-lihas.dms-key.pem" -in "%CERTS_DIR%\client-lihas.dms.pem" -certfile "%CERTS_DIR%\rootCA.pem" -passout pass:
+        
+        rem Generate template installer scripts
+        set SCRIPTS_DIR=%~dp0
+        if exist "%SCRIPTS_DIR%client-install-template.bat" (
+            powershell -Command "(Get-Content '%~dp0client-install-template.bat') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.bat'"
+        )
+        if exist "%SCRIPTS_DIR%client-install-template.sh" (
+            powershell -Command "(Get-Content '%~dp0client-install-template.sh') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.sh'"
+        )
+        if exist "%SCRIPTS_DIR%client-instructions-template.txt" (
+            powershell -Command "(Get-Content '%~dp0client-instructions-template.txt') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-INSTRUCTIONS.txt'"
+        )
+    )
+)
+
 echo.
 echo Certificates generated in %CERTS_DIR%\
 echo   cert.pem  - server certificate (valid for %LAN_IP%)
