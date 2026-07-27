@@ -68,6 +68,13 @@ backup: ## Run manual database backup
 restore: ## Restore from backup (usage: make restore FILE=dms_backup.dump)
 	docker compose exec django pg_restore -h db -p 5432 -U $(shell grep POSTGRES_USER .env | cut -d= -f2) -d $(shell grep POSTGRES_DB .env | cut -d= -f2) --clean --if-exists /backups/$(FILE)
 
+uninstall-certs: ## Remove all certificates and uninstall Root CA from system trust store
+ifeq ($(OS),Windows_NT)
+	scripts\uninstall-certs.bat
+else
+	./scripts/uninstall-certs.sh
+endif
+
 clean: ## Remove all containers, volumes, and networks
 	docker compose down -v
 

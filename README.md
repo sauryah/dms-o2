@@ -303,6 +303,8 @@ dms-o2/
 │   ├── generate-certs.bat     # Auto-generate TLS certs (Windows)
 │   ├── generate-client-cert.sh # Generate client mTLS cert (Linux/macOS)
 │   ├── generate-client-cert.bat # Generate client mTLS cert (Windows)
+│   ├── uninstall-certs.sh     # Uninstall Root CA and delete certs (Linux/macOS)
+│   ├── uninstall-certs.bat    # Uninstall Root CA and delete certs (Windows)
 │   ├── client-instructions-template.txt # Client cert installation instructions template
 │   ├── install-cert.bat       # Install rootCA on Windows clients
 │   ├── backup_db.sh           # Database backup script
@@ -339,6 +341,7 @@ Run `make help` to view all CLI tasks:
 | :--- | :--- |
 | `make setup` | Full automated setup (Docker + DB + certs) |
 | `make certs` | Regenerate TLS certificates for current LAN IP |
+| `make uninstall-certs` | Remove all certificates and uninstall Root CA from system trust store |
 | `make start` | Start all containers |
 | `make stop` | Stop all containers |
 | `make logs` | Tail all container logs |
