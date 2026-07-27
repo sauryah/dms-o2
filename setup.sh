@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Configuration
+MTLS_CLIENT_NAME="lihas.dms"
+
 echo "=== DMS Setup Automation ==="
 
 # 1. Check if Docker is installed
@@ -65,7 +68,7 @@ if [ -n "$LAN_IP_CERT" ] && command -v mkcert &> /dev/null; then
     auto_client_cert_generated=false
     if [ -f dynamic.yml ] && grep -q "clientAuth:" dynamic.yml; then
         echo ">>> mTLS is enabled. Auto-generating a universal client certificate..."
-        CLIENT_NAME="universal"
+        CLIENT_NAME="$MTLS_CLIENT_NAME"
         mkcert -client -cert-file "certs/client-$CLIENT_NAME.pem" -key-file "certs/client-$CLIENT_NAME-key.pem" localhost 127.0.0.1 ::1
         
         if command -v openssl &> /dev/null; then

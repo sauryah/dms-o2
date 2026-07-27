@@ -1,6 +1,9 @@
 # DMS Windows Setup Automation Script
 # Run this script in PowerShell to configure and start the DMS application
 
+# --- Configuration ---
+$MTLS_CLIENT_NAME = "lihas.dms"
+
 Write-Host "=== DMS Windows Setup Automation ===" -ForegroundColor Green
 
 # 1. Check if Docker is installed
@@ -11,12 +14,17 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 
 # 1.5 Check if mkcert is installed
 if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
-    Write-Host ">>> mkcert not found. Installing via winget..." -ForegroundColor Yellow
-    winget install -e --id FiloSottile.MkCert --accept-source-agreements --accept-package-agreements 2>$null
-    if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
-        Write-Host ">>> WARNING: Could not install mkcert automatically." -ForegroundColor Yellow
-        Write-Host ">>> Install manually: https://github.com/FiloSottile/mkcert#installation" -ForegroundColor Yellow
-        Write-Host ">>> Then run: scripts\generate-certs.bat" -ForegroundColor Yellow
+    # Check if installed via winget but not yet in PATH of current session
+    $wingetMkcert = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter mkcert.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
+    if ($wingetMkcert) {
+        $env:PATH += ";$wingetMkcert"
+    } else {
+        Write-Host ">>> mkcert not found. Installing via winget..." -ForegroundColor Yellow
+        & winget install -e --id FiloSottile.MkCert --accept-source-agreements --accept-package-agreements 2>$null
+        $wingetMkcert = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter mkcert.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
+        if ($wingetMkcert) {
+            $env:PATH += ";$wingetMkcert"
+        }
     }
 }
 
@@ -94,7 +102,7 @@ if ($certsLanIp) {
         $dynamicYml = Get-Content $dynamicYmlPath -Raw
         if ($dynamicYml -match "clientAuth:") {
             Write-Host ">>> mTLS is enabled. Auto-generating a universal client certificate..." -ForegroundColor Cyan
-            $clientName = "universal"
+            $clientName = $MTLS_CLIENT_NAME
             $clientPem = Join-Path $certsDir "client-$clientName.pem"
             $clientKey = Join-Path $certsDir "client-$clientName-key.pem"
             $clientP12 = Join-Path $certsDir "client-$clientName.p12"
