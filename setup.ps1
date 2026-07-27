@@ -21,7 +21,8 @@ if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
 }
 
 # 2. Check environment file
-if (-not (Test-Path .env)) {
+$envPath = Join-Path $PSScriptRoot ".env"
+if (-not (Test-Path $envPath)) {
     Write-Host ">>> Creating .env file from template with secure dynamic keys..."
     
     function Generate-Secret {
@@ -37,7 +38,7 @@ if (-not (Test-Path .env)) {
     $redisPass = Generate-Secret 24
     $apiSecret = Generate-Secret 32
 
-    $examplePath = Resolve-Path .env.example
+    $examplePath = Join-Path $PSScriptRoot ".env.example"
     $content = [System.IO.File]::ReadAllText($examplePath)
     $content = $content.Replace('POSTGRES_PASSWORD=auto:run_setup_to_generate', "POSTGRES_PASSWORD=$dbPass")
     $content = $content.Replace('DJANGO_SECRET_KEY=auto:run_setup_to_generate', "DJANGO_SECRET_KEY=$djangoKey")
@@ -46,7 +47,6 @@ if (-not (Test-Path .env)) {
     $content = $content.Replace('REDIS_PASSWORD=auto:run_setup_to_generate', "REDIS_PASSWORD=$redisPass")
     $content = $content.Replace('INTERNAL_API_SECRET=auto:run_setup_to_generate', "INTERNAL_API_SECRET=$apiSecret")
 
-    $envPath = Join-Path (Get-Location) ".env"
     [System.IO.File]::WriteAllText($envPath, $content)
     Write-Host ">>> Created .env file with generated secure keys and passwords."
 } else {
@@ -66,29 +66,41 @@ if (-not $certsLanIp) {
 }
 
 if ($certsLanIp) {
-    if (-not (Test-Path "certs")) { New-Item -ItemType Directory -Path "certs" -Force | Out-Null }
-    if (Test-Path "certs\cert.pem") {
+    $certsDir = Join-Path $PSScriptRoot "certs"
+    if (-not (Test-Path $certsDir)) { New-Item -ItemType Directory -Path $certsDir -Force | Out-Null }
+    
+    $certPem = Join-Path $certsDir "cert.pem"
+    $keyPem = Join-Path $certsDir "key.pem"
+    if (Test-Path $certPem) {
         Write-Host ">>> Certificates already exist. Regenerating..." -ForegroundColor Yellow
     }
     & mkcert -install 2>$null
-    & mkcert -cert-file "certs\cert.pem" -key-file "certs\key.pem" localhost 127.0.0.1 $certsLanIp ::1
+    & mkcert -cert-file $certPem -key-file $keyPem localhost 127.0.0.1 $certsLanIp ::1
     # Copy root CA for distribution
     $caroot = & mkcert -CAROOT 2>$null
     if ($caroot -and (Test-Path "$caroot\rootCA.pem")) {
-        Copy-Item "$caroot\rootCA.pem" "certs\rootCA.pem" -Force
-        & certutil -decode "certs\rootCA.pem" "certs\rootCA.cer" 2>$null | Out-Null
+        $rootCaPem = Join-Path $certsDir "rootCA.pem"
+        $rootCaCer = Join-Path $certsDir "rootCA.cer"
+        Copy-Item "$caroot\rootCA.pem" $rootCaPem -Force
+        & certutil -decode $rootCaPem $rootCaCer 2>$null | Out-Null
         Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
     }
     Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
 
     # Automatically generate a client certificate if mTLS is enabled in dynamic.yml
     $autoClientCertGenerated = $false
-    if (Test-Path "dynamic.yml") {
-        $dynamicYml = Get-Content "dynamic.yml" -Raw
+    $dynamicYmlPath = Join-Path $PSScriptRoot "dynamic.yml"
+    if (Test-Path $dynamicYmlPath) {
+        $dynamicYml = Get-Content $dynamicYmlPath -Raw
         if ($dynamicYml -match "clientAuth:") {
             Write-Host ">>> mTLS is enabled. Auto-generating a universal client certificate..." -ForegroundColor Cyan
             $clientName = "universal"
-            & mkcert -client -cert-file "certs\client-$clientName.pem" -key-file "certs\client-$clientName-key.pem" localhost 127.0.0.1 ::1
+            $clientPem = Join-Path $certsDir "client-$clientName.pem"
+            $clientKey = Join-Path $certsDir "client-$clientName-key.pem"
+            $clientP12 = Join-Path $certsDir "client-$clientName.p12"
+            $rootCaPem = Join-Path $certsDir "rootCA.pem"
+
+            & mkcert -client -cert-file $clientPem -key-file $clientKey localhost 127.0.0.1 ::1
             
             $openssl = Get-Command openssl -ErrorAction SilentlyContinue
             if (-not $openssl) {
@@ -99,20 +111,25 @@ if ($certsLanIp) {
                 }
             }
             if ($openssl) {
-                & $openssl pkcs12 -export -out "certs\client-$clientName.p12" -inkey "certs\client-$clientName-key.pem" -in "certs\client-$clientName.pem" -certfile "certs\rootCA.pem" -passout pass:
+                & $openssl pkcs12 -export -out $clientP12 -inkey $clientKey -in $clientPem -certfile $rootCaPem -passout pass:
                 
-                # Generate companion instructions and installer scripts
-                if (Test-Path "scripts\client-instructions-template.txt") {
-                    $inst = [System.IO.File]::ReadAllText("scripts\client-instructions-template.txt").Replace('{{CLIENT_NAME}}', $clientName)
-                    [System.IO.File]::WriteAllText("certs\client-$clientName-INSTRUCTIONS.txt", $inst)
+                # Generate companion instructions and installer scripts using script root paths
+                $templateDir = Join-Path $PSScriptRoot "scripts"
+                
+                $instructionsTemplate = Join-Path $templateDir "client-instructions-template.txt"
+                if (Test-Path $instructionsTemplate) {
+                    $inst = [System.IO.File]::ReadAllText($instructionsTemplate).Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText((Join-Path $certsDir "client-$clientName-INSTRUCTIONS.txt"), $inst)
                 }
-                if (Test-Path "scripts\client-install-template.bat") {
-                    $bat = [System.IO.File]::ReadAllText("scripts\client-install-template.bat").Replace('{{CLIENT_NAME}}', $clientName)
-                    [System.IO.File]::WriteAllText("certs\client-$clientName-install.bat", $bat)
+                $batTemplate = Join-Path $templateDir "client-install-template.bat"
+                if (Test-Path $batTemplate) {
+                    $bat = [System.IO.File]::ReadAllText($batTemplate).Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText((Join-Path $certsDir "client-$clientName-install.bat"), $bat)
                 }
-                if (Test-Path "scripts\client-install-template.sh") {
-                    $sh = [System.IO.File]::ReadAllText("scripts\client-install-template.sh").Replace('{{CLIENT_NAME}}', $clientName)
-                    [System.IO.File]::WriteAllText("certs\client-$clientName-install.sh", $sh)
+                $shTemplate = Join-Path $templateDir "client-install-template.sh"
+                if (Test-Path $shTemplate) {
+                    $sh = [System.IO.File]::ReadAllText($shTemplate).Replace('{{CLIENT_NAME}}', $clientName)
+                    [System.IO.File]::WriteAllText((Join-Path $certsDir "client-$clientName-install.sh"), $sh)
                 }
                 
                 Write-Host ">>> Auto-generated universal client certificate: certs\client-$clientName.p12" -ForegroundColor Green
@@ -124,8 +141,9 @@ if ($certsLanIp) {
     }
 
     # Automatically add detected LAN IP and hostname to DJANGO_ALLOWED_HOSTS in .env
-    if (Test-Path .env) {
-        $envContent = [System.IO.File]::ReadAllText(".env")
+    $envPath = Join-Path $PSScriptRoot ".env"
+    if (Test-Path $envPath) {
+        $envContent = [System.IO.File]::ReadAllText($envPath)
         if ($envContent -match 'DJANGO_ALLOWED_HOSTS=(.*)') {
             $existingHosts = $Matches[1].Trim()
             $hostArr = $existingHosts -split ',' | ForEach-Object { $_.Trim() }
@@ -141,7 +159,7 @@ if ($certsLanIp) {
             }
             if ($updated) {
                 $envContent = $envContent -replace 'DJANGO_ALLOWED_HOSTS=.*', "DJANGO_ALLOWED_HOSTS=$existingHosts"
-                [System.IO.File]::WriteAllText(".env", $envContent)
+                [System.IO.File]::WriteAllText($envPath, $envContent)
                 Write-Host ">>> Updated DJANGO_ALLOWED_HOSTS in .env with LAN IP ($certsLanIp) and hostname ($compName)" -ForegroundColor Green
             }
         }
