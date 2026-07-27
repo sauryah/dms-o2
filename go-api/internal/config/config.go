@@ -25,6 +25,7 @@ type Config struct {
 	DjangoAPIURL                string
 	SearchCacheTTLSeconds       int
 	InternalAPISecret           string
+	PostgresSSLMode             string
 }
 
 func Load() (*Config, error) {
@@ -56,6 +57,20 @@ func Load() (*Config, error) {
 	pgDB := os.Getenv("POSTGRES_DB")
 	if pgDB == "" {
 		pgDB = "dms"
+	}
+
+	pgSSLMode := os.Getenv("POSTGRES_SSLMODE")
+	if pgSSLMode == "" {
+		pgSSLMode = "disable"
+	}
+	validSSLModes := map[string]bool{
+		"disable":     true,
+		"require":     true,
+		"verify-ca":   true,
+		"verify-full": true,
+	}
+	if !validSSLModes[pgSSLMode] {
+		return nil, fmt.Errorf("invalid POSTGRES_SSLMODE '%s': must be disable, require, verify-ca, or verify-full", pgSSLMode)
 	}
 
 	meiliHost := os.Getenv("MEILI_HOST")
@@ -155,15 +170,17 @@ func Load() (*Config, error) {
 		DjangoAPIURL:                djangoAPIURL,
 		SearchCacheTTLSeconds:       searchCacheTTL,
 		InternalAPISecret:           internalAPISecret,
+		PostgresSSLMode:             pgSSLMode,
 	}, nil
 }
 
 func (c *Config) PostgresConnStr() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.PostgresHost,
 		c.PostgresPort,
 		c.PostgresUser,
 		c.PostgresPassword,
 		c.PostgresDB,
+		c.PostgresSSLMode,
 	)
 }

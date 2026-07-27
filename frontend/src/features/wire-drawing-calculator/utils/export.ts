@@ -1,6 +1,3 @@
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import type { PassData, Statistics } from '../types';
 import { formatNumber } from './parsing';
 
@@ -35,130 +32,142 @@ export function exportCSV(passes: PassData[], _stats: Statistics): void {
   downloadBlob(blob, 'wire-drawing-analysis.csv');
 }
 
-export function exportExcel(
+export async function exportExcel(
   passes: PassData[],
   stats: Statistics,
   _dies: number[]
-): void {
-  const wb = XLSX.utils.book_new();
+): Promise<void> {
+  try {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
 
-  const sheetData = [
-    [
-      'Pass',
-      'From Die (mm)',
-      'To Die (mm)',
-      'Area Before (mm²)',
-      'Area After (mm²)',
-      'Area Reduction (%)',
-      'Elongation (%)',
-      'Reduction Ratio',
-    ],
-    ...passes.map((p) => [
-      p.pass,
-      p.fromDie,
-      p.toDie,
-      parseFloat(formatNumber(p.areaBefore)),
-      parseFloat(formatNumber(p.areaAfter)),
-      parseFloat(formatNumber(p.areaReduction)),
-      parseFloat(formatNumber(p.elongation)),
-      parseFloat(formatNumber(p.reductionRatio)),
-    ]),
-    [],
-    ['Statistics'],
-    ['Total Passes', stats.totalPasses],
-    ['Starting Die (mm)', stats.startingDie],
-    ['Final Die (mm)', stats.finalDie],
-    ['Average Elongation (%)', parseFloat(formatNumber(stats.avgElongation))],
-    ['Maximum Elongation (%)', parseFloat(formatNumber(stats.maxElongation))],
-    ['Minimum Elongation (%)', parseFloat(formatNumber(stats.minElongation))],
-    [
-      'Average Area Reduction (%)',
-      parseFloat(formatNumber(stats.avgAreaReduction)),
-    ],
-    [
-      'Overall Area Reduction (%)',
-      parseFloat(formatNumber(stats.overallAreaReduction)),
-    ],
-    [
-      'Overall Reduction Ratio',
-      parseFloat(formatNumber(stats.overallReductionRatio)),
-    ],
-  ];
+    const sheetData = [
+      [
+        'Pass',
+        'From Die (mm)',
+        'To Die (mm)',
+        'Area Before (mm²)',
+        'Area After (mm²)',
+        'Area Reduction (%)',
+        'Elongation (%)',
+        'Reduction Ratio',
+      ],
+      ...passes.map((p) => [
+        p.pass,
+        p.fromDie,
+        p.toDie,
+        parseFloat(formatNumber(p.areaBefore)),
+        parseFloat(formatNumber(p.areaAfter)),
+        parseFloat(formatNumber(p.areaReduction)),
+        parseFloat(formatNumber(p.elongation)),
+        parseFloat(formatNumber(p.reductionRatio)),
+      ]),
+      [],
+      ['Statistics'],
+      ['Total Passes', stats.totalPasses],
+      ['Starting Die (mm)', stats.startingDie],
+      ['Final Die (mm)', stats.finalDie],
+      ['Average Elongation (%)', parseFloat(formatNumber(stats.avgElongation))],
+      ['Maximum Elongation (%)', parseFloat(formatNumber(stats.maxElongation))],
+      ['Minimum Elongation (%)', parseFloat(formatNumber(stats.minElongation))],
+      [
+        'Average Area Reduction (%)',
+        parseFloat(formatNumber(stats.avgAreaReduction)),
+      ],
+      [
+        'Overall Area Reduction (%)',
+        parseFloat(formatNumber(stats.overallAreaReduction)),
+      ],
+      [
+        'Overall Reduction Ratio',
+        parseFloat(formatNumber(stats.overallReductionRatio)),
+      ],
+    ];
 
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-  XLSX.utils.book_append_sheet(wb, ws, 'Die Schedule');
-  XLSX.writeFile(wb, 'wire-drawing-analysis.xlsx');
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Die Schedule');
+    XLSX.writeFile(wb, 'wire-drawing-analysis.xlsx');
+  } catch (error) {
+    console.error('Failed to load xlsx for export:', error);
+  }
 }
 
-export function exportPDF(
+export async function exportPDF(
   passes: PassData[],
   stats: Statistics,
   dies: number[]
-): void {
-  const doc = new jsPDF('landscape');
+): Promise<void> {
+  try {
+    const { default: jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
 
-  doc.setFontSize(18);
-  doc.text('Wire Drawing Die Elongation Report', 14, 20);
+    const doc = new jsPDF('landscape');
 
-  doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
-  doc.text(
-    `Die Schedule: ${dies.map((d) => formatNumber(d)).join(' → ')}`,
-    14,
-    36
-  );
+    doc.setFontSize(18);
+    doc.text('Wire Drawing Die Elongation Report', 14, 20);
 
-  const tableData = passes.map((p) => [
-    p.pass.toString(),
-    formatNumber(p.fromDie),
-    formatNumber(p.toDie),
-    formatNumber(p.areaBefore),
-    formatNumber(p.areaAfter),
-    formatNumber(p.areaReduction),
-    formatNumber(p.elongation),
-    formatNumber(p.reductionRatio),
-  ]);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
+    doc.text(
+      `Die Schedule: ${dies.map((d) => formatNumber(d)).join(' → ')}`,
+      14,
+      36
+    );
 
-  (doc as any).autoTable({
-    startY: 45,
-    head: [
-      [
-        'Pass',
-        'From Die',
-        'To Die',
-        'Area Before',
-        'Area After',
-        'Area Red. %',
-        'Elong. %',
-        'Red. Ratio',
+    const tableData = passes.map((p) => [
+      p.pass.toString(),
+      formatNumber(p.fromDie),
+      formatNumber(p.toDie),
+      formatNumber(p.areaBefore),
+      formatNumber(p.areaAfter),
+      formatNumber(p.areaReduction),
+      formatNumber(p.elongation),
+      formatNumber(p.reductionRatio),
+    ]);
+
+    (doc as any).autoTable({
+      startY: 45,
+ head: [
+        [
+          'Pass',
+          'From Die',
+          'To Die',
+          'Area Before',
+          'Area After',
+          'Area Red. %',
+          'Elong. %',
+          'Red. Ratio',
+        ],
       ],
-    ],
-    body: tableData,
-    theme: 'grid',
-    headStyles: { fillColor: [30, 58, 95] },
-  });
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 95] },
+    });
 
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
 
-  doc.setFontSize(12);
-  doc.text('Statistics', 14, finalY);
-  doc.setFontSize(10);
-  const statsLines = [
-    `Total Passes: ${stats.totalPasses}`,
-    `Starting Die: ${formatNumber(stats.startingDie)} mm`,
-    `Final Die: ${formatNumber(stats.finalDie)} mm`,
-    `Average Elongation: ${formatNumber(stats.avgElongation)}%`,
-    `Max Elongation: ${formatNumber(stats.maxElongation)}%`,
-    `Min Elongation: ${formatNumber(stats.minElongation)}%`,
-    `Average Area Reduction: ${formatNumber(stats.avgAreaReduction)}%`,
-    `Overall Area Reduction: ${formatNumber(stats.overallAreaReduction)}%`,
-    `Overall Reduction Ratio: ${formatNumber(stats.overallReductionRatio)}`,
-  ];
-  statsLines.forEach((line, i) => {
-    doc.text(line, 14, finalY + 7 + i * 6);
-  });
+    doc.setFontSize(12);
+    doc.text('Statistics', 14, finalY);
+    doc.setFontSize(10);
+    const statsLines = [
+      `Total Passes: ${stats.totalPasses}`,
+      `Starting Die: ${formatNumber(stats.startingDie)} mm`,
+      `Final Die: ${formatNumber(stats.finalDie)} mm`,
+      `Average Elongation: ${formatNumber(stats.avgElongation)}%`,
+      `Max Elongation: ${formatNumber(stats.maxElongation)}%`,
+      `Min Elongation: ${formatNumber(stats.minElongation)}%`,
+      `Average Area Reduction: ${formatNumber(stats.avgAreaReduction)}%`,
+      `Overall Area Reduction: ${formatNumber(stats.overallAreaReduction)}%`,
+      `Overall Reduction Ratio: ${formatNumber(stats.overallReductionRatio)}`,
+    ];
+    statsLines.forEach((line, i) => {
+      doc.text(line, 14, finalY + 7 + i * 6);
+    });
 
-  doc.save('wire-drawing-report.pdf');
+    doc.save('wire-drawing-report.pdf');
+  } catch (error) {
+    console.error('Failed to load jspdf for export:', error);
+  }
 }
 
 export function copyResultsToClipboard(

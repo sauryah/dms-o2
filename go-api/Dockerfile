@@ -11,5 +11,11 @@ FROM alpine:3.20
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/server .
+
+RUN addgroup -S dmsuser && adduser -S dmsuser -G dmsuser \
+    && chown -R dmsuser:dmsuser /app
+
+USER dmsuser
+
 EXPOSE 8080
 CMD ["./server"]

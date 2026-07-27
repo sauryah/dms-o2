@@ -121,3 +121,34 @@ func TestConfigProductionChecks(t *testing.T) {
 		t.Fatalf("expected success with secure credentials, got error: %v", err)
 	}
 }
+
+func TestConfigSSLMode(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("POSTGRES_PASSWORD", "db_secret_password")
+	os.Setenv("MEILI_MASTER_KEY", "meili_secret_key")
+	os.Setenv("DJANGO_SECRET_KEY", "django-insecure-development-secret-key-12345")
+	os.Setenv("INTERNAL_API_SECRET", "dms_internal_secret_default_key_998_longer")
+	os.Setenv("POSTGRES_SSLMODE", "require")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("expected no error loading config with sslmode require, got: %v", err)
+	}
+
+	if cfg.PostgresSSLMode != "require" {
+		t.Errorf("expected PostgresSSLMode require, got %s", cfg.PostgresSSLMode)
+	}
+
+	expectedConn := "host=db port=5432 user=dms_user password=db_secret_password dbname=dms sslmode=require"
+	if cfg.PostgresConnStr() != expectedConn {
+		t.Errorf("expected conn str %q, got %q", expectedConn, cfg.PostgresConnStr(), cfg.PostgresConnStr())
+	}
+
+	// Invalid sslmode
+	os.Setenv("POSTGRES_SSLMODE", "invalid-mode")
+	_, err = Load()
+	if err == nil {
+		t.Error("expected error for invalid POSTGRES_SSLMODE")
+	}
+}
+

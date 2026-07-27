@@ -63,24 +63,27 @@ func (m *EventManager) Start() {
 				Message: message,
 			}
 			m.nextID++
-		if len(m.history) >= 500 {
-			m.history = m.history[1:]
-		}
+			if len(m.history) >= 500 {
+				m.history = m.history[1:]
+			}
 			m.history = append(m.history, event)
 			m.mu.Unlock()
 
 			m.mu.RLock()
+			var staleClients []Client
 			for client := range m.clients {
 				select {
 				case client <- event:
 				default:
 					slog.Warn("SSE Client buffer full or blocked, unregistering client.")
-					go func(c Client) {
-						m.unregister <- c
-					}(client)
+					staleClients = append(staleClients, client)
 				}
 			}
 			m.mu.RUnlock()
+
+			for _, c := range staleClients {
+				m.unregister <- c
+			}
 		}
 	}
 }

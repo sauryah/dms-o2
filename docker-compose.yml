@@ -179,7 +179,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: celery -A dms beat -l warning
+    command: celery -A dms beat -l warning --pidfile=/tmp/celerybeat.pid
     volumes:
       - ./backend:/app
     environment:
@@ -190,6 +190,18 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid && kill -0 $$(cat /tmp/celerybeat.pid) 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.25'
 
 
   go-api:
@@ -203,6 +215,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
       - MEILI_HOST=${MEILI_HOST}
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - MEILI_SEARCH_KEY=${MEILI_SEARCH_KEY}
@@ -250,7 +263,7 @@ services:
     restart: unless-stopped
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
-      - MEILI_ENV=development
+      - MEILI_ENV=${MEILI_ENV:-production}
     volumes:
       - meili_data:/meili_data
     healthcheck:
