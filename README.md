@@ -486,13 +486,17 @@ Copy via USB, network share, email, etc.
 
 Choose the method matching the client machine's environment:
 
-##### Option A: Windows (PowerShell - Recommended)
-Run **PowerShell as Administrator** and execute:
+##### Option A: Windows (Automated Script - Recommended)
+1. Copy both `certs/rootCA.cer` and the installer script `scripts/install-cert.bat` to the same folder on the client machine.
+2. Right-click `install-cert.bat` and select **Run as Administrator**.
+
+##### Option B: Windows (PowerShell Manual Command)
+Run **PowerShell as Administrator** in the folder containing `rootCA.cer` and execute:
 ```powershell
 certutil -addstore -f "Root" rootCA.cer
 ```
 
-##### Option B: Windows (Graphical User Interface)
+##### Option C: Windows (Graphical User Interface)
 1. Double-click `rootCA.cer`.
 2. Click **Install Certificate...**
 3. Select **Local Machine** and click **Next**.
@@ -500,7 +504,7 @@ certutil -addstore -f "Root" rootCA.cer
 5. Select **Trusted Root Certification Authorities** and click **OK**.
 6. Click **Next** and click **Finish**.
 
-##### Option C: Mozilla Firefox (All Platforms)
+##### Option D: Mozilla Firefox (All Platforms)
 Firefox maintains an isolated certificate store:
 1. Open Firefox and navigate to `about:preferences#privacy`.
 2. Scroll to the **Certificates** section and click **View Certificates...**
@@ -508,7 +512,7 @@ Firefox maintains an isolated certificate store:
 4. Select `rootCA.cer` and check **Trust this CA to identify websites**.
 5. Click **OK** and restart Firefox.
 
-##### Option D: Google Chrome / Microsoft Edge (Alternative)
+##### Option E: Google Chrome / Microsoft Edge (Alternative)
 If Chrome does not inherit the Windows system store automatically:
 1. Go to `chrome://settings/certificates`.
 2. Navigate to **Authorities** and click **Import**.
