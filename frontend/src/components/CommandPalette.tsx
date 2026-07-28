@@ -276,15 +276,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, {} as Record<string, PaletteAction[]>)
 
   // Compute stable per-category offset so each action gets a deterministic flat index
-  const categoryOffsets = useMemo(() => {
-    const offsets: Record<string, number> = {}
-    let counter = 0
-    for (const cat of categories) {
-      offsets[cat] = counter
-      counter += groupedActions[cat].length
-    }
-    return offsets
-  }, [groupedActions])
+  const categoryOffsets: Record<string, number> = {}
+  let categoryOffsetCounter = 0
+  for (const cat of categories) {
+    categoryOffsets[cat] = categoryOffsetCounter
+    categoryOffsetCounter += groupedActions[cat].length
+  }
 
   const renderedCategories = categories.map(cat => {
     const catActions = groupedActions[cat]
