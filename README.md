@@ -50,7 +50,7 @@
   - [Command Utility (dms-backup.sh)](#command-utility-dms-backupsh)
 - [Security](#-security)
   - [TLS Certificates & Root CA](#tls-certificates--root-ca)
-- [LAN HTTPS Access from Other Computers](#-lan-https-access-from-other-computers)
+- [Client & User Access Installation Guide](#-client--user-access-installation-guide)
   - [Step 1: Copy the Root CA](#step-1-copy-the-root-ca)
   - [Step 2: Install the Certificate on the Client](#step-2-install-the-certificate-on-the-client)
   - [Step 3: Verify the Connection](#step-3-verify-the-connection)
@@ -192,7 +192,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 > [!TIP]
 > **LAN Network Access**
-> On completion, the setup scripts output your server's LAN IP address (e.g., `https://192.168.1.15`). Any device on the same local network can access the dashboard. To remove SSL browser warnings on client machines, see [LAN HTTPS Access from Other Computers](#lan-https-access-from-other-computers).
+> On completion, the setup scripts output your server's LAN IP address (e.g., `https://192.168.1.15`). Any device on the same local network can access the dashboard. To remove SSL browser warnings on client machines, see [Client & User Access Installation Guide](#-client--user-access-installation-guide).
 
 ---
 
@@ -471,7 +471,7 @@ DMS secures network connections using HTTPS/TLS. To access the application secur
 
 ---
 
-## 🔑 LAN HTTPS Access from Other Computers
+## 👥 Client & User Access Installation Guide
 
 To access the DMS dashboard from another computer on the same local network **without certificate warnings**, you need to install the server's root CA certificate (`rootCA.cer`) on each client device.
 
@@ -619,7 +619,7 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 | Symptom | Primary Cause | Resolution |
 | :--- | :--- | :--- |
 | **Cannot connect/access from phone or external device** | Server IP changed, host is not allowed in Django, or Windows network category is set to Public | DMS auto-detects the server IP during setup. If it fails, add the IP manually to `DJANGO_ALLOWED_HOSTS` in `.env` (e.g. `DJANGO_ALLOWED_HOSTS=...,192.168.1.15`) and restart: `docker compose restart django`. On Windows, run PowerShell as Administrator and execute `Set-NetConnectionProfile -InterfaceAlias Wi-Fi -NetworkCategory Private` to allow local routing. |
-| **Browser shows "Not Secure" or certificate warning** | Root CA certificate not installed on client machine | Follow the [LAN HTTPS Access Guide](#lan-https-access-from-other-computers) to install `rootCA.cer`. For Firefox, import the certificate manually via `about:preferences#privacy`. |
+| **Browser shows "Not Secure" or certificate warning** | Root CA certificate not installed on client machine | Follow the [Client & User Access Installation Guide](#-client--user-access-installation-guide) to install `rootCA.cer`. For Firefox, import the certificate manually via `about:preferences#privacy`. |
 | **`ERR_CERT_AUTHORITY_INVALID` in Chrome** | Chrome is ignoring the OS certificate store | Import the root CA directly via `chrome://settings/certificates` -> **Authorities** -> **Import**. |
 | **Certificate does not match IP (DNS/IP SAN error)** | Server IP address changed after cert generation | Regenerate certificates using `./scripts/generate-certs.sh` (Linux/macOS) or `scripts\generate-certs.bat` (Windows), then reinstall the new root CA on client machines. |
 
