@@ -1,8 +1,8 @@
-# 🛠️ DMS-O2
+# DMS-O2
 
 <p align="center">
-  <strong>Industrial-Grade Die Management System (DMS)</strong><br />
-  <em>Optimized for low-latency shop floor operations, offline resilience, and secure LAN asset tracking.</em>
+  <strong>Industrial-Grade Die Management System</strong><br />
+  <em>High-performance LAN platform for die tracking, inventory management, and auditing.</em>
 </p>
 
 <p align="center">
@@ -19,56 +19,50 @@
 
 ---
 
-**DMS-O2** is an industrial-grade, high-performance Local Area Network (LAN) platform for tracking, inventory management, and auditing of manufacturing dies. Designed for low latency, high concurrency shop floor operations, and offline resilience, it replaces unstructured spreadsheets with a structured, reliable source of truth.
+**DMS-O2** is an industrial-grade, high-performance Local Area Network (LAN) platform for die tracking, inventory management, and auditing. Built for low-latency shop floor operations with offline resilience, it replaces unstructured spreadsheets with a reliable source of truth.
 
-## 🖥️ Screen Preview
+## Table of Contents
 
-![DMS dashboard screenshot](docs/assets/dms-screenshot.png)
-
----
-
-## 📖 Table of Contents
-
-- [Overview & Architecture](#-overview--architecture)
-- [Key Features](#-key-features)
-- [Technology Stack](#-technology-stack)
-- [Quick Start](#-quick-start)
+- [Overview & Architecture](#overview--architecture)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [Quick Start](#quick-start)
   - [Prerequisites](#prerequisites)
   - [Installing mkcert](#installing-mkcert)
   - [Automated Setup](#automated-setup)
   - [Manual Setup (Alternative)](#manual-setup-alternative)
   - [Access Interfaces](#access-interfaces)
-- [Deploy with Docker (No Source Code)](#-deploy-with-docker-no-source-code)
-- [Configuration](#-configuration)
-- [Project Structure](#-project-structure)
-- [Usage Guide](#-usage-guide)
+- [Deploy with Docker (No Source Code)](#deploy-with-docker-no-source-code)
+- [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [Usage Guide](#usage-guide)
   - [Using Make (Recommended)](#using-make-recommended)
   - [Common Container Tasks](#common-container-tasks)
-  - [Keyboard Navigation](#-keyboard-navigation)
-- [Deployment & Upgrades](#-deployment--upgrades)
-- [Backup & Recovery](#-backup--recovery)
+  - [Keyboard Navigation](#keyboard-navigation)
+- [Deployment & Upgrades](#deployment--upgrades)
+- [Backup & Recovery](#backup--recovery)
   - [Command Utility (dms-backup.sh)](#command-utility-dms-backupsh)
-- [Security](#-security)
+- [Security](#security)
   - [TLS Certificates & Root CA](#tls-certificates--root-ca)
-- [Client & User Access Installation Guide](#-client--user-access-installation-guide)
+- [Client & User Access Installation Guide](#client--user-access-installation-guide)
   - [Step 1: Copy the Root CA](#step-1-copy-the-root-ca)
   - [Step 2: Install the Certificate on the Client](#step-2-install-the-certificate-on-the-client)
   - [Step 3: Verify the Connection](#step-3-verify-the-connection)
   - [Regenerating Certificates](#regenerating-certificates)
-- [Roadmap](#-roadmap)
-- [FAQ](#-faq)
-- [Troubleshooting](#-troubleshooting)
-  - [Full Docker Reset (Nuclear Option)](#-full-docker-reset-nuclear-option)
-- [Licensing & Compliance](#-licensing--compliance)
-- [Contributing](#-contributing)
-- [Support](#-support)
-- [Credits](#-credits)
+- [Roadmap](#roadmap)
+- [FAQ](#faq)
+- [Troubleshooting](#troubleshooting)
+  - [Full Docker Reset (Nuclear Option)](#full-docker-reset-nuclear-option)
+- [Licensing & Compliance](#licensing--compliance)
+- [Contributing](#contributing)
+- [Support](#support)
+- [Credits](#credits)
 
 ---
 
-## 🧠 Overview & Architecture
+## Overview & Architecture
 
-DMS-O2 is built as a microservice-oriented application optimized to deliver sub-millisecond read latency over local area networks (LAN). It uses a hybrid query execution design: fuzzy text searches are routed to Meilisearch, while numeric range queries run directly on PostgreSQL.
+DMS-O2 uses a hybrid query execution design: fuzzy text searches route to Meilisearch, while numeric range queries run directly on PostgreSQL. The architecture delivers sub-millisecond read latency over LAN.
 
 ```mermaid
 graph TD
@@ -96,34 +90,32 @@ graph TD
     classDef celery fill:#fdf2f8,stroke:#db2777,stroke-width:2px,color:#be185d;
 ```
 
-*For deep architectural design specifications, refer to [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
+*For deep architectural specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-* **Precision Die Modeling**: Custom tracking templates optimized for:
-  * **Round dies** (casing, current size, original size).
-  * **Flat dies** (width, thickness, corner radius).
-* **Interactive CAD Highlighting**: Bidirectional vector highlight syncing. Hovering over dimensions in tables glows the corresponding blueprint SVG node, and vice versa.
-* **Visual Storage Rack Map**: Drag-and-drop grid interface representing physical warehouse racks for rapid inventory relocation.
-* **Fuzzy & Parametric Search**: Blazing-fast lookup leveraging the Go search microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
+* **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius).
+* **Interactive CAD Highlighting**: Bidirectional vector sync between table dimensions and blueprint SVG nodes.
+* **Visual Storage Rack Map**: Drag-and-drop grid interface for physical warehouse rack management.
+* **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
 * **Granular Role-Based Access Control (RBAC)**:
-  * *Unauthenticated / Operator*: Read-only search, view metrics, and browse inventory.
+  * *Unauthenticated / Operator*: Read-only search, metrics, and inventory browsing.
   * *Admin*: Full CRUD on dies, machines, and sets, plus bulk spreadsheet imports.
-  * *Root*: User administration, database backup/restore operations, and system configuration.
-* **Immutable Auditing**: Database triggers and Django pre-save signals capture all modifications to die status, location, and dimensions.
-* **Session Management**: Concurrent session control with immediate eviction of previous logins upon new sign-ins.
+  * *Root*: User administration, database backup/restore, and system configuration.
+* **Immutable Auditing**: Database triggers and Django signals capture all modifications to die status, location, and dimensions.
+* **Session Management**: Single active session enforcement with immediate revocation on new sign-in.
 * **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
-* **3D von Mises Stress Heatmap & Flow Stream Visualizer**: Interactive WebGL 3D model visualizer (`StressHeatmap3D.tsx`) featuring real-time die angle/bearing sliders, cutaway slice plane, 3D chevron crack defect overlay, and 3D snapshot export.
-* **Theory & Fundamentals Workbench**: CAD Die Geometry Inspector SVG, math deformation simulator, Siebel's force calculations, and engineering trade-off comparison matrices (`TheoryPanel.tsx`).
-* **Granular Tool Permissions & Live Auth Sync**: Indented sub-feature tool permissions tree in `UserManager.tsx` (enabling/disabling individual calculation and 3D tools per user) with real-time background auto-sync in `AuthContext.tsx`.
-* **Frontend Resilience & Auto-Recovery**: Automatic dynamic import chunk load error recovery (`lazyWithRetry.ts`) and user-friendly update fallback screen (`ErrorBoundary.tsx`).
-* **Engineering Tools Suite**: Integrated die calculators, including the **Sizing & Elongation Calculator** and the high-fidelity **Wire Drawing Elongation Calculator** featuring interactive results tables, Suggesters, and PDF/Excel/CSV exports.
+* **3D Stress Analysis**: WebGL von Mises stress heatmaps with angle/bearing sliders, cutaway planes, crack defect overlays, and snapshot export.
+* **Engineering Workbench**: CAD geometry inspector, deformation simulator, Siebel's force calculations, and trade-off comparison matrices.
+* **Granular Tool Permissions**: Per-user feature toggles with real-time background auth sync.
+* **Frontend Resilience**: Automatic chunk load error recovery and update fallback handling.
+* **Engineering Calculators**: Sizing & elongation calculator, wire drawing calculator with interactive results, and PDF/Excel/CSV exports.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Component | Version | Role / Purpose |
 | :--- | :--- | :--- | :--- |
@@ -138,7 +130,7 @@ graph TD
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -172,7 +164,7 @@ Choose the command matching your host operating system:
 
 ### Automated Setup
 
-The system includes automated installers that copy configuration files, build containers, initialize databases, and generate certificates.
+The setup scripts automate container builds, database initialization, and certificate generation.
 
 #### Linux & macOS
 ```bash
@@ -205,7 +197,6 @@ If you prefer to configure the steps manually:
    cp .env.example .env
    ```
 2. **Generate TLS Certificates**:
-   Generate local certificates using the scripts before starting the containers:
    ```bash
    # Windows
    scripts\generate-certs.bat
@@ -214,7 +205,7 @@ If you prefer to configure the steps manually:
    chmod +x scripts/generate-certs.sh
    ./scripts/generate-certs.sh
    ```
-   *Or generate manually using `mkcert` directly (replace `YOUR_LAN_IP` with your server's IP):*
+   *Or generate directly with `mkcert` (replace `YOUR_LAN_IP`):*
    ```bash
    mkcert -install
    mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 YOUR_LAN_IP ::1
@@ -247,9 +238,9 @@ If you prefer to configure the steps manually:
 
 ---
 
-## 🐳 Deploy with Docker (No Source Code)
+## Deploy with Docker (No Source Code)
 
-To deploy DMS-O2 instantly using pre-built images without cloning this repository, execute:
+Deploy DMS-O2 using pre-built images without cloning the repository:
 
 ```bash
 mkdir dms && cd dms
@@ -263,9 +254,9 @@ docker compose -f docker-compose.ghcr.yml up -d
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-System variables are managed in the `.env` file in the project root.
+System variables managed in the `.env` file at the project root.
 
 > [!WARNING]
 > Ensure all secret keys and passwords are changed in production environments. Never commit `.env` files to git repositories.
@@ -291,7 +282,7 @@ System variables are managed in the `.env` file in the project root.
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 dms-o2/
@@ -345,11 +336,11 @@ dms-o2/
 
 ---
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### Using Make (Recommended)
 
-Run `make help` to view all CLI tasks:
+Run `make help` to view available CLI tasks:
 
 | Command | Description |
 | :--- | :--- |
@@ -367,32 +358,32 @@ Run `make help` to view all CLI tasks:
 
 ### Common Container Tasks
 
-* **Start the container stack**:
+* **Start the stack**:
   ```bash
   docker compose up -d
   ```
-* **Stop the stack (without deleting data)**:
+* **Stop without deleting data**:
   ```bash
   docker compose stop
   ```
-* **Bring the stack down (cleans containers and networks)**:
+* **Bring down (removes containers and networks)**:
   ```bash
   docker compose down
   ```
-* **View container logs**:
+* **View logs**:
   ```bash
   docker compose logs -f
   ```
-* **Database Interactive CLI**:
+* **Database CLI**:
   ```bash
   docker compose exec db psql -U dms_user -d dms
   ```
 
 ---
 
-### ⌨️ Keyboard Navigation
+### Keyboard Navigation
 
-To optimize for shop-floor speed, the search interface supports rapid keyboard shortcuts:
+Optimized for shop-floor speed with keyboard shortcuts:
 
 * <kbd>▲ ArrowUp</kbd> / <kbd>▼ ArrowDown</kbd> — Navigate up and down through list results.
 * <kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd> — Shift focus between input fields.
@@ -400,26 +391,27 @@ To optimize for shop-floor speed, the search interface supports rapid keyboard s
 
 ---
 
-## 📈 Deployment & Upgrades
+## Deployment & Upgrades
 
-Production-optimized assets use a high-concurrency setup:
+Production deployment uses high-concurrency configuration:
+
 1. **Nginx**: Serves compiled React assets with Gzip compression.
-2. **Gunicorn**: Serves the Django backend WSGI server.
-3. **Go Endpoint**: Bypasses Django entirely for high-speed read operations on `/api/go/*`.
+2. **Gunicorn**: WSGI server for Django backend.
+3. **Go Endpoint**: Bypasses Django for high-speed reads on `/api/go/*`.
 
 ### Production Deployment Script
 
-To deploy upgrades without downtime, use the integrated deployment automation script:
+Deploy upgrades without downtime using the integrated deployment script:
 ```bash
 ./deploy.sh
 ```
-This script pulls updates, verifies configuration files, builds changed containers, runs SQL migrations, and clears legacy docker caches.
+This script pulls updates, verifies configuration, builds changed containers, runs migrations, and clears legacy caches.
 
 ---
 
-## 💾 Backup & Recovery
+## Backup & Recovery
 
-A scheduled database container performs compressed dumps nightly at **2:00 AM** and persists them to the host folder `./backups/` with a **14-day retention cycle**.
+Automated nightly compressed database dumps at **2:00 AM** with **14-day retention**. Backups persist to `./backups/`.
 
 ### Command Utility (`dms-backup.sh`)
 
@@ -441,41 +433,41 @@ A scheduled database container performs compressed dumps nightly at **2:00 AM** 
 
 ---
 
-## 🛡️ Security
+## Security
 
 DMS-O2 is built with security-first practices to protect industrial assets and maintain server integrity on local shop floor networks.
 
 ### Core Security Controls
 
-* **Container Privilege Isolation**: All container processes run under a non-root system user (`USER dmsuser`) to prevent privilege escalation.
-* **Mutating API Protection**: All mutating cookie-based API calls require an `X-Requested-With: XMLHttpRequest` header to prevent CSRF attacks.
-* **HMAC Message Signing**: Celery outbox task payloads are signed using HMAC-SHA256 signatures and validated before execution.
-* **Insecure Credential Startup Invalidation**: System validation checks prevent running in production mode (`DJANGO_DEBUG=False`) with default insecure credentials.
-* **HTTPS Everywhere**: Traefik automatically enforces SSL/TLS for all inbound requests and redirects all plain HTTP traffic.
-* **Session Integrity**: Single active session enforcement: logging in from a new device immediately revokes older active sessions.
-* **Timing-Attack Countermeasures**: Shared microservice secrets (e.g., `INTERNAL_API_SECRET` for Django ↔ Go communication) are validated using timing-safe comparisons (`hmac.compare_digest`).
-* **Microservice Authentication**: Active Redis authentication (`--requirepass`) enforced across Go, Django, and Celery connections.
-* **Hardened Security Headers**: Complete Nginx static-serving headers including `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, and `Permissions-Policy`.
-* **Input Validation**: Strict input validation in all shell scripts and fully parameterized SQL queries to prevent SQL injections.
-* **Celery Task Safety**: Backup restore tasks pass token hashes instead of raw JWTs through the message broker.
+* **Container Isolation**: All processes run under a non-root user (`USER dmsuser`).
+* **CSRF Protection**: Mutating cookie-based API calls require `X-Requested-With: XMLHttpRequest`.
+* **HMAC Signing**: Celery outbox task payloads validated via HMAC-SHA256.
+* **Credential Validation**: Startup checks prevent production mode with default credentials.
+* **HTTPS Enforcement**: Traefik auto-enforces TLS and redirects all HTTP traffic.
+* **Session Integrity**: Single active session policy with immediate revocation.
+* **Timing-Safe Comparisons**: Microservice secrets validated using `hmac.compare_digest`.
+* **Redis Authentication**: `--requirepass` enforced across all service connections.
+* **Security Headers**: Nginx serves `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, and `Permissions-Policy`.
+* **Input Validation**: Parameterized SQL queries and strict shell script validation.
+* **Task Safety**: Backup restore tasks pass token hashes instead of raw JWTs.
 
 ---
 
 ### TLS Certificates & Root CA
 
-DMS secures network connections using HTTPS/TLS. To access the application securely from other machines without security warnings, each client device should trust the server's Root CA.
+DMS-O2 secures network connections via HTTPS/TLS. Client devices must trust the server's Root CA to access the dashboard without certificate warnings.
 
-*   **Server Certificates**: Auto-generated for your machine's LAN IP address during `setup.sh` / `setup.ps1` using [mkcert](https://github.com/FiloSottile/mkcert), stored locally in `certs/` (excluded from git), and valid for 2 years. Regenerable using `scripts/generate-certs.sh` or `scripts/generate-certs.bat`.
+* **Server Certificates**: Auto-generated for your LAN IP during setup using [mkcert](https://github.com/FiloSottile/mkcert). Stored in `certs/` (gitignored), valid for 2 years. Regenerate with `scripts/generate-certs.sh` or `scripts/generate-certs.bat`.
 
-*If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting.*
+*For security issues, see [Security Policy](SECURITY.md) for responsible vulnerability reporting guidelines.*
 
 ---
 
-## 👥 Client & User Access Installation Guide
+## Client & User Access Installation Guide
 
-To access the DMS dashboard from another computer on the same local network **without certificate warnings**, you need to install the server's root CA certificate (`rootCA.cer`) on each client device.
+To access DMS from another computer on the same LAN without certificate warnings, install the server's root CA certificate (`rootCA.cer`) on each client device.
 
-### 📋 Setup Workflow
+### Setup Workflow
 
 ```mermaid
 graph LR
@@ -490,10 +482,7 @@ graph LR
 ```
 
 #### Step 1: Copy the Root CA
-On the DMS server, copy this file from the `certs/` folder to the client computer:
-* `certs/rootCA.cer` *(DER format, optimized for Windows)*
-
-Copy via USB, network share, email, etc.
+Copy `certs/rootCA.cer` (DER format, optimized for Windows) from the DMS server to the client machine via USB, network share, or email.
 
 ---
 
@@ -536,17 +525,13 @@ If Chrome does not inherit the Windows system store automatically:
 ---
 
 #### Step 3: Verify the Connection
-Open the browser on the client machine and navigate to:
-```text
-https://<DMS_SERVER_IP>
-```
-The connection should now display a secure padlock icon with no warnings.
+Navigate to `https://<DMS_SERVER_IP>` in the client browser. The connection should display a secure padlock with no warnings.
 
 ---
 
 ### Regenerating Certificates
 
-If the server's IP address changes, you must regenerate the certificates:
+If the server's IP address changes, regenerate certificates:
 
 ```bash
 # Linux/macOS
@@ -556,53 +541,51 @@ If the server's IP address changes, you must regenerate the certificates:
 scripts\generate-certs.bat
 ```
 
-Or run `mkcert` directly, replacing `YOUR_LAN_IP` with your actual IP (e.g., `192.168.10.71`):
+Or run `mkcert` directly (replace `YOUR_LAN_IP`):
 ```bash
 mkcert -install
 mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 YOUR_LAN_IP ::1
 ```
 
-After generating, restart Traefik:
+After regeneration, restart Traefik and redistribute the new `rootCA.cer`:
 ```bash
 docker compose up -d --force-recreate traefik
 ```
-Then redistribute the new `rootCA.cer` to all client machines.
 
 ---
 
-## 📈 Roadmap
+## Roadmap
 
 The current priorities and roadmap items for DMS-O2 include:
 
-* **CAD Engine Extensions**: Direct import support for DWG/DXF dimensional schematics.
-* **Expanded Analytics**: Graphical historical wear trends and predictive cycle life tracking.
+* **CAD Engine Extensions**: DWG/DXF dimensional schematic import.
+* **Expanded Analytics**: Historical wear trends and predictive cycle life tracking.
 * **Multi-Warehouse Syncing**: Inter-facility inventory transfers with audit chain validation.
-* **ScyllaDB Migration**: Evaluation of high-throughput timeseries storage for die history logs.
+* **ScyllaDB Migration**: High-throughput timeseries storage for die history logs.
 
 ---
 
-## ❓ FAQ
+## FAQ
 
 #### How is concurrent session eviction handled?
-DMS enforces a single active session policy. When a user signs in from a different terminal or browser session, the previous session is immediately invalidated (returning `401 Unauthorized` on old requests).
+DMS enforces a single active session policy. Signing in from a new device immediately revokes the previous session (returning `401 Unauthorized`).
 
 #### How do I re-sync search indexes manually?
-If database records and Meilisearch indexes are out of sync, trigger a full re-index run:
 ```bash
 docker compose exec django python manage.py sync_search
 ```
 
 #### Can unauthenticated users move dies?
-No. Moving dies, adding new records, or editing states requires **Admin** or **Root** permissions. Unauthenticated users are strictly limited to search and view actions.
+No. Moving dies, adding records, or editing states requires **Admin** or **Root** permissions. Unauthenticated users are limited to search and view actions.
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 Below are solutions to common setup, network, and database issues. Click on a category to expand the troubleshooting steps.
 
 <details>
-<summary><b>🐳 Docker, Container & Port Issues</b></summary>
+<summary><b>Docker, Container & Port Issues</b></summary>
 
 | Symptom | Primary Cause | Resolution |
 | :--- | :--- | :--- |
@@ -614,7 +597,7 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 </details>
 
 <details>
-<summary><b>🔒 SSL, HTTPS & LAN Network Issues</b></summary>
+<summary><b>SSL, HTTPS & LAN Network Issues</b></summary>
 
 | Symptom | Primary Cause | Resolution |
 | :--- | :--- | :--- |
@@ -626,7 +609,7 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 </details>
 
 <details>
-<summary><b>🗄️ Database, Cache & Search Index Issues</b></summary>
+<summary><b>Database, Cache & Search Index Issues</b></summary>
 
 | Symptom | Primary Cause | Resolution |
 | :--- | :--- | :--- |
@@ -638,7 +621,7 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 </details>
 
 <details>
-<summary><b>🔑 Authentication, Sessions & Administration</b></summary>
+<summary><b>Authentication, Sessions & Administration</b></summary>
 
 | Symptom | Primary Cause | Resolution |
 | :--- | :--- | :--- |
@@ -650,9 +633,9 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 
 ---
 
-### ☢️ Full Docker Reset (Nuclear Option)
+### Full Docker Reset (Nuclear Option)
 
-If your Docker environment gets corrupted or you need to start from a completely clean slate, you can wipe all containers, images, networks, volumes, and build cache.
+For corrupted Docker environments or complete resets, wipe all containers, images, networks, volumes, and build cache.
 
 > [!WARNING]
 > This command will delete **ALL** Docker data on your system, not just DMS-O2 resources. Ensure you have backed up any unrelated Docker work.
@@ -669,26 +652,26 @@ docker rm -f $(docker ps -aq) 2>$null; docker rmi -f $(docker images -aq) 2>$nul
 
 ---
 
-## ⚖️ Licensing & Compliance
+## Licensing & Compliance
 
 DMS-O2 is a dual-licensed project designed to offer flexibility for both open-source development and proprietary commercial use:
 
-1. **Open Source (GNU AGPL-3.0)**: Free to run, copy, modify, and distribute. However, if you modify the software and host it over a network, you **must make your modifications publicly available** under the AGPL-3.0. Review the full terms in the [LICENSE](LICENSE) file.
-2. **Commercial License**: If your organization has policies against AGPL software, or you wish to make proprietary modifications without disclosing your source code, you must obtain a commercial license. Review details in [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) or contact the maintainers.
+1. **Open Source (GNU AGPL-3.0)**: Free to run, copy, modify, and distribute. Network-hosted modifications must be disclosed under AGPL-3.0. See [LICENSE](LICENSE).
+2. **Commercial License**: For organizations requiring proprietary modifications without disclosure. See [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
 
-For detailed intellectual property and branding rules, see:
-* **Copyright Details**: [COPYRIGHT.md](COPYRIGHT.md)
-* **Trademark Guidelines**: [TRADEMARK.md](TRADEMARK.md)
+Additional details:
+* **Copyright**: [COPYRIGHT.md](COPYRIGHT.md)
+* **Trademarks**: [TRADEMARK.md](TRADEMARK.md)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup instructions, testing workflows, and details on our Contributor License Agreement (CLA) which allows the dual-licensing of contributions.
+Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and CLA details.
 
 ### Pre-commit Hooks
 
-A pre-commit hook configuration is included in `.githooks/pre-commit` to verify Python syntax, check for `console.log` statements in frontend code, validate Dockerfiles, and detect secret leaks. To enable it:
+Included in `.githooks/pre-commit` to verify Python syntax, check for `console.log` statements, validate Dockerfiles, and detect secret leaks. Enable with:
 
 ```bash
 git config core.hooksPath .githooks
@@ -696,12 +679,12 @@ git config core.hooksPath .githooks
 
 ---
 
-## 📞 Support
+## Support
 
-For deployment support, bug reports, and customization assistance, check our [Support Guide](SUPPORT.md) to choose the best community or commercial support channel.
+For deployment support, bug reports, and customization assistance, see [Support Guide](SUPPORT.md).
 
 ---
 
-## 🏆 Credits
+## Credits
 
 Developed for industrial manufacturing shop floors by Sahil Pradhan.
