@@ -1,7 +1,10 @@
 # DMS-O2
 
 <p align="center">
-  <strong>Industrial-Grade Die Management System</strong><br />
+  <strong>Industrial-Grade Die Management System</strong>
+</p>
+
+<p align="center">
   <em>High-performance LAN platform for die tracking, inventory management, and auditing.</em>
 </p>
 
@@ -10,6 +13,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=flat-square" alt="License: AGPL v3"></a>
   <a href="https://hub.docker.com/r/sauryah/dms-backend"><img src="https://img.shields.io/docker/pulls/sauryah/dms-backend?style=flat-square" alt="Docker Pulls"></a>
   <a href="https://github.com/sauryah/dms-o2/actions"><img src="https://img.shields.io/github/actions/workflow/status/sauryah/dms-o2/docker-publish.yml?branch=main&style=flat-square" alt="Build Status"></a>
+</p>
+
+<p align="center">
   <a href="backend"><img src="https://img.shields.io/badge/Python-3.11-blue.svg?style=flat-square&logo=python" alt="Python Version"></a>
   <a href="go-api"><img src="https://img.shields.io/badge/Go-1.22-blue.svg?style=flat-square&logo=go" alt="Go Version"></a>
   <a href="frontend"><img src="https://img.shields.io/badge/React-18-blue.svg?style=flat-square&logo=react" alt="React Version"></a>
@@ -19,7 +25,9 @@
 
 ---
 
-**DMS-O2** is an industrial-grade, high-performance Local Area Network (LAN) platform for die tracking, inventory management, and auditing. Built for low-latency shop floor operations with offline resilience, it replaces unstructured spreadsheets with a reliable source of truth.
+<p align="center">
+  <strong>DMS-O2</strong> is an industrial-grade, high-performance Local Area Network (LAN) platform for die tracking, inventory management, and auditing. Built for low-latency shop floor operations with offline resilience, it replaces unstructured spreadsheets with a reliable source of truth.
+</p>
 
 ## Table of Contents
 
