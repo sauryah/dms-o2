@@ -27,15 +27,6 @@ interface HoverInfo {
 }
 
 export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
-  if (!passes || passes.length === 0) {
-    return (
-      <div className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-12 text-center">
-        <Activity className="h-8 w-8 text-slate-600 mx-auto mb-3" />
-        <p className="text-slate-400 text-sm">No pass data available. Generate a die schedule to view the 3D stress model.</p>
-      </div>
-    );
-  }
-
   const [selectedPassIdx, setSelectedPassIdx] = useState<number>(0);
   const [rotationX, setRotationX] = useState<number>(20);
   const [rotationY, setRotationY] = useState<number>(-35);
@@ -501,6 +492,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     setIsDragging(false);
     setHoverInfo(null);
   }, []);
+
+  if (!passes || passes.length === 0) {
+    return (
+      <div className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-12 text-center">
+        <Activity className="h-8 w-8 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400 text-sm">No pass data available. Generate a die schedule to view the 3D stress model.</p>
+      </div>
+    );
+  }
 
   const stressMin = stressRangeRef.current.min;
   const stressMax = stressRangeRef.current.max;
