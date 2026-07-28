@@ -204,16 +204,31 @@ If you prefer to configure the steps manually:
    ```bash
    cp .env.example .env
    ```
-2. **Start Services**:
+2. **Generate TLS Certificates**:
+   Generate local certificates using the scripts before starting the containers:
+   ```bash
+   # Windows
+   scripts\generate-certs.bat
+
+   # Linux/macOS
+   chmod +x scripts/generate-certs.sh
+   ./scripts/generate-certs.sh
+   ```
+   *Or generate manually using `mkcert` directly (replace `YOUR_LAN_IP` with your server's IP):*
+   ```bash
+   mkcert -install
+   mkcert -cert-file certs/cert.pem -key-file certs/key.pem localhost 127.0.0.1 YOUR_LAN_IP ::1
+   ```
+3. **Start Services**:
    ```bash
    docker compose up -d --build
    ```
-3. **Run Database Migrations & Seeds**:
+4. **Run Database Migrations & Seeds**:
    ```bash
    docker compose exec django python manage.py migrate
    docker compose exec django python manage.py create_root_user
    ```
-4. **Sync Search Indexes**:
+5. **Sync Search Indexes**:
    ```bash
    docker compose exec django python manage.py sync_search
    ```
