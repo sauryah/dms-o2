@@ -1,10 +1,6 @@
 tls:
   options:
-    default:
-      clientAuth:
-        caFiles:
-          - /certs/rootCA.pem
-        clientAuthType: RequireAndVerifyClientCert
+    default: {}
   stores:
     default:
       defaultCertificate:

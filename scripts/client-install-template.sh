@@ -58,10 +58,43 @@ else
     echo "[WARNING] Root CA file not found in this folder."
 fi
 
+# 3. Configure Browser Auto-Select Certificate Policies
+echo ""
+echo "[*] Configuring browser policies for automatic client certificate selection..."
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS Chrome
+    defaults write com.google.Chrome AutoSelectCertificateForUrls -array '{"pattern":"https://localhost","filter":{}}' '{"pattern":"https://127.0.0.1","filter":{}}' '{"pattern":"https://{{LAN_IP}}","filter":{}}' 2>/dev/null || true
+    echo "  [OK] Chrome auto-select policy configured."
+    
+    # macOS Edge
+    defaults write com.microsoft.Edge AutoSelectCertificateForUrls -array '{"pattern":"https://localhost","filter":{}}' '{"pattern":"https://127.0.0.1","filter":{}}' '{"pattern":"https://{{LAN_IP}}","filter":{}}' 2>/dev/null || true
+    echo "  [OK] Edge auto-select policy configured."
+    
+    # macOS Firefox
+    sudo mkdir -p "/Library/Application Support/Mozilla" 2>/dev/null || true
+    echo '{"policies": {"Preferences": {"security.default_personal_cert": "Select Automatically"}}}' | sudo tee "/Library/Application Support/Mozilla/policies.json" >/dev/null 2>&1 || true
+    echo "  [OK] Firefox auto-select policy configured."
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux Chrome
+    sudo mkdir -p /etc/opt/chrome/policies/managed 2>/dev/null || true
+    echo '{"AutoSelectCertificateForUrls": ["{\"pattern\":\"https://localhost\",\"filter\":{}}", "{\"pattern\":\"https://127.0.0.1\",\"filter\":{}}", "{\"pattern\":\"https://{{LAN_IP}}\",\"filter\":{}}"]}' | sudo tee /etc/opt/chrome/policies/managed/autoselect_cert.json >/dev/null 2>&1 || true
+    echo "  [OK] Chrome auto-select policy configured."
+    
+    # Linux Edge
+    sudo mkdir -p /etc/opt/edge/policies/managed 2>/dev/null || true
+    echo '{"AutoSelectCertificateForUrls": ["{\"pattern\":\"https://localhost\",\"filter\":{}}", "{\"pattern\":\"https://127.0.0.1\",\"filter\":{}}", "{\"pattern\":\"https://{{LAN_IP}}\",\"filter\":{}}"]}' | sudo tee /etc/opt/edge/policies/managed/autoselect_cert.json >/dev/null 2>&1 || true
+    echo "  [OK] Edge auto-select policy configured."
+    
+    # Linux Firefox
+    sudo mkdir -p /etc/firefox/policies 2>/dev/null || true
+    echo '{"policies": {"Preferences": {"security.default_personal_cert": "Select Automatically"}}}' | sudo tee /etc/firefox/policies/policies.json >/dev/null 2>&1 || true
+    echo "  [OK] Firefox auto-select policy configured."
+fi
+
 echo ""
 echo "========================================================================"
 echo "Installation complete!"
 echo "IMPORTANT: Please restart your browser completely for the changes to take effect."
-echo "When you visit the site, select the certificate named \"client-$CLIENT_NAME\"."
+echo "Browsers should now automatically select the \"client-$CLIENT_NAME\" certificate."
 echo "========================================================================"
 echo ""

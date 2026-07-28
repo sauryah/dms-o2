@@ -41,14 +41,14 @@ if [ -f "$DYNAMIC_YML" ] && grep -q "clientAuth:" "$DYNAMIC_YML"; then
         
         SCRIPTS_DIR="$(dirname "$0")"
         if [ -f "$SCRIPTS_DIR/client-install-template.bat" ]; then
-            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-install-template.bat" > "$CERTS_DIR/client-$CLIENT_NAME-install.bat"
+            sed -e "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" -e "s/{{LAN_IP}}/$LAN_IP/g" "$SCRIPTS_DIR/client-install-template.bat" > "$CERTS_DIR/client-$CLIENT_NAME-install.bat"
         fi
         if [ -f "$SCRIPTS_DIR/client-install-template.sh" ]; then
-            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-install-template.sh" > "$CERTS_DIR/client-$CLIENT_NAME-install.sh"
+            sed -e "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" -e "s/{{LAN_IP}}/$LAN_IP/g" "$SCRIPTS_DIR/client-install-template.sh" > "$CERTS_DIR/client-$CLIENT_NAME-install.sh"
             chmod +x "$CERTS_DIR/client-$CLIENT_NAME-install.sh"
         fi
         if [ -f "$SCRIPTS_DIR/client-instructions-template.txt" ]; then
-            sed "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" "$SCRIPTS_DIR/client-instructions-template.txt" > "$CERTS_DIR/client-$CLIENT_NAME-INSTRUCTIONS.txt"
+            sed -e "s/{{CLIENT_NAME}}/$CLIENT_NAME/g" -e "s/{{LAN_IP}}/$LAN_IP/g" "$SCRIPTS_DIR/client-instructions-template.txt" > "$CERTS_DIR/client-$CLIENT_NAME-INSTRUCTIONS.txt"
         fi
     fi
 fi

@@ -49,8 +49,7 @@
 - [Backup & Recovery](#-backup--recovery)
   - [Command Utility (dms-backup.sh)](#command-utility-dms-backupsh)
 - [Security](#-security)
-  - [TLS Certificates & Mutual TLS (mTLS)](#tls-certificates--mutual-tls-mtls)
-- [Generating and Installing Client Certificates (mTLS)](#-generating-and-installing-client-certificates-mtls)
+  - [TLS Certificates & Root CA](#tls-certificates--root-ca)
 - [LAN HTTPS Access from Other Computers](#-lan-https-access-from-other-computers)
   - [Step 1: Copy the Root CA](#step-1-copy-the-root-ca)
   - [Step 2: Install the Certificate on the Client](#step-2-install-the-certificate-on-the-client)
@@ -447,61 +446,17 @@ DMS-O2 is built with security-first practices to protect industrial assets and m
 
 ---
 
-### TLS Certificates & Mutual TLS (mTLS)
+### TLS Certificates & Root CA
 
-DMS enforces **Mutual TLS (mTLS)** for all network connections. In addition to the server proving its identity, each client device must present a valid client certificate to access the application.
+DMS secures network connections using HTTPS/TLS. To access the application securely from other machines without security warnings, each client device should trust the server's Root CA.
 
 *   **Server Certificates**: Auto-generated for your machine's LAN IP address during `setup.sh` / `setup.ps1` using [mkcert](https://github.com/FiloSottile/mkcert), stored locally in `certs/` (excluded from git), and valid for 2 years. Regenerable using `scripts/generate-certs.sh` or `scripts/generate-certs.bat`.
-*   **Client Certificates**: Required for each browser/client device. The setup scripts automatically generate a universal client certificate bundle (`client-universal.p12`) and its installer scripts. Additional certificates can be issued using the client generation scripts.
 
 *If you identify a security issue, please review our [Security Policy](SECURITY.md) for details on responsible vulnerability reporting.*
 
 ---
 
-## 🔑 Installing the Universal Client Certificate (mTLS)
-
-Since mTLS is active, any device attempting to connect without a client certificate will receive an `ERR_BAD_SSL_CLIENT_AUTH_CERT` error and be blocked at the TLS handshake level.
-
-The setup scripts automatically generate a universal client certificate in your `certs/` directory:
-1.  `client-universal.p12`: The client certificate bundle (contains private key and certificate).
-2.  `client-universal-install.bat`: One-click automated installer for Windows devices.
-3.  `client-universal-install.sh`: Automated installer script for macOS/Linux devices.
-4.  `client-universal-INSTRUCTIONS.txt`: A custom step-by-step manual installation sheet.
-
-### 1. Install the Certificate on the Client Device
-Copy the `.p12` certificate file, the appropriate installer script (`-install.bat` or `-install.sh`), and the server's root CA certificate (`rootCA.cer` or `rootCA.pem` from the `certs/` directory) to the client device.
-
-*   **Automated Installation (Recommended):**
-    *   **Windows**: Double-click `client-universal-install.bat`. It will request administrator privileges to automatically register the Root CA and install the client certificate.
-    *   **macOS/Linux**: Open terminal in the directory and run `./client-universal-install.sh` (which requests sudo privileges to register the Root CA).
-*   **Manual Installation (Fallback):**
-    *   **Windows (Chrome/Edge)**: Double-click the `.p12` file -> select **Current User** -> click Next -> leave the password **blank** -> choose **Place all certificates in the following store** -> click Browse -> select **Personal** (CRITICAL: Do not use Automatic) -> click OK -> Finish.
-    *   **Firefox (All Platforms)**: Go to Settings -> Privacy & Security -> View Certificates -> **Your Certificates** tab -> click Import -> select the `.p12` file (leave the password blank).
-    *   **macOS (Safari/Chrome)**: Double-click the `.p12` file -> import into the **login** keychain (leave the password blank).
-
-*Note: Restart your browser completely after installation. You will be prompted to select the client certificate when visiting the app.*
-
----
-
-### ⚠️ Troubleshooting mTLS Issues
-
-#### A. Firefox shows "Security Issue" or does not prompt for a certificate
-Mozilla Firefox uses an independent certificate store and ignores the Windows system store configured by the automated installer script.
-1. **Trust the Server CA:** Open Firefox -> Settings -> Search "Certificates" -> click **View Certificates...** -> select **Authorities** tab -> click **Import...** -> select `rootCA.pem` -> check **"Trust this CA to identify websites"** -> click **OK**.
-2. **Import the Client Cert:** In the same **View Certificates...** window, go to **Your Certificates** tab -> click **Import...** -> select `client-universal.p12` -> leave the password **blank** -> click **OK**.
-3. **Restart:** Fully restart Firefox.
-
-#### B. ERR_BAD_SSL_CLIENT_AUTH_CERT Error
-This occurs if the browser did not present a client certificate or presented a certificate that does not match the server's Root CA.
-1. **Clear SSL Cache (Windows):** Open the Start Menu -> search for **Internet Options** -> go to the **Content** tab -> click **Clear SSL State**.
-2. **Restart Browser:** Fully close all browser tabs and windows (check Task Manager for background browser processes) and reopen.
-3. **Mismatched Server CA:** If you re-ran setup and generated a new CA key:
-   * Restart Traefik on the server: `docker compose restart traefik`
-   * Run the client installer script (`install.bat` / `install.sh`) again on the client device to register the new certificates.
-
----
-
-## 🌐 LAN HTTPS Access from Other Computers
+## 🔑 LAN HTTPS Access from Other Computers
 
 To access the DMS dashboard from another computer on the same local network **without certificate warnings**, you need to install the server's root CA certificate (`rootCA.cer`) on each client device.
 

@@ -52,13 +52,13 @@ if exist "%DYNAMIC_YML%" (
         rem Generate template installer scripts
         set SCRIPTS_DIR=%~dp0
         if exist "%SCRIPTS_DIR%client-install-template.bat" (
-            powershell -Command "(Get-Content '%~dp0client-install-template.bat') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.bat'"
+            powershell -Command "(Get-Content '%~dp0client-install-template.bat') -replace '{{CLIENT_NAME}}', 'lihas.dms' -replace '{{LAN_IP}}', '%LAN_IP%' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.bat'"
         )
         if exist "%SCRIPTS_DIR%client-install-template.sh" (
-            powershell -Command "(Get-Content '%~dp0client-install-template.sh') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.sh'"
+            powershell -Command "(Get-Content '%~dp0client-install-template.sh') -replace '{{CLIENT_NAME}}', 'lihas.dms' -replace '{{LAN_IP}}', '%LAN_IP%' | Set-Content '%CERTS_DIR%\client-lihas.dms-install.sh'"
         )
         if exist "%SCRIPTS_DIR%client-instructions-template.txt" (
-            powershell -Command "(Get-Content '%~dp0client-instructions-template.txt') -replace '{{CLIENT_NAME}}', 'lihas.dms' | Set-Content '%CERTS_DIR%\client-lihas.dms-INSTRUCTIONS.txt'"
+            powershell -Command "(Get-Content '%~dp0client-instructions-template.txt') -replace '{{CLIENT_NAME}}', 'lihas.dms' -replace '{{LAN_IP}}', '%LAN_IP%' | Set-Content '%CERTS_DIR%\client-lihas.dms-INSTRUCTIONS.txt'"
         )
     )
 )
