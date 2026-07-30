@@ -2,6 +2,25 @@ import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '../../hooks/useApi'
 import { useToast } from '../../contexts'
 
+interface SequenceResultStep {
+  draft: number
+  inlet: number
+  outlet: number
+  reduction: number
+  elongation: number
+  drawingRatio: number
+  flowStress: number
+  drawingStress: number
+  drawingForce: number
+  power: number
+}
+
+interface SequenceResults {
+  steps: SequenceResultStep[]
+  totalReduction: number
+  totalElongation: number
+}
+
 export function useCalculatorState() {
   const { request } = useApi()
   const { showToast } = useToast()
@@ -95,7 +114,7 @@ export function useCalculatorState() {
   const flatValidationError = getFlatValidationError()
 
   const [roundResults, setRoundResults] = useState<any>(null)
-  const [sequenceResults, setSequenceResults] = useState<any>(null)
+  const [sequenceResults, setSequenceResults] = useState<SequenceResults | null>(null)
   const [flatResults, setFlatResults] = useState<any>(null)
 
   const [loadingRound, setLoadingRound] = useState(false)
