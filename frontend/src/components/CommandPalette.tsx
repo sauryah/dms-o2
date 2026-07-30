@@ -266,8 +266,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     }
   }, [activeIndex])
 
-  if (!isOpen) return null
-
   // Group actions by category
   const categories = ['Navigation', 'Search Results', 'Status Updates'] as const
   const groupedActions = categories.reduce((acc, cat) => {
@@ -285,6 +283,8 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     }
     return offsets
   }, [groupedActions])
+
+  if (!isOpen) return null
 
   const renderedCategories = categories.map(cat => {
     const catActions = groupedActions[cat]
