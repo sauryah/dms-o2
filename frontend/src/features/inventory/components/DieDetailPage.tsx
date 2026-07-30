@@ -1236,7 +1236,9 @@ export function DieDetailPage() {
       const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
       // Optimistically update single die caches
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       queryClient.setQueryData(['die', id], (old: any) => old ? { ...old, ...data } : old)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       queryClient.setQueryData(['dieDetail', id], (old: any) => old ? { ...old, ...data } : old)
 
       // Optimistically update list caches
