@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -892,4 +893,1118 @@ func escapeMeiliFilterValue(s string) string {
 	s = strings.ReplaceAll(s, "\n", "")
 	s = strings.ReplaceAll(s, "\r", "")
 	return s
+}
+
+// Calculator requests and responses
+
+type RoundCalcRequest struct {
+	CalcMode      string  `json:"calc_mode"`
+	Inlet         float64 `json:"inlet"`
+	Outlet        float64 `json:"outlet"`
+	TargetRed     float64 `json:"target_red"`
+	TargetElong   float64 `json:"target_elong"`
+	MaterialType  string  `json:"material_type"`
+	CustomLimit   float64 `json:"custom_limit"`
+	DrawSpeed     float64 `json:"draw_speed"`
+	DieAngle      float64 `json:"die_angle"`
+	YieldStrength float64 `json:"yield_strength"`
+	UTS           float64 `json:"uts"`
+	Lubrication   string  `json:"lubrication"`
+}
+
+type RoundCalcResponse struct {
+	Inlet           float64 `json:"inlet"`
+	Outlet          float64 `json:"outlet"`
+	Reduction       float64 `json:"reduction"`
+	Elongation      float64 `json:"elongation"`
+	ElongationRatio float64 `json:"elongation_ratio"`
+	InArea          float64 `json:"in_area"`
+	OutArea         float64 `json:"out_area"`
+	DiameterRatio   float64 `json:"diameter_ratio"`
+	FlowStress      float64 `json:"flow_stress"`
+	DrawingStress   float64 `json:"drawing_stress"`
+	DrawingForce    float64 `json:"drawing_force"`
+	PowerKw         float64 `json:"power_kw"`
+	FrictionCoef    float64 `json:"friction_coef"`
+	MaterialLimit   float64 `json:"material_limit"`
+}
+
+type FlatCalcRequest struct {
+	InWidth       float64 `json:"in_width"`
+	InThick       float64 `json:"in_thick"`
+	OutWidth      float64 `json:"out_width"`
+	OutThick      float64 `json:"out_thick"`
+	MaterialType  string  `json:"material_type"`
+	CustomLimit   float64 `json:"custom_limit"`
+	DrawSpeed     float64 `json:"draw_speed"`
+	DieAngle      float64 `json:"die_angle"`
+	YieldStrength float64 `json:"yield_strength"`
+	UTS           float64 `json:"uts"`
+	Lubrication   string  `json:"lubrication"`
+}
+
+type FlatCalcResponse struct {
+	InArea        float64 `json:"in_area"`
+	OutArea       float64 `json:"out_area"`
+	Reduction     float64 `json:"reduction"`
+	Elongation    float64 `json:"elongation"`
+	AspectIn      float64 `json:"aspect_in"`
+	AspectOut     float64 `json:"aspect_out"`
+	WidthRed      float64 `json:"width_red"`
+	ThickRed      float64 `json:"thick_red"`
+	FlowStress    float64 `json:"flow_stress"`
+	DrawingStress float64 `json:"drawing_stress"`
+	DrawingForce  float64 `json:"drawing_force"`
+	PowerKw       float64 `json:"power_kw"`
+	FrictionCoef  float64 `json:"friction_coef"`
+	MaterialLimit float64 `json:"material_limit"`
+}
+
+type SequenceCalcRequest struct {
+	Start         float64 `json:"start"`
+	End           float64 `json:"end"`
+	Reduction     float64 `json:"reduction"`
+	OptMode       string  `json:"opt_mode"`
+	MaterialType  string  `json:"material_type"`
+	CustomLimit   float64 `json:"custom_limit"`
+	DrawSpeed     float64 `json:"draw_speed"`
+	DieAngle      float64 `json:"die_angle"`
+	YieldStrength float64 `json:"yield_strength"`
+	UTS           float64 `json:"uts"`
+	Lubrication   string  `json:"lubrication"`
+}
+
+type SequenceStep struct {
+	Draft         int     `json:"draft"`
+	Inlet         float64 `json:"inlet"`
+	Outlet        float64 `json:"outlet"`
+	Reduction     float64 `json:"reduction"`
+	Elongation    float64 `json:"elongation"`
+	DrawingRatio  float64 `json:"drawing_ratio"`
+	FlowStress    float64 `json:"flow_stress"`
+	DrawingStress float64 `json:"drawing_stress"`
+	DrawingForce  float64 `json:"drawing_force"`
+	Power         float64 `json:"power"`
+}
+
+type SequenceCalcResponse struct {
+	Steps           []SequenceStep `json:"steps"`
+	TotalReduction  float64        `json:"total_reduction"`
+	TotalElongation float64        `json:"total_elongation"`
+}
+
+// Calculation logic helpers
+
+func getFrictionCoefficient(lubrication string) float64 {
+	switch lubrication {
+	case "hydrodynamic":
+		return 0.02
+	case "dry_soap":
+		return 0.04
+	case "wet_oil":
+		return 0.06
+	case "boundary":
+		return 0.10
+	default:
+		return 0.04
+	}
+}
+
+func getFlowStress(inArea, outArea float64, yieldStrength float64, materialType string) float64 {
+	if inArea <= 0 || outArea <= 0 {
+		return yieldStrength
+	}
+	epsilon := math.Log(inArea / outArea)
+	if epsilon <= 0 {
+		return yieldStrength
+	}
+
+	var K, n float64
+	y0 := yieldStrength
+
+	switch materialType {
+	case "copper_soft":
+		K = 315
+		n = 0.54
+	case "copper_hard":
+		K = 450
+		n = 0.10
+	case "aluminum":
+		K = 180
+		n = 0.20
+	case "steel_low":
+		K = 530
+		n = 0.26
+	case "custom":
+		fallthrough
+	default:
+		return y0 + 150*epsilon
+	}
+	return y0 + (K*math.Pow(epsilon, n))/(n+1)
+}
+
+func getDrawingStress(inArea, outArea, alphaRad float64, yieldStrength float64, materialType string, mu float64) float64 {
+	if inArea <= outArea || alphaRad <= 0 || inArea <= 0 || outArea <= 0 {
+		return 0
+	}
+	epsilon := math.Log(inArea / outArea)
+	r := (inArea - outArea) / inArea
+	if r <= 0 {
+		return 0
+	}
+	delta := (alphaRad / r) * (2 - r)
+	phi := 0.88 + 0.12*delta
+	flowStress := getFlowStress(inArea, outArea, yieldStrength, materialType)
+	return flowStress * (1 + mu/math.Tan(alphaRad)) * epsilon * phi
+}
+
+func getMaterialLimit(materialType string, customLimit float64) float64 {
+	switch materialType {
+	case "copper_soft":
+		return 30.0
+	case "copper_hard":
+		return 20.0
+	case "aluminum":
+		return 25.0
+	case "steel_low":
+		return 22.0
+	case "custom":
+		return customLimit
+	default:
+		return 30.0
+	}
+}
+
+// Handlers
+
+func (h *Handler) HandleCalculateRound(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req RoundCalcRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if req.Inlet <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Inlet diameter must be a positive number greater than 0 mm.")
+		return
+	}
+
+	inArea := math.Pi * math.Pow(req.Inlet/2, 2)
+	var outlet, reduction, elongation, elongationRatio, outArea, diameterRatio float64
+
+	switch req.CalcMode {
+	case "forward":
+		if req.Outlet <= 0 {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Outlet diameter must be a positive number greater than 0 mm.")
+			return
+		}
+		if req.Outlet >= req.Inlet {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, fmt.Sprintf("Outlet diameter (%.2f mm) must be strictly smaller than inlet diameter (%.2f mm).", req.Outlet, req.Inlet))
+			return
+		}
+		outlet = req.Outlet
+		outArea = math.Pi * math.Pow(outlet/2, 2)
+		reduction = ((inArea - outArea) / inArea) * 100
+		elongation = ((inArea / outArea) - 1) * 100
+		elongationRatio = inArea / outArea
+		diameterRatio = req.Inlet / outlet
+
+	case "backward_red":
+		if req.TargetRed <= 0 || req.TargetRed >= 100 {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Target area reduction % must be between 0% and 100%.")
+			return
+		}
+		reduction = req.TargetRed
+		outArea = inArea * (1 - reduction/100)
+		outlet = 2 * math.Sqrt(outArea/math.Pi)
+		elongation = ((inArea / outArea) - 1) * 100
+		elongationRatio = inArea / outArea
+		diameterRatio = req.Inlet / outlet
+
+	case "backward_elong":
+		if req.TargetElong <= 0 {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Target elongation % must be a positive number greater than 0%.")
+			return
+		}
+		elongation = req.TargetElong
+		outArea = inArea / (1 + elongation/100)
+		outlet = 2 * math.Sqrt(outArea/math.Pi)
+		reduction = ((inArea - outArea) / inArea) * 100
+		elongationRatio = 1 + elongation/100
+		diameterRatio = req.Inlet / outlet
+
+	default:
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Invalid calculation mode.")
+		return
+	}
+
+	alphaRad := (req.DieAngle * math.Pi) / 180
+	mu := getFrictionCoefficient(req.Lubrication)
+	flowStress := getFlowStress(inArea, outArea, req.YieldStrength, req.MaterialType)
+	drawingStress := getDrawingStress(inArea, outArea, alphaRad, req.YieldStrength, req.MaterialType, mu)
+	drawingForce := outArea * drawingStress
+	powerKw := (drawingForce * req.DrawSpeed) / 1000
+	matLimit := getMaterialLimit(req.MaterialType, req.CustomLimit)
+
+	resp := RoundCalcResponse{
+		Inlet:           req.Inlet,
+		Outlet:          outlet,
+		Reduction:       reduction,
+		Elongation:      elongation,
+		ElongationRatio: elongationRatio,
+		InArea:          inArea,
+		OutArea:         outArea,
+		DiameterRatio:   diameterRatio,
+		FlowStress:      flowStress,
+		DrawingStress:   drawingStress,
+		DrawingForce:    drawingForce,
+		PowerKw:         powerKw,
+		FrictionCoef:    mu,
+		MaterialLimit:   matLimit,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) HandleCalculateFlat(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req FlatCalcRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if req.InWidth <= 0 || req.InThick <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Inlet width and thickness must be positive numbers greater than 0 mm.")
+		return
+	}
+	if req.OutWidth <= 0 || req.OutThick <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Outlet width and thickness must be positive numbers greater than 0 mm.")
+		return
+	}
+
+	inArea := req.InWidth * req.InThick
+	outArea := req.OutWidth * req.OutThick
+
+	if outArea >= inArea {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, fmt.Sprintf("Finished outlet cross-section area (%.2f mm²) must be smaller than inlet area (%.2f mm²).", outArea, inArea))
+		return
+	}
+
+	reduction := ((inArea - outArea) / inArea) * 100
+	elongation := ((inArea / outArea) - 1) * 100
+	aspectIn := req.InWidth / req.InThick
+	aspectOut := req.OutWidth / req.OutThick
+	widthRed := ((req.InWidth - req.OutWidth) / req.InWidth) * 100
+	thickRed := ((req.InThick - req.OutThick) / req.InThick) * 100
+
+	alphaRad := (req.DieAngle * math.Pi) / 180
+	mu := getFrictionCoefficient(req.Lubrication)
+	flowStress := getFlowStress(inArea, outArea, req.YieldStrength, req.MaterialType)
+	drawingStress := getDrawingStress(inArea, outArea, alphaRad, req.YieldStrength, req.MaterialType, mu)
+	drawingForce := outArea * drawingStress
+	powerKw := (drawingForce * req.DrawSpeed) / 1000
+	matLimit := getMaterialLimit(req.MaterialType, req.CustomLimit)
+
+	resp := FlatCalcResponse{
+		InArea:        inArea,
+		OutArea:       outArea,
+		Reduction:     reduction,
+		Elongation:    elongation,
+		AspectIn:      aspectIn,
+		AspectOut:     aspectOut,
+		WidthRed:      widthRed,
+		ThickRed:      thickRed,
+		FlowStress:    flowStress,
+		DrawingStress: drawingStress,
+		DrawingForce:  drawingForce,
+		PowerKw:       powerKw,
+		FrictionCoef:  mu,
+		MaterialLimit: matLimit,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) HandleCalculateSequence(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req SequenceCalcRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if req.Start <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Start diameter must be a positive number greater than 0 mm.")
+		return
+	}
+	if req.End <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "End diameter must be a positive number greater than 0 mm.")
+		return
+	}
+	if req.Start <= req.End {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, fmt.Sprintf("Start diameter (%.2f mm) must be strictly greater than target end diameter (%.2f mm).", req.Start, req.End))
+		return
+	}
+	if req.Reduction <= 0 || req.Reduction >= 100 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Average reduction % per pass must be between 0% and 100%.")
+		return
+	}
+
+	steps := []SequenceStep{}
+	currentDia := req.Start
+	safetyCounter := 0
+	currentRed := req.Reduction
+	if req.OptMode == "graduated" {
+		currentRed = math.Min(req.Reduction*1.25, 30.0)
+	}
+
+	mu := getFrictionCoefficient(req.Lubrication)
+	alphaRad := (req.DieAngle * math.Pi) / 180
+
+	for currentDia > req.End && safetyCounter < 50 {
+		safetyCounter++
+		targetRedMultiplier := 1 - currentRed/100
+		nextArea := (math.Pi * math.Pow(currentDia/2, 2)) * targetRedMultiplier
+		nextDia := 2 * math.Sqrt(nextArea/math.Pi)
+
+		var stepInArea, stepOutArea, actualRed, actualElong, drawingRatio float64
+
+		if nextDia <= req.End {
+			stepInArea = math.Pi * math.Pow(currentDia/2, 2)
+			stepOutArea = math.Pi * math.Pow(req.End/2, 2)
+			actualRed = ((stepInArea - stepOutArea) / stepInArea) * 100
+			actualElong = ((stepInArea / stepOutArea) - 1) * 100
+			drawingRatio = stepInArea / stepOutArea
+
+			flowStress := getFlowStress(stepInArea, stepOutArea, req.YieldStrength, req.MaterialType)
+			drawingStress := getDrawingStress(stepInArea, stepOutArea, alphaRad, req.YieldStrength, req.MaterialType, mu)
+			drawingForce := stepOutArea * drawingStress
+			power := (drawingForce * req.DrawSpeed) / 1000
+
+			steps = append(steps, SequenceStep{
+				Draft:         len(steps) + 1,
+				Inlet:         currentDia,
+				Outlet:        req.End,
+				Reduction:     actualRed,
+				Elongation:    actualElong,
+				DrawingRatio:  drawingRatio,
+				FlowStress:    flowStress,
+				DrawingStress: drawingStress,
+				DrawingForce:  drawingForce,
+				Power:         power,
+			})
+			break
+		} else {
+			stepInArea = math.Pi * math.Pow(currentDia/2, 2)
+			stepOutArea = nextArea
+			actualRed = currentRed
+			actualElong = (1/targetRedMultiplier - 1) * 100
+			drawingRatio = 1 / targetRedMultiplier
+
+			flowStress := getFlowStress(stepInArea, stepOutArea, req.YieldStrength, req.MaterialType)
+			drawingStress := getDrawingStress(stepInArea, stepOutArea, alphaRad, req.YieldStrength, req.MaterialType, mu)
+			drawingForce := stepOutArea * drawingStress
+			power := (drawingForce * req.DrawSpeed) / 1000
+
+			steps = append(steps, SequenceStep{
+				Draft:         len(steps) + 1,
+				Inlet:         currentDia,
+				Outlet:        nextDia,
+				Reduction:     actualRed,
+				Elongation:    actualElong,
+				DrawingRatio:  drawingRatio,
+				FlowStress:    flowStress,
+				DrawingStress: drawingStress,
+				DrawingForce:  drawingForce,
+				Power:         power,
+			})
+			currentDia = nextDia
+			if req.OptMode == "graduated" {
+				currentRed = math.Max(currentRed*0.88, 8.0)
+			}
+		}
+	}
+
+	startArea := math.Pi * math.Pow(req.Start/2, 2)
+	endArea := math.Pi * math.Pow(req.End/2, 2)
+	totalReduction := ((startArea - endArea) / startArea) * 100
+	totalElongation := ((startArea / endArea) - 1) * 100
+
+	resp := SequenceCalcResponse{
+		Steps:           steps,
+		TotalReduction:  totalReduction,
+		TotalElongation: totalElongation,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+// Wire Drawing calculation schemas
+
+type WireDrawingCalcRequest struct {
+	Dies []float64 `json:"dies"`
+}
+
+type PassData struct {
+	Pass           int     `json:"pass"`
+	FromDie        float64 `json:"from_die"`
+	ToDie          float64 `json:"to_die"`
+	AreaBefore     float64 `json:"area_before"`
+	AreaAfter      float64 `json:"area_after"`
+	AreaReduction  float64 `json:"area_reduction"`
+	Elongation     float64 `json:"elongation"`
+	ReductionRatio float64 `json:"reduction_ratio"`
+}
+
+type WireDrawingStats struct {
+	TotalPasses           int     `json:"total_passes"`
+	StartingDie           float64 `json:"starting_die"`
+	FinalDie              float64 `json:"final_die"`
+	AvgElongation         float64 `json:"avg_elongation"`
+	MaxElongation         float64 `json:"max_elongation"`
+	MinElongation         float64 `json:"min_elongation"`
+	AvgAreaReduction      float64 `json:"avg_area_reduction"`
+	OverallAreaReduction  float64 `json:"overall_area_reduction"`
+	OverallReductionRatio float64 `json:"overall_reduction_ratio"`
+}
+
+type ConsistencyData struct {
+	AvgElongation float64 `json:"avg_elongation"`
+	Variation     float64 `json:"variation"`
+	QualityRating string  `json:"quality_rating"`
+	Stars         int     `json:"stars"`
+}
+
+type WireDrawingCalcResponse struct {
+	Passes      []PassData        `json:"passes"`
+	Stats       WireDrawingStats  `json:"stats"`
+	Consistency ConsistencyData   `json:"consistency"`
+}
+
+func (h *Handler) HandleCalculateWireDrawing(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req WireDrawingCalcRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if len(req.Dies) < 2 {
+		resp := WireDrawingCalcResponse{
+			Passes: []PassData{},
+			Stats: WireDrawingStats{
+				TotalPasses: 0,
+				StartingDie: 0,
+				FinalDie:    0,
+			},
+			Consistency: ConsistencyData{
+				AvgElongation: 0,
+				Variation:     0,
+				QualityRating: "N/A",
+				Stars:         0,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	passes := make([]PassData, 0, len(req.Dies)-1)
+	for i := 0; i < len(req.Dies)-1; i++ {
+		fromDie := req.Dies[i]
+		toDie := req.Dies[i+1]
+		areaBefore := (math.Pi * fromDie * fromDie) / 4
+		areaAfter := (math.Pi * toDie * toDie) / 4
+		areaReduction := (1 - (toDie*toDie)/(fromDie*fromDie)) * 100
+		elongation := ((fromDie*fromDie)/(toDie*toDie) - 1) * 100
+		reductionRatio := (fromDie * fromDie) / (toDie * toDie)
+
+		passes = append(passes, PassData{
+			Pass:           i + 1,
+			FromDie:        fromDie,
+			ToDie:          toDie,
+			AreaBefore:     areaBefore,
+			AreaAfter:      areaAfter,
+			AreaReduction:  areaReduction,
+			Elongation:     elongation,
+			ReductionRatio: reductionRatio,
+		})
+	}
+
+	elongations := make([]float64, 0, len(passes))
+	reductions := make([]float64, 0, len(passes))
+	var sumElong, sumRed float64
+
+	for _, p := range passes {
+		elongations = append(elongations, p.Elongation)
+		reductions = append(reductions, p.AreaReduction)
+		sumElong += p.Elongation
+		sumRed += p.AreaReduction
+	}
+
+	avgElong := sumElong / float64(len(passes))
+	avgRed := sumRed / float64(len(passes))
+
+	var maxElong, minElong float64
+	if len(elongations) > 0 {
+		maxElong = elongations[0]
+		minElong = elongations[0]
+		for _, e := range elongations {
+			if e > maxElong {
+				maxElong = e
+			}
+			if e < minElong {
+				minElong = e
+			}
+		}
+	}
+
+	var maxDeviation float64
+	for _, e := range elongations {
+		dev := math.Abs(e - avgElong)
+		if dev > maxDeviation {
+			maxDeviation = dev
+		}
+	}
+
+	var stars int
+	var qualityRating string
+	if maxDeviation <= 1 {
+		stars = 5
+		qualityRating = "Excellent"
+	} else if maxDeviation <= 2 {
+		stars = 4
+		qualityRating = "Very Good"
+	} else if maxDeviation <= 3 {
+		stars = 3
+		qualityRating = "Good"
+	} else if maxDeviation <= 5 {
+		stars = 2
+		qualityRating = "Fair"
+	} else {
+		stars = 1
+		qualityRating = "Poor"
+	}
+
+	startingDie := req.Dies[0]
+	finalDie := req.Dies[len(req.Dies)-1]
+	overallAreaReduction := (1 - (finalDie*finalDie)/(startingDie*startingDie)) * 100
+	overallReductionRatio := (startingDie * startingDie) / (finalDie * finalDie)
+
+	resp := WireDrawingCalcResponse{
+		Passes: passes,
+		Stats: WireDrawingStats{
+			TotalPasses:           len(passes),
+			StartingDie:           startingDie,
+			FinalDie:              finalDie,
+			AvgElongation:         avgElong,
+			MaxElongation:         maxElong,
+			MinElongation:         minElong,
+			AvgAreaReduction:      avgRed,
+			OverallAreaReduction:  overallAreaReduction,
+			OverallReductionRatio: overallReductionRatio,
+		},
+		Consistency: ConsistencyData{
+			AvgElongation: avgElong,
+			Variation:     maxDeviation,
+			QualityRating: qualityRating,
+			Stars:         stars,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+// Pass Optimizer structs
+
+type PassAssignmentInput struct {
+	StartDia        float64 `json:"startDia"`
+	TargetDia       float64 `json:"targetDia"`
+	AvgReduction    float64 `json:"avgReduction"`
+	OptMode         string  `json:"optMode"`
+	MaterialType    string  `json:"materialType"`
+	Lubrication     string  `json:"lubrication"`
+	DrawSpeed       float64 `json:"drawSpeed"`
+	DieAngle        float64 `json:"dieAngle"`
+	SearchTolerance float64 `json:"searchTolerance"`
+	CustomYield     float64 `json:"customYield,omitempty"`
+}
+
+type PassAssignmentInfo struct {
+	Die          database.DieRepresentation `json:"die"`
+	Status       string                     `json:"status"`
+	SizeDelta    float64                    `json:"sizeDelta"`
+	LocationText string                     `json:"locationText"`
+}
+
+type OptimizerPassResult struct {
+	Step             SequenceStep        `json:"step"`
+	Assignment       *PassAssignmentInfo `json:"assignment"`
+	DrawStress       float64             `json:"drawStress"`
+	FlowStress       float64             `json:"flowStress"`
+	TempRise         float64             `json:"tempRise"`
+	CentralBurstRisk string              `json:"centralBurstRisk"`
+	PowerKw          float64             `json:"powerKw"`
+}
+
+type OptimizerResult struct {
+	Passes          []OptimizerPassResult `json:"passes"`
+	TotalReduction  float64               `json:"totalReduction"`
+	TotalElongation float64               `json:"totalElongation"`
+	GapsCount       int                   `json:"gapsCount"`
+	AssignedCount   int                   `json:"assignedCount"`
+	MaxStress       float64               `json:"maxStress"`
+	MaxTempRise     float64               `json:"maxTempRise"`
+	UsedDieIds      []string              `json:"usedDieIds"`
+}
+
+func (h *Handler) HandleOptimizePasses(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req PassAssignmentInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if req.StartDia <= 0 || req.TargetDia <= 0 || req.StartDia <= req.TargetDia {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "Invalid start or target diameter parameters")
+		return
+	}
+
+	matProps, exists := materialProps[req.MaterialType]
+	if !exists {
+		matProps = materialProps["copper_soft"]
+	}
+
+	mu := getFrictionCoefficient(req.Lubrication)
+	alphaRad := (req.DieAngle * math.Pi) / 180
+
+	steps := []SequenceStep{}
+	currentDia := req.StartDia
+	safetyCounter := 0
+	currentRed := req.AvgReduction
+	if req.OptMode == "graduated" {
+		currentRed = math.Min(req.AvgReduction*1.25, 30.0)
+	}
+
+	for currentDia > req.TargetDia && safetyCounter < 50 {
+		safetyCounter++
+		targetRedMultiplier := 1 - currentRed/100
+		nextArea := (math.Pi * math.Pow(currentDia/2, 2)) * targetRedMultiplier
+		nextDia := 2 * math.Sqrt(nextArea/math.Pi)
+
+		var stepInArea, stepOutArea, actualRed, actualElong, drawingRatio float64
+
+		if nextDia <= req.TargetDia {
+			stepInArea = math.Pi * math.Pow(currentDia/2, 2)
+			stepOutArea = math.Pi * math.Pow(req.TargetDia/2, 2)
+			actualRed = ((stepInArea - stepOutArea) / stepInArea) * 100
+			actualElong = ((stepInArea / stepOutArea) - 1) * 100
+			drawingRatio = stepInArea / stepOutArea
+
+			steps = append(steps, SequenceStep{
+				Draft:        len(steps) + 1,
+				Inlet:        currentDia,
+				Outlet:       req.TargetDia,
+				Reduction:    actualRed,
+				Elongation:   actualElong,
+				DrawingRatio: drawingRatio,
+			})
+			break
+		} else {
+			stepInArea = math.Pi * math.Pow(currentDia/2, 2)
+			stepOutArea = nextArea
+			actualRed = currentRed
+			actualElong = (1/targetRedMultiplier - 1) * 100
+			drawingRatio = 1 / targetRedMultiplier
+
+			steps = append(steps, SequenceStep{
+				Draft:        len(steps) + 1,
+				Inlet:        currentDia,
+				Outlet:       nextDia,
+				Reduction:    actualRed,
+				Elongation:   actualElong,
+				DrawingRatio: drawingRatio,
+			})
+			currentDia = nextDia
+			if req.OptMode == "graduated" {
+				currentRed = math.Max(currentRed*0.88, 8.0)
+			}
+		}
+	}
+
+	if len(steps) == 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "No passes generated — check input parameters")
+		return
+	}
+
+	usedDieIdsMap := make(map[string]bool)
+	usedDieIdsList := []string{}
+	passResults := []OptimizerPassResult{}
+
+	var maxStress, maxTempRise float64
+
+	for _, step := range steps {
+		inArea := math.Pi * math.Pow(step.Inlet/2, 2)
+		outArea := math.Pi * math.Pow(step.Outlet/2, 2)
+
+		yieldVal := matProps.YieldStrength
+		if req.CustomYield > 0 {
+			yieldVal = req.CustomYield
+		}
+		flowStress := getFlowStress(inArea, outArea, yieldVal, req.MaterialType)
+		drawStress := getDrawingStress(inArea, outArea, alphaRad, yieldVal, req.MaterialType, mu)
+		powerKw := (outArea * drawStress * req.DrawSpeed) / 1000
+		tempRise := (drawStress * (step.Elongation / 100)) / (matProps.Density * matProps.SpecificHeat)
+
+		// Central burst risk (Hollomon)
+		val := step.DrawingRatio * math.Sin(alphaRad)
+		centralBurstRisk := "danger"
+		if val > 1.4 {
+			centralBurstRisk = "safe"
+		} else if val > 1.0 {
+			centralBurstRisk = "caution"
+		}
+
+		if drawStress > maxStress {
+			maxStress = drawStress
+		}
+		if tempRise > maxTempRise {
+			maxTempRise = tempRise
+		}
+
+		var assignment *PassAssignmentInfo = nil
+
+		// Database Lookup & Ranking
+		sizeMin := fmt.Sprintf("%.3f", step.Outlet-req.SearchTolerance)
+		sizeMax := fmt.Sprintf("%.3f", step.Outlet+req.SearchTolerance)
+
+		dies, err := h.db.QueryPostgresDirectly(r.Context(), "", "ROUND", "", "", sizeMin, sizeMax, "", "", "", "", "", "", "", 5, 0)
+		if err == nil && len(dies) > 0 {
+			// Rank matching dies
+			var bestDie *database.DieRepresentation = nil
+			var bestScore int = 999999
+			var bestDelta float64 = 999999.0
+
+			for _, d := range dies {
+				if usedDieIdsMap[d.DieID] {
+					continue
+				}
+				prio, ok := statusPriority[d.Status]
+				if !ok {
+					prio = 99
+				}
+				dieSize := 0.0
+				if d.CurrentSize != nil {
+					dieSize, _ = strconv.ParseFloat(*d.CurrentSize, 64)
+				}
+				delta := math.Abs(dieSize - step.Outlet)
+
+				if prio < bestScore || (prio == bestScore && delta < bestDelta) {
+					bestDie = &d
+					bestScore = prio
+					bestDelta = delta
+				}
+			}
+
+			if bestDie != nil {
+				usedDieIdsMap[bestDie.DieID] = true
+				usedDieIdsList = append(usedDieIdsList, bestDie.DieID)
+
+				locationText := bestDie.Location
+				if bestDie.RackName != "" && bestDie.Shelf != nil && *bestDie.Shelf > 0 {
+					locationText = fmt.Sprintf("%s - S%d", bestDie.RackName, *bestDie.Shelf)
+				} else if locationText == "" {
+					locationText = "Unassigned"
+				}
+
+				assignment = &PassAssignmentInfo{
+					Die:          *bestDie,
+					Status:       bestDie.Status,
+					SizeDelta:    bestDelta,
+					LocationText: locationText,
+				}
+			}
+		}
+
+		passResults = append(passResults, OptimizerPassResult{
+			Step:             step,
+			Assignment:       assignment,
+			DrawStress:       drawStress,
+			FlowStress:       flowStress,
+			TempRise:         tempRise,
+			CentralBurstRisk: centralBurstRisk,
+			PowerKw:          powerKw,
+		})
+	}
+
+	startArea := math.Pi * math.Pow(req.StartDia/2, 2)
+	endArea := math.Pi * math.Pow(req.TargetDia/2, 2)
+	totalReduction := ((startArea - endArea) / startArea) * 100
+	totalElongation := ((startArea / endArea) - 1) * 100
+
+	var gapsCount, assignedCount int
+	for _, p := range passResults {
+		if p.Assignment == nil {
+			gapsCount++
+		} else {
+			assignedCount++
+		}
+	}
+
+	resp := OptimizerResult{
+		Passes:          passResults,
+		TotalReduction:  totalReduction,
+		TotalElongation: totalElongation,
+		GapsCount:       gapsCount,
+		AssignedCount:   assignedCount,
+		MaxStress:       maxStress,
+		MaxTempRise:     maxTempRise,
+		UsedDieIds:      usedDieIdsList,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+// Material settings
+type MaterialProp struct {
+	Density      float64 // g/cm3
+	SpecificHeat float64 // J/g-C
+	K            float64
+	N            float64
+	YieldStrength float64
+}
+
+var materialProps = map[string]MaterialProp{
+	"copper_soft": {Density: 8.96, SpecificHeat: 0.385, K: 315, N: 0.54, YieldStrength: 70},
+	"copper_hard": {Density: 8.96, SpecificHeat: 0.385, K: 450, N: 0.10, YieldStrength: 250},
+	"aluminum":    {Density: 2.70, SpecificHeat: 0.900, K: 180, N: 0.20, YieldStrength: 80},
+	"steel_low":   {Density: 7.85, SpecificHeat: 0.450, K: 530, N: 0.26, YieldStrength: 250},
+}
+
+var statusPriority = map[string]int{
+	"AVAILABLE":   0,
+	"RUNNING":     1,
+	"CLEANING":    2,
+	"POLISHING":   3,
+	"MAINTENANCE": 4,
+	"DAMAGED":     5,
+	"SCRAPPED":    6,
+	"MISSING":     7,
+}
+
+// Die Series schemas and logic
+
+type DieSeriesRequest struct {
+	Mode       string  `json:"mode"`
+	DStart     float64 `json:"d_start"`
+	DEnd       float64 `json:"d_end"`
+	Elongation float64 `json:"elongation"`
+	PassCount  int     `json:"pass_count"`
+	ShowRange  bool    `json:"show_range"`
+	RangeMin   float64 `json:"range_min"`
+	RangeMax   float64 `json:"range_max"`
+}
+
+type DieSeriesResponse struct {
+	Series        []float64  `json:"series"`
+	Passes        []PassData `json:"passes"`
+	AvgElongation float64    `json:"avg_elongation"`
+}
+
+func calculatePassCountForElongation(dStart, dEnd, elongation float64) int {
+	if elongation <= 0 || dStart <= dEnd {
+		return 0
+	}
+	factor := 1 + elongation/100
+	ratio := dStart / dEnd
+	return int(math.Ceil(math.Log(ratio) / math.Log(math.Sqrt(factor))))
+}
+
+func generateDieSeriesFromElongation(dStart, dEnd, elongation, rangeMin, rangeMax float64, hasRange bool) []float64 {
+	maxPasses := calculatePassCountForElongation(dStart, dEnd, elongation)
+	if maxPasses <= 0 {
+		return []float64{dStart}
+	}
+
+	if !hasRange || maxPasses <= 1 {
+		factor := math.Sqrt(1 + elongation/100)
+		series := []float64{dStart}
+		for i := 1; i <= maxPasses; i++ {
+			val := dStart / math.Pow(factor, float64(i))
+			series = append(series, math.Round(val*1000)/1000)
+		}
+		if series[len(series)-1] < dEnd {
+			series[len(series)-1] = dEnd
+		}
+		return series
+	}
+
+	factor := math.Sqrt(1 + elongation/100)
+	for mainPasses := maxPasses; mainPasses >= 1; mainPasses-- {
+		dAfterMain := dStart / math.Pow(factor, float64(mainPasses))
+		finalElong := ((dAfterMain * dAfterMain) / (dEnd * dEnd) - 1) * 100
+
+		if finalElong >= rangeMin-0.01 && finalElong <= rangeMax+0.01 {
+			series := []float64{dStart}
+			for i := 1; i <= mainPasses; i++ {
+				val := dStart / math.Pow(factor, float64(i))
+				series = append(series, math.Round(val*1000)/1000)
+			}
+			clampedElong := math.Max(rangeMin, math.Min(rangeMax, finalElong))
+			dFinal := dAfterMain / math.Sqrt(1+clampedElong/100)
+			series = append(series, math.Round(dFinal*1000)/1000)
+			if series[len(series)-1] < dEnd {
+				series[len(series)-1] = dEnd
+			}
+			return series
+		}
+	}
+
+	series := []float64{dStart}
+	for i := 1; i <= maxPasses; i++ {
+		val := dStart / math.Pow(factor, float64(i))
+		series = append(series, math.Round(val*1000)/1000)
+	}
+	dAfterMain := series[len(series)-1]
+	clampedElong := math.Max(rangeMin, math.Min(rangeMax, elongation))
+	dFinal := dAfterMain / math.Sqrt(1+clampedElong/100)
+	series = append(series, math.Round(dFinal*1000)/1000)
+	if series[len(series)-1] < dEnd {
+		series[len(series)-1] = dEnd
+	}
+	return series
+}
+
+func generateDieSeriesFromPasses(dStart, elongation, rangeMin, rangeMax float64, passCount int, hasRange bool) []float64 {
+	if passCount <= 0 || elongation <= 0 {
+		return []float64{dStart}
+	}
+
+	factor := math.Sqrt(1 + elongation/100)
+	series := []float64{dStart}
+
+	if passCount <= 2 || !hasRange {
+		for i := 1; i <= passCount; i++ {
+			val := dStart / math.Pow(factor, float64(i))
+			series = append(series, math.Round(val*1000)/1000)
+		}
+		return series
+	}
+
+	for i := 1; i <= passCount-1; i++ {
+		val := dStart / math.Pow(factor, float64(i))
+		series = append(series, math.Round(val*1000)/1000)
+	}
+
+	dAfterMain := series[len(series)-1]
+	finalElong := math.Max(rangeMin, math.Min(rangeMax, elongation))
+	dFinal := dAfterMain / math.Sqrt(1+finalElong/100)
+	series = append(series, math.Round(dFinal*1000)/1000)
+	return series
+}
+
+func (h *Handler) HandleGenerateDieSeries(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return
+	}
+
+	var req DieSeriesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	if req.DStart <= 0 || req.Elongation <= 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "d_start and elongation must be greater than 0")
+		return
+	}
+
+	var series []float64
+	if req.Mode == "target" {
+		if req.DEnd <= 0 || req.DEnd >= req.DStart {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "d_end must be greater than 0 and less than d_start")
+			return
+		}
+		series = generateDieSeriesFromElongation(req.DStart, req.DEnd, req.Elongation, req.RangeMin, req.RangeMax, req.ShowRange)
+	} else {
+		if req.PassCount <= 0 {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "pass_count must be greater than 0")
+			return
+		}
+		series = generateDieSeriesFromPasses(req.DStart, req.Elongation, req.RangeMin, req.RangeMax, req.PassCount, req.ShowRange)
+	}
+
+	passes := make([]PassData, 0, len(series)-1)
+	var sumElong float64
+	for i := 0; i < len(series)-1; i++ {
+		fromDie := series[i]
+		toDie := series[i+1]
+		areaBefore := (math.Pi * fromDie * fromDie) / 4
+		areaAfter := (math.Pi * toDie * toDie) / 4
+		areaReduction := (1 - (toDie*toDie)/(fromDie*fromDie)) * 100
+		elongation := ((fromDie*fromDie)/(toDie*toDie) - 1) * 100
+		reductionRatio := (fromDie * fromDie) / (toDie * toDie)
+		sumElong += elongation
+
+		passes = append(passes, PassData{
+			Pass:           i + 1,
+			FromDie:        fromDie,
+			ToDie:          toDie,
+			AreaBefore:     areaBefore,
+			AreaAfter:      areaAfter,
+			AreaReduction:  areaReduction,
+			Elongation:     elongation,
+			ReductionRatio: reductionRatio,
+		})
+	}
+
+	var avgElong float64
+	if len(passes) > 0 {
+		avgElong = sumElong / float64(len(passes))
+	}
+
+	resp := DieSeriesResponse{
+		Series:        series,
+		Passes:        passes,
+		AvgElongation: avgElong,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }

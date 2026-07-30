@@ -25,7 +25,6 @@ interface FlatCalculatorProps {
   uts: string
 
   // Physics helpers
-  getDrawingStress: (inArea: number, outArea: number, alphaRad: number) => number
   getMaterialLimit: () => number
 
   // Die matching
@@ -51,7 +50,6 @@ export function FlatCalculator({
   materialType,
   yieldStrength,
   uts,
-  getDrawingStress,
   getMaterialLimit,
   matchingDies,
   loadingDies,
@@ -445,10 +443,9 @@ export function FlatCalculator({
                     Mechanical Tension & Power
                   </h4>
                   {(() => {
-                    const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                    const sigmaD = getDrawingStress(flatResults.inArea, flatResults.outArea, alphaRad)
-                    const forceN = flatResults.outArea * sigmaD
-                    const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                    const sigmaD = flatResults.drawingStress || 0
+                    const forceN = flatResults.drawingForce || 0
+                    const powerKw = flatResults.powerKw || 0
                     const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
 
                     const epsilon = Math.log(flatResults.inArea / flatResults.outArea)

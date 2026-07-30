@@ -863,4 +863,103 @@ func TestHandleSearch_MeilisearchFailureFallback(t *testing.T) {
 	}
 }
 
+func TestHandleCalculateRound(t *testing.T) {
+	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+
+	t.Run("invalid_method", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/go/tools/calculate/round", nil)
+		w := httptest.NewRecorder()
+		h.HandleCalculateRound(w, req)
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("expected Method Not Allowed (405), got %d", w.Code)
+		}
+	})
+
+	t.Run("forward_mode_valid", func(t *testing.T) {
+		body := `{"calc_mode":"forward","inlet":8.0,"outlet":6.5,"die_angle":7.0,"draw_speed":2.0,"yield_strength":70.0,"uts":220.0,"lubrication":"dry_soap","material_type":"copper_soft"}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/round", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateRound(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp RoundCalcResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.Inlet != 8.0 || resp.Outlet != 6.5 {
+			t.Errorf("expected inlet 8.0, outlet 6.5, got: %+v", resp)
+		}
+		if resp.Reduction <= 0 {
+			t.Errorf("expected positive reduction, got: %f", resp.Reduction)
+		}
+	})
+}
+
+func TestHandleCalculateFlat(t *testing.T) {
+	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+
+	t.Run("valid_flat", func(t *testing.T) {
+		body := `{"in_width":20.0,"in_thick":5.0,"out_width":18.0,"out_thick":4.5,"die_angle":7.0,"draw_speed":2.0,"yield_strength":70.0,"uts":220.0,"lubrication":"dry_soap","material_type":"copper_soft"}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/flat", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateFlat(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d", w.Code)
+		}
+		var resp FlatCalcResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.InArea != 100.0 || resp.OutArea != 81.0 {
+			t.Errorf("expected inArea 100, outArea 81, got: %+v", resp)
+		}
+	})
+}
+
+func TestHandleCalculateSequence(t *testing.T) {
+	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+
+	t.Run("valid_sequence", func(t *testing.T) {
+		body := `{"start":8.0,"end":2.5,"reduction":20.0,"opt_mode":"constant","die_angle":7.0,"draw_speed":2.0,"yield_strength":70.0,"uts":220.0,"lubrication":"dry_soap","material_type":"copper_soft"}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/sequence", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateSequence(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp SequenceCalcResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(resp.Steps) == 0 {
+			t.Errorf("expected steps to be generated, got 0")
+		}
+	})
+}
+
+func TestHandleCalculateWireDrawing(t *testing.T) {
+	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+
+	t.Run("valid_wire_drawing", func(t *testing.T) {
+		body := `{"dies":[2.49, 2.217, 1.974, 1.757]}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/wire-drawing", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateWireDrawing(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp WireDrawingCalcResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(resp.Passes) != 3 {
+			t.Errorf("expected 3 passes, got %d", len(resp.Passes))
+		}
+		if resp.Stats.TotalPasses != 3 {
+			t.Errorf("expected total passes statistic to be 3, got %d", resp.Stats.TotalPasses)
+		}
+	})
+}
+
 

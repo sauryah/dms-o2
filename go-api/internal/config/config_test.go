@@ -141,7 +141,7 @@ func TestConfigSSLMode(t *testing.T) {
 
 	expectedConn := "host=db port=5432 user=dms_user password=db_secret_password dbname=dms sslmode=require"
 	if cfg.PostgresConnStr() != expectedConn {
-		t.Errorf("expected conn str %q, got %q", expectedConn, cfg.PostgresConnStr(), cfg.PostgresConnStr())
+		t.Errorf("expected conn str %q, got %q", expectedConn, cfg.PostgresConnStr())
 	}
 
 	// Invalid sslmode

@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState, Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
-import { calculatePassData, calculateStatistics, calculateConsistency } from '../features/wire-drawing-calculator/utils/calculations';
+import { useApi } from '../hooks/useApi';
 import Header from '../features/wire-drawing-calculator/components/Header';
 import InputPanel from '../features/wire-drawing-calculator/components/InputPanel';
 import ResultsTable from '../features/wire-drawing-calculator/components/ResultsTable';
@@ -77,10 +77,71 @@ export function WireDrawingCalculatorPage() {
   const canAccess3DHeatmap = isRoot || authorizedTools.includes('3d-stress-heatmap');
   const canAccessTheory = isRoot || authorizedTools.includes('engineering-theory');
 
-  const passes = calculatePassData(dies);
-  const stats = calculateStatistics(dies, passes);
-  const consistency = calculateConsistency(passes);
-  
+  const { request } = useApi();
+  const [passes, setPasses] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [consistency, setConsistency] = useState<any>(null);
+
+  useEffect(() => {
+    if (dies.length < 2) {
+      setPasses([]);
+      setStats(null);
+      setConsistency(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await request('/api/go/tools/calculate/wire-drawing', {
+          method: 'POST',
+          body: JSON.stringify({ dies }),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        });
+        if (res) {
+          // Map snake_case response fields to camelCase expected by frontend components
+          setPasses(res.passes.map((p: any) => ({
+            pass: p.pass,
+            fromDie: p.from_die,
+            toDie: p.to_die,
+            areaBefore: p.area_before,
+            areaAfter: p.area_after,
+            areaReduction: p.area_reduction,
+            elongation: p.elongation,
+            reductionRatio: p.reduction_ratio
+          })));
+          setStats({
+            totalPasses: res.stats.total_passes,
+            startingDie: res.stats.starting_die,
+            finalDie: res.stats.final_die,
+            avgElongation: res.stats.avg_elongation,
+            maxElongation: res.stats.max_elongation,
+            minElongation: res.stats.min_elongation,
+            avgAreaReduction: res.stats.avg_area_reduction,
+            overallAreaReduction: res.stats.overall_area_reduction,
+            overallReductionRatio: res.stats.overall_reduction_ratio
+          });
+          setConsistency({
+            avgElongation: res.consistency.avg_elongation,
+            variation: res.consistency.variation,
+            qualityRating: res.consistency.quality_rating,
+            stars: res.consistency.stars
+          });
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err);
+        }
+      }
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [dies]);
+
   const handleParse = useCallback((d: number[]) => setDies(d), [setDies]);
   const handleDiesChange = useCallback((d: number[]) => setDies(d), [setDies]);
 
@@ -196,10 +257,10 @@ export function WireDrawingCalculatorPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StatisticsPanel stats={stats} />
+              {stats && <StatisticsPanel stats={stats} />}
               <div className="space-y-6">
-                <PassConsistency consistency={consistency} />
-                <ExportPanel passes={passes} stats={stats} dies={dies} />
+                {consistency && <PassConsistency consistency={consistency} />}
+                {stats && <ExportPanel passes={passes} stats={stats} dies={dies} />}
                 <SaveLoad dies={dies} onLoad={setDies} />
               </div>
             </div>

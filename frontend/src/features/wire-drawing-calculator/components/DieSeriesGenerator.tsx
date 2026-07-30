@@ -1,11 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sliders, ArrowRight, Zap, Settings2 } from 'lucide-react';
-import {
-  generateDieSeriesFromElongation,
-  generateDieSeriesFromPasses,
-  calculatePassData,
-} from '../utils/calculations';
+import { useApi } from '../../../hooks/useApi';
 import { formatNumber } from '../utils/parsing';
 
 type Mode = 'target' | 'passes';
@@ -24,41 +20,92 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
   const [rangeMin, setRangeMin] = useState<string>('8');
   const [rangeMax, setRangeMax] = useState<string>('30');
 
-  const rMin = parseFloat(rangeMin);
-  const rMax = parseFloat(rangeMax);
-  const hasRange = showRange && !isNaN(rMin) && !isNaN(rMax) && rMin > 0 && rMax > rMin;
+  const { request } = useApi();
+  const [generated, setGenerated] = useState<number[] | null>(null);
+  const [previewPasses, setPreviewPasses] = useState<any[]>([]);
+  const [avgElongation, setAvgElongation] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
 
-  const generated = useMemo(() => {
+  useEffect(() => {
     const ds = parseFloat(dStart);
     const de = parseFloat(dEnd);
     const el = parseFloat(elongation);
     const pc = parseInt(passCount, 10);
 
-    if (isNaN(ds) || ds <= 0 || isNaN(el) || el <= 0) return null;
-
-    const rMinArg = hasRange ? rMin : undefined;
-    const rMaxArg = hasRange ? rMax : undefined;
-
-    if (mode === 'target') {
-      if (isNaN(de) || de <= 0 || de >= ds) return null;
-      return generateDieSeriesFromElongation(ds, de, el, rMinArg, rMaxArg);
-    } else {
-      if (isNaN(pc) || pc <= 0) return null;
-      return generateDieSeriesFromPasses(ds, el, pc, rMinArg, rMaxArg);
+    if (isNaN(ds) || ds <= 0 || isNaN(el) || el <= 0) {
+      setGenerated(null);
+      setPreviewPasses([]);
+      setAvgElongation(0);
+      return;
     }
-  }, [dStart, dEnd, elongation, passCount, mode, rangeMin, rangeMax, hasRange]);
 
+    if (mode === 'target' && (isNaN(de) || de <= 0 || de >= ds)) {
+      setGenerated(null);
+      setPreviewPasses([]);
+      setAvgElongation(0);
+      return;
+    }
+
+    if (mode === 'passes' && (isNaN(pc) || pc <= 0)) {
+      setGenerated(null);
+      setPreviewPasses([]);
+      setAvgElongation(0);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const payload = {
+          mode,
+          d_start: ds,
+          d_end: de,
+          elongation: el,
+          pass_count: pc,
+          show_range: showRange,
+          range_min: parseFloat(rangeMin) || 0,
+          range_max: parseFloat(rangeMax) || 0,
+        };
+        const res = await request('/api/go/tools/calculate/die-series', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+        });
+        if (res) {
+          setGenerated(res.series);
+          setPreviewPasses(res.passes.map((p: any) => ({
+            pass: p.pass,
+            fromDie: p.from_die,
+            toDie: p.to_die,
+            areaBefore: p.area_before,
+            areaAfter: p.area_after,
+            areaReduction: p.area_reduction,
+            elongation: p.elongation,
+            reductionRatio: p.reduction_ratio
+          })));
+          setAvgElongation(res.avg_elongation);
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [dStart, dEnd, elongation, passCount, mode, rangeMin, rangeMax, showRange]);
+
+  const rMin = parseFloat(rangeMin);
+  const rMax = parseFloat(rangeMax);
+  const hasRange = showRange && !isNaN(rMin) && !isNaN(rMax) && rMin > 0 && rMax > rMin;
   const impossible = hasRange && generated === null && mode === 'target';
-
-  const previewPasses = useMemo(() => {
-    if (!generated || generated.length < 2) return [];
-    return calculatePassData(generated);
-  }, [generated]);
-
-  const avgElongation = useMemo(() => {
-    if (previewPasses.length === 0) return 0;
-    return previewPasses.reduce((s, p) => s + p.elongation, 0) / previewPasses.length;
-  }, [previewPasses]);
 
   return (
     <motion.div

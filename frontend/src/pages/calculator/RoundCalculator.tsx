@@ -26,9 +26,6 @@ interface RoundCalculatorProps {
   mu: number
   materialType: string
   
-  // Physics helpers
-  getDrawingStress: (inArea: number, outArea: number, alphaRad: number) => number
-  
   // Die matching
   matchingDies: Record<number, any[]>
   loadingDies: Record<number, boolean>
@@ -57,7 +54,6 @@ export function RoundCalculator({
   uts,
   mu,
   materialType,
-  getDrawingStress,
   matchingDies,
   loadingDies,
   findMatchingDies,
@@ -539,10 +535,9 @@ export function RoundCalculator({
                     Mechanical Tension & Power
                   </h4>
                    {(() => {
-                    const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                    const sigmaD = getDrawingStress(roundResults.inArea, roundResults.outArea, alphaRad)
-                    const forceN = roundResults.outArea * sigmaD
-                    const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                    const sigmaD = roundResults.drawingStress || 0
+                    const forceN = roundResults.drawingForce || 0
+                    const powerKw = roundResults.powerKw || 0
                     const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
                     
                     const epsilon = Math.log(roundResults.inArea / roundResults.outArea)

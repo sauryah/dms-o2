@@ -2,8 +2,8 @@ import { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Zap } from 'lucide-react';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
+import { useApi } from '../hooks/useApi';
 import DieSeriesGenerator from '../features/wire-drawing-calculator/components/DieSeriesGenerator';
-import { calculatePassData, calculateStatistics, calculateConsistency } from '../features/wire-drawing-calculator/utils/calculations';
 import ResultsTable from '../features/wire-drawing-calculator/components/ResultsTable';
 import StatisticsPanel from '../features/wire-drawing-calculator/components/StatisticsPanel';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
@@ -18,6 +18,70 @@ export function DieSeriesGeneratorPage() {
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDies, setPendingDies] = useState<number[] | null>(null);
+
+  const { request } = useApi();
+  const [passes, setPasses] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [consistency, setConsistency] = useState<any>(null);
+
+  useEffect(() => {
+    if (dies.length < 2) {
+      setPasses([]);
+      setStats(null);
+      setConsistency(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await request('/api/go/tools/calculate/wire-drawing', {
+          method: 'POST',
+          body: JSON.stringify({ dies }),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        });
+        if (res) {
+          setPasses(res.passes.map((p: any) => ({
+            pass: p.pass,
+            fromDie: p.from_die,
+            toDie: p.to_die,
+            areaBefore: p.area_before,
+            areaAfter: p.area_after,
+            areaReduction: p.area_reduction,
+            elongation: p.elongation,
+            reductionRatio: p.reduction_ratio
+          })));
+          setStats({
+            totalPasses: res.stats.total_passes,
+            startingDie: res.stats.starting_die,
+            finalDie: res.stats.final_die,
+            avgElongation: res.stats.avg_elongation,
+            maxElongation: res.stats.max_elongation,
+            minElongation: res.stats.min_elongation,
+            avgAreaReduction: res.stats.avg_area_reduction,
+            overallAreaReduction: res.stats.overall_area_reduction,
+            overallReductionRatio: res.stats.overall_reduction_ratio
+          });
+          setConsistency({
+            avgElongation: res.consistency.avg_elongation,
+            variation: res.consistency.variation,
+            qualityRating: res.consistency.quality_rating,
+            stars: res.consistency.stars
+          });
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err);
+        }
+      }
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [dies]);
 
   const handleApplyGenerated = useCallback((newDies: number[]) => {
     if (dies.length > 0) {
@@ -55,10 +119,6 @@ export function DieSeriesGeneratorPage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
-
-  const passes = calculatePassData(dies);
-  const stats = calculateStatistics(dies, passes);
-  const consistency = calculateConsistency(passes);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#0B1220] py-8 px-4 sm:px-6 lg:px-8">
@@ -108,8 +168,8 @@ export function DieSeriesGeneratorPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StatisticsPanel stats={stats} />
-              <PassConsistency consistency={consistency} />
+              {stats && <StatisticsPanel stats={stats} />}
+              {consistency && <PassConsistency consistency={consistency} />}
             </div>
           </>
         )}

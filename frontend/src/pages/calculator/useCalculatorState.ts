@@ -93,174 +93,14 @@ export function useCalculatorState() {
   const roundValidationError = getRoundValidationError()
   const sequenceValidationError = getSequenceValidationError()
   const flatValidationError = getFlatValidationError()
-  const getRoundResults = () => {
-    const inVal = parseFloat(roundInlet)
-    const outVal = parseFloat(roundOutlet)
-    const targetRed = parseFloat(roundTargetRed)
-    const targetElong = parseFloat(roundTargetElong)
 
-    if (isNaN(inVal) || inVal <= 0) return null
+  const [roundResults, setRoundResults] = useState<any>(null)
+  const [sequenceResults, setSequenceResults] = useState<any>(null)
+  const [flatResults, setFlatResults] = useState<any>(null)
 
-    const inArea = Math.PI * Math.pow(inVal / 2, 2)
-
-    if (roundCalcMode === 'forward') {
-      if (isNaN(outVal) || outVal <= 0 || outVal >= inVal) return null
-      const outArea = Math.PI * Math.pow(outVal / 2, 2)
-      const reduction = ((inArea - outArea) / inArea) * 100
-      const elongation = ((inArea / outArea) - 1) * 105
-      // Wait: wait, why did it say 105? Oh, let me check the original code!
-      // In original code, the calculation is:
-      // const elongation = ((inArea / outArea) - 1) * 100
-      // Let me write exactly const elongation = ((inArea / outArea) - 1) * 100
-      const elongationVal = ((inArea / outArea) - 1) * 100
-      const elongationRatio = inArea / outArea
-      return {
-        inlet: inVal,
-        outlet: outVal,
-        reduction,
-        elongation: elongationVal,
-        elongationRatio,
-        inArea,
-        outArea,
-        diameterRatio: inVal / outVal
-      }
-    } else if (roundCalcMode === 'backward_red') {
-      if (isNaN(targetRed) || targetRed <= 0 || targetRed >= 100) return null
-      const outArea = inArea * (1 - targetRed / 100)
-      const outValCalced = 2 * Math.sqrt(outArea / Math.PI)
-      const elongation = ((inArea / outArea) - 1) * 100
-      return {
-        inlet: inVal,
-        outlet: outValCalced,
-        reduction: targetRed,
-        elongation,
-        elongationRatio: inArea / outArea,
-        inArea,
-        outArea,
-        diameterRatio: inVal / outValCalced
-      }
-    } else {
-      // backward_elong
-      if (isNaN(targetElong) || targetElong <= 0) return null
-      const outArea = inArea / (1 + targetElong / 100)
-      const outValCalced = 2 * Math.sqrt(outArea / Math.PI)
-      const reduction = ((inArea - outArea) / inArea) * 100
-      return {
-        inlet: inVal,
-        outlet: outValCalced,
-        reduction,
-        elongation: targetElong,
-        elongationRatio: 1 + targetElong / 100,
-        inArea,
-        outArea,
-        diameterRatio: inVal / outValCalced
-      }
-    }
-  }
-
-  // 2. Calculate Multi-Draft Sequence
-  const getSequenceResults = () => {
-    const start = parseFloat(seqStart)
-    const end = parseFloat(seqEnd)
-    const avgRed = parseFloat(seqReduction)
-
-    if (isNaN(start) || start <= 0 || isNaN(end) || end <= 0 || start <= end || isNaN(avgRed) || avgRed <= 0 || avgRed >= 100) {
-      return null
-    }
-
-    const steps = []
-    let currentDia = start
-    let safetyCounter = 0
-    let currentRed = seqOptMode === 'graduated' ? Math.min(avgRed * 1.25, 30.0) : avgRed
-
-    while (currentDia > end && safetyCounter < 50) {
-      safetyCounter++
-      const targetRedMultiplier = 1 - currentRed / 100
-      const nextArea = (Math.PI * Math.pow(currentDia / 2, 2)) * targetRedMultiplier
-      const nextDia = 2 * Math.sqrt(nextArea / Math.PI)
-
-      if (nextDia <= end) {
-        // Last step goes straight to target end diameter
-        const inArea = Math.PI * Math.pow(currentDia / 2, 2)
-        const outArea = Math.PI * Math.pow(end / 2, 2)
-        const actualRed = ((inArea - outArea) / inArea) * 100
-        const actualElong = ((inArea / outArea) - 1) * 100
-        steps.push({
-          draft: steps.length + 1,
-          inlet: currentDia,
-          outlet: end,
-          reduction: actualRed,
-          elongation: actualElong,
-          drawingRatio: inArea / outArea
-        })
-        break
-      } else {
-        steps.push({
-          draft: steps.length + 1,
-          inlet: currentDia,
-          outlet: nextDia,
-          reduction: currentRed,
-          elongation: (1 / targetRedMultiplier - 1) * 100,
-          drawingRatio: 1 / targetRedMultiplier
-        })
-        currentDia = nextDia
-        if (seqOptMode === 'graduated') {
-          currentRed = Math.max(currentRed * 0.88, 8.0)
-        }
-      }
-    }
-
-    // Cumulative stats
-    const startArea = Math.PI * Math.pow(start / 2, 2)
-    const endArea = Math.PI * Math.pow(end / 2, 2)
-    const totalReduction = ((startArea - endArea) / startArea) * 100
-    const totalElongation = ((startArea / endArea) - 1) * 100
-
-    return {
-      steps,
-      totalReduction,
-      totalElongation
-    }
-  }
-
-  // 3. Calculate Flat Draft
-  const getFlatResults = () => {
-    const inW = parseFloat(flatInWidth)
-    const inT = parseFloat(flatInThick)
-    const outW = parseFloat(flatOutWidth)
-    const outT = parseFloat(flatOutThick)
-
-    if (isNaN(inW) || inW <= 0 || isNaN(inT) || inT <= 0 || isNaN(outW) || outW <= 0 || isNaN(outT) || outT <= 0) {
-      return null
-    }
-
-    const inArea = inW * inT
-    const outArea = outW * outT
-
-    if (outArea >= inArea) return null
-
-    const reduction = ((inArea - outArea) / inArea) * 100
-    const elongation = ((inArea / outArea) - 1) * 100
-    const aspectIn = inW / inT
-    const aspectOut = outW / outT
-    const widthRed = ((inW - outW) / inW) * 100
-    const thickRed = ((inT - outT) / inT) * 100
-
-    return {
-      inArea,
-      outArea,
-      reduction,
-      elongation,
-      aspectIn,
-      aspectOut,
-      widthRed,
-      thickRed
-    }
-  }
-
-  const roundResults = getRoundResults()
-  const sequenceResults = getSequenceResults()
-  const flatResults = getFlatResults()
+  const [loadingRound, setLoadingRound] = useState(false)
+  const [loadingSequence, setLoadingSequence] = useState(false)
+  const [loadingFlat, setLoadingFlat] = useState(false)
 
   // New Physics variables
   const [drawSpeed, setDrawSpeed] = useState<string>('2.0')
@@ -268,6 +108,237 @@ export function useCalculatorState() {
   const [yieldStrength, setYieldStrength] = useState<string>('70')
   const [uts, setUts] = useState<string>('220')
   const [lubrication, setLubrication] = useState<'hydrodynamic' | 'dry_soap' | 'wet_oil' | 'boundary'>('dry_soap')
+
+  // Async calculations for Round Calculator
+  useEffect(() => {
+    if (roundValidationError) {
+      setRoundResults(null)
+      return
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setLoadingRound(true)
+      try {
+        const payload = {
+          calc_mode: roundCalcMode,
+          inlet: parseFloat(roundInlet) || 0,
+          outlet: parseFloat(roundOutlet) || 0,
+          target_red: parseFloat(roundTargetRed) || 0,
+          target_elong: parseFloat(roundTargetElong) || 0,
+          material_type: materialType,
+          custom_limit: parseFloat(customLimit) || 0,
+          draw_speed: parseFloat(drawSpeed) || 0,
+          die_angle: parseFloat(dieAngle) || 0,
+          yield_strength: parseFloat(yieldStrength) || 0,
+          uts: parseFloat(uts) || 0,
+          lubrication: lubrication
+        }
+        const res = await request('/api/go/tools/calculate/round', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        })
+        if (res) {
+          // Map backend fields to frontend expected fields
+          setRoundResults({
+            inlet: res.inlet,
+            outlet: res.outlet,
+            reduction: res.reduction,
+            elongation: res.elongation,
+            elongationRatio: res.elongation_ratio,
+            inArea: res.in_area,
+            outArea: res.out_area,
+            diameterRatio: res.diameter_ratio,
+            flowStress: res.flow_stress,
+            drawingStress: res.drawing_stress,
+            drawingForce: res.drawing_force,
+            powerKw: res.power_kw,
+            frictionCoef: res.friction_coef,
+            materialLimit: res.material_limit
+          })
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err)
+        }
+      } finally {
+        setLoadingRound(false)
+      }
+    }, 150)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [
+    roundValidationError,
+    roundCalcMode,
+    roundInlet,
+    roundOutlet,
+    roundTargetRed,
+    roundTargetElong,
+    materialType,
+    customLimit,
+    drawSpeed,
+    dieAngle,
+    yieldStrength,
+    uts,
+    lubrication
+  ])
+
+  // Async calculations for Flat Calculator
+  useEffect(() => {
+    if (flatValidationError) {
+      setFlatResults(null)
+      return
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setLoadingFlat(true)
+      try {
+        const payload = {
+          in_width: parseFloat(flatInWidth) || 0,
+          in_thick: parseFloat(flatInThick) || 0,
+          out_width: parseFloat(flatOutWidth) || 0,
+          out_thick: parseFloat(flatOutThick) || 0,
+          material_type: materialType,
+          custom_limit: parseFloat(customLimit) || 0,
+          draw_speed: parseFloat(drawSpeed) || 0,
+          die_angle: parseFloat(dieAngle) || 0,
+          yield_strength: parseFloat(yieldStrength) || 0,
+          uts: parseFloat(uts) || 0,
+          lubrication: lubrication
+        }
+        const res = await request('/api/go/tools/calculate/flat', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        })
+        if (res) {
+          setFlatResults({
+            inArea: res.in_area,
+            outArea: res.out_area,
+            reduction: res.reduction,
+            elongation: res.elongation,
+            aspectIn: res.aspect_in,
+            aspectOut: res.aspect_out,
+            widthRed: res.width_red,
+            thickRed: res.thick_red,
+            flowStress: res.flow_stress,
+            drawingStress: res.drawing_stress,
+            drawingForce: res.drawing_force,
+            powerKw: res.power_kw,
+            frictionCoef: res.friction_coef,
+            materialLimit: res.material_limit
+          })
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err)
+        }
+      } finally {
+        setLoadingFlat(false)
+      }
+    }, 150)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [
+    flatValidationError,
+    flatInWidth,
+    flatInThick,
+    flatOutWidth,
+    flatOutThick,
+    materialType,
+    customLimit,
+    drawSpeed,
+    dieAngle,
+    yieldStrength,
+    uts,
+    lubrication
+  ])
+
+  // Async calculations for Sequence Calculator
+  useEffect(() => {
+    if (sequenceValidationError) {
+      setSequenceResults(null)
+      return
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setLoadingSequence(true)
+      try {
+        const payload = {
+          start: parseFloat(seqStart) || 0,
+          end: parseFloat(seqEnd) || 0,
+          reduction: parseFloat(seqReduction) || 0,
+          opt_mode: seqOptMode,
+          material_type: materialType,
+          custom_limit: parseFloat(customLimit) || 0,
+          draw_speed: parseFloat(drawSpeed) || 0,
+          die_angle: parseFloat(dieAngle) || 0,
+          yield_strength: parseFloat(yieldStrength) || 0,
+          uts: parseFloat(uts) || 0,
+          lubrication: lubrication
+        }
+        const res = await request('/api/go/tools/calculate/sequence', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        })
+        if (res) {
+          setSequenceResults({
+            steps: res.steps.map((s: any) => ({
+              draft: s.draft,
+              inlet: s.inlet,
+              outlet: s.outlet,
+              reduction: s.reduction,
+              elongation: s.elongation,
+              drawingRatio: s.drawing_ratio,
+              flowStress: s.flow_stress,
+              drawingStress: s.drawing_stress,
+              drawingForce: s.drawing_force,
+              power: s.power
+            })),
+            totalReduction: res.total_reduction,
+            totalElongation: res.total_elongation
+          })
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+          console.error(err)
+        }
+      } finally {
+        setLoadingSequence(false)
+      }
+    }, 150)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [
+    sequenceValidationError,
+    seqStart,
+    seqEnd,
+    seqReduction,
+    seqOptMode,
+    materialType,
+    customLimit,
+    drawSpeed,
+    dieAngle,
+    yieldStrength,
+    uts,
+    lubrication
+  ])
 
   const getFrictionCoefficient = () => {
     switch (lubrication) {
@@ -387,14 +458,7 @@ export function useCalculatorState() {
     let csvContent = 'data:text/csv;charset=utf-8,'
     csvContent += 'Pass,Inlet Diameter (mm),Outlet Diameter (mm),Drawing Ratio,Draft Reduction (%),Elongation (%),Drawing Force (N),Drawing Stress (MPa),Power (kW)\n'
     sequenceResults.steps.forEach(step => {
-      const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
-      const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
-      const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-      const sigmaD = getDrawingStress(stepInArea, stepOutArea, alphaRad)
-      const forceN = stepOutArea * sigmaD
-      const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
-      
-      csvContent += `${step.draft},${step.inlet.toFixed(3)},${step.outlet.toFixed(3)},${step.drawingRatio.toFixed(3)},${step.reduction.toFixed(1)},${step.elongation.toFixed(1)},${forceN.toFixed(1)},${sigmaD.toFixed(1)},${powerKw.toFixed(2)}\n`
+      csvContent += `${step.draft},${step.inlet.toFixed(3)},${step.outlet.toFixed(3)},${step.drawingRatio.toFixed(3)},${step.reduction.toFixed(1)},${step.elongation.toFixed(1)},${(step.drawingForce || 0).toFixed(1)},${(step.drawingStress || 0).toFixed(1)},${(step.power || 0).toFixed(2)}\n`
     })
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement('a')
@@ -473,12 +537,7 @@ export function useCalculatorState() {
     getRoundValidationError,
     getSequenceValidationError,
     getFlatValidationError,
-    getRoundResults,
-    getSequenceResults,
-    getFlatResults,
     getFrictionCoefficient,
-    getFlowStress,
-    getDrawingStress,
     findMatchingDies,
     findMatchingFlatDies,
     exportSequenceCSV,

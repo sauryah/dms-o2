@@ -25,7 +25,6 @@ interface SequenceCalculatorProps {
   uts: string
 
   // Physics helpers
-  getDrawingStress: (inArea: number, outArea: number, alphaRad: number) => number
   getMaterialLimit: () => number
 
   // CSV export
@@ -54,7 +53,6 @@ export function SequenceCalculator({
   materialType,
   yieldStrength,
   uts,
-  getDrawingStress,
   getMaterialLimit,
   exportSequenceCSV,
   matchingDies,
@@ -283,12 +281,9 @@ export function SequenceCalculator({
                         const isStepUnsafe = step.reduction > limit
 
                         // Calculate Physics values
-                        const stepInArea = Math.PI * Math.pow(step.inlet / 2, 2)
-                        const stepOutArea = Math.PI * Math.pow(step.outlet / 2, 2)
-                        const alphaRad = (parseFloat(dieAngle) * Math.PI) / 180
-                        const sigmaD = getDrawingStress(stepInArea, stepOutArea, alphaRad)
-                        const forceN = stepOutArea * sigmaD
-                        const powerKw = (forceN * parseFloat(drawSpeed)) / 1000
+                        const sigmaD = step.drawingStress || 0
+                        const forceN = step.drawingForce || 0
+                        const powerKw = step.power || 0
                         const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
 
                         return (
