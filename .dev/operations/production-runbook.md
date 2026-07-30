@@ -8,38 +8,33 @@ Operational procedures for production environment.
 
 ## Deployment
 
-### Standard Deployment
+### Standard Deployment (Source Build)
 ```bash
 # 1. Pull latest changes
 git pull origin main
 
-# 2. Build containers
-docker-compose build
+# 2. Run database migrations
+docker compose run --rm django python manage.py migrate
 
-# 3. Run database migrations
-docker-compose run --rm backend python manage.py migrate
+# 3. Rebuild and restart
+docker compose up -d --build
 
-# 4. Restart services
-docker-compose up -d
-
-# 5. Verify health
-docker-compose ps
-curl -f http://localhost:8000/health/ || exit 1
+# 4. Verify health
+docker compose ps
+curl -f https://localhost/api/v1/health/ || exit 1
 ```
 
-### Zero-Downtime Deployment
+### Pre-Built Image Deployment (No Source)
 ```bash
-# 1. Build new image
-docker-compose build --build-arg VERSION=$(git rev-parse --short HEAD)
+# 1. Pull pre-built images
+docker compose -f docker-compose.ghcr.yml pull
 
-# 2. Scale up new version
-docker-compose up -d --no-deps --scale backend=2 backend
+# 2. Start services
+docker compose -f docker-compose.ghcr.yml up -d
 
-# 3. Wait for new container healthy
-sleep 30
-
-# 4. Scale down old version
-docker-compose up -d --no-deps --scale backend=1 backend
+# 3. Verify health
+docker compose -f docker-compose.ghcr.yml ps
+curl -f https://localhost/api/v1/health/
 ```
 
 ### Rollback Procedure
@@ -51,43 +46,43 @@ git log --oneline -5
 git checkout <previous-commit>
 
 # 3. Rebuild and deploy
-docker-compose build
-docker-compose up -d
+docker compose up -d --build
 
 # 4. Verify rollback
-docker-compose ps
-curl -f http://localhost:8000/health/ || exit 1
+docker compose ps
+curl -f https://localhost/api/v1/health/ || exit 1
 ```
 
 ## Monitoring
 
 ### Health Checks
 ```bash
-# Backend health
-curl -f http://localhost:8000/health/
+# Django API health
+curl -f https://localhost/api/v1/health/
 
 # Go API health
-curl -f http://localhost:8080/health/
+curl -f https://localhost/api/go/health
 
 # Database connectivity
-docker-compose run --rm backend python manage.py dbshell -c "SELECT 1;"
+docker compose exec db pg_isready -U dms_user -d dms
 
 # Redis connectivity
-docker-compose run --rm redis redis-cli ping
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" ping
 ```
 
 ### Log Monitoring
 ```bash
 # View all logs
-docker-compose logs -f
+docker compose logs -f
 
 # View specific service
-docker-compose logs -f backend
-docker-compose logs -f go-api
-docker-compose logs -f redis
+docker compose logs -f django
+docker compose logs -f go-api
+docker compose logs -f redis
 
 # View errors only
-docker-compose logs -f | grep -i error
+docker compose logs -f | findstr /i error   # Windows
+docker compose logs -f | grep -i error      # Linux/macOS
 ```
 
 ### Performance Monitoring
@@ -95,14 +90,14 @@ docker-compose logs -f | grep -i error
 # Container resource usage
 docker stats
 
-# Database performance
-docker-compose run --rm backend python manage.py shell -c "
+# Database queries
+docker compose exec django python manage.py shell -c "
 from django.db import connection
 print(f'Queries: {len(connection.queries)}')
 "
 
 # Redis memory usage
-docker-compose run --rm redis redis-cli info memory
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" info memory
 ```
 
 ## Incident Response
@@ -125,129 +120,108 @@ docker-compose run --rm redis redis-cli info memory
 #### Service Won't Start
 ```bash
 # Check logs
-docker-compose logs backend
+docker compose logs django
 
 # Check disk space
-df -h
-
-# Check memory
-free -m
+df -h         # Linux/macOS
 
 # Restart service
-docker-compose restart backend
+docker compose restart django
 ```
 
 #### Database Connection Issues
 ```bash
 # Check PostgreSQL status
-docker-compose ps postgres
+docker compose ps db
 
-# Check connections
-docker-compose run --rm backend python manage.py shell -c "
-from django.db import connections
-print(connections['default'].queries_count)
-"
+# Check connectivity
+docker compose exec db pg_isready -U dms_user -d dms
 
 # Restart database
-docker-compose restart postgres
+docker compose restart db
 ```
 
 #### Redis Connection Issues
 ```bash
 # Check Redis status
-docker-compose ps redis
+docker compose ps redis
 
 # Check Redis logs
-docker-compose logs redis
+docker compose logs redis
 
 # Test connectivity
-docker-compose run --rm redis redis-cli ping
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" ping
 
 # Restart Redis
-docker-compose restart redis
+docker compose restart redis
 ```
 
 ## Backup & Recovery
 
-### Backup Procedure
+### Manual Backup
 ```bash
-# Full backup
-docker-compose run --rm backend python manage.py createbackup --type=full
+# Using the backup script
+./dms-backup.sh backup
 
-# Incremental backup
-docker-compose run --rm backend python manage.py createbackup --type=incremental
-
-# Verify backup
-docker-compose run --rm backend python manage.py verifybackup --latest
-```
-
-### Recovery Procedure
-```bash
 # List backups
-docker-compose run --rm backend python manage.py listbackups
+./dms-backup.sh list
 
 # Restore from backup
-docker-compose run --rm backend python manage.py restorebackup --backup-id=<id>
-
-# Verify recovery
-docker-compose run --rm backend python manage.py check
+./dms-backup.sh restore <backup_filename.dump>
 ```
+
+### Scheduled Backups
+Automatic backups run via Celery Beat daily at 2:00 AM (configured in `CELERY_BEAT_SCHEDULE`). Backups are stored in `./backups/` with 14-day retention.
+
+### Remote Backup (Optional)
+If `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` are configured in `.env`, backups are also streamed to S3-compatible storage (S3/MinIO) automatically.
 
 ## Scaling
 
 ### Horizontal Scaling
 ```bash
-# Scale backend
-docker-compose up -d --scale backend=3
+# Scale Go API (stateless read service)
+docker compose up -d --scale go-api=2
 
-# Scale Go API
-docker-compose up -d --scale go-api=2
+# Scale Celery workers
+docker compose up -d --scale worker=3
 ```
+
+Note: Django Gunicorn scaling within a single compose stack is limited because sessions reference in-memory state. For multi-instance Django, use the unified monolith deployment with a load balancer.
 
 ### Vertical Scaling
 Update `docker-compose.yml` resource limits:
 ```yaml
-deploy:
-  resources:
-    limits:
-      cpus: '2'
-      memory: 2G
+services:
+  django:
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 ```
 
 ## Security
 
 ### Security Patches
 ```bash
-# Update base images
-docker-compose build --no-cache
-
-# Scan for vulnerabilities
-docker scan dms-o2-backend
-
-# Apply patches
+# Rebuild images with security updates
 git pull origin main
-docker-compose build
-docker-compose up -d
+docker compose up -d --build
 ```
 
 ### Access Management
 ```bash
 # List users
-docker-compose run --rm backend python manage.py shell -c "
+docker compose exec django python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
 for u in User.objects.all():
     print(f'{u.username}: {u.role}')
 "
 
-# Reset password
-docker-compose run --rm backend python manage.py shell -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-u = User.objects.get(username='admin')
-u.set_password('newpassword')
-u.save()
-"
+# Reset root password
+docker compose exec django python manage.py changepassword root
 ```
 
 ## Maintenance
@@ -255,35 +229,20 @@ u.save()
 ### Database Maintenance
 ```bash
 # Vacuum analyze
-docker-compose run --rm backend python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute('VACUUM ANALYZE')
-"
+docker compose exec db psql -U dms_user -d dms -c "VACUUM ANALYZE;"
 
-# Check bloat
-docker-compose run --rm backend python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute('SELECT pg_size_pretty(pg_total_relation_size(\'die\'))')
-print(cursor.fetchone()[0])
-"
+# Check table size
+docker compose exec db psql -U dms_user -d dms -c "SELECT pg_size_pretty(pg_total_relation_size('dies_die'));"
 ```
 
 ### Log Rotation
-```bash
-# Clear old logs
-docker-compose logs --tail=0 -f &
-
-# Rotate Docker logs
-sudo truncate -s 0 /var/lib/docker/containers/*/\*-json.log
-```
+Docker log rotation is pre-configured in docker-compose.yml with `max-size: 10m` and `max-file: 3` for traefik, django, and go-api services.
 
 ### Cache Management
 ```bash
 # Clear Redis cache
-docker-compose run --rm redis redis-cli FLUSHALL
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" FLUSHALL
 
 # Verify cache cleared
-docker-compose run --rm redis redis-cli DBSIZE
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" DBSIZE
 ```

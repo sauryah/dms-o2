@@ -117,6 +117,10 @@ CREATE TABLE history_diehistory (
     ip_address INET,
     note TEXT NOT NULL DEFAULT ''
 );
+
+CREATE INDEX idx_diehistory_changed_by ON history_diehistory(changed_by_id);
+CREATE INDEX idx_diehistory_composite ON history_diehistory(die_id, field_name, timestamp);
+CREATE INDEX idx_diehistory_timestamp ON history_diehistory(timestamp DESC);
 ```
 
 ### MachineHistory (`history_machinehistory`)
@@ -149,10 +153,7 @@ CREATE TABLE dies_wearalert (
 );
 ```
 
-    created_at TIMESTAMP DEFAULT NOW(),
-    resolved_at TIMESTAMP
-);
-```
+
 
 ### OutboxTask
 ```sql
@@ -188,15 +189,30 @@ The `payload_hash` field stores a SHA-256 HMAC signature of the payload signed u
 ### Performance Indexes
 ```sql
 -- DieHistory queries
-CREATE INDEX idx_die_history_timestamp ON die_history(timestamp DESC);
-CREATE INDEX idx_die_history_die_timestamp ON die_history(die_id, timestamp DESC);
+CREATE INDEX idx_die_history_timestamp ON history_diehistory(timestamp DESC);
+CREATE INDEX idx_die_history_die_timestamp ON history_diehistory(die_id, timestamp DESC);
+CREATE INDEX idx_die_history_composite ON history_diehistory(die_id, field_name, timestamp);
+
+-- MachineHistory queries
+CREATE INDEX idx_machine_history_entity ON history_machinehistory(entity_type, entity_id);
+CREATE INDEX idx_machine_history_timestamp ON history_machinehistory(timestamp DESC);
 
 -- Outbox processing
 CREATE INDEX idx_outbox_task_status ON outbox_task(is_processed, created_at);
 
 -- Search optimization
-CREATE INDEX idx_die_status ON die(status);
-CREATE INDEX idx_machine_status ON machine(status);
+CREATE INDEX idx_die_status ON dies_die(status);
+CREATE INDEX idx_die_type ON dies_die(die_type);
+CREATE INDEX idx_rounddie_current_size ON dies_rounddie(current_size);
+CREATE INDEX idx_flatdie_dimensions ON dies_flatdie(current_width, current_thickness);
+
+-- GIN trigram index for casing search
+CREATE INDEX idx_die_casing_trgm ON dies_die USING gin (casing gin_trgm_ops);
+
+-- User sessions and activity
+CREATE INDEX idx_user_session_token_hash ON users_usersession(token_hash);
+CREATE INDEX idx_user_activity_timestamp ON users_useractivitylog(timestamp DESC);
+CREATE INDEX idx_user_activity_username ON users_useractivitylog(username);
 ```
 
 ## Migration Strategy
@@ -206,7 +222,8 @@ CREATE INDEX idx_machine_status ON machine(status);
 - Document breaking changes in ADRs
 
 ## Backup Strategy
-- Full backup: Daily at 02:00 UTC
-- Incremental backup: Every 6 hours
-- WAL archiving: Continuous
-- Recovery point objective: 1 hour
+- Full backup: Daily at 02:00 (Celery Beat auto-backup-daily task)
+- History pruning: Daily at 03:00 (Celery Beat auto-prune-history-daily task)
+- Retention: 14 days (configurable via HISTORY_RETENTION_DAYS)
+- Remote: Optional S3/MinIO streaming via boto3 (configure S3_ENDPOINT_URL in .env)
+- Recovery point objective: 24 hours

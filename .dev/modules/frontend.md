@@ -13,7 +13,7 @@ User dashboard, CAD vector blueprints renderer, 3D von Mises stress heatmap, the
 ## Important Files
 - [App.tsx](file:///frontend/src/App.tsx): Main application router and shell layout.
 - [useInventoryState.ts](file:///frontend/src/features/inventory/hooks/useInventoryState.ts): Central inventory state management hook.
-- [StressHeatmap3D.tsx](file:///frontend/src/features/calculator/components/StressHeatmap3D.tsx): 3D WebGL stress visualizer.
-- [TheoryPanel.tsx](file:///frontend/src/features/calculator/components/TheoryPanel.tsx): CAD die inspector & live simulator.
+- [StressHeatmap3D.tsx](file:///frontend/src/features/wire-drawing-calculator/components/StressHeatmap3D.tsx): 3D WebGL stress visualizer.
+- [TheoryPanel.tsx](file:///frontend/src/features/wire-drawing-calculator/components/TheoryPanel.tsx): CAD die inspector & live simulator.
 - [lazyWithRetry.ts](file:///frontend/src/utils/lazyWithRetry.ts): Dynamic import chunk recovery utility.
 

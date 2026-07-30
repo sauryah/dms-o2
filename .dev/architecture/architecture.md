@@ -21,7 +21,17 @@ sequenceDiagram
 ```
 
 ## Important Configurations
-- **Nginx**: Inside the monolithic docker container, Nginx acts as a reverse proxy, listening on user-space port `8080`.
+### Development Stack (docker-compose.yml)
+- **Frontend (Vite/Nginx)**: Serves React SPA during development with HMR.
+- **Django (Gunicorn)**: Listens on port `8000`.
+- **Go API**: Listens on port `8080`.
+- **Worker / Heavy-Worker**: Celery workers for default and heavy task queues.
+- **Beat**: Celery beat for periodic task scheduling.
+- **Traefik**: Exposes ports `80` and `443` on the host, routing to Django, Go API, and Frontend.
+
+### Unified Monolith Stack (docker-compose.unified.yml)
+- **Nginx**: Inside the monolithic container, acts as a reverse proxy, listening on port `8080`.
 - **Gunicorn**: Listens on port `8000` locally.
 - **Go API**: Listens on port `8080` internally.
-- **Traefik**: Exposes ports `80` and `443` on the host, forwarding queries dynamically to the monolith.
+- **Supervisord**: Orchestrates Nginx, Gunicorn, Celery workers, Celery beat, and Go API inside a single container.
+- **Traefik**: Routes external traffic to the monolith.

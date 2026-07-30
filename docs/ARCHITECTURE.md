@@ -73,6 +73,7 @@ Authorization: Bearer <your_jwt_access_token>
       "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
     }
     ```
+*   **Cookies Set**: The login endpoint also sets `dms_access_token` (15 min) and `dms_refresh_token` (24h) as HTTPOnly cookies. The Go API validates access tokens via Redis cache or `/internal/verify-token/`. The refresh token cookie enables transparent token refresh without exposing tokens to XSS.
 
 ---
 
@@ -127,7 +128,8 @@ Authorization: Bearer <your_jwt_access_token>
         "die_type": "ROUND",
         "casing": "Steel-25",
         "status": "AVAILABLE",
-        "location": "Rack A - Row 1",
+        "rack": 1,
+        "shelf_number": 3,
         "punched_size": 12.500,
         "current_size": 12.480,
         "current_set": 1,
@@ -142,7 +144,8 @@ Authorization: Bearer <your_jwt_access_token>
       "die_type": "ROUND",
       "casing": "Steel-25",
       "status": "AVAILABLE",
-      "location": "Rack A - Row 1",
+      "rack": 1,
+      "shelf_number": 3,
       "punched_size": "12.500",
       "current_size": "12.480",
       "current_set": 1,
@@ -163,7 +166,8 @@ Authorization: Bearer <your_jwt_access_token>
         "die_type": "FLAT",
         "casing": "Carbide-30",
         "status": "AVAILABLE",
-        "location": "Rack B - Row 2",
+        "rack": 2,
+        "shelf_number": 5,
         "punched_width": 30.000,
         "current_width": 29.950,
         "punched_thickness": 5.000,
@@ -223,9 +227,9 @@ sequenceDiagram
     | :--- | :--- | :--- | :--- |
     | `q` | string | Fuzzy keyword query (searches ids, locations, casing, sets) | `R-101` |
     | `die_type` | string | Match type exactly: `ROUND` or `FLAT` | `ROUND` |
-    | `status` | string | Match status exactly: `AVAILABLE`, `RUNNING`, etc. | `RUNNING` |
+    | `status` | string | Match status exactly: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE` | `RUNNING` |
     | `casing` | string | Filter casing substring (escaped for Meilisearch) | `Steel` |
-    | `location` | string | Filter by location | `Rack A` |
+    | `location` | string | Filter by location (deprecated; use `rack_id` + `shelf_number`) | `Rack A` |
     | `size_min` | decimal | Lower bound ROUND diameter | `5.25` |
     | `size_max` | decimal | Upper bound ROUND diameter | `10.5` |
     | `width_min` | decimal | Lower bound FLAT width | `25.0` |
@@ -250,7 +254,8 @@ sequenceDiagram
           "die_type": "ROUND",
           "casing": "Steel-25",
           "status": "RUNNING",
-          "location": "Rack A - Row 1",
+          "rack": "Rack A",
+          "shelf_number": 1,
           "set_name": "Set Alpha",
           "machine_name": "Machine 1",
           "current_set": 1,
@@ -370,7 +375,7 @@ DATABASES = {
             'connect_timeout': 10,  # Max seconds to wait for connection
             'options': '-c statement_timeout=30000',  # Force timeout at 30 seconds
         },
-        'ATOMIC_REQUESTS': True,  # Wrap HTTP requests in explicit SQL transactions
+        'ATOMIC_REQUESTS': False,  # Disabled to allow exception responses (400, 401, 403) without contaminating test transactions; serializer writes use explicit @transaction.atomic
     }
 }
 ```

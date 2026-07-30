@@ -83,16 +83,22 @@ backend/
 ## Key Views
 
 ### Authentication
-- `POST /api/auth/login/`: User login
-- `POST /api/auth/logout/`: User logout
-- `POST /api/auth/token/refresh/`: Token refresh
+- `POST /api/v1/auth/login/`: User login (sets HTTPOnly cookies + returns JWT)
+- `POST /api/v1/auth/logout/`: User logout
+- `POST /api/v1/auth/refresh/`: Token refresh
+- `POST /api/v1/auth/keep-alive/`: Extend session
+- `POST /api/v1/auth/sse-ticket/`: Get SSE connection ticket
+- `GET /api/v1/auth/me/`: Current user profile
+- `POST /api/v1/auth/change-password/`: Change password
 
 ### Dies
-- `GET /api/dies/`: List dies
-- `POST /api/dies/{id}/recut/`: Recut die
+- `GET /api/v1/dies/`: List dies (with type/status/size filters)
+- `POST /api/v1/dies/{die_id}/recut/`: Recut die
+- `GET /api/v1/dies/{die_id}/wear_prediction/`: Wear prediction
+- `GET/POST /api/v1/dies/{die_id}/maintenance_logs/`: Maintenance log
 
 ### Backups
-- `POST /api/backups/`: Create backup
+- `GET/POST /api/v1/backups/`: List / create backups
 
 ## Business Logic
 

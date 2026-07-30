@@ -173,7 +173,7 @@ func processData(ctx context.Context, id int) error {
 - Extract custom hooks
 - Use React.memo for performance
 - Handle loading and error states
-- **Centralized Application Versioning**: Do NOT hardcode version strings in UI components (`Footer`, `AboutModal`, `CalculatorPage`, etc.). Always import `APP_VERSION` from `src/version.ts` (which reads from `package.json`). Whenever `package.json` is updated for a release, all UI badges across the application update automatically in sync.
+- **Centralized Application Versioning**: Do NOT hardcode version strings in UI components (`Footer`, `AboutModal`, `CalculatorPage`, etc.). Import `APP_VERSION` from `src/version.ts` where available. If that file is not present, read the version from `package.json` via Vite's `__APP_VERSION__` global constant (defined in `vite.config.js`). Whenever `package.json` is updated for a release, all UI badges across the application update automatically in sync.
 
 ### Example
 ```typescript

@@ -104,7 +104,7 @@ graph TD
 
 ## Key Features
 
-* **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius).
+* **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius). Supports statuses: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE`.
 * **Interactive CAD Highlighting**: Bidirectional vector sync between table dimensions and blueprint SVG nodes.
 * **Visual Storage Rack Map**: Drag-and-drop grid interface for physical warehouse rack management.
 * **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
@@ -297,10 +297,12 @@ dms-o2/
 ├── .github/workflows/         # CI/CD Deployment configurations
 ├── .githooks/                 # Git hooks (pre-commit linting & secret detection)
 ├── backend/                   # Django Backend Service
-│   ├── dies/                  # Die models, database signals, and viewsets
-│   ├── history/               # Audit logging logic and model hooks
-│   ├── machines/              # Assets (Categories, Machines, Tool Sets)
-│   └── users/                 # RBAC and session timeout tracking
+│   ├── dms/                   # Core settings, URLs, Celery config
+│   ├── dies/                  # Die models, signals, viewsets, services (recut, wear, import, search, validation)
+│   ├── history/               # Audit logging (DieHistory, MachineHistory) and views
+│   ├── machines/              # Assets (Categories, Machines, Sets, Racks)
+│   ├── search/                # Celery Meilisearch indexing tasks and outbox processor
+│   └── users/                 # RBAC, auth views, permissions, session management
 ├── certs/                     # TLS certificates (generated, gitignored)
 │   ├── cert.pem               # Server certificate for current LAN IP
 │   ├── key.pem                # Private key
@@ -309,7 +311,8 @@ dms-o2/
 │   ├── cmd/server/main.go     # API routes and Redis invalidation cache logic
 │   └── Dockerfile             # Multi-stage container file
 ├── frontend/                  # React Frontend Single Page Application
-│   ├── src/                   # UI components, layout grids, hooks
+│   ├── src/                   # UI components, layout grids, hooks, contexts
+│   ├── features/              # Feature-specific components (inventory, dashboard, wire-drawing-calculator)
 │   └── Dockerfile.prod        # Production static Nginx configuration
 ├── scripts/                   # Utility scripts
 │   ├── generate-certs.sh      # Auto-generate TLS certs (Linux/macOS)
