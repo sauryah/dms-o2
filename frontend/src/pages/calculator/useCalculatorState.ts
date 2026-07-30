@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useApi } from '../../hooks/useApi'
 import { useToast } from '../../contexts'
 
@@ -113,13 +113,11 @@ export function useCalculatorState() {
   const sequenceValidationError = getSequenceValidationError()
   const flatValidationError = getFlatValidationError()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [roundResults, setRoundResults] = useState<any>(null)
   const [sequenceResults, setSequenceResults] = useState<SequenceResults | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [flatResults, setFlatResults] = useState<any>(null)
-
-  const [loadingRound, setLoadingRound] = useState(false)
-  const [loadingSequence, setLoadingSequence] = useState(false)
-  const [loadingFlat, setLoadingFlat] = useState(false)
 
   // New Physics variables
   const [drawSpeed, setDrawSpeed] = useState<string>('2.0')
@@ -377,47 +375,7 @@ export function useCalculatorState() {
   }
   const mu = getFrictionCoefficient()
 
-  const getFlowStress = (inArea: number, outArea: number) => {
-    const epsilon = Math.log(inArea / outArea)
-    if (epsilon <= 0) return parseFloat(yieldStrength) || 70
-    
-    let K = 0
-    let n = 0
-    const y0 = parseFloat(yieldStrength) || 70
-    
-    switch (materialType) {
-      case 'copper_soft':
-        K = 315
-        n = 0.54
-        break
-      case 'copper_hard':
-        K = 450
-        n = 0.10
-        break
-      case 'aluminum':
-        K = 180
-        n = 0.20
-        break
-      case 'steel_low':
-        K = 530
-        n = 0.26
-        break
-      case 'custom':
-      default:
-        return y0 + 150 * epsilon
-    }
-    return y0 + (K * Math.pow(epsilon, n)) / (n + 1)
-  }
 
-  const getDrawingStress = (inArea: number, outArea: number, alphaRad: number) => {
-    if (inArea <= outArea || alphaRad <= 0) return 0
-    const epsilon = Math.log(inArea / outArea)
-    const r = (inArea - outArea) / inArea
-    const delta = (alphaRad / r) * (2 - r)
-    const phi = 0.88 + 0.12 * delta
-    const flowStress = getFlowStress(inArea, outArea)
-    return flowStress * (1 + mu / Math.tan(alphaRad)) * epsilon * phi
-  }
 
   // New Die Matching variables
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
