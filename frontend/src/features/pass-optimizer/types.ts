@@ -1,4 +1,4 @@
-import { DieStatus } from '../../types'
+import { DieStatus } from '../../contracts/dieContracts'
 
 export interface PassAssignmentInput {
   startDia: number
@@ -25,7 +25,7 @@ export interface PassStep {
 }
 
 export interface DieAssignment {
-  die: any
+  die: { die_id: string }
   status: DieStatus
   sizeDelta: number
   locationText: string

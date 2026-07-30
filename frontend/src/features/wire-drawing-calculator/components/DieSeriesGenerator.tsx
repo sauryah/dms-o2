@@ -4,6 +4,17 @@ import { Sliders, ArrowRight, Zap, Settings2 } from 'lucide-react';
 import { useApi } from '../../../hooks/useApi';
 import { formatNumber } from '../utils/parsing';
 
+interface PreviewPass {
+  pass: number;
+  fromDie: number;
+  toDie: number;
+  areaBefore: number;
+  areaAfter: number;
+  areaReduction: number;
+  elongation: number;
+  reductionRatio: number;
+}
+
 type Mode = 'target' | 'passes';
 
 interface DieSeriesGeneratorProps {
@@ -22,8 +33,7 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
 
   const { request } = useApi();
   const [generated, setGenerated] = useState<number[] | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [previewPasses, setPreviewPasses] = useState<any[]>([]);
+  const [previewPasses, setPreviewPasses] = useState<PreviewPass[]>([]);
   const [avgElongation, setAvgElongation] = useState<number>(0);
 
   useEffect(() => {
@@ -74,8 +84,7 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
         });
         if (res) {
           setGenerated(res.series);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setPreviewPasses(res.passes.map((p: any) => ({
+          setPreviewPasses(res.passes.map((p: { pass: number; from_die: number; to_die: number; area_before: number; area_after: number; area_reduction: number; elongation: number; reduction_ratio: number }) => ({
             pass: p.pass,
             fromDie: p.from_die,
             toDie: p.to_die,
@@ -99,7 +108,7 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
       clearTimeout(timer);
       controller.abort();
     };
-  }, [dStart, dEnd, elongation, passCount, mode, rangeMin, rangeMax, showRange]);
+  }, [dStart, dEnd, elongation, passCount, mode, rangeMin, rangeMax, showRange, request]);
 
   const rMin = parseFloat(rangeMin);
   const rMax = parseFloat(rangeMax);

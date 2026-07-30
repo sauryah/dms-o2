@@ -24,7 +24,7 @@ import { StatusBadge } from '../../../components/ui/StatusBadge'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { usePassOptimizer } from '../hooks/usePassOptimizer'
 import { PassAssignmentInput } from '../types'
-import type { DieStatus } from '../../../types'
+import type { DieStatus } from '../../../contracts/dieContracts'
 
 const defaultInput: PassAssignmentInput = {
   startDia: 8.0,

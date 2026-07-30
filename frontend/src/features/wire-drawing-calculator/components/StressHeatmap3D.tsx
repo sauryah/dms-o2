@@ -27,15 +27,6 @@ interface HoverInfo {
 }
 
 export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
-  if (!passes || passes.length === 0) {
-    return (
-      <div className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-12 text-center">
-        <Activity className="h-8 w-8 text-slate-600 mx-auto mb-3" />
-        <p className="text-slate-400 text-sm">No pass data available. Generate a die schedule to view the 3D stress model.</p>
-      </div>
-    );
-  }
-
   const [selectedPassIdx, setSelectedPassIdx] = useState<number>(0);
   const [rotationX, setRotationX] = useState<number>(20);
   const [rotationY, setRotationY] = useState<number>(-35);
@@ -59,7 +50,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const touchStartDist = useRef<number>(0);
   const touchStartZoom = useRef<number>(1);
 
-  // IMPROVEMENT 2: DPI-aware canvas with ResizeObserver
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver((entries) => {
@@ -82,7 +72,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     if (ctx) ctx.scale(dpr, dpr);
   }, [displaySize]);
 
-  // IMPROVEMENT 4: Pause on document.hidden
   useEffect(() => {
     const onVisChange = () => {
       if (document.hidden) {
@@ -104,6 +93,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const activePass = passes[selectedPassIdx] || passes[0];
 
   const din = activePass?.fromDie ?? 3.0;
+
   const dout = activePass?.toDie ?? 2.5;
   const areaRed = activePass?.areaReduction ?? 0;
   const elongation = activePass?.elongation ?? 0;
@@ -113,7 +103,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const deltaParam = (approachAngle2Alpha * Math.PI / 180 / rFrac) * (1 + Math.sqrt(1 - rFrac));
   const isCentralBurstRisk = deltaParam > 3.0 || approachAngle2Alpha > 18 || areaRed > 24;
 
-  // IMPROVEMENT 7: Slab-method stress model (Hollomon + Sachs)
   const K = 315;
   const nPow = 0.54;
   const mu = 0.04;
@@ -124,7 +113,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const maxStress = sigmaFlow * 2.5;
   const deltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
 
-  // Pre-compute geometry for deps and rendering
   const scaleR = 18;
   const rIn = (din / 2) * scaleR;
   const rOut = (dout / 2) * scaleR;
@@ -146,7 +134,96 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     link.click();
   };
 
-  // Animation Frame Loop & 3D Canvas Render
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartDist.current = Math.sqrt(dx * dx + dy * dy);
+      touchStartZoom.current = zoom;
+    }
+  }, [zoom]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isDragging) {
+      const deltaX = e.touches[0].clientX - dragStart.x;
+      const deltaY = e.touches[0].clientY - dragStart.y;
+      setRotationY((prev) => prev + deltaX * 0.5);
+      setRotationX((prev) => Math.max(-80, Math.min(80, prev - deltaY * 0.5)));
+      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    } else if (e.touches.length === 2 && touchStartDist.current > 0) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / touchStartDist.current;
+      setZoom(Math.max(0.3, Math.min(3, touchStartZoom.current * scale)));
+    }
+  }, [isDragging, dragStart]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    touchStartDist.current = 0;
+  }, []);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging) {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      setRotationY((prev) => prev + deltaX * 0.5);
+      setRotationX((prev) => Math.max(-80, Math.min(80, prev - deltaY * 0.5)));
+      setDragStart({ x: e.clientX, y: e.clientY });
+      setHoverInfo(null);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const relX = (mouseX / rect.width) - 0.5;
+    const axialRange = 360;
+    const axialPos = relX * axialRange;
+    const axialMm = axialPos * 0.5;
+
+    let stressMPa: number;
+    if (axialPos < xConeStart) {
+      stressMPa = sigmaD * 0.25;
+    } else if (axialPos <= xConeEnd) {
+      const t = (axialPos - xConeStart) / (xConeEnd - xConeStart);
+      stressMPa = sigmaD * (0.4 + 0.55 * Math.pow(Math.max(0, Math.min(1, t)), 0.7));
+    } else if (axialPos <= xBearEnd) {
+      const tBear = (axialPos - xConeEnd) / Math.max(bearingLen, 1);
+      stressMPa = sigmaD * (0.85 + 0.1 * Math.max(0, Math.min(1, tBear)));
+    } else {
+      stressMPa = sigmaD * 0.35;
+    }
+
+    const localDeltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
+
+    setHoverInfo({
+      x: e.clientX,
+      y: e.clientY,
+      axial: axialMm,
+      stress: stressMPa,
+      temp: 25 + localDeltaT,
+      strain: axialPos >= xConeStart && axialPos <= xConeEnd
+        ? Math.max(0, Math.min(1, (axialPos - xConeStart) / (xConeEnd - xConeStart))) * epsilon
+        : axialPos > xConeEnd ? epsilon : 0,
+    });
+  }, [isDragging, dragStart, sigmaD, epsilon, xConeStart, xConeEnd, xBearEnd, bearingLen]);
+
+  const handleMouseUp = useCallback(() => setIsDragging(false), []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+    setHoverInfo(null);
+  }, []);
+
   useEffect(() => {
     let animId: number;
     let particleOffset = 0;
@@ -410,97 +487,14 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     coneLength, rIn, rOut, alphaRadHalf,
   ]);
 
-  // IMPROVEMENT 5: Touch event handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      setIsDragging(true);
-      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    } else if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchStartDist.current = Math.sqrt(dx * dx + dy * dy);
-      touchStartZoom.current = zoom;
-    }
-  }, [zoom]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    if (e.touches.length === 1 && isDragging) {
-      const deltaX = e.touches[0].clientX - dragStart.x;
-      const deltaY = e.touches[0].clientY - dragStart.y;
-      setRotationY((prev) => prev + deltaX * 0.5);
-      setRotationX((prev) => Math.max(-80, Math.min(80, prev - deltaY * 0.5)));
-      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    } else if (e.touches.length === 2 && touchStartDist.current > 0) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const scale = dist / touchStartDist.current;
-      setZoom(Math.max(0.3, Math.min(3, touchStartZoom.current * scale)));
-    }
-  }, [isDragging, dragStart]);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    touchStartDist.current = 0;
-  }, []);
-
-  // IMPROVEMENT 8: Hover tracking
-  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isDragging) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      setRotationY((prev) => prev + deltaX * 0.5);
-      setRotationX((prev) => Math.max(-80, Math.min(80, prev - deltaY * 0.5)));
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setHoverInfo(null);
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const relX = (mouseX / rect.width) - 0.5;
-    const axialRange = 360;
-    const axialPos = relX * axialRange;
-    const axialMm = axialPos * 0.5;
-
-    let stressMPa: number;
-    if (axialPos < xConeStart) {
-      stressMPa = sigmaD * 0.25;
-    } else if (axialPos <= xConeEnd) {
-      const t = (axialPos - xConeStart) / (xConeEnd - xConeStart);
-      stressMPa = sigmaD * (0.4 + 0.55 * Math.pow(Math.max(0, Math.min(1, t)), 0.7));
-    } else if (axialPos <= xBearEnd) {
-      const tBear = (axialPos - xConeEnd) / Math.max(bearingLen, 1);
-      stressMPa = sigmaD * (0.85 + 0.1 * Math.max(0, Math.min(1, tBear)));
-    } else {
-      stressMPa = sigmaD * 0.35;
-    }
-
-    const localDeltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
-
-    setHoverInfo({
-      x: e.clientX,
-      y: e.clientY,
-      axial: axialMm,
-      stress: stressMPa,
-      temp: 25 + localDeltaT,
-      strain: axialPos >= xConeStart && axialPos <= xConeEnd
-        ? Math.max(0, Math.min(1, (axialPos - xConeStart) / (xConeEnd - xConeStart))) * epsilon
-        : axialPos > xConeEnd ? epsilon : 0,
-    });
-  }, [isDragging, dragStart, sigmaD, epsilon, xConeStart, xConeEnd, xBearEnd, bearingLen]);
-
-  const handleMouseUp = useCallback(() => setIsDragging(false), []);
-
-  const handleMouseLeave = useCallback(() => {
-    setIsDragging(false);
-    setHoverInfo(null);
-  }, []);
+  if (!passes || passes.length === 0) {
+    return (
+      <div className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-12 text-center">
+        <Activity className="h-8 w-8 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400 text-sm">No pass data available. Generate a die schedule to view the 3D stress model.</p>
+      </div>
+    );
+  }
 
   const stressMin = stressRangeRef.current.min;
   const stressMax = stressRangeRef.current.max;

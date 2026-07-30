@@ -16,8 +16,16 @@ function barColor(val: number) {
   return '#EF4444';
 }
 
-const CustomBar = (props: any) => {
-  const { x, y, width, height, value } = props;
+interface CustomBarProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+}
+
+const CustomBar = (props: CustomBarProps) => {
+  const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props;
   const fill = barColor(value);
   const r = Math.min(4, height / 2, width / 2);
   return (

@@ -125,6 +125,7 @@ export async function exportPDF(
       formatNumber(p.reductionRatio),
     ]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (doc as any).autoTable({
       startY: 45,
  head: [
@@ -144,6 +145,7 @@ export async function exportPDF(
       headStyles: { fillColor: [30, 58, 95] },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const finalY = (doc as any).lastAutoTable.finalY + 10;
 
     doc.setFontSize(12);

@@ -7,7 +7,7 @@ import {
   ChevronUp,
   Cpu,
   Activity,
-  Lightbulb,
+
   Sliders,
   Layers,
   Scale,

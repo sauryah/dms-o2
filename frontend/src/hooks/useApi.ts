@@ -4,13 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 export class ApiError extends Error {
   type: 'network' | 'timeout' | 'http_4xx' | 'http_5xx' | 'unauthorized' | 'aborted' | 'unknown';
   status?: number;
-  data?: any;
+  data?: unknown;
 
   constructor(
     message: string,
     type: 'network' | 'timeout' | 'http_4xx' | 'http_5xx' | 'unauthorized' | 'aborted' | 'unknown',
     status?: number,
-    data?: any
+    data?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
