@@ -135,7 +135,6 @@ export function useCalculatorState() {
 
     const controller = new AbortController()
     const timer = setTimeout(async () => {
-      setLoadingRound(true)
       try {
         const payload = {
           calc_mode: roundCalcMode,
@@ -180,9 +179,6 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
-        }
-      } finally {
-        setLoadingRound(false)
       }
     }, 150)
 
@@ -216,7 +212,6 @@ export function useCalculatorState() {
 
     const controller = new AbortController()
     const timer = setTimeout(async () => {
-      setLoadingFlat(true)
       try {
         const payload = {
           in_width: parseFloat(flatInWidth) || 0,
@@ -259,9 +254,6 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
-        }
-      } finally {
-        setLoadingFlat(false)
       }
     }, 150)
 
@@ -294,7 +286,6 @@ export function useCalculatorState() {
 
     const controller = new AbortController()
     const timer = setTimeout(async () => {
-      setLoadingSequence(true)
       try {
         const payload = {
           start: parseFloat(seqStart) || 0,
@@ -338,9 +329,6 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
-        }
-      } finally {
-        setLoadingSequence(false)
       }
     }, 150)
 
