@@ -1,10 +1,13 @@
 import os
+import logging
 import subprocess
 from typing import Dict, Any, Optional
 from django.conf import settings
 from users.models import UserSession
 from search.tasks import rebuild_search_index_task
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 class BackupService:
     @staticmethod
@@ -114,8 +117,8 @@ class BackupService:
             checksum = hasher.hexdigest()
             with open(f"{filepath}.md5", 'w') as md5_f:
                 md5_f.write(f"{checksum}  {filename}\n")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Backup checksum generation failed: %s", e)
 
         # Stream backup to S3/MinIO if enabled
         if getattr(settings, 'S3_BACKUPS_ENABLED', False):
@@ -200,16 +203,17 @@ class BackupService:
         try:
             from django.core.management import call_command
             call_command('migrate', noinput=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Migration after restore failed: %s", e)
+            raise
 
         # Evict all restored sessions to prevent unauthorized reuse of restored sessions
         try:
             from django.contrib.sessions.models import Session
             Session.objects.all().delete()
             UserSession.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Session eviction after restore failed: %s", e)
 
         # Restore the restorer's session so they stay logged in
         if current_session_data:
@@ -228,8 +232,8 @@ class BackupService:
                         ip_address=current_session_data['ip_address'],
                         device=current_session_data['device']
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("Restoring restorer session after restore failed: %s", e)
 
         # Offload the slow Meilisearch index synchronization to Celery
         rebuild_search_index_task.delay(filename)

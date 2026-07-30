@@ -192,6 +192,7 @@ class DashboardHistoryListView(APIView):
         queryset = DieHistory.objects.all().select_related('die', 'changed_by')
         if field:
             queryset = queryset.filter(field_name__icontains=field)
+        queryset = queryset.order_by('-timestamp')
         
         # Limit to the requested size
         queryset = queryset[:limit]

@@ -543,8 +543,8 @@ class TokenRefreshView(SimpleJWTTokenRefreshView):
                             'last_seen': session.last_seen.isoformat(),
                         }
                         cache.set(new_cache_key, cache_data, timeout=settings.SESSION_ABSOLUTE_TIMEOUT_HOURS * 3600)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Token refresh session update failed: {e}")
 
                 # Do not pop 'access' from response.data, frontend useApi requires it
                 response.data.pop('refresh', None)
