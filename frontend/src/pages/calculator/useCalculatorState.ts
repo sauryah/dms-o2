@@ -179,6 +179,7 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
+        }
       }
     }, 150)
 
@@ -254,6 +255,7 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
+        }
       }
     }, 150)
 
@@ -329,6 +331,7 @@ export function useCalculatorState() {
         const error = err as { name?: string; type?: string };
         if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
+        }
       }
     }, 150)
 
