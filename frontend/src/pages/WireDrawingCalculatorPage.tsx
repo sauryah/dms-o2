@@ -140,7 +140,7 @@ export function WireDrawingCalculatorPage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [dies]);
+  }, [dies, request]);
 
   const handleParse = useCallback((d: number[]) => setDies(d), [setDies]);
   const handleDiesChange = useCallback((d: number[]) => setDies(d), [setDies]);

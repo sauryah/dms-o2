@@ -159,8 +159,9 @@ export function useCalculatorState() {
             materialLimit: res.material_limit
           })
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err) {
+        const error = err as { name?: string; type?: string };
+        if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
         }
       } finally {
@@ -185,7 +186,8 @@ export function useCalculatorState() {
     dieAngle,
     yieldStrength,
     uts,
-    lubrication
+    lubrication,
+    request
   ])
 
   // Async calculations for Flat Calculator
@@ -236,8 +238,9 @@ export function useCalculatorState() {
             materialLimit: res.material_limit
           })
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err) {
+        const error = err as { name?: string; type?: string };
+        if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
         }
       } finally {
@@ -261,7 +264,8 @@ export function useCalculatorState() {
     dieAngle,
     yieldStrength,
     uts,
-    lubrication
+    lubrication,
+    request
   ])
 
   // Async calculations for Sequence Calculator
@@ -296,7 +300,8 @@ export function useCalculatorState() {
         })
         if (res) {
           setSequenceResults({
-            steps: res.steps.map((s: any) => ({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          steps: res.steps.map((s: any) => ({
               draft: s.draft,
               inlet: s.inlet,
               outlet: s.outlet,
@@ -312,8 +317,9 @@ export function useCalculatorState() {
             totalElongation: res.total_elongation
           })
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err) {
+        const error = err as { name?: string; type?: string };
+        if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err)
         }
       } finally {
@@ -337,7 +343,8 @@ export function useCalculatorState() {
     dieAngle,
     yieldStrength,
     uts,
-    lubrication
+    lubrication,
+    request
   ])
 
   const getFrictionCoefficient = () => {
@@ -394,6 +401,7 @@ export function useCalculatorState() {
   }
 
   // New Die Matching variables
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [matchingDies, setMatchingDies] = useState<Record<number, any[]>>({})
   const [loadingDies, setLoadingDies] = useState<Record<number, boolean>>({})
 
@@ -423,8 +431,9 @@ export function useCalculatorState() {
       })
       const results = (res && typeof res === 'object' && 'results' in res) ? res.results : (Array.isArray(res) ? res : [])
       setMatchingDies(prev => ({ ...prev, [passNo]: results }))
-    } catch (err: any) {
-      if (err?.type === 'aborted') return
+    } catch (err) {
+      const error = err as { type?: string };
+      if (error?.type === 'aborted') return
       console.error('Failed to fetch matching dies', err)
       showToast('Failed to search matching dies inventory', 'error')
     } finally {
@@ -444,8 +453,9 @@ export function useCalculatorState() {
       })
       const results = (res && typeof res === 'object' && 'results' in res) ? res.results : (Array.isArray(res) ? res : [])
       setMatchingDies(prev => ({ ...prev, [passNo]: results }))
-    } catch (err: any) {
-      if (err?.type === 'aborted') return
+    } catch (err) {
+      const error = err as { type?: string };
+      if (error?.type === 'aborted') return
       console.error('Failed to fetch matching flat dies', err)
       showToast('Failed to search matching flat dies inventory', 'error')
     } finally {

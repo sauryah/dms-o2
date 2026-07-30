@@ -4,6 +4,7 @@ import { useToast } from '../../../contexts'
 import {
   PassAssignmentInput,
   OptimizerResult,
+  PassResult,
 } from '../types'
 
 export function usePassOptimizer() {
@@ -22,6 +23,7 @@ export function usePassOptimizer() {
       })
       if (res) {
         setResults({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           passes: res.passes.map((p: any) => ({
             step: {
               draft: p.step.draft,
@@ -63,7 +65,7 @@ export function usePassOptimizer() {
   const exportCSV = useCallback(() => {
     if (!results) return
     const header = 'Pass,Inlet (mm),Outlet (mm),Reduction %,Drawing Stress MPa,Temp Rise C,Power kW,Burst Risk,Die ID,Die Status,Die Location,Die Delta mm'
-    const rows = results.passes.map((p: any) =>
+    const rows = results.passes.map((p: PassResult) =>
       [
         p.step.draft,
         p.step.inlet.toFixed(3),

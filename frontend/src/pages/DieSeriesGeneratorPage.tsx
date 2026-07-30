@@ -81,7 +81,7 @@ export function DieSeriesGeneratorPage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [dies]);
+  }, [dies, request]);
 
   const handleApplyGenerated = useCallback((newDies: number[]) => {
     if (dies.length > 0) {

@@ -22,9 +22,9 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
 
   const { request } = useApi();
   const [generated, setGenerated] = useState<number[] | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [previewPasses, setPreviewPasses] = useState<any[]>([]);
   const [avgElongation, setAvgElongation] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const ds = parseFloat(dStart);
@@ -55,7 +55,6 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setLoading(true);
       try {
         const payload = {
           mode,
@@ -75,6 +74,7 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
         });
         if (res) {
           setGenerated(res.series);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setPreviewPasses(res.passes.map((p: any) => ({
             pass: p.pass,
             fromDie: p.from_die,
@@ -87,12 +87,11 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
           })));
           setAvgElongation(res.avg_elongation);
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err) {
+        const error = err as { name?: string; type?: string };
+        if (error?.name !== 'AbortError' && error?.type !== 'aborted') {
           console.error(err);
         }
-      } finally {
-        setLoading(false);
       }
     }, 150);
 
