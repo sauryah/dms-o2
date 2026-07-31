@@ -244,7 +244,7 @@ export function UserManager() {
             placeholder="Search username, name, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-550 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
           />
         </div>
 
@@ -303,9 +303,9 @@ export function UserManager() {
         </div>
       ) : error ? (
         <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto shadow-lg">
-          <ShieldAlert className="h-10 w-10 text-rose-550 mx-auto mb-4" />
+          <ShieldAlert className="h-10 w-10 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-          <p className="text-rose-455 font-mono text-sm">{error.message}</p>
+          <p className="font-mono text-sm">{error.message}</p>
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto shadow-xl select-none">
@@ -319,23 +319,23 @@ export function UserManager() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-[10px] font-bold uppercase tracking-wider select-none">
-                  <th className="py-4.5 px-6 font-mono">Username Identity</th>
-                  <th className="py-4.5 px-6 hidden sm:table-cell font-mono">Full Name</th>
-                  <th className="py-4.5 px-6 hidden md:table-cell font-mono">Email Address</th>
-                  <th className="py-4.5 px-6 font-mono">Role</th>
-                  <th className="py-4.5 px-6 font-mono">Status</th>
-                  <th className="py-4.5 px-6 font-mono">Tools Access</th>
-                  <th className="py-4.5 px-6 text-right font-mono">Actions</th>
+                  <th className="px-6 font-mono">Username Identity</th>
+                  <th className="px-6 hidden sm:table-cell font-mono">Full Name</th>
+                  <th className="px-6 hidden md:table-cell font-mono">Email Address</th>
+                  <th className="px-6 font-mono">Role</th>
+                  <th className="px-6 font-mono">Status</th>
+                  <th className="px-6 font-mono">Tools Access</th>
+                  <th className="px-6 text-right font-mono">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-850/50">
+              <tbody className="divide-y">
                 {filteredUsers.map((user: any) => {
                   const isSelf = user.username === currentUsername
                   const avatarStyle = getAvatarStyle(user.username)
                   
                   return (
                     <React.Fragment key={user.id}>
-                      <tr className="group hover:bg-slate-850/25 transition-all duration-150">
+                      <tr className="group transition-all duration-150">
                         
                         {/* Username Column with Avatar Initial */}
                         <td className="py-3.5 px-6 font-bold text-white">
@@ -386,7 +386,7 @@ export function UserManager() {
                         <td className="py-3.5 px-6">
                           <div className="flex items-center space-x-2">
                             <span className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' : 'bg-rose-500'}`} />
-                            <span className={`text-xs font-semibold ${user.is_active ? 'text-emerald-450' : 'text-rose-455'}`}>
+                            <span className={`text-xs font-semibold ${user.is_active ? '' : ''}`}>
                               {user.is_active ? 'Active' : 'Deactivated'}
                             </span>
                           </div>
@@ -447,8 +447,8 @@ export function UserManager() {
                             disabled={isSelf}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
                               user.is_active 
-                                ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 border-rose-500/20 disabled:opacity-40' 
-                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-450 border-emerald-500/20'
+                                ? 'bg-rose-500/10 hover:bg-rose-500/20  border-rose-500/20 disabled:opacity-40' 
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/20  border-emerald-500/20'
                             }`}
                           >
                             {user.is_active ? 'Suspend' : 'Activate'}
@@ -457,7 +457,7 @@ export function UserManager() {
                           <button 
                             onClick={() => handleDeleteUser(user)}
                             disabled={isSelf}
-                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-550 border border-rose-500/20 p-2 rounded-xl text-xs transition disabled:opacity-40"
+                            className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 p-2 rounded-xl text-xs transition disabled:opacity-40"
                             title={isSelf ? 'You cannot delete yourself' : 'Delete user'}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -507,7 +507,7 @@ export function UserManager() {
             <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-4 space-y-4">
               {formError && (
                 <div className="bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-xl p-4 text-xs font-semibold font-mono flex items-center space-x-2">
-                  <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-[var(--color-danger)]" />
+                  <ShieldAlert className="shrink-0 text-[var(--color-danger)]" />
                   <span>{formError}</span>
                 </div>
               )}
@@ -650,7 +650,7 @@ export function UserManager() {
                     checked={isActiveInput}
                     disabled={editingUser && editingUser.username === currentUsername}
                     onChange={(e) => setIsActiveInput(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
+                    className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
                   />
                 </div>
 
@@ -686,7 +686,7 @@ export function UserManager() {
                         setAuthorizedToolsInput(['sizing-calculator', 'wire-drawing-calculator'])
                       }
                     }}
-                    className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
+                    className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
                   />
                 </div>
 
@@ -703,7 +703,7 @@ export function UserManager() {
                   </div>
 
                   {/* Top-Level Tool 1: Sizing Calculator */}
-                  <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-805 rounded-xl hover:border-slate-700 transition">
+                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
                     <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
@@ -715,7 +715,7 @@ export function UserManager() {
                             isChecked ? prev.filter(id => id !== 'sizing-calculator') : [...prev, 'sizing-calculator']
                           );
                         }}
-                        className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
                       />
                       <label htmlFor="tool-sizing-calculator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
                         Sizing & Elongation Calculator
@@ -727,7 +727,7 @@ export function UserManager() {
                   </div>
 
                   {/* Top-Level Tool 2: Wire Drawing Calculator */}
-                  <div className="p-3 bg-slate-900 border border-slate-805 rounded-xl space-y-3">
+                  <div className="p-3 bg-slate-900 border rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <input
@@ -740,7 +740,7 @@ export function UserManager() {
                               isChecked ? prev.filter(id => id !== 'wire-drawing-calculator') : [...prev, 'wire-drawing-calculator']
                             );
                           }}
-                          className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                          className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
                         />
                         <label htmlFor="tool-wire-drawing-calculator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
                           Wire Drawing Calculator (Base)
@@ -800,7 +800,7 @@ export function UserManager() {
                             Theory & Fundamentals Guide
                           </label>
                         </div>
-                        <span className="text-[8px] font-mono text-indigo-400 bg-indigo-950 border border-indigo-805 px-1.5 py-0.5 rounded font-extrabold uppercase">
+                        <span className="text-[8px] font-mono text-indigo-400 bg-indigo-950 border px-1.5 py-0.5 rounded font-extrabold uppercase">
                           Theory Docs
                         </span>
                       </div>
@@ -808,7 +808,7 @@ export function UserManager() {
                   </div>
 
                   {/* Top-Level Tool 3: Die Series Generator */}
-                  <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-805 rounded-xl hover:border-slate-700 transition">
+                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
                     <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
@@ -820,7 +820,7 @@ export function UserManager() {
                             isChecked ? prev.filter(id => id !== 'die-series-generator') : [...prev, 'die-series-generator']
                           );
                         }}
-                        className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
                       />
                       <label htmlFor="tool-die-series-generator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
                         Die Series Generator
@@ -834,7 +834,7 @@ export function UserManager() {
               )}
 
               {/* Submit Buttons */}
-              <div className="border-t border-slate-805 pt-5 flex justify-end space-x-3 bg-slate-950/10 -mx-6 -mb-6 p-6">
+              <div className="border-t pt-5 flex justify-end space-x-3 bg-slate-950/10 -mx-6 -mb-6 p-6">
                 <button 
                   type="button" 
                   onClick={closeForm}
@@ -891,7 +891,7 @@ function UserActivityLogSection({ username }: { username: string }) {
 
   if (error) {
     return (
-      <div className="text-center text-xs text-rose-455 font-semibold py-4 font-mono">
+      <div className="text-center text-xs font-semibold py-4 font-mono">
         Failed to load activity logs: {error.message}
       </div>
     )
@@ -950,7 +950,7 @@ function UserActivityLogSection({ username }: { username: string }) {
             <div key={log.id} className="relative flex justify-between items-start gap-4 p-3 bg-slate-900 border border-slate-800 hover:border-slate-800 rounded-xl transition">
               
               {/* Event indicator dot */}
-              <div className={`absolute -left-[14px] top-4.5 w-2 h-2 rounded-full border border-slate-950 ${
+              <div className={`absolute -left-[14px]  w-2 h-2 rounded-full border border-slate-950 ${
                 log.action === 'LOGIN'
                   ? 'bg-emerald-500'
                   : log.action === 'FAILED_LOGIN'
@@ -964,7 +964,7 @@ function UserActivityLogSection({ username }: { username: string }) {
                     log.action === 'LOGIN'
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : log.action === 'FAILED_LOGIN'
-                      ? 'bg-rose-500/10 text-rose-455 border border-rose-500/20 animate-pulse'
+                      ? 'bg-rose-500/10  border border-rose-500/20 animate-pulse'
                       : 'bg-slate-800 text-slate-400 border border-slate-700'
                   }`}>
                     {log.action}

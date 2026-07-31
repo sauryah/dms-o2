@@ -30,34 +30,26 @@ func (w *statusResponseWriter) WriteHeader(code int) {
 }
 
 func main() {
-	// Configure slog JSON logger
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("Configuration error", "error", err)
 		os.Exit(1)
 	}
 
-	// Connect to PostgreSQL
 	db, err := database.NewPostgresDB(cfg)
 	if err != nil {
 		slog.Error("Could not connect to PostgreSQL database", "error", err)
 		os.Exit(1)
 	}
 
-	// Connect to Meilisearch
 	meiliClient := search.NewSearchClient(cfg)
-
-	// Connect to Redis
 	redisClient := cache.NewCache(cfg)
 
-	// Create and start Event Manager for SSE broadcasts
 	eventManager := events.NewEventManager()
 	go eventManager.Start()
 
-	// Create Handler containing dependencies and state
 	handler := handlers.NewHandler(cfg, db, redisClient, meiliClient, eventManager)
 
 	// Start PostgreSQL event listener for Redis cache invalidation & SSE broadcasts
@@ -65,14 +57,11 @@ func main() {
 		redisClient.Invalidate(context.Background())
 	})
 
-	// Start Index Reconciliation Scheduler
 	handler.StartReconciliationScheduler()
 
-	// Register HTTP handlers
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/go/health", handler.HandleHealth)
 
-	// Create middleware
 	jwtAuth := auth.AuthMiddleware(cfg, redisClient)
 
 	mux.Handle("GET /api/go/search", jwtAuth(http.HandlerFunc(handler.HandleSearch)))
@@ -98,7 +87,7 @@ func main() {
 
 	// Apply security headers and request size limits
 	secureMux := middleware.SecurityHeaders(loggingMux)
-	limitedMux := middleware.MaxBytesReader(secureMux, 10<<20) // 10MB limit
+	limitedMux := middleware.MaxBytesReader(secureMux, 10<<20)
 
 	server := &http.Server{
 		Addr:              ":" + port,

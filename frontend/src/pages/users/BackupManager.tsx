@@ -131,7 +131,7 @@ export function BackupManager() {
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="p-1.5 bg-blue-500/10 border border-blue-500/25 text-blue-400 rounded-lg">
-                <Database className="h-4.5 w-4.5" />
+                <Database className="" />
               </div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Database Snapshot Tool</h3>
             </div>
@@ -175,8 +175,8 @@ export function BackupManager() {
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition-all" />
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/25 text-indigo-450 rounded-lg">
-                <Upload className="h-4.5 w-4.5" />
+              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-lg">
+                <Upload className="" />
               </div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Ingest Dump Archive</h3>
             </div>
@@ -186,7 +186,7 @@ export function BackupManager() {
           </div>
 
           <div 
-            className={`border border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-350 ${
+            className={`border border-dashed rounded-xl p-5 text-center cursor-pointer transition-all  ${
               isUploading 
                 ? 'border-blue-500/50 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.05)]' 
                 : 'border-slate-800 hover:border-blue-500/40 bg-slate-950/50 hover:bg-slate-950/90'
@@ -221,7 +221,7 @@ export function BackupManager() {
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
           <div className="flex items-center space-x-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-450" />
+            <ShieldCheck className="h-4 w-4" />
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Stored Snapshots Registry</h4>
           </div>
           <span className="text-xs text-slate-400 font-mono">
@@ -263,7 +263,7 @@ export function BackupManager() {
                     <th className="py-4 px-6 font-mono text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-850/60 font-mono text-xs text-slate-300">
+                <tbody className="divide-y font-mono text-xs text-slate-300">
                   <AnimatePresence>
                     {backups.map((backup: any) => {
                       const dateStr = new Date(backup.created_at).toLocaleString()
@@ -271,7 +271,7 @@ export function BackupManager() {
                       return (
                         <tr 
                           key={backup.filename} 
-                          className="hover:bg-slate-850/20 transition-colors duration-150"
+                          className="transition-colors duration-150"
                         >
                           <td className="py-3.5 px-6 font-semibold text-slate-200">
                             <div className="flex items-center space-x-2.5">
@@ -311,7 +311,7 @@ export function BackupManager() {
                                 setSelectedBackup(backup)
                                 setShowRestoreConfirmModal(true)
                               }}
-                              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-450 border border-emerald-500/20 hover:border-emerald-500/30 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-wider uppercase transition cursor-pointer"
+                              className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/30 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-wider uppercase transition cursor-pointer"
                               title="Restore database to this state"
                             >
                               Restore
@@ -321,7 +321,7 @@ export function BackupManager() {
                             <button
                               onClick={() => setBackupToDelete(backup.filename)}
                               disabled={deleteBackupMutation.isPending}
-                              className="bg-slate-950/40 hover:bg-rose-500/10 text-slate-400 hover:text-rose-455 border border-slate-800/80 p-1.5 rounded-xl transition disabled:opacity-40 cursor-pointer"
+                              className="bg-slate-950/40 hover:bg-rose-500/10 text-slate-400 border border-slate-800/80 p-1.5 rounded-xl transition disabled:opacity-40 cursor-pointer"
                               title="Delete backup from disk"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

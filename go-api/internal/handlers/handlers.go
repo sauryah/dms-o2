@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/meilisearch/meilisearch-go"
 	"dms-go-api/internal/auth"
 	"dms-go-api/internal/config"
 	"dms-go-api/internal/database"
 	"dms-go-api/internal/events"
+	"github.com/meilisearch/meilisearch-go"
 )
 
 type Database interface {
@@ -63,22 +63,30 @@ func writeProblemDetails(w http.ResponseWriter, r *http.Request, title string, s
 	json.NewEncoder(w).Encode(prob)
 }
 
+func requirePost(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+		return false
+	}
+	return true
+}
+
 type SearchParams struct {
-	Q         string
-	DieType   string
-	Status    string
-	Casing    string
-	SizeMin   string
-	SizeMax   string
-	WidthMin  string
-	WidthMax  string
-	ThickMin  string
-	ThickMax  string
-	MachineID string
-	SetID     string
+	Q          string
+	DieType    string
+	Status     string
+	Casing     string
+	SizeMin    string
+	SizeMax    string
+	WidthMin   string
+	WidthMax   string
+	ThickMin   string
+	ThickMax   string
+	MachineID  string
+	SetID      string
 	Unassigned string
-	Limit     int
-	Offset    int
+	Limit      int
+	Offset     int
 }
 
 func ParseSearchParams(r *http.Request) (*SearchParams, error) {
@@ -120,7 +128,7 @@ func ParseSearchParams(r *http.Request) (*SearchParams, error) {
 
 	return &SearchParams{
 		Q: q, DieType: dieType, Status: statusVal,
-		Casing: casing,
+		Casing:  casing,
 		SizeMin: sizeMin, SizeMax: sizeMax,
 		WidthMin: widthMin, WidthMax: widthMax,
 		ThickMin: thickMin, ThickMax: thickMax,
@@ -144,11 +152,11 @@ type Handler struct {
 	search       Search
 	eventManager *events.EventManager
 
-	reconMu      sync.RWMutex
-	lastRecon    time.Time
-	reconStatus  string
-	pgCount      int
-	meiliCount   int
+	reconMu     sync.RWMutex
+	lastRecon   time.Time
+	reconStatus string
+	pgCount     int
+	meiliCount  int
 }
 
 func NewHandler(
@@ -1078,8 +1086,7 @@ func getMaterialLimit(materialType string, customLimit float64) float64 {
 // Handlers
 
 func (h *Handler) HandleCalculateRound(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 
@@ -1174,8 +1181,7 @@ func (h *Handler) HandleCalculateRound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleCalculateFlat(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 
@@ -1240,8 +1246,7 @@ func (h *Handler) HandleCalculateFlat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleCalculateSequence(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 
@@ -1396,14 +1401,13 @@ type ConsistencyData struct {
 }
 
 type WireDrawingCalcResponse struct {
-	Passes      []PassData        `json:"passes"`
-	Stats       WireDrawingStats  `json:"stats"`
-	Consistency ConsistencyData   `json:"consistency"`
+	Passes      []PassData       `json:"passes"`
+	Stats       WireDrawingStats `json:"stats"`
+	Consistency ConsistencyData  `json:"consistency"`
 }
 
 func (h *Handler) HandleCalculateWireDrawing(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 
@@ -1586,8 +1590,7 @@ type OptimizerResult struct {
 }
 
 func (h *Handler) HandleOptimizePasses(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 
@@ -1801,10 +1804,10 @@ func (h *Handler) HandleOptimizePasses(w http.ResponseWriter, r *http.Request) {
 
 // Material settings
 type MaterialProp struct {
-	Density      float64 // g/cm3
-	SpecificHeat float64 // J/g-C
-	K            float64
-	N            float64
+	Density       float64 // g/cm3
+	SpecificHeat  float64 // J/g-C
+	K             float64
+	N             float64
 	YieldStrength float64
 }
 
@@ -1876,7 +1879,7 @@ func generateDieSeriesFromElongation(dStart, dEnd, elongation, rangeMin, rangeMa
 	factor := math.Sqrt(1 + elongation/100)
 	for mainPasses := maxPasses; mainPasses >= 1; mainPasses-- {
 		dAfterMain := dStart / math.Pow(factor, float64(mainPasses))
-		finalElong := ((dAfterMain * dAfterMain) / (dEnd * dEnd) - 1) * 100
+		finalElong := ((dAfterMain*dAfterMain)/(dEnd*dEnd) - 1) * 100
 
 		if finalElong >= rangeMin-0.01 && finalElong <= rangeMax+0.01 {
 			series := []float64{dStart}
@@ -1938,8 +1941,7 @@ func generateDieSeriesFromPasses(dStart, elongation, rangeMin, rangeMax float64,
 }
 
 func (h *Handler) HandleGenerateDieSeries(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeProblemDetails(w, r, "Method Not Allowed", http.StatusMethodNotAllowed, "Only POST method is allowed")
+	if !requirePost(w, r) {
 		return
 	}
 

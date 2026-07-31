@@ -4,7 +4,7 @@ from django.db import transaction
 from machines.models import Set, Machine, MachineCategory, Rack
 from dies.models import Die
 from history.models import MachineHistory
-from users.middleware import get_current_user, get_current_ip
+from users.context import get_current_user, get_current_ip
 from dms.events import broadcast_event
 from dies.contracts import (
     MACHINE_DELETE_ACTION,

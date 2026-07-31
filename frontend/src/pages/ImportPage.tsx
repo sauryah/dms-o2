@@ -334,7 +334,7 @@ export function ImportPage() {
             <button 
               type="submit"
               disabled={!file || progress}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 disabled:to-slate-850 text-white px-8 py-3 rounded-xl font-bold text-xs shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer"
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-8 py-3 rounded-xl font-bold text-xs shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer"
             >
               {progress ? (
                 <div className="flex items-center space-x-2">
@@ -391,7 +391,7 @@ export function ImportPage() {
                   <span className="text-emerald-500 font-extrabold mr-1 text-sm">✓</span> {importResult.created} created
                 </span>
                 <span className="text-xs font-bold text-slate-400">
-                  <span className="text-blue-550 font-extrabold mr-1 text-sm">✓</span> {importResult.updated} updated
+                  <span className="font-extrabold mr-1 text-sm">✓</span> {importResult.updated} updated
                 </span>
                 <span className="text-xs font-bold text-slate-400">
                   <span className="text-slate-500 font-extrabold mr-1 text-sm">✓</span> {importResult.skipped} skipped
@@ -464,7 +464,7 @@ export function ImportPage() {
             {dryRunResult.errors.length > 0 && (
               <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-xl">
                 <span className="text-xs text-rose-300 font-bold block mb-2">Simulated Errors:</span>
-                <ul className="text-xs font-mono max-h-40 overflow-y-auto space-y-1.5 list-disc list-inside text-rose-455">
+                <ul className="text-xs font-mono max-h-40 overflow-y-auto space-y-1.5 list-disc list-inside">
                   {dryRunResult.errors.map((err, i) => (
                     <li key={i}>
                       Row {err.row}: {err.error}

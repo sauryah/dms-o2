@@ -48,7 +48,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
         {/* Right Action container (Spinner / Clear button) */}
         <div className="absolute inset-y-0 right-0 pr-4 flex items-center space-x-2">
           {loading && (
-            <Loader2 className="h-4.5 w-4.5 animate-spin text-blue-400" />
+            <Loader2 className="animate-spin text-blue-400" />
           )}
           {!loading && value && onClear && (
             <button

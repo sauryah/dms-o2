@@ -120,7 +120,7 @@ export function StepWizard({
             type="button"
             onClick={handleNextClick}
             disabled={nextDisabled || isSubmitting}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 disabled:to-slate-850 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
           >
             Next
           </button>
@@ -129,7 +129,7 @@ export function StepWizard({
             type="submit"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 disabled:to-slate-850 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
           >
             {isSubmitting ? 'Creating...' : 'Submit'}
           </button>

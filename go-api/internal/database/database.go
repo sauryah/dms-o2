@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"dms-go-api/internal/config"
+	"github.com/lib/pq"
 )
 
 type DieRepresentation struct {
@@ -78,6 +78,34 @@ func (db *PostgresDB) IsUserActive(ctx context.Context, userID int) (bool, error
 	return isActive, nil
 }
 
+func appendDimensionFilters(args []interface{}, argCounter int, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]string, []interface{}, int) {
+	var sqlParts []string
+	appendFilter := func(column, value string) {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND %s $%d", column, argCounter))
+		args = append(args, value)
+		argCounter++
+	}
+	if sizeMin != "" {
+		appendFilter("r.current_size >=", sizeMin)
+	}
+	if sizeMax != "" {
+		appendFilter("r.current_size <=", sizeMax)
+	}
+	if widthMin != "" {
+		appendFilter("f.current_width >=", widthMin)
+	}
+	if widthMax != "" {
+		appendFilter("f.current_width <=", widthMax)
+	}
+	if thickMin != "" {
+		appendFilter("f.current_thickness >=", thickMin)
+	}
+	if thickMax != "" {
+		appendFilter("f.current_thickness <=", thickMax)
+	}
+	return sqlParts, args, argCounter
+}
+
 func buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) ([]string, []interface{}, int) {
 	var sqlParts []string
 	var args []interface{}
@@ -143,38 +171,10 @@ func buildWhereClauses(q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin
 		argCounter++
 	}
 
-	if sizeMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
-		args = append(args, sizeMin)
-		argCounter++
-	}
-	if sizeMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
-		args = append(args, sizeMax)
-		argCounter++
-	}
-
-	if widthMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
-		args = append(args, widthMin)
-		argCounter++
-	}
-	if widthMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
-		args = append(args, widthMax)
-		argCounter++
-	}
-
-	if thickMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
-		args = append(args, thickMin)
-		argCounter++
-	}
-	if thickMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
-		args = append(args, thickMax)
-		argCounter++
-	}
+	dimParts, dimArgs, dimCounter := appendDimensionFilters(args, argCounter, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	sqlParts = append(sqlParts, dimParts...)
+	args = dimArgs
+	argCounter = dimCounter
 
 	if machineID != "" {
 		sqlParts = append(sqlParts, fmt.Sprintf("AND m.id = $%d", argCounter))
@@ -292,38 +292,10 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 	args = append(args, pq.Array(hitIDs))
 	argCounter++
 
-	if sizeMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size >= $%d", argCounter))
-		args = append(args, sizeMin)
-		argCounter++
-	}
-	if sizeMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND r.current_size <= $%d", argCounter))
-		args = append(args, sizeMax)
-		argCounter++
-	}
-
-	if widthMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width >= $%d", argCounter))
-		args = append(args, widthMin)
-		argCounter++
-	}
-	if widthMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_width <= $%d", argCounter))
-		args = append(args, widthMax)
-		argCounter++
-	}
-
-	if thickMin != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness >= $%d", argCounter))
-		args = append(args, thickMin)
-		argCounter++
-	}
-	if thickMax != "" {
-		sqlParts = append(sqlParts, fmt.Sprintf("AND f.current_thickness <= $%d", argCounter))
-		args = append(args, thickMax)
-		argCounter++
-	}
+	dimParts, dimArgs, dimCounter := appendDimensionFilters(args, argCounter, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+	sqlParts = append(sqlParts, dimParts...)
+	args = dimArgs
+	argCounter = dimCounter
 
 	query := strings.Join(sqlParts, "\n")
 	rows, err := db.QueryContext(ctx, query, args...)

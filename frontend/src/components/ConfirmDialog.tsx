@@ -137,7 +137,7 @@ export function ConfirmDialog({
             <button
               onClick={onCancel}
               data-cancel-btn
-              className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 px-4.5 py-2 rounded-xl text-xs font-semibold transition focus-ring"
+              className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 py-2 rounded-xl text-xs font-semibold transition focus-ring"
             >
               {cancelText}
             </button>

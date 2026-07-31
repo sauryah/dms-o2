@@ -11,7 +11,7 @@ export default function Header({ dark, toggleDark }: HeaderProps) {
       <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Cog className="w-4.5 h-4.5 text-white" />
+            <Cog className="text-white" />
           </div>
           <div>
             <h1 className="text-[15px] font-semibold text-[#F8FAFC] tracking-[-0.01em] m-0 leading-tight">

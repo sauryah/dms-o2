@@ -98,7 +98,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
       case 'CLEANING': return 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]'
       case 'POLISHING': return 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]'
       case 'DAMAGED': return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-      case 'SCRAPPED': return 'bg-slate-650'
+      case 'SCRAPPED': return ''
       default: return 'bg-slate-400'
     }
   }
@@ -224,11 +224,11 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-orange-400 dot-glow glow-orange animate-pulse shrink-0" />
             <div className="text-xs">
-              <p className="font-bold text-white">Relocating Die <span className="font-mono text-orange-350">{pickedUpDie.die_id}</span></p>
-              <p className="text-slate-400 mt-0.5 font-medium">Use arrow keys to traverse cells. Press <kbd className="bg-slate-900 border border-slate-805 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Space</kbd> to drop, <kbd className="bg-slate-900 border border-slate-805 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Esc</kbd> to cancel.</p>
+              <p className="font-bold text-white">Relocating Die <span className="font-mono">{pickedUpDie.die_id}</span></p>
+              <p className="text-slate-400 mt-0.5 font-medium">Use arrow keys to traverse cells. Press <kbd className="bg-slate-900 border px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Space</kbd> to drop, <kbd className="bg-slate-900 border px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-200">Esc</kbd> to cancel.</p>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-orange-450 font-mono bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-md">
+          <span className="text-[10px] font-bold font-mono bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-md">
             Targeting: {targetCell?.rack} - {targetCell?.shelf}
           </span>
         </div>
@@ -302,7 +302,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                               tabIndex={0}
                               onKeyDown={(e) => handleDieKeyDown(e, die, rack, shelf)}
                               className={`group relative flex items-center justify-between p-1.5 rounded-lg border bg-slate-900 border-slate-800 cursor-pointer transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                draggedDieId === die.die_id ? 'opacity-40' : 'hover:border-blue-500/50 hover:bg-slate-850'
+                                draggedDieId === die.die_id ? 'opacity-40' : 'hover:border-blue-500/50 '
                               } ${
                                 pickedUpDie?.die_id === die.die_id ? 'ring-2 ring-orange-500 bg-orange-950/40 border-orange-500 opacity-80' : ''
                               }`}
@@ -362,7 +362,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
         <div className="w-full lg:w-80 bg-slate-900/60 border border-slate-800/60 rounded-2xl p-5 shadow-xl flex flex-col max-h-[500px] transition-all duration-300">
           <div className="flex justify-between items-center mb-4 border-b border-slate-800/60 pb-3">
             <div className="flex items-center space-x-2 min-w-0">
-              <Move className="h-4.5 w-4.5 text-amber-500 shrink-0" />
+              <Move className="text-amber-500 shrink-0" />
               <span className="text-sm font-extrabold text-white truncate">Unassigned Dies</span>
               <span className="bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full text-[10px] border border-amber-500/20">
                 {unallocatedDies.length}

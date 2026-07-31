@@ -267,7 +267,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                         data-testid={`machine-node-${machine.id}`}
                         className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
                           isMachineDragOver
-                            ? 'bg-blue-650 text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
+                            ? ' text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
                             : isMachineSelected 
                               ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2 glow-blue' 
                               : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
@@ -283,7 +283,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                             e.stopPropagation()
                             toggleMachine(machine.id)
                           }}
-                          className="p-1 hover:bg-slate-855 rounded transition mr-1"
+                          className="p-1 rounded transition mr-1"
                         >
                           {isMachineExpanded ? (
                             <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
@@ -372,7 +372,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnUnassigned(e) : undefined}
                       className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
                         isUnassignedDragOver
-                          ? 'bg-amber-655 text-white border-amber-500 ring-2 ring-amber-500/20'
+                          ? ' text-white border-amber-500 ring-2 ring-amber-500/20'
                           : selectedNode?.type === 'unassigned'
                             ? 'bg-amber-600/10 text-white border-amber-500 glow-amber'
                             : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'

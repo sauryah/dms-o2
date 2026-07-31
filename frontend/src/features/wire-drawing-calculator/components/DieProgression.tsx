@@ -127,7 +127,7 @@ export default function DieProgression({ dies, onDiesChange }: DieProgressionPro
                           updated.splice(i + 1, 0, midVal);
                           onDiesChange(updated);
                         }}
-                        className="w-5 h-5 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-emerald-450 border border-emerald-900/40 flex items-center justify-center shadow-lg transition transform hover:scale-110 cursor-pointer absolute z-10 animate-scaleIn"
+                        className="w-5 h-5 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-900/40 flex items-center justify-center shadow-lg transition transform hover:scale-110 cursor-pointer absolute z-10 animate-scaleIn"
                         title={`Insert pass size between ${d} and ${dies[i+1]}`}
                       >
                         <Plus className="w-3 h-3 stroke-[3]" />

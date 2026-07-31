@@ -148,8 +148,8 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                   key={seg.statusKey} 
                   onMouseEnter={() => setHoveredSegment(seg)}
                   onMouseLeave={() => setHoveredSegment(null)}
-                  className={`flex items-center justify-between text-xs py-1 px-2 rounded-lg border-b border-slate-800/40 transition-colors duration-250 cursor-pointer ${
-                    active ? 'bg-slate-850/60 border-slate-800/80 text-white' : 'hover:bg-slate-800/20'
+                  className={`flex items-center justify-between text-xs py-1 px-2 rounded-lg border-b border-slate-800/40 transition-colors  cursor-pointer ${
+                    active ? ' border-slate-800/80 text-white' : 'hover:bg-slate-800/20'
                   }`}
                 >
                   <div className="flex items-center space-x-2">
@@ -330,7 +330,7 @@ export function DashboardPage() {
                 tabIndex={0}
                 onClick={() => navigate(`/inventory?status=${statusKey}`)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/inventory?status=${statusKey}`) } }}
-                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all duration-350 focus-ring ${statusColors[statusKey]}`}
+                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all  focus-ring ${statusColors[statusKey]}`}
               >
                 <div className="flex items-center justify-between opacity-80 gap-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider">{statusKey}</span>
@@ -831,7 +831,7 @@ function MaintenanceQueue() {
                   <th className="py-2.5 px-3">Location</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-850">
+              <tbody className="divide-y">
                 {maintenanceList.map((die: any) => (
                   <tr
                     key={die.die_id}
@@ -919,7 +919,7 @@ function RecentActivityFeed() {
               tabIndex={0}
               onClick={() => navigate(`/dies/${item.die_id}`)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${item.die_id}`) } }}
-              className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-850/50 transition duration-150 cursor-pointer group"
+              className="flex items-start gap-2.5 p-2 rounded-xl transition duration-150 cursor-pointer group"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
               <div className="min-w-0 flex-grow text-xs leading-normal">

@@ -22,7 +22,7 @@ export function Toast({ message, variant = 'info', onDismiss }: ToastProps) {
   }, [variant])
 
   const iconMap = {
-    success: <CheckCircle2 className="h-5 w-5 text-emerald-450 shrink-0" />,
+    success: <CheckCircle2 className="h-5 w-5 shrink-0" />,
     error: <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0" />,
     info: <Info className="h-5 w-5 text-blue-400 shrink-0" />
   }

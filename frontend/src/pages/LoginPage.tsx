@@ -77,7 +77,7 @@ export function LoginPage() {
         {evictedInfo && (
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl p-4 text-xs font-sans animate-fadeIn text-left">
             <div className="flex items-center gap-2.5 mb-1.5">
-              <AlertCircle className="h-4.5 w-4.5 text-amber-400 shrink-0" />
+              <AlertCircle className="text-amber-400 shrink-0" />
               <span className="font-bold text-amber-200">Session Evicted</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
@@ -123,7 +123,7 @@ export function LoginPage() {
 
           {errorMsg && (
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-3.5 text-xs font-medium flex items-center gap-2.5 font-sans animate-fadeIn">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-455" />
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}

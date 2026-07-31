@@ -379,7 +379,7 @@ export function SettingsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-550 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans"
+                  className="w-full bg-gradient-to-r from-blue-600 hover:from-blue-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans"
                 >
                   {isSubmitting ? 'Changing Password...' : 'Change Password'}
                 </button>
@@ -413,7 +413,7 @@ export function SettingsPage() {
                           min="0.001"
                           value={getToleranceField('ROUND', 'max_wear_mm')}
                           onChange={(e) => handleToleranceChange('ROUND', 'max_wear_mm', e.target.value)}
-                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -425,7 +425,7 @@ export function SettingsPage() {
                             max="100"
                             value={getToleranceField('ROUND', 'warning_percentage')}
                             onChange={(e) => handleToleranceChange('ROUND', 'warning_percentage', e.target.value)}
-                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                           />
                         </div>
                         <div>
@@ -436,7 +436,7 @@ export function SettingsPage() {
                             max="100"
                             value={getToleranceField('ROUND', 'critical_percentage')}
                             onChange={(e) => handleToleranceChange('ROUND', 'critical_percentage', e.target.value)}
-                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                           />
                         </div>
                       </div>
@@ -453,7 +453,7 @@ export function SettingsPage() {
                           min="0.001"
                           value={getToleranceField('FLAT', 'max_wear_mm')}
                           onChange={(e) => handleToleranceChange('FLAT', 'max_wear_mm', e.target.value)}
-                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                          className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -465,7 +465,7 @@ export function SettingsPage() {
                             max="100"
                             value={getToleranceField('FLAT', 'warning_percentage')}
                             onChange={(e) => handleToleranceChange('FLAT', 'warning_percentage', e.target.value)}
-                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                           />
                         </div>
                         <div>
@@ -476,7 +476,7 @@ export function SettingsPage() {
                             max="100"
                             value={getToleranceField('FLAT', 'critical_percentage')}
                             onChange={(e) => handleToleranceChange('FLAT', 'critical_percentage', e.target.value)}
-                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-550/80 focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
+                            className="w-full bg-[#03060c] border border-slate-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-4 focus:ring-blue-950/25 transition-all font-mono"
                           />
                         </div>
                       </div>
@@ -499,7 +499,7 @@ export function SettingsPage() {
                   <button
                     type="submit"
                     disabled={isSubmittingTolerances}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-550 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans font-bold"
+                    className="w-full bg-gradient-to-r from-blue-600 hover:from-blue-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wider text-xs font-sans font-bold"
                   >
                     {isSubmittingTolerances ? 'Saving Configurations...' : 'Save Tolerance Configurations'}
                   </button>

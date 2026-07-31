@@ -1,5 +1,5 @@
 from django.db import transaction
-from users.middleware import _thread_locals
+from users.context import _thread_locals
 from search.meili import delete_die_document
 from dms.events import broadcast_event
 from dies.contracts import (

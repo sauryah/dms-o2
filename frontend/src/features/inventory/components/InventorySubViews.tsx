@@ -160,7 +160,7 @@ export function SearchView({
             </div>
             <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
-              <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 relative z-10 font-heading">
+              <span className="text-2xl md:text-3xl font-black mt-2 relative z-10 font-heading">
                 {totalCount - dies.filter(isDieActive).length}
               </span>
             </div>
@@ -304,7 +304,7 @@ export function MachineView({
               <span>Machine Explorer</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-black text-white">{selectedMachine.name}</h2>
-            <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-905 border border-slate-800 text-slate-300 rounded-lg mt-2">
+            <span className="inline-block px-2.5 py-1 text-xs font-semibold border border-slate-800 text-slate-300 rounded-lg mt-2">
               {selectedMachine.category_name || 'Standard Category'}
             </span>
           </div>
@@ -470,7 +470,7 @@ export function SetView({
             </div>
             <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
-              <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 font-heading">
+              <span className="text-2xl md:text-3xl font-black mt-2 font-heading">
                 {setDies.length - setDies.filter(isDieActive).length}
               </span>
             </div>
@@ -493,8 +493,8 @@ export function SetView({
                   <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
                 </div>
                 <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-800 p-0.5">
-                  <div className="bg-gradient-to-r from-emerald-600 to-emerald-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
-                  <div className="bg-gradient-to-r from-rose-600 to-rose-450 h-full rounded-full transition-all duration-550 shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
+                  <div className="bg-gradient-to-r from-emerald-600 h-full rounded-full transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
+                  <div className="bg-gradient-to-r from-rose-600 h-full rounded-full transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
                 </div>
               </div>
             )
@@ -633,7 +633,7 @@ export function UnassignedView({
             </div>
             <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
-              <span className="text-2xl md:text-3xl font-black text-rose-455 mt-2 relative z-10 font-heading">
+              <span className="text-2xl md:text-3xl font-black mt-2 relative z-10 font-heading">
                 {totalCount - unassignedDies.filter(isDieActive).length}
               </span>
             </div>
@@ -642,7 +642,7 @@ export function UnassignedView({
           <div className="space-y-4">
             <div className="flex items-center justify-between select-none">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-amber-450" />
+                <Sliders className="h-4 w-4" />
                 <span>
                   {viewMode === 'grid' ? 'Standalone Grid' : viewMode === 'list' ? 'Standalone Catalog' : 'Location Rack Placement'}
                 </span>
@@ -732,7 +732,7 @@ export function UnassignedView({
         </>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-          <Sliders className="h-12 w-12 text-slate-605 mb-4 animate-pulse" />
+          <Sliders className="h-12 w-12 mb-4 animate-pulse" />
           <p className="text-slate-400 font-medium">No unassigned dies match the current filters.</p>
         </div>
       )}

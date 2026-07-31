@@ -350,7 +350,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       <div className="absolute inset-0 cursor-default" onClick={onClose} />
       
       {/* Command Palette Card Box */}
-      <div className="relative w-full max-w-2xl bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-250 flex flex-col max-h-[500px] border-blue-500/10 hover:border-blue-500/20 transition-colors">
+      <div className="relative w-full max-w-2xl bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 flex flex-col max-h-[500px] border-blue-500/10 hover:border-blue-500/20 transition-colors">
         
         {/* Glowing Neon Accent Border line */}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 shadow-[0_1px_10px_rgba(59,130,246,0.5)]" />
@@ -403,7 +403,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
         {/* Footer shortcuts helper panel */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 text-[11px] font-medium font-sans text-slate-400 tracking-wide select-none">
-          <div className="flex items-center gap-4.5">
+          <div className="flex items-center">
             <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">↑↓</span> Move</span>
             <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">Enter</span> Select</span>
           </div>

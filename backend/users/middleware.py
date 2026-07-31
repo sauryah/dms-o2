@@ -1,6 +1,5 @@
-from users.context import _thread_locals, get_current_user, get_current_ip
 from django.conf import settings
-import ipaddress
+from users.context import _thread_locals
 
 
 TRUSTED_PROXIES = getattr(settings, 'TRUSTED_PROXIES', frozenset())

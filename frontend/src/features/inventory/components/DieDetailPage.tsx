@@ -750,7 +750,7 @@ function WearPredictionSection({ die }: { die: any }) {
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider font-sans">{kpi.label}</span>
-                <Icon className={`h-4.5 w-4.5 ${kpi.iconColor} group-hover:scale-110 transition-transform duration-300`} />
+                <Icon className={`  ${kpi.iconColor} group-hover:scale-110 transition-transform duration-300`} />
               </div>
               <div className="text-3xl font-extrabold tracking-tight text-white font-heading my-1 font-mono">
                 {kpi.value}

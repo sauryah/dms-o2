@@ -321,7 +321,7 @@ export function HistoryPage() {
             onClick={exportToCSV}
             className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-950 text-slate-300 hover:text-white disabled:text-slate-600 border border-slate-800 hover:border-slate-700 disabled:border-slate-950 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-md shadow-slate-950/20"
           >
-            <Download className="h-4.5 w-4.5 text-blue-500" />
+            <Download className="text-blue-500" />
             <span>Export to CSV</span>
           </button>
         </div>
@@ -372,7 +372,7 @@ export function HistoryPage() {
                   placeholder="Search die ID..."
                   value={dieIdInput}
                   onChange={(e) => { setDieIdInput(e.target.value); setPage(1); }}
-                  className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                  className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
                 />
               </div>
             </div>
@@ -388,7 +388,7 @@ export function HistoryPage() {
                     placeholder="Search name..."
                     value={entityNameInput}
                     onChange={(e) => { setEntityNameInput(e.target.value); setPage(1); }}
-                    className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                    className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
                   />
                 </div>
               </div>
@@ -433,7 +433,7 @@ export function HistoryPage() {
                 placeholder="Username..."
                 value={userInput}
                 onChange={(e) => { setUserInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
               />
             </div>
           </div>
@@ -447,7 +447,7 @@ export function HistoryPage() {
                 placeholder="e.g. status..."
                 value={fieldInput}
                 onChange={(e) => { setFieldInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
               />
             </div>
           </div>
@@ -461,7 +461,7 @@ export function HistoryPage() {
                 placeholder="e.g. 192.168..."
                 value={ipInput}
                 onChange={(e) => { setIpInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
               />
             </div>
           </div>
@@ -475,7 +475,7 @@ export function HistoryPage() {
                 placeholder="Search notes or values..."
                 value={searchTextInput}
                 onChange={(e) => { setSearchTextInput(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 placeholder-slate-650 transition focus-ring"
+                className="pl-9 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm w-full text-slate-200 transition focus-ring"
               />
             </div>
           </div>
@@ -529,7 +529,7 @@ export function HistoryPage() {
             {activeTab === 'timeline' ? (
               <div className="p-6 space-y-6 bg-slate-950/40 relative">
                 {/* Timeline vertical rule */}
-                <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-slate-850/60" />
+                <div className="absolute left-10 top-0 bottom-0 w-0.5" />
                 
                 {groupHistoryItems(currentList).map((group) => (
                   <div key={group.key} className="flex gap-6 relative group animate-fadeIn">
@@ -603,33 +603,33 @@ export function HistoryPage() {
                   <thead className="bg-slate-950/40 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     {activeTab === 'dies' ? (
                       <tr>
-                        <th className="px-6 py-4.5">Timestamp</th>
-                        <th className="px-6 py-4.5">Die ID</th>
-                        <th className="px-6 py-4.5">Field Changed</th>
-                        <th className="px-6 py-4.5">Old Value</th>
-                        <th className="px-6 py-4.5">New Value</th>
-                        <th className="px-6 py-4.5">Changed By</th>
-                        <th className="px-6 py-4.5">IP Address</th>
-                        <th className="px-6 py-4.5">Reason / Note</th>
+                        <th className="px-6">Timestamp</th>
+                        <th className="px-6">Die ID</th>
+                        <th className="px-6">Field Changed</th>
+                        <th className="px-6">Old Value</th>
+                        <th className="px-6">New Value</th>
+                        <th className="px-6">Changed By</th>
+                        <th className="px-6">IP Address</th>
+                        <th className="px-6">Reason / Note</th>
                       </tr>
                     ) : (
                       <tr>
-                        <th className="px-6 py-4.5">Timestamp</th>
-                        <th className="px-6 py-4.5">Entity</th>
-                        <th className="px-6 py-4.5">Name</th>
-                        <th className="px-6 py-4.5">Action</th>
-                        <th className="px-6 py-4.5">Field Changed</th>
-                        <th className="px-6 py-4.5">Old Value</th>
-                        <th className="px-6 py-4.5">New Value</th>
-                        <th className="px-6 py-4.5">Changed By</th>
-                        <th className="px-6 py-4.5">IP Address</th>
+                        <th className="px-6">Timestamp</th>
+                        <th className="px-6">Entity</th>
+                        <th className="px-6">Name</th>
+                        <th className="px-6">Action</th>
+                        <th className="px-6">Field Changed</th>
+                        <th className="px-6">Old Value</th>
+                        <th className="px-6">New Value</th>
+                        <th className="px-6">Changed By</th>
+                        <th className="px-6">IP Address</th>
                       </tr>
                     )}
                   </thead>
                   <tbody className="divide-y divide-slate-800/65 text-slate-300">
                     {activeTab === 'dies' ? (
                       currentList.map((log: any) => (
-                        <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
+                        <tr key={log.id} className="transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                           </td>
@@ -658,7 +658,7 @@ export function HistoryPage() {
                       ))
                     ) : (
                       currentList.map((log: any) => (
-                        <tr key={log.id} className="hover:bg-slate-850/15 transition-colors">
+                        <tr key={log.id} className="transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                           </td>
@@ -679,10 +679,10 @@ export function HistoryPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-xs">
                             <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                               log.action === 'CREATED'
-                                ? 'bg-emerald-500/15 text-emerald-450'
+                                ? 'bg-emerald-500/15 '
                                 : log.action === 'DELETED'
                                 ? 'bg-rose-500/15 text-rose-400'
-                                : 'bg-amber-500/15 text-amber-450'
+                                : 'bg-amber-500/15 '
                             }`}>
                               {log.action}
                             </span>
@@ -712,7 +712,7 @@ export function HistoryPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4.5 border-t border-slate-800 bg-slate-950/20">
+              <div className="flex items-center justify-between px-6 border-t border-slate-800 bg-slate-950/20">
                 <span className="text-xs text-slate-400 font-medium">
                   Showing page <span className="font-semibold text-slate-200">{page}</span> of{' '}
                   <span className="font-semibold text-slate-200">{totalPages}</span> ({count} records)
@@ -721,16 +721,16 @@ export function HistoryPage() {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border border-slate-750 disabled:border-transparent rounded-xl transition"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border disabled:border-transparent rounded-xl transition"
                   >
-                    <ArrowLeft className="h-4.5 w-4.5" />
+                    <ArrowLeft className="" />
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border border-slate-750 disabled:border-transparent rounded-xl transition"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-950 text-slate-300 disabled:text-slate-600 border disabled:border-transparent rounded-xl transition"
                   >
-                    <ArrowRight className="h-4.5 w-4.5" />
+                    <ArrowRight className="" />
                   </button>
                 </div>
               </div>

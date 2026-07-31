@@ -198,7 +198,7 @@ export function ActiveSessionsList() {
                       checked={allSelected}
                       ref={(el) => { if (el) el.indeterminate = someSelected }}
                       onChange={toggleSelectAll}
-                      className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
+                      className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
                     />
                   </th>
                   <th className="py-4 px-6 font-mono">User ID</th>
@@ -218,7 +218,7 @@ export function ActiveSessionsList() {
                   return (
                     <tr
                       key={sess.id}
-                      className={`group hover:bg-slate-850/25 transition-all duration-150 ${
+                      className={`group  transition-all duration-150 ${
                         isSessSelected ? 'bg-blue-500/[0.03]' : ''
                       }`}
                     >
@@ -227,7 +227,7 @@ export function ActiveSessionsList() {
                           type="checkbox"
                           checked={isSessSelected}
                           onChange={() => toggleSelect(sess.id)}
-                          className="h-4.5 w-4.5 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
+                          className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
                       <td className="py-4 px-6 font-bold text-white font-mono">

@@ -361,7 +361,7 @@ export function InventoryPage() {
       {/* Sidebar Overlay (Mobile only) */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-45 md:hidden transition-opacity duration-300 animate-fadeIn"
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm md:hidden transition-opacity duration-300 animate-fadeIn"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -554,7 +554,7 @@ export function InventoryPage() {
               ) : error ? (
                 <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto shadow-lg">
                   <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-                  <p className="text-rose-455 font-mono text-sm">{error.message}</p>
+                  <p className="font-mono text-sm">{error.message}</p>
                 </div>
               ) : !selectedNode ? (
                 <div className="text-center py-20 bg-slate-900/30 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto shadow-xl select-none">

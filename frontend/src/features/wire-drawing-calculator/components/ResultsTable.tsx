@@ -121,7 +121,7 @@ export default function ResultsTable({
         <div className="flex flex-wrap gap-1.5 items-center">
           <div className="flex items-center gap-2 mr-2 text-xs select-none cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
             <span className="text-[11px] font-medium text-[#94A3B8]">Show Math Details</span>
-            <div className={`relative w-8.5 h-4.5 rounded-full transition-colors duration-200 shrink-0 ${showDetails ? 'bg-blue-600' : 'bg-slate-800'}`}>
+            <div className={`relative   rounded-full transition-colors duration-200 shrink-0 ${showDetails ? 'bg-blue-600' : 'bg-slate-800'}`}>
               <div className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 ${showDetails ? 'translate-x-4.5' : 'translate-x-0'}`} />
             </div>
           </div>

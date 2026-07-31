@@ -112,7 +112,7 @@ export function CalculatorPage() {
           <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
             <button
               onClick={() => state.setShowFormulaInfo(!state.showFormulaInfo)}
-              className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-semibold rounded-xl border transition-premium ${
+              className={`flex items-center gap-2  py-2.5 text-xs font-semibold rounded-xl border transition-premium ${
                 state.showFormulaInfo
                   ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.08)]'
                   : 'bg-[#0D1325] border-[#1b253b] text-slate-400 hover:text-slate-200 hover:bg-[#121A2F]/65'

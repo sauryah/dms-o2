@@ -126,7 +126,7 @@ export function SessionAuditLogs() {
     switch (status) {
       case 'ACTIVE':
         return (
-          <span className="flex items-center space-x-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-emerald-500/10 text-emerald-450 border border-emerald-500/20 w-fit">
+          <span className="flex items-center space-x-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-fit">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
             <span>Active Now</span>
           </span>
@@ -140,8 +140,8 @@ export function SessionAuditLogs() {
         )
       case 'FAILED':
         return (
-          <span className="flex items-center space-x-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-rose-500/10 text-rose-455 border border-rose-500/20 w-fit animate-pulse">
-            <ShieldAlert className="h-3 w-3 text-rose-550" />
+          <span className="flex items-center space-x-1.5 px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-rose-500/10 border border-rose-500/20 w-fit animate-pulse">
+            <ShieldAlert className="h-3 w-3" />
             <span>Failed Attempt</span>
           </span>
         )
@@ -217,7 +217,7 @@ export function SessionAuditLogs() {
             placeholder="Search by username..."
             value={usernameSearch}
             onChange={handleSearchChange}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-550 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
           />
         </div>
 
@@ -239,7 +239,7 @@ export function SessionAuditLogs() {
           <button
             onClick={() => refetch()}
             disabled={isLoading || isFetching}
-            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 px-4.5 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 cursor-pointer"
+            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 cursor-pointer"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-blue-400' : ''}`} />
             <span className="font-mono">Sync Logs</span>
@@ -261,7 +261,7 @@ export function SessionAuditLogs() {
         </div>
       ) : error ? (
         <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto">
-          <ShieldAlert className="h-10 w-10 text-rose-550 mx-auto mb-4" />
+          <ShieldAlert className="h-10 w-10 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
           <p className="text-rose-400 font-mono text-sm">{(error as any).message}</p>
         </div>
@@ -285,7 +285,7 @@ export function SessionAuditLogs() {
                   <th className="py-4 px-6 font-mono">Client Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-850/60 font-mono text-xs text-slate-300 select-none">
+              <tbody className="divide-y font-mono text-xs text-slate-300 select-none">
                 {groupedSessions.map((session: any) => {
                   const loginStr = session.login_time ? new Date(session.login_time).toLocaleString() : '—'
                   const logoutStr = session.status === 'ACTIVE' 
@@ -295,7 +295,7 @@ export function SessionAuditLogs() {
                   const client = parseUserAgent(session.device)
 
                   return (
-                    <tr key={session.id} className="hover:bg-slate-850/20 transition-colors duration-150">
+                    <tr key={session.id} className="transition-colors duration-150">
                       <td className="py-3.5 px-6 font-semibold text-slate-200">
                         {session.username}
                       </td>
@@ -306,7 +306,7 @@ export function SessionAuditLogs() {
                         {loginStr}
                       </td>
                       <td className="py-3.5 px-6 text-slate-400">
-                        <span className={session.status === 'ACTIVE' ? 'text-emerald-450 font-bold' : ''}>
+                        <span className={session.status === 'ACTIVE' ? ' font-bold' : ''}>
                           {logoutStr}
                         </span>
                       </td>

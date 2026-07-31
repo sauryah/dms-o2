@@ -97,7 +97,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
               placeholder="Search tool sets..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none placeholder-slate-505"
+              className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none"
             />
           </div>
           {machines && (
@@ -141,7 +141,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
                     </button>
                     <button 
                       onClick={() => { setSetToDelete(s) }}
-                      className="p-1.5 text-slate-400 hover:text-rose-455 hover:bg-slate-900/50 rounded-lg transition"
+                      className="p-1.5 text-slate-400 hover:bg-slate-900/50 rounded-lg transition"
                       aria-label={`Delete set ${s.name}`}
                     >
                       <Trash2 className="h-4 w-4" />

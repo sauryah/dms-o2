@@ -1,20 +1,15 @@
 import os
+import re
+import sys
 from pathlib import Path
 from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-development-secret-key-12345')
 
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
-
-if not DEBUG and (not SECRET_KEY or SECRET_KEY == 'django-insecure-development-secret-key-12345'):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured("DJANGO_SECRET_KEY is not configured or is set to insecure default in production.")
 
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
@@ -66,9 +61,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
-
-# We will implement custom session/JWT middleware in Phase 8
-# Let's keep a placeholder or just standard middleware for now
 
 ROOT_URLCONF = 'dms.urls'
 
@@ -155,11 +147,6 @@ if not CORS_ALLOW_ALL_ORIGINS:
 
 CORS_ALLOW_CREDENTIALS = True
 
-from corsheaders.defaults import default_headers
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'x-requested-with',
-]
-
 # REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -205,7 +192,6 @@ MEILI_HOST = config('MEILI_HOST', default='http://meilisearch:7700')
 MEILI_MASTER_KEY = config('MEILI_MASTER_KEY', default='change_me')
 INTERNAL_API_SECRET = config('INTERNAL_API_SECRET', default='')
 
-# Custom user model with role (will implement in users app)
 AUTH_USER_MODEL = 'users.User'
 
 ROOT_USERNAME = config('ROOT_USERNAME', default='root')
@@ -214,9 +200,7 @@ ROOT_PASSWORD = config('ROOT_PASSWORD', default='root123')
 # Caching with Redis (Django 4.0+)
 REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
 REDIS_CACHE_URL = config('REDIS_CACHE_URL', default=f'redis://:{REDIS_PASSWORD}@redis:6379/0' if REDIS_PASSWORD else 'redis://redis:6379/0')
-import sys
 if 'test' in sys.argv:
-    import re
     REDIS_CACHE_URL = re.sub(r'/\d+$', '/15', REDIS_CACHE_URL)
 
 CACHES = {
@@ -263,7 +247,6 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-import sys
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv
 CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
 
@@ -316,7 +299,7 @@ S3_BACKUPS_REGION = config('S3_BACKUPS_REGION', default='us-east-1')
 
 from django.core.exceptions import ImproperlyConfigured
 if not DEBUG:
-    if SECRET_KEY == 'django-insecure-development-secret-key-12345':
+    if not SECRET_KEY or SECRET_KEY == 'django-insecure-development-secret-key-12345':
         raise ImproperlyConfigured("Insecure DJANGO_SECRET_KEY detected in production!")
     if not MEILI_MASTER_KEY or len(MEILI_MASTER_KEY) < 16 or MEILI_MASTER_KEY in ('meili_secret_key', 'change_me'):
         raise ImproperlyConfigured("Insecure MEILI_MASTER_KEY detected in production!")

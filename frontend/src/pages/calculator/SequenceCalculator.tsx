@@ -185,7 +185,7 @@ export function SequenceCalculator({
             type="submit"
             className="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
           >
-            <Calculator className="h-4.5 w-4.5" />
+            <Calculator className="" />
             Generate Pass Sequence
           </button>
         </div>
@@ -289,7 +289,7 @@ export function SequenceCalculator({
                         return (
                           <tr key={step.draft} className={`transition-colors duration-150 group ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950/15 hover:bg-rose-950/25 border-l-2 border-l-rose-500' : 'hover:bg-[#121A2F]/40'}`}>
                             <td className="p-3">
-                              <span className={`w-5.5 h-5.5 rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-300 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
+                              <span className={`  rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-300 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
                                 #{step.draft}
                               </span>
                             </td>
@@ -298,7 +298,7 @@ export function SequenceCalculator({
                               <span className="text-[9px] text-slate-500 ml-1">mm</span>
                             </td>
                             <td className="p-3 text-center">
-                              <div className="inline-flex items-center justify-center w-5.5 h-5.5 rounded bg-[#050816] border border-[#1b253b] shadow-inner">
+                              <div className="inline-flex items-center justify-center rounded bg-[#050816] border border-[#1b253b] shadow-inner">
                                 <ArrowRight className="h-3 w-3 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-premium" />
                               </div>
                             </td>

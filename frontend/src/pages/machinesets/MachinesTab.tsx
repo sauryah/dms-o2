@@ -172,7 +172,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
                   value={machName}
                   onChange={(e) => setMachName(e.target.value)}
                   rows={2}
-                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none placeholder-slate-650"
+                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none"
                 />
               )}
             </div>

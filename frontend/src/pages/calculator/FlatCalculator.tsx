@@ -169,7 +169,7 @@ export function FlatCalculator({
             type="submit"
             className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
           >
-            <Calculator className="h-4.5 w-4.5" />
+            <Calculator className="" />
             Calculate Flat Profile
           </button>
         </div>
@@ -359,7 +359,7 @@ export function FlatCalculator({
               {/* KPI Metric Readouts */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* KPI 1: Area Reduction */}
-                <div className="bg-[#121A2F] border border-[#1b253b] p-4.5 rounded-xl transition-premium hover:border-emerald-500/30 shadow-inner group">
+                <div className="bg-[#121A2F] border border-[#1b253b] rounded-xl transition-premium hover:border-emerald-500/30 shadow-inner group">
                   <span className="text-[10px] text-slate-400 font-heading font-semibold uppercase tracking-wider block mb-1">
                     Area Red. (R)
                   </span>
@@ -370,7 +370,7 @@ export function FlatCalculator({
                 </div>
 
                 {/* KPI 2: Elongation */}
-                <div className="bg-[#121A2F] border border-[#1b253b] p-4.5 rounded-xl transition-premium hover:border-blue-500/30 shadow-inner group">
+                <div className="bg-[#121A2F] border border-[#1b253b] rounded-xl transition-premium hover:border-blue-500/30 shadow-inner group">
                   <span className="text-[10px] text-slate-400 font-heading font-semibold uppercase tracking-wider block mb-1">
                     Elongation (E)
                   </span>
@@ -381,7 +381,7 @@ export function FlatCalculator({
                 </div>
 
                 {/* KPI 3: Width Reduction */}
-                <div className="bg-[#121A2F] border border-[#1b253b] p-4.5 rounded-xl transition-premium shadow-inner group">
+                <div className="bg-[#121A2F] border border-[#1b253b] rounded-xl transition-premium shadow-inner group">
                   <span className="text-[10px] text-slate-400 font-heading font-semibold uppercase tracking-wider block mb-1">
                     Width Red.
                   </span>
@@ -392,7 +392,7 @@ export function FlatCalculator({
                 </div>
 
                 {/* KPI 4: Thickness Reduction */}
-                <div className="bg-[#121A2F] border border-[#1b253b] p-4.5 rounded-xl transition-premium shadow-inner group">
+                <div className="bg-[#121A2F] border border-[#1b253b] rounded-xl transition-premium shadow-inner group">
                   <span className="text-[10px] text-slate-400 font-heading font-semibold uppercase tracking-wider block mb-1">
                     Thick. Red.
                   </span>

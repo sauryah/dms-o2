@@ -142,13 +142,13 @@ function AppContent() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-32 bg-slate-805 rounded-full h-1.5 overflow-hidden">
+              <div className="w-32 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-blue-500 h-full rounded-full transition-all duration-500"
                   style={{ width: `${rebuildStatus.progress}%` }}
                 />
               </div>
-              <span className="text-xs font-bold text-blue-405 font-mono">{rebuildStatus.progress}%</span>
+              <span className="text-xs font-bold font-mono">{rebuildStatus.progress}%</span>
             </div>
           </div>
         )}
