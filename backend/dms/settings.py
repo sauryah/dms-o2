@@ -1,8 +1,8 @@
 import os
 import re
-import sys
 from pathlib import Path
 from decouple import config, Csv
+from dms.testing import IS_TESTING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -200,7 +200,7 @@ ROOT_PASSWORD = config('ROOT_PASSWORD', default='root123')
 # Caching with Redis (Django 4.0+)
 REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
 REDIS_CACHE_URL = config('REDIS_CACHE_URL', default=f'redis://:{REDIS_PASSWORD}@redis:6379/0' if REDIS_PASSWORD else 'redis://redis:6379/0')
-if 'test' in sys.argv:
+if IS_TESTING:
     REDIS_CACHE_URL = re.sub(r'/\d+$', '/15', REDIS_CACHE_URL)
 
 CACHES = {
@@ -247,7 +247,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv
+CELERY_TASK_ALWAYS_EAGER = IS_TESTING
 CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
 
 LOGGING = {

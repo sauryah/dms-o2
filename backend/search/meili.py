@@ -1,15 +1,14 @@
-import sys
 import logging
 import meilisearch
 from django.conf import settings
+from dms.testing import IS_TESTING
 
 logger = logging.getLogger(__name__)
 
 # Initialize client
 client = meilisearch.Client(settings.MEILI_HOST, settings.MEILI_MASTER_KEY)
 
-# Determine the index name dynamically (use dies_test for tests)
-IS_TESTING = 'test' in sys.argv
+# Use a separate index for tests
 INDEX_NAME = 'dies_test' if IS_TESTING else 'dies'
 
 def init_meilisearch():

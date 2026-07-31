@@ -43,6 +43,11 @@ DB schemas, and security properties. Verify after each change group.
    shows only pre-existing test/prop errors; `eslint src` 0 errors (467 pre-existing
    warnings).
 
+4. **Testing-mode detection (`backend/`)** — created `dms/testing.py` exposing
+   `IS_TESTING = 'test' in sys.argv`. `dms/settings.py` (REDIS db selection + Celery
+   eager) and `search/meili.py` now import it instead of sniffing `sys.argv` inline.
+   `py_compile` clean; no circular-import risk (`dms.testing` deps only `sys`).
+
 ## Deferred / Explicitly Skipped
 - **`dms/urls.py` legacy `api/` aliases** — NOT deduped. Frontend actively calls non-v1
   `api/auth/*`, `api/import/*`, `api/history/*`, `api/events/`; `/api/v1/` unused by
@@ -51,12 +56,8 @@ DB schemas, and security properties. Verify after each change group.
   risk, user-visible).
 - **`settings.py` LAN-IP auto-detect block** (was lines 21-31) — fragile but behavior-
   relevant; left untouched.
-- **`'test' in sys.argv` sniffing** in `users/context.py`, `users/views/auth.py:39`,
-  `search/meili.py:12` — not yet consolidated (settings.py instances deduped).
 
 ## Next Steps
-- Consolidate remaining `'test' in sys.argv` sniffing into one helper.
-- Update `.dev/changelog-dev.md`.
 - Optional: address pre-existing tsc test-file errors (SessionTimeoutManager.test.tsx
   missing `refetchPermissions`, etc.).
 

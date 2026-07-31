@@ -261,3 +261,12 @@
 *   **Documentation Updated**: .dev/state/active-task.md
 *   **Testing Performed**: go vet/go build/go test ./... all pass (Go). py_compile clean on all edited Python files. 
 px tsc --noEmit shows only pre-existing test/prop errors; eslint src 0 errors (467 pre-existing warnings). Deferred items: dms/urls.py legacy API aliases (frontend depends on them) and duplicate dialog/empty-state merge (user-canceled).
+### 2026-07-31 A– Consolidate Testing-Mode Detection
+*   **Feature**: Created dms/testing.py exposing IS_TESTING = 'test' in sys.argv. Replaced inline sys.argv sniffing in dms/settings.py (Redis test DB selection, Celery eager flag) and search/meili.py (test index selection) with a single shared constant.
+*   **Affected Modules**: ackend
+*   **Files Modified/Created**:
+    *   [backend/dms/testing.py](file:///D:/DMS/dms-o2/backend/dms/testing.py) - New shared IS_TESTING constant.
+    *   [backend/dms/settings.py](file:///D:/DMS/dms-o2/backend/dms/settings.py) - Import IS_TESTING; removed now-unused import sys.
+    *   [backend/search/meili.py](file:///D:/DMS/dms-o2/backend/search/meili.py) - Import IS_TESTING for INDEX_NAME selection.
+*   **Documentation Updated**: .dev/state/active-task.md
+*   **Testing Performed**: py_compile clean on all edited files. No circular-import risk (dms.testing imports only sys).
