@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/meilisearch/meilisearch-go v0.26.3
 	github.com/redis/go-redis/v9 v9.5.1
 )
