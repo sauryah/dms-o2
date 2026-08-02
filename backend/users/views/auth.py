@@ -222,6 +222,15 @@ class ChangePasswordView(APIView):
         access_token = str(refresh.access_token)
         refresh_token_str = str(refresh)
 
+        # Register the new token session so CustomJWTAuthentication accepts it
+        access_hash = hashlib.sha256(access_token.encode('utf-8')).hexdigest()
+        UserSession.objects.create(
+            user=user,
+            token_hash=access_hash,
+            ip_address=get_client_ip(request),
+            device=request.META.get('HTTP_USER_AGENT', '')[:255]
+        )
+
         response = Response({
             "detail": "Password changed successfully.",
             "token": access_token,

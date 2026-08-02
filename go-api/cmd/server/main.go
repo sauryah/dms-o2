@@ -85,8 +85,9 @@ func main() {
 		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", recorder.status, "duration", time.Since(start))
 	})
 
-	// Apply security headers and request size limits
-	secureMux := middleware.SecurityHeaders(loggingMux)
+	// Apply rate limiting, security headers, and request size limits
+	rateLimitedMux := middleware.RateLimit(loggingMux, 5.0, 20.0)
+	secureMux := middleware.SecurityHeaders(rateLimitedMux)
 	limitedMux := middleware.MaxBytesReader(secureMux, 10<<20)
 
 	server := &http.Server{

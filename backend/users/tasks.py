@@ -23,7 +23,7 @@ def create_backup_task(self):
         logger.error(f"Asynchronous backup failed: {exc}")
         raise self.retry(exc=exc, countdown=10)
 
-@shared_task(bind=True, max_retries=1)
+@shared_task(bind=True, max_retries=0)
 def restore_backup_task(self, filepath, filename, user_id, session_data=None):
     """
     Asynchronously execute database restoration (pg_restore) using BackupService.
@@ -50,7 +50,7 @@ def restore_backup_task(self, filepath, filename, user_id, session_data=None):
         return {'status': 'success'}
     except Exception as exc:
         logger.error(f"Asynchronous restore failed: {exc}")
-        raise self.retry(exc=exc, countdown=10)
+        raise exc
 
 
 @shared_task

@@ -8,7 +8,7 @@ export interface DieCardProps {
   viewMode?: 'grid' | 'list'
 }
 
-export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
+export const DieCard = React.memo(function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
   const isRound = die.die_type === 'ROUND'
   const sizeText = isRound
     ? `${parseFloat(die.current_size || 0).toFixed(3)} mm`
@@ -136,4 +136,4 @@ export function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
       </div>
     </div>
   )
-}
+})

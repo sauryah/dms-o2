@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from machines.models import MachineCategory, Machine, Set, Rack
-from dies.models import RoundDie
+from dies.models import Die, RoundDie
 
 User = get_user_model()
 
@@ -105,14 +105,17 @@ class MachinesAPITests(APITestCase):
     def test_delete_rack_with_assigned_dies(self):
         self.client.force_authenticate(user=self.admin_user)
         # Assign a die to the rack
-        RoundDie.objects.create(
+        die = Die.objects.create(
             die_id='DIE-R100',
             die_type='ROUND',
+            casing='25x10',
             status='AVAILABLE',
             rack=self.rack,
-            rack_row=1,
-            rack_column=1,
-            initial_size=2.5,
+            shelf_number=1
+        )
+        RoundDie.objects.create(
+            die=die,
+            punched_size=2.5,
             current_size=2.5
         )
         response = self.client.delete(f'/api/v1/racks/{self.rack.id}/')

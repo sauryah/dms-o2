@@ -160,6 +160,11 @@ class BackupViewSet(viewsets.ViewSet):
         if not file_obj:
             return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
             
+        # Enforce file size limit of 50MB to prevent Denial of Service (DoS)
+        MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+        if file_obj.size > MAX_FILE_SIZE:
+            return Response({'error': 'File size exceeds the 50MB limit.'}, status=status.HTTP_400_BAD_REQUEST)
+            
         filename = file_obj.name
         if not filename.endswith('.dump'):
             return Response({'error': 'Only .dump files are allowed'}, status=status.HTTP_400_BAD_REQUEST)

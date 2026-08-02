@@ -258,6 +258,11 @@ class ImportDiesView(APIView):
         if not file_obj:
             return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Enforce file size limit of 10MB to prevent Denial of Service (DoS)
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+        if file_obj.size > MAX_FILE_SIZE:
+            return Response({"error": "File size exceeds the 10MB limit."}, status=status.HTTP_400_BAD_REQUEST)
+        
         name, ext = os.path.splitext(file_obj.name)
         if ext.lower() not in ['.csv', '.xlsx']:
             return Response({"error": "Unsupported file format. Only CSV and XLSX are supported."}, status=status.HTTP_400_BAD_REQUEST)

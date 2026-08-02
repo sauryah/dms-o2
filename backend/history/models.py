@@ -10,6 +10,8 @@ class DieHistory(models.Model):
     new_value  = models.TextField()
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     note       = models.TextField(blank=True)
+    prev_hash  = models.CharField(max_length=64, blank=True, null=True)
+    hash       = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -18,6 +20,16 @@ class DieHistory(models.Model):
             models.Index(fields=['timestamp']),
             models.Index(fields=['die', 'field_name', 'timestamp']),
         ]
+
+    def save(self, *args, **kwargs):
+        if not self.hash:
+            import hashlib
+            last_record = DieHistory.objects.filter(die=self.die).order_by('-id').first()
+            p_hash = last_record.hash if (last_record and last_record.hash) else "0" * 64
+            self.prev_hash = p_hash
+            payload = f"{p_hash}:{self.die_id}:{self.changed_by_id or ''}:{self.field_name}:{self.old_value}:{self.new_value}"
+            self.hash = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"History: {self.die.die_id} - {self.field_name}"
@@ -46,6 +58,8 @@ class MachineHistory(models.Model):
     changed_by  = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, db_index=True)
     timestamp   = models.DateTimeField(auto_now_add=True)
     ip_address  = models.GenericIPAddressField(null=True, blank=True)
+    prev_hash   = models.CharField(max_length=64, blank=True, null=True)
+    hash        = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -53,6 +67,16 @@ class MachineHistory(models.Model):
             models.Index(fields=['entity_type', 'entity_id']),
             models.Index(fields=['timestamp']),
         ]
+
+    def save(self, *args, **kwargs):
+        if not self.hash:
+            import hashlib
+            last_record = MachineHistory.objects.filter(entity_type=self.entity_type, entity_id=self.entity_id).order_by('-id').first()
+            p_hash = last_record.hash if (last_record and last_record.hash) else "0" * 64
+            self.prev_hash = p_hash
+            payload = f"{p_hash}:{self.entity_type}:{self.entity_id}:{self.action}:{self.field_name or ''}:{self.old_value or ''}:{self.new_value or ''}:{self.changed_by_id or ''}"
+            self.hash = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"MachineHistory: {self.entity_type} {self.entity_name} - {self.action}"

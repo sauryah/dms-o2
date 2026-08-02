@@ -17,3 +17,8 @@ repos:
           - typescript@5.3.3
           - "@typescript-eslint/parser@6.21.0"
           - "@typescript-eslint/eslint-plugin@6.21.0"
+
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
