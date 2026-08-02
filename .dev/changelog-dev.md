@@ -1,6 +1,16 @@
-﻿# Engineering Implementation History (changelog-dev.md)
+# Engineering Implementation History (changelog-dev.md)
 
-### 2026-07-28 Â· Disable Mutual TLS (mTLS) & Revert to One-Way TLS
+### 2026-08-03 · Execute Phase 2 & Phase 3 Package Security Audits & Upgrades
+*   **Feature**: Audited all dependencies across frontend, Django backend, and Go API tiers. Upgraded libraries to their latest safe and verified patch/minor versions to remediate security warnings while maintaining strict compatibility constraints (such as preserving Go 1.22 compatibility for container compilation). Formulated and documented a comprehensive major version migration planning guide.
+*   **Affected Modules**: `backend`, `frontend`, `go-api`
+*   **Files Modified/Created**:
+    *   [backend/requirements.txt](file:///home/sahil/Desktop/Projects/dms-o2/backend/requirements.txt) - Upgraded Django (4.2.30), DRF (3.17.1), SimpleJWT (5.5.1), Celery (5.6.3), Gunicorn (26.0.0), psycopg2 (2.9.12), sentry-sdk (2.66.1), boto3 (1.43.62), django-cors-headers (4.9.0), and django-prometheus (2.5.0).
+    *   [go-api/go.mod](file:///home/sahil/Desktop/Projects/dms-o2/go-api/go.mod) - Upgraded lib/pq (v1.12.3), go-redis/v9 (v9.18.0), fasthttp (v1.59.0), and golang-jwt/jwt/v4 (v4.5.2).
+    *   [frontend/package.json](file:///home/sahil/Desktop/Projects/dms-o2/frontend/package.json) - Upgraded vite (5.4.21), vitest (1.6.1), framer-motion (11.18.2), @tanstack/react-query (5.101.4), and added npm override for dompurify (3.4.12) to patch sub-dependency XSS warnings.
+*   **Documentation Created**: [discovery_report.md](file:///home/sahil/.gemini/antigravity-cli/brain/32d82d21-d483-4f8a-8c4a-241fa9df4e2a/discovery_report.md), [migration_plan.md](file:///home/sahil/.gemini/antigravity-cli/brain/32d82d21-d483-4f8a-8c4a-241fa9df4e2a/migration_plan.md)
+*   **Testing Performed**: Rebuilt all docker containers (`go-api`, `django`) successfully. Ran full frontend Vitest test suites (51/51 tests green), Go API tests (100% green), and Django system check framework validations (PASS).
+
+### 2026-07-28 · Disable Mutual TLS (mTLS) & Revert to One-Way TLS
 *   **Feature**: Reverted TLS client authentication type from `RequireAndVerifyClientCert` to `NoClientCert` to disable client certificate verification. This simplifies client access by only requiring the local root CA to be installed and trusted, avoiding repeated client certificate prompts in modern browsers (Chrome, Edge, Firefox). Updated installation bat/sh scripts and cert generation logic to dynamically skip client certificates when mTLS is disabled. Cleared all unnecessary client certificate files from the workspace.
 *   **Affected Modules**: `gateway`, `scripts`, `docs`
 *   **Files Modified/Created**:
