@@ -1,5 +1,16 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-03 · Implement Custom Workspace Dev Tools & Antigravity Extensions
+*   **Feature**: Created local shell/python developer utilities to run toolchain checks, dependency audits, and search indexing checks. Integrated custom Model Context Protocol (MCP) server and operational skill for Google Antigravity.
+*   **Affected Modules**: `scripts`, `agents`
+*   **Files Modified/Created**:
+    *   [scripts/env-doctor.sh](file:///home/sahil/Desktop/Projects/dms-o2/scripts/env-doctor.sh) - Developer toolchain and container health checker.
+    *   [scripts/dependency-auditor.sh](file:///home/sahil/Desktop/Projects/dms-o2/scripts/dependency-auditor.sh) - Consolidated packages/CVE auditor.
+    *   [scripts/sync-meili.sh](file:///home/sahil/Desktop/Projects/dms-o2/scripts/sync-meili.sh) - Wrapper to synchronize database entities with Meilisearch index.
+    *   [scripts/dms_mcp_server.py](file:///home/sahil/Desktop/Projects/dms-o2/scripts/dms_mcp_server.py) - Stdinstdout JSON-RPC 2.0 Model Context Protocol (MCP) server for Antigravity schema/Redis inspections.
+    *   [.agents/skills/dms-o2-ops/SKILL.md](file:///home/sahil/Desktop/Projects/dms-o2/.agents/skills/dms-o2-ops/SKILL.md) - Project operational guides and coding standards for agents.
+*   **Testing Performed**: Executed env-doctor and auditor script runs locally. Verified stdout/stderr streams of the MCP server. Passed Go and frontend unit test suites.
+
 ### 2026-08-03 · Execute Phase 2 & Phase 3 Package Security Audits & Upgrades
 *   **Feature**: Audited all dependencies across frontend, Django backend, and Go API tiers. Upgraded libraries to their latest safe and verified patch/minor versions to remediate security warnings while maintaining strict compatibility constraints (such as preserving Go 1.22 compatibility for container compilation). Formulated and documented a comprehensive major version migration planning guide.
 *   **Affected Modules**: `backend`, `frontend`, `go-api`

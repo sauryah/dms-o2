@@ -7,15 +7,13 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Codebase refactor – Go, Django, frontend cleanup pass
+**Task:** Dependency Security Audit, Platform Upgrades, Custom Developer Tools, and Antigravity Extensions
 **Status:** Complete
-**Started:** 2026-07-31
-**Confidence:** 90%
+**Started:** 2026-08-02
+**Confidence:** 100%
 
 ## Task Description
-Production-quality refactor across the three tiers. Audit first (complete), then implement
-deduplication, dead-code removal, and convention fixes. Preserve behavior, public APIs,
-DB schemas, and security properties. Verify after each change group.
+Perform codebase-wide dependency audit, execute step-by-step package upgrades across all three tiers, create local diagnostic/sync scripts, and develop an MCP server and workspace skill for Antigravity integration.
 
 ## Completed
 1. **Go (`go-api/`)** — `internal/handlers/handlers.go`: extracted `requirePost(w,r)`
@@ -47,6 +45,9 @@ DB schemas, and security properties. Verify after each change group.
    `IS_TESTING = 'test' in sys.argv`. `dms/settings.py` (REDIS db selection + Celery
    eager) and `search/meili.py` now import it instead of sniffing `sys.argv` inline.
    `py_compile` clean; no circular-import risk (`dms.testing` deps only `sys`).
+5. **Dependency Audit & Upgrades** — Audited frontend, backend, and Go API dependencies. Upgraded Django (4.2.30), DRF (3.17.1), SimpleJWT (5.5.1), Celery (5.6.3), Gunicorn (26.0.0), psycopg2 (2.9.12), sentry-sdk (2.66.1), boto3 (1.43.62), django-cors-headers (4.9.0), django-prometheus (2.5.0), lib/pq (v1.12.3), go-redis/v9 (v9.21.0), fasthttp (v1.59.0), golang-jwt/jwt/v4 (v4.5.2), vite (5.4.21), vitest (1.6.1), framer-motion (11.18.2), @tanstack/react-query (5.101.4), and added npm overrides for dompurify (3.4.12) to patch security CVEs. All build checks, Go API test suites, and frontend test suites pass cleanly.
+6. **Workspace Developer Tools** — Added scripts `scripts/env-doctor.sh` (toolchain diagnostics), `scripts/check_pypi.py` (PyPI version inspector), `scripts/dependency-auditor.sh` (unified dependency auditor), and `scripts/sync-meili.sh` (Meilisearch synchronization helper).
+7. **Antigravity Custom Extensions** — Created a local JSON-RPC 2.0 Model Context Protocol (MCP) server `scripts/dms_mcp_server.py` exposing PostgreSQL schema, Redis active verify-token hashes, and Meilisearch health tools to the assistant. Developed a project-specific skill `.agents/skills/dms-o2-ops/SKILL.md` to guide agent execution.
 
 ## Deferred / Explicitly Skipped
 - **`dms/urls.py` legacy `api/` aliases** — NOT deduped. Frontend actively calls non-v1

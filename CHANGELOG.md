@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.9.3] - 2026-08-03
+
+### Platform Dependency Upgrades & Auditing
+- **Dependency Upgrades**: Upgraded Django to `4.2.30` (latest v4.2 LTS), djangorestframework to `3.17.1`, djangorestframework-simplejwt to `5.5.1`, and psycopg2 to `2.9.12` in python backend. Bumped Go `lib/pq` to `v1.12.3`, `golang-jwt/jwt/v4` to `v4.5.2` (security patch), and `fasthttp` to `v1.59.0`. Upgraded react-query to `5.101.4` and framer-motion to `11.18.2`.
+- **Vite & Vitest Tooling**: Upgraded Vite to `5.4.21` and Vitest to `1.6.1`. Verified full 100% test coverage runs and build compilation.
+- **XSS Patching**: Added sub-dependency npm overrides for `dompurify` to `3.4.12` to address downstream security advisories.
+
+### Custom Developer Tools & Extensions
+- **Developer Scripts**: Created `scripts/env-doctor.sh` (system/container diagnostic tool), `scripts/dependency-auditor.sh` (multi-tier packages and updates validator), and `scripts/sync-meili.sh` (Docker-aware search sync wrapper).
+- **Model Context Protocol (MCP)**: Added `scripts/dms_mcp_server.py` implementing a JSON-RPC 2.0 MCP server exposing database schema queries, Meilisearch health, and Redis session lookups directly to the assistant.
+- **Agent Skill**: Configured a local skill guide in `.agents/skills/dms-o2-ops/SKILL.md` to establish development procedures and guidelines.
+
 ## [1.9.2] - 2026-07-23
 
 ### Frontend Resilience & Dynamic Imports
