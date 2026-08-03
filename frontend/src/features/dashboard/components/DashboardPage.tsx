@@ -27,13 +27,14 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
   }, [])
 
   const statusThemeColors: Record<string, string> = {
-    AVAILABLE: '#10b981', // Emerald
-    RUNNING: '#3b82f6',   // Blue
-    CLEANING: '#f59e0b',  // Amber
-    POLISHING: '#8b5cf6', // Purple
-    DAMAGED: '#f43f5e',   // Rose
-    SCRAPPED: '#64748b',  // Slate
-    MISSING: '#ef4444',   // Red
+    AVAILABLE: 'var(--color-available)',
+    RUNNING: 'var(--color-running)',
+    CLEANING: 'var(--color-cleaning)',
+    POLISHING: 'var(--color-polishing)',
+    DAMAGED: 'var(--color-damaged)',
+    SCRAPPED: 'var(--color-scrapped)',
+    MISSING: 'var(--color-missing)',
+    MAINTENANCE: 'var(--color-maintenance)',
   }
 
   const radius = 50

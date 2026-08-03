@@ -8,6 +8,7 @@ export interface Column {
   label: string
   sortable?: boolean
   render?: (row: any) => React.ReactNode
+  isNumeric?: boolean
 }
 
 export interface DataTableProps {
@@ -138,14 +139,20 @@ export function DataTable({
                         />
                       </td>
                     )}
-                    {columns.map((col) => (
-                      <td 
-                        key={col.key} 
-                        className="py-3.5 px-5 text-sm text-[var(--color-text)] font-semibold font-sans align-middle"
-                      >
-                        {col.render ? col.render(row) : (row[col.key] ?? '—')}
-                      </td>
-                    ))}
+                    {columns.map((col) => {
+                      const val = row[col.key]
+                      const isNumericVal = typeof val === 'number' || col.isNumeric || col.key.includes('size') || col.key.includes('width') || col.key.includes('thickness') || col.key.includes('id') || col.key.includes('count')
+                      return (
+                        <td 
+                          key={col.key} 
+                          className={`py-3.5 px-5 text-sm text-[var(--color-text)] font-semibold align-middle ${
+                            isNumericVal ? 'font-mono tracking-tight text-xs' : 'font-sans'
+                          }`}
+                        >
+                          {col.render ? col.render(row) : (val ?? '—')}
+                        </td>
+                      )
+                    })}
                   </tr>
                 )
               })
