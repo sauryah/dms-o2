@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStatsQuery, useSearchQuery } from '../hooks/useDashboard'
 import { useQuery } from '@tanstack/react-query'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { useAuth } from '../../../contexts/AuthContext'
+
 import { useDebounce } from '../../../hooks/useDebounce'
 import { useApi } from '../../../hooks/useApi'
 import { RoundDieCard } from './RoundDieCard'
@@ -173,7 +173,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const { role } = useAuth()
+
   const [q, setQ] = useState('')
   const debouncedQ = useDebounce(q, 300)
   const [dieType, setDieType] = useState('')
@@ -204,7 +204,7 @@ export function DashboardPage() {
 
 
 
-  const { request } = useApi()
+
   const [trendBaseline, setTrendBaseline] = useState<any>(null)
 
   // Fetch overall statistics
