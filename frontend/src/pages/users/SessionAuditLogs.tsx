@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search, Clock, ShieldAlert, LogOut, Info, Monitor, Smartphone, Download } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
-import { motion } from 'framer-motion'
 
 export function SessionAuditLogs() {
   const { request } = useApi()
