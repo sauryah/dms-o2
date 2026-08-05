@@ -1,11 +1,12 @@
 # Engineering Implementation History (changelog-dev.md)
 
-### 2026-08-05 · Implement User Administration Section Upgrades
-*   **Feature**: Implemented client-side Export to CSV feature for Security Audit Logs, added Search Query Highlighting for User Directory and Security Audit Logs search results, and removed unused imports in `UserManager.tsx` to maintain lint cleanliness.
+### 2026-08-05 · Implement User Administration Section Upgrades & Visual Alignment Fixes
+*   **Feature**: Implemented client-side Export to CSV feature for Security Audit Logs, added Search Query Highlighting for User Directory and Security Audit Logs search results, and removed unused imports in `UserManager.tsx` to maintain lint cleanliness. Adjusted the "Filters" toggle button in the Die Registry Inventory page to align height and corner rounding with the adjacent SearchBar component.
 *   **Affected Modules**: `frontend`
 *   **Files Modified**:
     *   [frontend/src/pages/users/UserManager.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/users/UserManager.tsx) - Added search query highlighting and cleaned up imports.
     *   [frontend/src/pages/users/SessionAuditLogs.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/users/SessionAuditLogs.tsx) - Added Export to CSV option and search query highlighting.
+    *   [frontend/src/features/inventory/components/InventoryPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/inventory/components/InventoryPage.tsx) - Corrected Filter button height, corner radius (`rounded-2xl`), padding (`py-3.5 px-6`), and text size (`text-sm`) to match SearchBar.
 *   **Testing Performed**: Executed frontend typecheck using `npx tsc --noEmit` and verified the build integrity.
 
 ### 2026-08-03 · Implement Custom Workspace Dev Tools & Antigravity Extensions

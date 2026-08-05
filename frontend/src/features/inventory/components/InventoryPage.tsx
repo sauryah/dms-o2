@@ -424,7 +424,7 @@ export function InventoryPage() {
             <button 
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-xl border text-xs font-bold transition w-full sm:w-auto shrink-0 justify-center cursor-pointer ${
+              className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border text-sm font-bold transition w-full sm:w-auto shrink-0 justify-center cursor-pointer ${
                 showFilters 
                   ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
                   : 'bg-slate-950/40 text-slate-300 border-slate-800 hover:border-slate-700'
