@@ -1543,11 +1543,14 @@ export function DieDetailPage() {
         <style dangerouslySetInnerHTML={{__html: `
           @media print {
             body, html {
+              background: white !important;
               background-color: white !important;
               color: #0f172a !important;
               font-family: ui-sans-serif, system-ui, sans-serif !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
-            nav, footer, .print\\:hidden {
+            nav, footer, .print\\:hidden, button, .recharts-legend-wrapper, .lucide {
               display: none !important;
             }
             .print-container {
@@ -1555,18 +1558,57 @@ export function DieDetailPage() {
               width: 100% !important;
               padding: 0 !important;
               margin: 0 !important;
+              background: white !important;
+              color: #0f172a !important;
             }
-            .print-only-container {
+            /* Override slate panels and card styling for high-contrast print */
+            .bg-slate-900, .bg-slate-950, .bg-slate-950\\/30, .bg-slate-950\\/40, .bg-slate-950\\/80 {
+              background: transparent !important;
+              background-color: transparent !important;
+              color: #0f172a !important;
+              border-color: #cbd5e1 !important;
+            }
+            .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+              color: #0f172a !important;
+            }
+            .text-slate-500 {
+              color: #475569 !important;
+            }
+            .border-slate-800, .border-slate-800\\/40, .border-slate-800\\/60, .border-slate-900 {
+              border-color: #cbd5e1 !important;
+            }
+            /* Optimize blueprint vector artwork for crisp printing */
+            .blueprint-outline {
+              stroke: #1e3a8a !important;
+              stroke-width: 2.5px !important;
+            }
+            .blueprint-outline-secondary {
+              stroke: #475569 !important;
+              stroke-width: 1.5px !important;
+            }
+            .blueprint-axis {
+              stroke: #94a3b8 !important;
+              stroke-dasharray: 2 2 !important;
+            }
+            .blueprint-dim-line {
+              stroke: #0284c7 !important;
+              stroke-width: 1px !important;
+            }
+            .blueprint-dim-text {
+              fill: #1e40af !important;
+              font-weight: bold !important;
+            }
+            /* Convert grids to standard block flow for multi-page alignment safety */
+            .grid {
               display: block !important;
             }
-            .print-only-container .glass-panel {
-              background: white !important;
-              border: 1px solid #e2e8f0 !important;
-              box-shadow: none !important;
-              border-radius: 12px !important;
+            .grid > div {
+              margin-bottom: 2rem !important;
+              page-break-inside: avoid !important;
             }
           }
         `}} />
+
 
         <PageHeader 
           title={`Die Asset: ${die.die_id}`} 
