@@ -1,8 +1,6 @@
-import React, { useEffect, useRef, useMemo, useState } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import { 
   Plus, 
-  ChevronRight, 
-  ChevronLeft, 
   ChevronDown,
   ChevronUp,
   Menu, 
@@ -54,10 +52,8 @@ export function InventoryPage() {
     setShowFilters,
     isCreateOpen,
     setIsCreateOpen,
-    hasActiveFilter,
     sortField,
     sortOrder,
-    setSortOrder,
     handleSort,
     setsList,
     createError,
@@ -73,7 +69,6 @@ export function InventoryPage() {
     selectedNode,
     setSelectedNode,
     isSidebarCollapsed,
-    setIsSidebarCollapsed,
     isSidebarOpen,
     setIsSidebarOpen,
     isSearchActive,
