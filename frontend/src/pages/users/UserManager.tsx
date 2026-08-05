@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, X, Search, Filter, Shield, Key, Mail, User, Info, Check, ArrowRight, ShieldAlert, Monitor, Smartphone } from 'lucide-react'
+import { Plus, Trash2, X, Search, Filter, Shield, Key, Mail, User, ShieldAlert, Monitor, Smartphone } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export function UserManager() {
   const { request } = useApi()
@@ -217,6 +216,25 @@ export function UserManager() {
   })
 
   // Get dynamic background and color for user avatar
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return <span>{text}</span>
+    const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    return (
+      <span>
+        {parts.map((part, i) => 
+          regex.test(part) ? (
+            <mark key={i} className="bg-blue-500/30 text-blue-200 rounded px-0.5 font-bold normal-case">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    )
+  }
+
   const getAvatarStyle = (username: string) => {
     const chars = username.charCodeAt(0) + (username.charCodeAt(1) || 0)
     const hues = [200, 240, 280, 320, 360, 20, 120, 160]
@@ -347,7 +365,7 @@ export function UserManager() {
                               {user.username.charAt(0)}
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="font-mono text-sm">{user.username}</span>
+                              <span className="font-mono text-sm">{highlightMatch(user.username, searchQuery)}</span>
                               {isSelf && (
                                 <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold select-none">
                                   YOU
@@ -359,12 +377,12 @@ export function UserManager() {
                         
                         {/* Full Name */}
                         <td className="py-3.5 px-6 text-slate-300 hidden sm:table-cell text-sm">
-                          {user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '—'}
+                          {user.first_name || user.last_name ? highlightMatch(`${user.first_name || ''} ${user.last_name || ''}`.trim(), searchQuery) : '—'}
                         </td>
                         
                         {/* Email */}
                         <td className="py-3.5 px-6 text-slate-300 hidden md:table-cell font-mono text-xs">
-                          {user.email || '—'}
+                          {user.email ? highlightMatch(user.email, searchQuery) : '—'}
                         </td>
                         
                         {/* Role Badges */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { RefreshCw, Search, Clock, ShieldAlert, LogOut, Info, Monitor, Smartphone } from 'lucide-react'
+import { RefreshCw, Search, Clock, ShieldAlert, LogOut, Info, Monitor, Smartphone, Download } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
 import { motion } from 'framer-motion'
 
@@ -202,6 +202,65 @@ export function SessionAuditLogs() {
     }
   }
 
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return <span>{text}</span>
+    const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    return (
+      <span>
+        {parts.map((part, i) => 
+          regex.test(part) ? (
+            <mark key={i} className="bg-blue-500/30 text-blue-200 rounded px-0.5 font-bold normal-case">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    )
+  }
+
+  const handleExportCSV = () => {
+    if (groupedSessions.length === 0) return
+    const headers = ['Username', 'Status', 'Session Start', 'Session End', 'Duration', 'IP Address', 'Device Environment']
+    const rows = groupedSessions.map((session: any) => {
+      const loginStr = session.login_time ? new Date(session.login_time).toLocaleString().replace(/"/g, '""') : '—'
+      const logoutStr = session.status === 'ACTIVE' 
+        ? 'Active Now' 
+        : (session.logout_time ? new Date(session.logout_time).toLocaleString().replace(/"/g, '""') : '—')
+      const duration = getDuration ? getDuration(session.login_time, session.logout_time, session.status) : '—'
+      const client = parseUserAgent ? parseUserAgent(session.device) : { label: 'Unknown' }
+      
+      const usernameSafe = (session.username || '').replace(/"/g, '""')
+      const statusSafe = (session.status || '').replace(/"/g, '""')
+      const durationSafe = (duration || '').replace(/"/g, '""')
+      const ipSafe = (session.ip_address || '—').replace(/"/g, '""')
+      const clientSafe = (client.label || '').replace(/"/g, '""')
+
+      return [
+        `"${usernameSafe}"`,
+        `"${statusSafe}"`,
+        `"${loginStr}"`,
+        `"${logoutStr}"`,
+        `"${durationSafe}"`,
+        `"${ipSafe}"`,
+        `"${clientSafe}"`
+      ]
+    })
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const timestamp = new Date().toISOString().split('T')[0]
+    link.download = `security_audit_logs_${timestamp}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
   const groupedSessions = groupLogsIntoSessions(logs);
 
   return (
@@ -235,11 +294,20 @@ export function SessionAuditLogs() {
           </select>
         </div>
 
-        <div className="flex justify-end items-center">
+        <div className="flex justify-end items-center space-x-2">
+          <button
+            onClick={handleExportCSV}
+            disabled={groupedSessions.length === 0}
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-900/40 text-white disabled:text-slate-500 border border-blue-500/20 disabled:border-slate-800/80 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+            title="Download current log view as CSV"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span className="font-mono">Export CSV</span>
+          </button>
           <button
             onClick={() => refetch()}
             disabled={isLoading || isFetching}
-            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 cursor-pointer"
+            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40 cursor-pointer"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-blue-400' : ''}`} />
             <span className="font-mono">Sync Logs</span>
@@ -297,7 +365,7 @@ export function SessionAuditLogs() {
                   return (
                     <tr key={session.id} className="transition-colors duration-150">
                       <td className="py-3.5 px-6 font-semibold text-slate-200">
-                        {session.username}
+                        {highlightMatch(session.username, usernameSearch)}
                       </td>
                       <td className="py-3.5 px-6">
                         {getStatusBadge(session.status)}
