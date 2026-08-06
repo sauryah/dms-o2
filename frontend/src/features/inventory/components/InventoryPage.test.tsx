@@ -60,7 +60,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe('InventoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuth).mockReturnValue({ role: 'ADMIN' })
+    vi.mocked(useAuth).mockReturnValue({ role: 'ADMIN' } as any)
   })
 
   test('renders without crashing', () => {
@@ -133,7 +133,7 @@ describe('InventoryPage', () => {
   })
 
   test('hides Add Die button for VIEWER role', () => {
-    vi.mocked(useAuth).mockReturnValue({ role: 'VIEWER' })
+    vi.mocked(useAuth).mockReturnValue({ role: 'VIEWER' } as any)
 
     const { queryByText } = render(
       <Wrapper>

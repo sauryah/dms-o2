@@ -18,7 +18,7 @@ describe('ExportMenu', () => {
       showToast: showToastMock,
       toasts: [],
       dismissToast: vi.fn()
-    })
+    } as any)
   })
 
   test('renders dropdown toggle button', () => {

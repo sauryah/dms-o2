@@ -47,11 +47,11 @@ describe('SessionTimeoutManager', () => {
       handleRefreshFailure: vi.fn(),
       shouldBlockRefresh: vi.fn(),
       resetRefreshFailures: vi.fn()
-    })
+    } as any)
 
     vi.mocked(useApi).mockReturnValue({
       request: mockRequest
-    })
+    } as any)
 
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
   })
@@ -78,7 +78,7 @@ describe('SessionTimeoutManager', () => {
       handleRefreshFailure: vi.fn(),
       shouldBlockRefresh: vi.fn(),
       resetRefreshFailures: vi.fn()
-    })
+    } as any)
 
     const { rerender } = render(<SessionTimeoutManager />)
 
@@ -104,7 +104,7 @@ describe('SessionTimeoutManager', () => {
       handleRefreshFailure: vi.fn(),
       shouldBlockRefresh: vi.fn(),
       resetRefreshFailures: vi.fn()
-    })
+    } as any)
 
     act(() => {
       rerender(<SessionTimeoutManager />)

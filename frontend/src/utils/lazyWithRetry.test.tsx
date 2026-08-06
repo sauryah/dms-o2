@@ -1,5 +1,6 @@
-import React, { Suspense } from 'react'
+import { Suspense } from 'react'
 import { render, screen } from '@testing-library/react'
+import { describe, beforeEach, it, expect } from 'vitest'
 import { lazyWithRetry } from './lazyWithRetry'
 
 describe('lazyWithRetry', () => {
