@@ -20,7 +20,7 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 
 	// Test filters
 	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", 10, 0)
-	
+
 	if !strings.Contains(query, "ILIKE $1") {
 		t.Errorf("expected search query parameter placeholder $1, got: %s", query)
 	}

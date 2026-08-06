@@ -3,8 +3,8 @@ package search
 import (
 	"log/slog"
 
-	"github.com/meilisearch/meilisearch-go"
 	"dms-go-api/internal/config"
+	"github.com/meilisearch/meilisearch-go"
 )
 
 type SearchClient struct {

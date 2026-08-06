@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"dms-go-api/internal/cache"
 	"dms-go-api/internal/config"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type ContextKey string
@@ -38,7 +38,6 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 					tokenStr = cookie.Value
 				}
 			}
-
 
 			if tokenStr == "" {
 				w.Header().Set("Content-Type", "application/json")

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/meilisearch/meilisearch-go"
 	"dms-go-api/internal/config"
 	"dms-go-api/internal/database"
+	"github.com/meilisearch/meilisearch-go"
 )
 
 // Mock definitions
@@ -450,7 +450,7 @@ func TestRelevanceSorting(t *testing.T) {
 	// Setup candidates to be returned by mock DB
 	size1600 := "1.600"
 	size2500 := "2.500"
-	
+
 	candidates := []database.DieRepresentation{
 		{ID: 1, DieID: "DIE-OTHER", DieType: "ROUND", CurrentSize: &size2500, Casing: "other-casing", MachineName: "machine-other"},
 		{ID: 2, DieID: "DIE-EXACT-ID", DieType: "ROUND", CurrentSize: &size2500, Casing: "other-casing", MachineName: "machine-other"},
@@ -537,7 +537,7 @@ func TestRelevanceSorting(t *testing.T) {
 
 func TestHandleSearch_PaginationParams(t *testing.T) {
 	cfg := &config.Config{}
-	
+
 	mockDb := &MockDatabase{
 		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
 			if limit == 10 && offset == 20 {
@@ -593,11 +593,11 @@ func TestScoreDie(t *testing.T) {
 		{
 			name: "Exact size match",
 			die: database.DieRepresentation{
-				DieID:   "R-101",
-				DieType: "ROUND",
+				DieID:       "R-101",
+				DieType:     "ROUND",
 				CurrentSize: &size2_5,
 			},
-			query: "2.5",
+			query:    "2.5",
 			expected: 100,
 		},
 		{
@@ -635,7 +635,7 @@ func TestScoreDie(t *testing.T) {
 			die: database.DieRepresentation{
 				DieID: "R-101",
 			},
-			query: "R-101",
+			query:    "R-101",
 			expected: 90,
 		},
 		{
@@ -643,7 +643,7 @@ func TestScoreDie(t *testing.T) {
 			die: database.DieRepresentation{
 				DieID: "R-101",
 			},
-			query: "r-101",
+			query:    "r-101",
 			expected: 90,
 		},
 		{
@@ -651,34 +651,34 @@ func TestScoreDie(t *testing.T) {
 			die: database.DieRepresentation{
 				DieID: "R-101",
 			},
-			query: "R-10",
+			query:    "R-10",
 			expected: 80,
 		},
 		{
 			name: "Substring location match",
 			die: database.DieRepresentation{
-				DieID: "R-101",
+				DieID:    "R-101",
 				Location: "Rack A - Shelf 3",
 			},
-			query: "Rack A",
+			query:    "Rack A",
 			expected: 70,
 		},
 		{
 			name: "Substring set match",
 			die: database.DieRepresentation{
-				DieID: "R-101",
+				DieID:   "R-101",
 				SetName: "Alpha Set",
 			},
-			query: "Alpha",
+			query:    "Alpha",
 			expected: 70,
 		},
 		{
 			name: "Substring casing match",
 			die: database.DieRepresentation{
-				DieID: "R-101",
+				DieID:  "R-101",
 				Casing: "Steel Casing",
 			},
-			query: "Steel",
+			query:    "Steel",
 			expected: 70,
 		},
 		{
@@ -686,7 +686,7 @@ func TestScoreDie(t *testing.T) {
 			die: database.DieRepresentation{
 				DieID: "R-101",
 			},
-			query: "abc", // query has no digits, allowed fuzzy match
+			query:    "abc", // query has no digits, allowed fuzzy match
 			expected: 50,
 		},
 		{
@@ -694,7 +694,7 @@ func TestScoreDie(t *testing.T) {
 			die: database.DieRepresentation{
 				DieID: "R-101",
 			},
-			query: "abc1", // scoreDie itself scores 50, discarded later in QueryMeilisearchAndPostgres
+			query:    "abc1", // scoreDie itself scores 50, discarded later in QueryMeilisearchAndPostgres
 			expected: 50,
 		},
 	}
@@ -806,7 +806,7 @@ func TestHandleStats(t *testing.T) {
 
 func TestHandleSearch_MeilisearchFailureFallback(t *testing.T) {
 	cfg := &config.Config{}
-	
+
 	// Mock Meilisearch to return an error (e.g. timeout or server down)
 	mockSearch := &MockSearch{
 		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
@@ -961,5 +961,3 @@ func TestHandleCalculateWireDrawing(t *testing.T) {
 		}
 	})
 }
-
-

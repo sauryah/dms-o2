@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"dms-go-api/internal/config"
+	"github.com/redis/go-redis/v9"
 )
 
 type Cache struct {

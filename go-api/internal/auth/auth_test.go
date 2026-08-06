@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"dms-go-api/internal/cache"
 	"dms-go-api/internal/config"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func TestAuthMiddleware(t *testing.T) {

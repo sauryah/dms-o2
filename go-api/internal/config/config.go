@@ -175,12 +175,16 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) PostgresConnStr() string {
+	sslMode := c.PostgresSSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.PostgresHost,
 		c.PostgresPort,
 		c.PostgresUser,
 		c.PostgresPassword,
 		c.PostgresDB,
-		c.PostgresSSLMode,
+		sslMode,
 	)
 }

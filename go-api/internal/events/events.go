@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lib/pq"
 	"dms-go-api/internal/config"
+	"github.com/lib/pq"
 )
 
 type Event struct {
