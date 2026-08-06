@@ -324,24 +324,24 @@ export function InventoryPage() {
       <button
         type="button"
         onClick={handleExpandAll}
-        className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
+        className="flex items-center gap-1.5 bg-[#0b0f19] hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus-ring cursor-pointer shadow-sm"
       >
-        <ChevronDown className="h-3.5 w-3.5" />
+        <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
         Expand Tree
       </button>
       <button
         type="button"
         onClick={handleCollapseAll}
-        className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition focus-ring"
+        className="flex items-center gap-1.5 bg-[#0b0f19] hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus-ring cursor-pointer shadow-sm"
       >
-        <ChevronUp className="h-3.5 w-3.5" />
+        <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
         Collapse Tree
       </button>
       <ExportMenu options={exportOptions} />
       {canCreate && (
         <button 
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer focus-ring"
+          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer focus-ring"
         >
           <Plus className="h-4 w-4" />
           <span>Add Die</span>

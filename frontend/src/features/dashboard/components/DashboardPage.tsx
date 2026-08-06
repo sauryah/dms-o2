@@ -314,10 +314,10 @@ export function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-          <div className="bg-gradient-to-tr from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px]">
-            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
-            <span className="text-3xl font-extrabold text-white block mt-1">{totalCount}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
+          <div className="bg-[#0b0f19]/90 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between min-h-[96px]">
+            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono">Total Dies</span>
+            <span className="text-2xl font-bold font-mono text-white block mt-1 tracking-tight">{totalCount}</span>
           </div>
           {Object.entries(stats).map(([statusKey, count]) => {
             const countVal = count as number
@@ -331,21 +331,21 @@ export function DashboardPage() {
                 tabIndex={0}
                 onClick={() => navigate(`/inventory?status=${statusKey}`)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/inventory?status=${statusKey}`) } }}
-                className={`border rounded-2xl p-4 shadow-lg text-center flex flex-col justify-between min-h-[100px] cursor-pointer hover:scale-[1.02] transition-all  focus-ring ${statusColors[statusKey]}`}
+                className={`border border-slate-800/80 hover:border-slate-700/80 rounded-xl p-4 shadow-sm hover:shadow-md text-left flex flex-col justify-between min-h-[96px] cursor-pointer transition-all duration-200 focus-ring bg-[#0b0f19]/90 ${statusColors[statusKey] || 'text-slate-300'}`}
               >
-                <div className="flex items-center justify-between opacity-80 gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider">{statusKey}</span>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-mono opacity-90">{statusKey}</span>
                   {diff > 0 ? (
-                    <span className="text-emerald-400 font-bold flex items-center text-[10px] bg-emerald-500/10 px-1 rounded" title="Up from 24h baseline">
-                      ▲ +{diff}
+                    <span className="text-emerald-400 font-bold flex items-center text-[10px] bg-emerald-500/10 px-1 py-0.5 rounded font-mono" title="Up from 24h baseline">
+                      + {diff}
                     </span>
                   ) : diff < 0 ? (
-                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-500/10 px-1 rounded" title="Down from 24h baseline">
-                      ▼ {diff}
+                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-500/10 px-1 py-0.5 rounded font-mono" title="Down from 24h baseline">
+                      - {Math.abs(diff)}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-3xl font-extrabold block mt-2 text-left">{String(count)}</span>
+                <span className="text-2xl font-bold font-mono block mt-1 tracking-tight">{String(count)}</span>
               </div>
             )
           })}
