@@ -9,11 +9,12 @@ export interface BreadcrumbItem {
 
 export interface PageHeaderProps {
   title: string
+  subtitle?: string
   breadcrumbs?: BreadcrumbItem[]
   actions?: React.ReactNode
 }
 
-export function PageHeader({ title, breadcrumbs = [], actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumbs = [], actions }: PageHeaderProps) {
   return (
     <div className="border-b border-[var(--color-border)] pb-5 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
       <div className="space-y-1.5">
@@ -49,6 +50,11 @@ export function PageHeader({ title, breadcrumbs = [], actions }: PageHeaderProps
         <h1 className="text-xl md:text-2xl font-black text-white tracking-tight leading-none">
           {title}
         </h1>
+        {subtitle && (
+          <p className="text-xs text-[var(--color-muted)] font-medium">
+            {subtitle}
+          </p>
+        )}
       </div>
 
       {/* Actions slot */}

@@ -2,9 +2,11 @@ import React from 'react'
 
 export interface StatusBadgeProps {
   status: string
+  size?: 'sm' | 'md' | 'lg' | string
+  className?: string
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, size = 'sm', className = '' }: StatusBadgeProps) {
   const normStatus = (status || '').toUpperCase()
 
   const statusStyleMap: Record<string, { color: string; backgroundColor: string; borderColor: string }> = {
@@ -24,10 +26,12 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     borderColor: 'var(--color-default-bdr)',
   }
 
+  const sizeClasses = size === 'lg' ? 'px-3 py-1 text-xs' : size === 'md' ? 'px-2.5 py-0.5 text-xs' : 'px-2 py-0.5 text-[10px]'
+
   return (
     <span
       style={style}
-      className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-bold font-mono tracking-wider select-none"
+      className={`inline-flex items-center rounded-full border font-bold font-mono tracking-wider select-none ${sizeClasses} ${className}`}
     >
       {normStatus}
     </span>
