@@ -301,3 +301,15 @@ px tsc --noEmit shows only pre-existing test/prop errors; eslint src 0 errors (4
     *   [backend/search/meili.py](file:///D:/DMS/dms-o2/backend/search/meili.py) - Import IS_TESTING for INDEX_NAME selection.
 *   **Documentation Updated**: .dev/state/active-task.md
 *   **Testing Performed**: py_compile clean on all edited files. No circular-import risk (dms.testing imports only sys).
+
+### 2026-08-06 · Celery Beat Permission Fix & Database Volume Recovery
+*   **Feature**: Fixed Celery Beat startup failure and PostgreSQL container password authentication mismatch.
+*   **Affected Modules**: docker deployment, celery services
+*   **Files Modified/Created**:
+    *   [docker-compose.yml](file:///home/sahil/Desktop/Projects/dms-o2/docker-compose.yml) - Configured Celery beat service with `--schedule=/tmp/celerybeat-schedule` to resolve permissions issues in the bind-mounted host folder.
+*   **Implementation Approach**:
+    *   Identified `OperationalError: password authentication failed for user "dms_user"` in migrations container, caused by a stale database volume retaining previous credentials.
+    *   Reset database volume (`docker compose down -v`) and initialized the environment using `setup.sh` to synchronize the container cluster with the new `.env` passwords.
+    *   Identified that the Celery beat container was failing its health checks due to the scheduler database `celerybeat-schedule` being created in `/app` (which is bind-mounted to `./backend` on the host, preventing the non-root `dmsuser` from writing to it).
+    *   Modified the Celery beat command to write the scheduler database file to `/tmp/celerybeat-schedule`, which is fully writable by `dmsuser`.
+*   **Testing Performed**: Verified all Docker containers are Up and Healthy, including Celery beat and Django.

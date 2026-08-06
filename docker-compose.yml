@@ -179,7 +179,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: celery -A dms beat -l warning --pidfile=/tmp/celerybeat.pid
+    command: celery -A dms beat -l warning --pidfile=/tmp/celerybeat.pid --schedule=/tmp/celerybeat-schedule
     volumes:
       - ./backend:/app
     environment:
