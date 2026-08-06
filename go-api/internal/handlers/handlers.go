@@ -226,6 +226,16 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) HandleLiveness(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "live"})
+}
+
+func (h *Handler) HandleReadiness(w http.ResponseWriter, r *http.Request) {
+	h.HandleHealth(w, r)
+}
+
 func (h *Handler) HandleIndexStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

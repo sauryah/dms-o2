@@ -61,6 +61,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/go/health", handler.HandleHealth)
+	mux.HandleFunc("GET /api/go/liveness", handler.HandleLiveness)
+	mux.HandleFunc("GET /api/go/readiness", handler.HandleReadiness)
 
 	jwtAuth := auth.AuthMiddleware(cfg, redisClient)
 
