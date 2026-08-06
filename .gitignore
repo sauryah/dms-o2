@@ -53,17 +53,9 @@ backups/
 backend/tmp/
 skills-lock.json
 
-# TLS certificates (generated per-machine)
-certs/*.pem
-certs/*.der
-certs/*.cer
-certs/*.pfx
-certs/*.p12
-certs/*-INSTRUCTIONS.txt
-certs/*-install.bat
-certs/*-install.sh
-certs/cert_check.der
-certs/served_cert.der
+# TLS certificates (generated per-machine, never commit private keys or certs)
+certs/*
+!certs/.gitkeep
 
 # Celery beat runtime
 celerybeat-schedule

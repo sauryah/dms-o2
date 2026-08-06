@@ -82,16 +82,91 @@ if ($certsLanIp) {
     if (Test-Path $certPem) {
         Write-Host ">>> Certificates already exist. Regenerating..." -ForegroundColor Yellow
     }
-    & mkcert -install 2>$null
-    & mkcert -cert-file $certPem -key-file $keyPem localhost 127.0.0.1 $certsLanIp ::1
-    # Copy root CA for distribution
-    $caroot = & mkcert -CAROOT 2>$null
-    if ($caroot -and (Test-Path "$caroot\rootCA.pem")) {
-        $rootCaPem = Join-Path $certsDir "rootCA.pem"
-        $rootCaCer = Join-Path $certsDir "rootCA.cer"
-        Copy-Item "$caroot\rootCA.pem" $rootCaPem -Force
-        & certutil -decode $rootCaPem $rootCaCer 2>$null | Out-Null
-        Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
+    $mkcertSuccess = $false
+    try {
+        if (Get-Command mkcert -ErrorAction SilentlyContinue) {
+            & mkcert -install 2>$null
+            & mkcert -cert-file $certPem -key-file $keyPem localhost 127.0.0.1 $certsLanIp ::1 2>$null
+            if (Test-Path $certPem) {
+                $caroot = & mkcert -CAROOT 2>$null
+                if ($caroot -and (Test-Path "$caroot\rootCA.pem")) {
+                    $rootCaPem = Join-Path $certsDir "rootCA.pem"
+                    $rootCaCer = Join-Path $certsDir "rootCA.cer"
+                    Copy-Item "$caroot\rootCA.pem" $rootCaPem -Force
+                    & certutil -decode $rootCaPem $rootCaCer 2>$null | Out-Null
+                    Write-Host ">>> Root CA copied: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
+                }
+                $mkcertSuccess = $true
+            }
+        }
+    } catch {
+        Write-Host ">>> mkcert execution failed or was blocked by Application Control policy." -ForegroundColor Yellow
+    }
+
+    if (-not $mkcertSuccess) {
+        Write-Host ">>> Application Control policy blocked mkcert or mkcert is unavailable." -ForegroundColor Yellow
+        Write-Host ">>> Falling back to OpenSSL certificate generation..." -ForegroundColor Cyan
+        
+        $opensslBin = Get-Command openssl -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+        if (-not $opensslBin) {
+            if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files\Git\usr\bin\openssl.exe" }
+            elseif (Test-Path "C:\Program Files (x86)\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files (x86)\Git\usr\bin\openssl.exe" }
+        }
+
+        if ($opensslBin) {
+            $rootCaPem = Join-Path $certsDir "rootCA.pem"
+            $rootCaKey = Join-Path $certsDir "rootCA.key"
+            $rootCaCer = Join-Path $certsDir "rootCA.cer"
+
+            # 1. Create Root CA if missing
+            if (-not (Test-Path $rootCaPem) -or -not (Test-Path $rootCaKey)) {
+                Write-Host ">>> Creating Local Root CA with OpenSSL..." -ForegroundColor Cyan
+                & $opensslBin req -x509 -new -nodes -keyout $rootCaKey -sha256 -days 3650 -out $rootCaPem -subj "/CN=DMS Local Root CA" 2>$null
+            }
+
+            # 2. Build OpenSSL SAN configuration
+            $sanCnf = Join-Path $certsDir "san.cnf"
+            $sanContent = @"
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = localhost
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment, digitalSignature
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1 = 127.0.0.1
+IP.2 = $certsLanIp
+IP.3 = ::1
+"@
+            [System.IO.File]::WriteAllText($sanCnf, $sanContent)
+
+            # 3. Generate server key and cert
+            $serverCsr = Join-Path $certsDir "server.csr"
+            & $opensslBin genrsa -out $keyPem 2048 2>$null
+            & $opensslBin req -new -key $keyPem -out $serverCsr -config $sanCnf 2>$null
+            & $opensslBin x509 -req -in $serverCsr -CA $rootCaPem -CAkey $rootCaKey -CAcreateserial -out $certPem -days 825 -sha256 -extfile $sanCnf -extensions v3_req 2>$null
+
+            if (Test-Path $sanCnf) { Remove-Item $sanCnf -Force }
+            if (Test-Path $serverCsr) { Remove-Item $serverCsr -Force }
+            $srlFile = Join-Path $certsDir "rootCA.srl"
+            if (Test-Path $srlFile) { Remove-Item $srlFile -Force }
+
+            if (Test-Path $rootCaPem) {
+                Copy-Item $rootCaPem $rootCaCer -Force
+                Write-Host ">>> Root CA generated via OpenSSL: certs\rootCA.pem and certs\rootCA.cer" -ForegroundColor Green
+            }
+        } else {
+            Write-Error "ERROR: Neither mkcert nor OpenSSL could be executed to generate TLS certificates."
+            exit 1
+        }
     }
     Write-Host ">>> TLS certificates generated for $certsLanIp" -ForegroundColor Green
 
@@ -108,18 +183,28 @@ if ($certsLanIp) {
             $clientP12 = Join-Path $certsDir "client-$clientName.p12"
             $rootCaPem = Join-Path $certsDir "rootCA.pem"
 
-            & mkcert -client -cert-file $clientPem -key-file $clientKey localhost 127.0.0.1 ::1
-            
-            $openssl = Get-Command openssl -ErrorAction SilentlyContinue
-            if (-not $openssl) {
-                if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") {
-                    $openssl = "C:\Program Files\Git\usr\bin\openssl.exe"
-                } elseif (Test-Path "C:\Program Files (x86)\Git\usr\bin\openssl.exe") {
-                    $openssl = "C:\Program Files (x86)\Git\usr\bin\openssl.exe"
+            if ($mkcertSuccess) {
+                try {
+                    & mkcert -client -cert-file $clientPem -key-file $clientKey localhost 127.0.0.1 ::1 2>$null
+                } catch {
+                    # Ignored, fallback to OpenSSL below
                 }
             }
-            if ($openssl) {
-                & $openssl pkcs12 -export -out $clientP12 -inkey $clientKey -in $clientPem -certfile $rootCaPem -passout pass:
+
+            if (-not (Test-Path $clientPem) -and $opensslBin) {
+                $rootCaPem = Join-Path $certsDir "rootCA.pem"
+                $rootCaKey = Join-Path $certsDir "rootCA.key"
+                $clientCsr = Join-Path $certsDir "client-$clientName.csr"
+                & $opensslBin genrsa -out $clientKey 2048 2>$null
+                & $opensslBin req -new -key $clientKey -out $clientCsr -subj "/CN=$clientName" 2>$null
+                & $opensslBin x509 -req -in $clientCsr -CA $rootCaPem -CAkey $rootCaKey -CAcreateserial -out $clientPem -days 825 -sha256 2>$null
+                if (Test-Path $clientCsr) { Remove-Item $clientCsr -Force }
+                $srlFile = Join-Path $certsDir "rootCA.srl"
+                if (Test-Path $srlFile) { Remove-Item $srlFile -Force }
+            }
+
+            if ($opensslBin -and (Test-Path $clientPem)) {
+                & $opensslBin pkcs12 -export -out $clientP12 -inkey $clientKey -in $clientPem -certfile $rootCaPem -passout pass: 2>$null
                 
                 # Generate companion instructions and installer scripts using script root paths
                 $templateDir = Join-Path $PSScriptRoot "scripts"
