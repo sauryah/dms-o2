@@ -31,6 +31,17 @@ const STRENGTH_COEFFICIENT_K = 315;      // K parameter (MPa)
 const HARDENING_EXPONENT_N = 0.54;       // n exponent
 const FRICTION_COEFFICIENT_MU = 0.04;     // mu coefficient
 
+const computeDrawingStress = (pass: PassData, approachAngle2Alpha: number) => {
+  if (!pass) return 0;
+  const areaRed = pass.areaReduction ?? 0;
+  const rFrac = Math.max(0.01, Math.min(0.9, areaRed / 100));
+  const alphaRadHalf = ((approachAngle2Alpha / 2) * Math.PI) / 180;
+  const epsilon = Math.log(1 / (1 - rFrac));
+  const sigmaFlow = STRENGTH_COEFFICIENT_K * Math.pow(Math.max(epsilon, 0.001), HARDENING_EXPONENT_N) / (HARDENING_EXPONENT_N + 1);
+  const phi = 0.88 + 0.12 * ((alphaRadHalf * 2) / rFrac) * (1 - rFrac);
+  return sigmaFlow * phi * epsilon * (1 + FRICTION_COEFFICIENT_MU / Math.tan(Math.max(alphaRadHalf, 0.01)));
+};
+
 // Sub-component to render a single 3D cylinder pass on its own canvas
 const PassVisualizerCanvas = React.memo(function PassVisualizerCanvas({
   pass,
@@ -440,7 +451,7 @@ const PassVisualizerCanvas = React.memo(function PassVisualizerCanvas({
       onMouseLeave={handleMouseLeave}
     >
       <canvas
-        ref={canvasRef}
+        ref={canvasRef as React.Ref<HTMLCanvasElement>}
         className="w-full h-full block select-none rounded-lg"
       />
     </div>
@@ -980,18 +991,21 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                     </tr>
                     <tr className="border-b border-slate-900/40">
                       <td className="py-1.5 font-bold">Delta (&Delta;)</td>
-                      <td className="py-1.5">{(activePassA.approachAngle2Alpha * Math.PI / 180 / Math.max(0.01, activePassA.areaReduction / 100)).toFixed(2)}</td>
-                      <td className="py-1.5">{(activePassB.approachAngle2Alpha * Math.PI / 180 / Math.max(0.01, activePassB.areaReduction / 100)).toFixed(2)}</td>
+                      <td className="py-1.5">{((approachAngle2Alpha * Math.PI / 180) / Math.max(0.01, (activePassA.areaReduction ?? 0) / 100)).toFixed(2)}</td>
+                      <td className="py-1.5">{((approachAngle2Alpha * Math.PI / 180) / Math.max(0.01, (activePassB.areaReduction ?? 0) / 100)).toFixed(2)}</td>
                       <td className="py-1.5 text-right font-bold">{calculateDelta(
-                        activePassA.approachAngle2Alpha * Math.PI / 180 / Math.max(0.01, activePassA.areaReduction / 100),
-                        activePassB.approachAngle2Alpha * Math.PI / 180 / Math.max(0.01, activePassB.areaReduction / 100)
+                        (approachAngle2Alpha * Math.PI / 180) / Math.max(0.01, (activePassA.areaReduction ?? 0) / 100),
+                        (approachAngle2Alpha * Math.PI / 180) / Math.max(0.01, (activePassB.areaReduction ?? 0) / 100)
                       )}</td>
                     </tr>
                     <tr className="border-b border-slate-900/40">
                       <td className="py-1.5 font-bold">Stress (MPa)</td>
-                      <td className="py-1.5">{(activePassA.drawingStress ?? 0).toFixed(0)}</td>
-                      <td className="py-1.5">{(activePassB.drawingStress ?? 0).toFixed(0)}</td>
-                      <td className="py-1.5 text-right font-bold text-purple-400">{calculateDelta(activePassA.drawingStress ?? 0, activePassB.drawingStress ?? 0)}</td>
+                      <td className="py-1.5">{computeDrawingStress(activePassA, approachAngle2Alpha).toFixed(0)}</td>
+                      <td className="py-1.5">{computeDrawingStress(activePassB, approachAngle2Alpha).toFixed(0)}</td>
+                      <td className="py-1.5 text-right font-bold text-purple-400">{calculateDelta(
+                        computeDrawingStress(activePassA, approachAngle2Alpha),
+                        computeDrawingStress(activePassB, approachAngle2Alpha)
+                      )}</td>
                     </tr>
                   </tbody>
                 </table>

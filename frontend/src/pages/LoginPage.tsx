@@ -11,7 +11,7 @@ export function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState<{ hostname: string; ip: string } | null>(null)
-  const [evictedInfo, setEvictedInfo] = useState<{ ip: string | null; at: string | null } | null>(() => {
+  const [evictedInfo] = useState<{ ip: string | null; at: string | null } | null>(() => {
     const reason = localStorage.getItem('dms_logout_reason')
     if (reason === 'session_evicted') {
       const ip = localStorage.getItem('dms_evicted_ip')

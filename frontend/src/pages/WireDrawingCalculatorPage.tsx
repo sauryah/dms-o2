@@ -13,7 +13,6 @@ import TargetChecker from '../features/wire-drawing-calculator/components/Target
 import DieSuggester from '../features/wire-drawing-calculator/components/DieSuggester';
 import ComparePanel from '../features/wire-drawing-calculator/components/ComparePanel';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, ShieldAlert } from 'lucide-react';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 

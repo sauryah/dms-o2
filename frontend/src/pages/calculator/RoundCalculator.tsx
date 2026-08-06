@@ -1,5 +1,4 @@
-import React from 'react'
-import { Calculator, Sliders, TrendingDown, Maximize2, ArrowRight, Table, Info, AlertTriangle, Zap } from 'lucide-react'
+import { Calculator, Sliders, TrendingDown, Maximize2, Table, Info, AlertTriangle, Zap } from 'lucide-react'
 
 interface RoundCalculatorProps {
   // Round state
@@ -48,12 +47,8 @@ export function RoundCalculator({
   setRoundTargetElong,
   roundResults,
   roundValidationError,
-  drawSpeed,
-  dieAngle,
-  yieldStrength,
   uts,
   mu,
-  materialType,
   matchingDies,
   loadingDies,
   findMatchingDies,

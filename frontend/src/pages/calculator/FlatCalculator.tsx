@@ -1,4 +1,3 @@
-import React from 'react'
 import { Calculator, ArrowRight, Table, Info, AlertTriangle, Zap } from 'lucide-react'
 
 interface FlatCalculatorProps {
@@ -44,11 +43,7 @@ export function FlatCalculator({
   setFlatOutThick,
   flatResults,
   flatValidationError,
-  drawSpeed,
-  dieAngle,
   mu,
-  materialType,
-  yieldStrength,
   uts,
   getMaterialLimit,
   matchingDies,

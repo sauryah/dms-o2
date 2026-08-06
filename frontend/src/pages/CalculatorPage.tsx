@@ -1,6 +1,4 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Calculator, Sliders, Zap, BookOpen, Layers, Ruler, Maximize2 } from 'lucide-react'
+import { Calculator, Sliders, Zap, BookOpen, Layers, Ruler } from 'lucide-react'
 import { APP_VERSION } from '../version'
 import { useCalculatorState } from './calculator/useCalculatorState'
 import { FormulaReference } from './calculator/FormulaReference'
@@ -9,7 +7,6 @@ import { SequenceCalculator } from './calculator/SequenceCalculator'
 import { FlatCalculator } from './calculator/FlatCalculator'
 
 export function CalculatorPage() {
-  const navigate = useNavigate()
   const state = useCalculatorState()
 
   const roundProps = {

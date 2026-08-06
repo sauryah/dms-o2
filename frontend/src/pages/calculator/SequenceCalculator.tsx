@@ -1,5 +1,4 @@
-import React from 'react'
-import { Calculator, Layers, ArrowRight, Table, Info, AlertTriangle, Zap, Maximize2 } from 'lucide-react'
+import { Calculator, ArrowRight, Table, Info, Maximize2 } from 'lucide-react'
 
 interface SequenceCalculatorProps {
   // Sequence state
@@ -46,12 +45,6 @@ export function SequenceCalculator({
   seqOptMode,
   setSeqOptMode,
   sequenceResults,
-  sequenceValidationError,
-  drawSpeed,
-  dieAngle,
-  mu,
-  materialType,
-  yieldStrength,
   uts,
   getMaterialLimit,
   exportSequenceCSV,

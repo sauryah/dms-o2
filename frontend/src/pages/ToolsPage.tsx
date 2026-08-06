@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import { Calculator, ArrowRight, Zap, Lock } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Settings2,
@@ -12,16 +11,13 @@ import {
   Activity,
   Zap,
   MapPin,
-  Hash,
   ChevronDown,
   ChevronUp,
   ArrowRight,
-  Box,
 } from 'lucide-react'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { Skeleton } from '../../../components/ui/Skeleton'
 import { StatusBadge } from '../../../components/ui/StatusBadge'
-import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { usePassOptimizer } from '../hooks/usePassOptimizer'
 import { PassAssignmentInput } from '../types'
 import type { DieStatus } from '../../../contracts/dieContracts'
@@ -63,7 +59,7 @@ export function PassOptimizerPage() {
           { label: 'Tools', href: '/tools' },
           { label: 'Pass Assignment' },
         ]}
-        action={
+        actions={
           results ? (
             <button
               onClick={exportCSV}

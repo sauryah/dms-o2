@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, RefreshCw, Database, Trash2, Upload, Download, AlertTriangle, Calendar, ShieldCheck, Info } from 'lucide-react'
+import { Plus, RefreshCw, Database, Trash2, Upload, Download, Calendar, ShieldCheck, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 
 export function BackupManager() {
   const { request } = useApi()
