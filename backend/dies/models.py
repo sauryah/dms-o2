@@ -21,6 +21,7 @@ class Die(models.Model):
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['die_type']),
+            models.Index(fields=['die_type', 'status']),
             GinIndex(name='die_casing_trgm_idx', fields=['casing'], opclasses=['gin_trgm_ops']),
         ]
 

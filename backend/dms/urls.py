@@ -5,7 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly, IsAdminOrRoot
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet
-from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, ServerInfoView, VerifyTokenView, TokenRefreshView
+from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, LivenessCheckView, ReadinessCheckView, ServerInfoView, VerifyTokenView, TokenRefreshView
 from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
@@ -48,6 +48,8 @@ urlpatterns = [
     path('api/v1/import/logs/', ImportLogsView.as_view(), name='import-logs'),
     path('api/v1/events/', EventStreamView.as_view(), name='events'),
     path('api/v1/health/', HealthCheckView.as_view(), name='health'),
+    path('api/v1/health/liveness/', LivenessCheckView.as_view(), name='health-liveness'),
+    path('api/v1/health/readiness/', ReadinessCheckView.as_view(), name='health-readiness'),
     path('api/v1/server-info/', ServerInfoView.as_view(), name='server-info'),
     path('api/v1/history/', DieHistoryListView.as_view(), name='die-history'),
     path('api/v1/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
@@ -67,6 +69,8 @@ urlpatterns = [
     path('api/import/logs/', ImportLogsView.as_view()),
     path('api/events/', EventStreamView.as_view()),
     path('api/health/', HealthCheckView.as_view()),
+    path('api/health/liveness/', LivenessCheckView.as_view()),
+    path('api/health/readiness/', ReadinessCheckView.as_view()),
     path('api/server-info/', ServerInfoView.as_view()),
     path('api/history/', DieHistoryListView.as_view()),
     path('api/history/machines/', MachineHistoryListView.as_view()),

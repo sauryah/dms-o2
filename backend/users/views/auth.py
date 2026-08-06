@@ -398,6 +398,21 @@ class HealthCheckView(APIView):
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
+class LivenessCheckView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        return Response({"status": "live"}, status=status.HTTP_200_OK)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class ReadinessCheckView(HealthCheckView):
+    pass
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ServerInfoView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = []
