@@ -150,14 +150,15 @@ Track implementation status across all phases.
 - Adjusted the "Filters" toggle button style in `InventoryPage.tsx` to align padding, border radius, and text size with SearchBar.
 - Fixed a bug in `DieDetailPage.tsx` causing blank print pages by replacing `print:hidden` with `print-container` on the outer layout container and adding `print:hidden` to header action buttons.
 
-### Phase 3: Wear Alert Automation & ML ⏳
+### Phase 3: Wear Alert Automation & ML ✅
+**Status:** Complete
+**Date:** 2026-08-06
 
-**Status:** Future phase
-**Target:** TBD
-
-**Planned:**
-- Build daily cron tasks executing wear predictions
-- Train predictive models forecasting tool remaining lifetime
+**Completed:**
+- Verified daily cron task `check_all_wear_alerts_task` scheduled at 1:00 AM via Celery beat (`CELERY_BEAT_SCHEDULE`).
+- Implemented `check_wear_alerts` management command (`backend/dies/management/commands/check_wear_alerts.py`) for CLI/DevOps execution.
+- Added test suite `test_wear_prediction.py` covering `WearPredictionService`, daily Celery task, and management command.
+- Hardened `PostgresConnStr` default fallback and resolved all pre-existing TypeScript type errors (`tsc --noEmit` 0 errors).
 
 ## Overall Progress
 - **AI-EOS:** 100% complete
@@ -168,10 +169,9 @@ Track implementation status across all phases.
 - **Die Inventory Redesign (v1.9.3):** 100% complete
 - **Package Security Audits & Upgrades:** 100% complete
 - **Custom Dev Tools & MCP Integration:** 100% complete
-- **Roadmap Phase 3:** 0% complete (future)
+- **Roadmap Phase 3:** 100% complete
 
 ## Next Actions
 1. Execute continuous testing and build verification
-2. Start Capstan Speed & Power Calculator / Roadmap Phase 3
-3. Maintain documentation integrity across docs and ledgers
+2. Maintain documentation integrity across docs and ledgers
 
