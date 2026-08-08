@@ -6,6 +6,7 @@ from django.core.management import call_command
 from io import StringIO
 from dies.models import Die, RoundDie, FlatDie, WearAlert
 from history.models import DieHistory
+from dies.tests.utils import create_historical_die_entry
 from dies.services.wear_prediction_service import WearPredictionService
 from dies.services.wear_alert_service import WearAlertService
 from dies.tasks import check_all_wear_alerts_task
@@ -51,21 +52,8 @@ class WearPredictionServiceTests(TestCase):
         t2 = now - timedelta(days=5)
 
         # Create history entries simulating wear progression
-        h1 = DieHistory.objects.create(
-            die=self.round_die,
-            field_name='current_size',
-            old_value='10.000',
-            new_value='10.010'
-        )
-        DieHistory.objects.filter(pk=h1.pk).update(timestamp=t1)
-
-        h2 = DieHistory.objects.create(
-            die=self.round_die,
-            field_name='current_size',
-            old_value='10.010',
-            new_value='10.020'
-        )
-        DieHistory.objects.filter(pk=h2.pk).update(timestamp=t2)
+        create_historical_die_entry(self.round_die, 'current_size', '10.000', '10.010', t1)
+        create_historical_die_entry(self.round_die, 'current_size', '10.010', '10.020', t2)
         self.r_detail.current_size = Decimal('10.030')
         self.r_detail.save()
 
@@ -78,13 +66,7 @@ class WearPredictionServiceTests(TestCase):
         now = timezone.now()
         t1 = now - timedelta(days=10)
 
-        h_flat = DieHistory.objects.create(
-            die=self.flat_die,
-            field_name='current_width',
-            old_value='20.000',
-            new_value='20.050'
-        )
-        DieHistory.objects.filter(pk=h_flat.pk).update(timestamp=t1)
+        create_historical_die_entry(self.flat_die, 'current_width', '20.000', '20.050', t1)
         self.f_detail.current_width = Decimal('20.080')
         self.f_detail.save()
 
@@ -98,21 +80,8 @@ class WearPredictionServiceTests(TestCase):
         t1 = now - timedelta(days=10)
         t2 = now - timedelta(days=5)
 
-        h1 = DieHistory.objects.create(
-            die=self.round_die,
-            field_name='current_size',
-            old_value='10.000',
-            new_value='10.010'
-        )
-        DieHistory.objects.filter(pk=h1.pk).update(timestamp=t1)
-
-        h2 = DieHistory.objects.create(
-            die=self.round_die,
-            field_name='current_size',
-            old_value='10.010',
-            new_value='10.020'
-        )
-        DieHistory.objects.filter(pk=h2.pk).update(timestamp=t2)
+        create_historical_die_entry(self.round_die, 'current_size', '10.000', '10.010', t1)
+        create_historical_die_entry(self.round_die, 'current_size', '10.010', '10.020', t2)
 
         self.r_detail.current_size = Decimal('10.030')
         self.r_detail.save()

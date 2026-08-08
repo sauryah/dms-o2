@@ -116,6 +116,9 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    volumes:
+      - ./backups:/backups
+      - django_tmp:/app/tmp
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 5s
@@ -170,6 +173,9 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    volumes:
+      - ./backups:/backups
+      - django_tmp:/app/tmp
     healthcheck:
       test: ["CMD-SHELL", "celery -A dms inspect ping"]
       interval: 10s
@@ -203,6 +209,9 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    volumes:
+      - ./backups:/backups
+      - django_tmp:/app/tmp
     healthcheck:
       test: ["CMD-SHELL", "celery -A dms inspect ping"]
       interval: 10s
@@ -342,3 +351,4 @@ volumes:
   postgres_data:
   meili_data:
   dms_backups:
+  django_tmp:

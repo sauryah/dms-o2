@@ -47,6 +47,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -101,6 +102,7 @@ services:
     command: celery -A dms worker -l warning --concurrency=2 --max-tasks-per-child=1000 -Q default
     volumes:
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -138,6 +140,7 @@ services:
     command: celery -A dms worker -l warning --concurrency=1 --max-tasks-per-child=1000 -Q heavy
     volumes:
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -315,3 +318,4 @@ services:
 volumes:
   postgres_data:
   meili_data:
+  django_tmp:

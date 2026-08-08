@@ -69,6 +69,7 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       <<: *common-env
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -123,6 +124,7 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       <<: *common-env
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -153,6 +155,7 @@ services:
     volumes:
       - ./backend:/app
       - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       <<: *common-env
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -346,3 +349,4 @@ volumes:
   postgres_data:
   meili_data:
   redis_data:
+  django_tmp:
