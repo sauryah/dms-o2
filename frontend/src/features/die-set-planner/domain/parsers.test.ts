@@ -7,26 +7,30 @@ import {
 } from './parsers'
 
 describe('normalizeDieSize', () => {
-  it('normalizes decimal variants to the same thousandths key', () => {
-    expect(normalizeDieSize('0.620').thousands).toBe(620)
-    expect(normalizeDieSize('.620').thousands).toBe(620)
-    expect(normalizeDieSize('0.6200').thousands).toBe(620)
-    expect(normalizeDieSize('620').thousands).toBe(620000)
+  it('normalizes decimal variants to the same hundred-thousandths key', () => {
+    expect(normalizeDieSize('0.620').hundredThousands).toBe(62000)
+    expect(normalizeDieSize('.620').hundredThousands).toBe(62000)
+    expect(normalizeDieSize('0.6200').hundredThousands).toBe(62000)
+    expect(normalizeDieSize('620').hundredThousands).toBe(62000000)
+    expect(normalizeDieSize('0.620mm').hundredThousands).toBe(62000)
+    expect(normalizeDieSize('0,620').hundredThousands).toBe(62000)
+    expect(normalizeDieSize('0.0625').hundredThousands).toBe(6250)
   })
 
   it('rejects empty, zero, negative, and non-numeric values', () => {
-    expect(normalizeDieSize('').thousands).toBeNull()
-    expect(normalizeDieSize('   ').thousands).toBeNull()
-    expect(normalizeDieSize('0').thousands).toBeNull()
-    expect(normalizeDieSize('-0.5').thousands).toBeNull()
-    expect(normalizeDieSize('abc').thousands).toBeNull()
-    expect(normalizeDieSize('0.62x').thousands).toBeNull()
+    expect(normalizeDieSize('').hundredThousands).toBeNull()
+    expect(normalizeDieSize('   ').hundredThousands).toBeNull()
+    expect(normalizeDieSize('0').hundredThousands).toBeNull()
+    expect(normalizeDieSize('-0.5').hundredThousands).toBeNull()
+    expect(normalizeDieSize('abc').hundredThousands).toBeNull()
+    expect(normalizeDieSize('0.62x').hundredThousands).toBeNull()
   })
 
   it('preserves display precision', () => {
-    expect(formatDieSize(620)).toBe('0.620')
-    expect(formatDieSize(625)).toBe('0.625')
-    expect(formatDieSize(1500)).toBe('1.500')
+    expect(formatDieSize(62000)).toBe('0.620')
+    expect(formatDieSize(62500)).toBe('0.625')
+    expect(formatDieSize(6250)).toBe('0.0625')
+    expect(formatDieSize(150000)).toBe('1.500')
   })
 })
 
@@ -38,6 +42,15 @@ describe('parseInventoryInput', () => {
       { dieSize: '0.550', quantity: 4 },
       { dieSize: '0.555', quantity: 4 },
       { dieSize: '0.560', quantity: 4 },
+    ])
+  })
+
+  it('parses float quantities from Excel and unit suffixes', () => {
+    const res = parseInventoryInput('0.620mm 4.0\n0,625 in 6.00')
+    expect(res.errors).toEqual([])
+    expect(res.rows).toEqual([
+      { dieSize: '0.620', quantity: 4 },
+      { dieSize: '0.625', quantity: 6 },
     ])
   })
 

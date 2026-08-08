@@ -24,17 +24,39 @@ type InventoryItem struct {
 	Quantity int64  `json:"quantity"`
 }
 
-// NormalizeDieSize converts a die size string into a thousandths integer key.
-// "0.620", ".620", "0.6200", "620" all normalize to 620. Returns an error when
-// the value is not a parseable positive decimal.
-func NormalizeDieSize(raw string) (int64, error) {
+// sanitizeDieSizeString cleans raw input by stripping trailing punctuation,
+// unit labels ("mm", "in", "inch", "inches", '"'), and converting European decimal commas.
+func sanitizeDieSizeString(raw string) string {
 	val := strings.TrimSpace(raw)
-	if val == "" {
-		return 0, fmt.Errorf("die size is empty")
+	val = strings.TrimSuffix(val, ";")
+	val = strings.TrimSuffix(val, ",")
+
+	lower := strings.ToLower(val)
+	unitSuffixes := []string{"mm", "in", "inch", "inches", "\""}
+	for _, u := range unitSuffixes {
+		if strings.HasSuffix(lower, u) {
+			val = strings.TrimSpace(val[:len(val)-len(u)])
+			break
+		}
+	}
+
+	if strings.Contains(val, ",") && !strings.Contains(val, ".") {
+		val = strings.ReplaceAll(val, ",", ".")
 	}
 
 	if strings.HasPrefix(val, ".") {
 		val = "0" + val
+	}
+	return val
+}
+
+// NormalizeDieSize converts a die size string into a hundred-thousandths integer key.
+// "0.620", ".620", "0.6200", "620", "0.620mm", "0,620" all normalize to 62000.
+// Fine wire sizes up to 5 decimal places (e.g. 0.0625) are preserved exactly as 6250.
+func NormalizeDieSize(raw string) (int64, error) {
+	val := sanitizeDieSizeString(raw)
+	if val == "" {
+		return 0, fmt.Errorf("die size is empty")
 	}
 
 	num, err := strconv.ParseFloat(val, 64)
@@ -48,12 +70,22 @@ func NormalizeDieSize(raw string) (int64, error) {
 		return 0, fmt.Errorf("invalid die size %q: not a finite number", strings.TrimSpace(raw))
 	}
 
-	return int64(math.Round(num * 1000)), nil
+	return int64(math.Round(num * 100000.0)), nil
 }
 
-// FormatDieSize renders a thousandths key back into its canonical display string.
-func FormatDieSize(thousands int64) string {
-	return fmt.Sprintf("%.3f", float64(thousands)/1000.0)
+// FormatDieSize renders a hundred-thousandths key back into its canonical display string.
+func FormatDieSize(hundredThousands int64) string {
+	val := float64(hundredThousands) / 100000.0
+	formatted := fmt.Sprintf("%.5f", val)
+	formatted = strings.TrimRight(formatted, "0")
+	parts := strings.Split(formatted, ".")
+	if len(parts) == 2 {
+		for len(parts[1]) < 3 {
+			parts[1] += "0"
+		}
+		return parts[0] + "." + parts[1]
+	}
+	return formatted + ".000"
 }
 
 // Requirement is the per-die detail row returned in the result table.
@@ -161,6 +193,9 @@ func CalculateSeriesCapacity(inventory []InventoryItem, series []string) (*Resul
 func CalculateSeriesCapacityForTarget(inventory []InventoryItem, series []string, targetSets int64) (*Result, error) {
 	if targetSets < 0 {
 		return nil, fmt.Errorf("target sets cannot be negative")
+	}
+	if targetSets > 1000000000 {
+		return nil, fmt.Errorf("target sets exceeds maximum limit of 1,000,000,000")
 	}
 	return calculateCapacity(inventory, series, targetSets)
 }

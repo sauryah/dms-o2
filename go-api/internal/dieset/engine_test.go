@@ -12,13 +12,17 @@ func TestNormalizeDieSize(t *testing.T) {
 		want    int64
 		wantErr bool
 	}{
-		{name: "three decimals", raw: "0.620", want: 620},
-		{name: "leading dot", raw: ".620", want: 620},
-		{name: "extra precision", raw: "0.6200", want: 620},
-		{name: "trailing spaces", raw: "  0.620  ", want: 620},
-		{name: "integer", raw: "620", want: 620000},
-		{name: "single decimal", raw: "1.5", want: 1500},
-		{name: "rounding", raw: "0.6255", want: 626},
+		{name: "three decimals", raw: "0.620", want: 62000},
+		{name: "leading dot", raw: ".620", want: 62000},
+		{name: "extra precision", raw: "0.6200", want: 62000},
+		{name: "trailing spaces", raw: "  0.620  ", want: 62000},
+		{name: "integer", raw: "620", want: 62000000},
+		{name: "single decimal", raw: "1.5", want: 150000},
+		{name: "fine wire 4 decimals", raw: "0.0625", want: 6250},
+		{name: "unit suffix mm", raw: "0.620mm", want: 62000},
+		{name: "unit suffix inch", raw: "0.620 in", want: 62000},
+		{name: "unit suffix quote", raw: "0.620\"", want: 62000},
+		{name: "european comma decimal", raw: "0,620", want: 62000},
 		{name: "empty", raw: "", wantErr: true},
 		{name: "non numeric", raw: "abc", wantErr: true},
 		{name: "zero", raw: "0", wantErr: true},
@@ -49,10 +53,11 @@ func TestFormatDieSize(t *testing.T) {
 		in   int64
 		want string
 	}{
-		{620, "0.620"},
-		{625, "0.625"},
-		{620000, "620.000"},
-		{1500, "1.500"},
+		{62000, "0.620"},
+		{62500, "0.625"},
+		{6250, "0.0625"},
+		{62000000, "620.000"},
+		{150000, "1.500"},
 	}
 	for _, tt := range tests {
 		if got := FormatDieSize(tt.in); got != tt.want {
@@ -335,6 +340,12 @@ func TestProcurementPlan(t *testing.T) {
 			t.Fatal("expected error for negative target sets")
 		}
 	})
+
+	t.Run("excessive target rejected", func(t *testing.T) {
+		if _, err := CalculateSeriesCapacityForTarget(inventory, series, 2000000000); err == nil {
+			t.Fatal("expected error for target sets exceeding maximum limit")
+		}
+	})
 }
 
 func TestParseInventoryText(t *testing.T) {
@@ -366,6 +377,11 @@ func TestParseInventoryText(t *testing.T) {
 			name:     "header row skipped",
 			raw:      "Die Size\tQty\n0.620\t4\n0.625\t4",
 			wantRows: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.625", Quantity: 4}},
+		},
+		{
+			name:     "float quantity from excel and unit suffix",
+			raw:      "0.620mm 4.0\n0,625 in 6.00",
+			wantRows: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.625", Quantity: 6}},
 		},
 		{
 			name:        "duplicates aggregated",

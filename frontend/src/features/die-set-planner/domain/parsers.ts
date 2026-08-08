@@ -21,24 +21,54 @@ export interface SeriesParseResult {
   errors: string[]
 }
 
-// NormalizeDieSize returns the thousandths integer key plus the canonical
-// formatted display string for a die size like "0.620", ".620" or "0.6200".
-export function normalizeDieSize(raw: string): { thousands: number | null; display: string } {
-  const val = raw.trim()
-  const cleaned = val.startsWith('.') ? `0${val}` : val
-  if (!cleaned) return { thousands: null, display: '' }
-  if (!/^\d+(\.\d+)?$/.test(cleaned)) return { thousands: null, display: val }
+export function sanitizeDieSizeString(raw: string): string {
+  let val = raw.trim()
+  val = val.replace(/[;,]$/, '')
+  const lower = val.toLowerCase()
+  const unitSuffixes = ['mm', 'in', 'inch', 'inches', '"']
+  for (const u of unitSuffixes) {
+    if (lower.endsWith(u)) {
+      val = val.slice(0, val.length - u.length).trim()
+      break
+    }
+  }
+  if (val.includes(',') && !val.includes('.')) {
+    val = val.replace(',', '.')
+  }
+  if (val.startsWith('.')) {
+    val = `0${val}`
+  }
+  return val
+}
+
+export function isUnitToken(tok: string): boolean {
+  const u = tok.trim().toLowerCase().replace(/[;,]$/, '')
+  return u === 'mm' || u === 'in' || u === 'inch' || u === 'inches' || u === '"'
+}
+
+export function normalizeDieSize(raw: string): { hundredThousands: number | null; thousands: number | null; display: string } {
+  const cleaned = sanitizeDieSizeString(raw)
+  if (!cleaned) return { hundredThousands: null, thousands: null, display: '' }
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) return { hundredThousands: null, thousands: null, display: raw }
   const num = Number.parseFloat(cleaned)
-  if (!Number.isFinite(num) || num <= 0) return { thousands: null, display: val }
-  return { thousands: Math.round(num * 1000), display: cleaned }
+  if (!Number.isFinite(num) || num <= 0) return { hundredThousands: null, thousands: null, display: raw }
+  const hundredThousands = Math.round(num * 100000)
+  return { hundredThousands, thousands: Math.round(num * 1000), display: cleaned }
 }
 
-export function formatDieSize(thousands: number): string {
-  return (thousands / 1000).toFixed(3)
+export function formatDieSize(hundredThousands: number): string {
+  const val = hundredThousands / 100000
+  const formatted = val.toFixed(5).replace(/0+$/, '')
+  const parts = formatted.split('.')
+  if (parts.length === 2) {
+    while (parts[1].length < 3) {
+      parts[1] += '0'
+    }
+    return `${parts[0]}.${parts[1]}`
+  }
+  return `${formatted}.000`
 }
 
-// Split raw pasted text into whitespace-separated tokens (handles tabs, spaces,
-// spreadsheet cell boundaries) while preserving line numbers for friendly errors.
 function tokenize(text: string): Array<{ token: string; line: number }> {
   const tokens: Array<{ token: string; line: number }> = []
   const lines = text.split(/\r?\n/)
@@ -51,19 +81,10 @@ function tokenize(text: string): Array<{ token: string; line: number }> {
 }
 
 export function isValidDieSize(raw: string): boolean {
-  const { thousands } = normalizeDieSize(raw)
-  return thousands !== null
+  const { hundredThousands } = normalizeDieSize(raw)
+  return hundredThousands !== null
 }
 
-// parseInventoryInput consumes spreadsheet-style "dieSize  quantity" rows.
-//
-// Parsing is line-based so a die documented without a quantity never steals the
-// quantity or size of the following line. Each line is interpreted as:
-//   - one pair per line          "0.620    4"
-//   - multiple pairs per line    "0.620  4  0.625  6"   (copied cells)
-//   - a lone die size            "0.200"  -> stock 0 with a warning
-//   - a header row               "Die Size  Qty"        (skipped)
-// Duplicate sizes are aggregated; the backend sums quantities authoritatively.
 export function parseInventoryInput(rawText: string): InventoryParseResult {
   const lines = rawText.split(/\r?\n/)
   const rows: ParsedInventoryRow[] = []
@@ -72,8 +93,6 @@ export function parseInventoryInput(rawText: string): InventoryParseResult {
   let missingQtyCount = 0
   let mergedCount = 0
 
-  // appendRow appends or merges a row by normalized die size (thousandths),
-  // aggregating duplicate inventory entries.
   const appendRow = (display: string, quantity: number) => {
     const existing = rows.find((r) => r.dieSize === display)
     if (existing) {
@@ -94,45 +113,46 @@ export function parseInventoryInput(rawText: string): InventoryParseResult {
     if (trimmed === '') continue
     const tokens = trimmed.split(/\s+/)
 
-    // Header row: every token is a non-numeric label (e.g. "Die Size", "Qty").
     const isHeaderRow =
-      tokens.every((t) => !isQuantityToken(t) && normalizeDieSize(t).thousands === null)
+      tokens.every((t) => !isQuantityToken(t) && normalizeDieSize(t).hundredThousands === null)
     if (isHeaderRow) continue
 
-    // A die-only line: a single token, or every token carries a decimal point
-    // ("0.200 0.205 0.210"). Pure integers are treated as quantities, so a line
-    // like "0.620 4" takes the pair path below. Each of these dies was
-    // documented in the series/sheet without a recorded quantity.
     const looksLikeDiesOnly =
-      (tokens.length === 1 && normalizeDieSize(tokens[0]).thousands !== null) ||
+      (tokens.length === 1 && normalizeDieSize(tokens[0]).hundredThousands !== null && !isQuantityToken(tokens[0])) ||
       (tokens.length > 1 &&
-        tokens.every((t) => t.includes('.') && normalizeDieSize(t).thousands !== null))
+        tokens.every((t) => !isQuantityToken(t) && t.includes('.') && normalizeDieSize(t).hundredThousands !== null))
     if (looksLikeDiesOnly) {
       for (const sizeTok of tokens) {
-        const display = formatDieSize(normalizeDieSize(sizeTok).thousands!)
+        const display = formatDieSize(normalizeDieSize(sizeTok).hundredThousands!)
         missingQtyCount++
         appendRow(display, 0)
       }
       continue
     }
 
-    // Otherwise walk the line as (size, quantity) pairs.
-    for (let i = 0; i < tokens.length; i += 2) {
-      const sizeTok = tokens[i]
-      const qtyTok = tokens[i + 1]
+    for (let i = 0; i < tokens.length; ) {
+      let sizeTok = tokens[i]
+      i++
+      if (i < tokens.length && isUnitToken(tokens[i])) {
+        sizeTok += ` ${tokens[i]}`
+        i++
+      }
 
       const info = normalizeDieSize(sizeTok)
-      if (info.thousands === null) {
+      if (info.hundredThousands === null) {
         errors.push(`Line ${ln + 1}: invalid die size "${sizeTok}". Must be a positive number like 0.620.`)
         continue
       }
-      const display = formatDieSize(info.thousands)
+      const display = formatDieSize(info.hundredThousands)
 
-      if (qtyTok === undefined) {
+      if (i >= tokens.length) {
         missingQtyCount++
         appendRow(display, 0)
-        continue
+        break
       }
+
+      const qtyTok = tokens[i]
+      i++
 
       if (!isQuantityToken(qtyTok)) {
         errors.push(
@@ -141,8 +161,8 @@ export function parseInventoryInput(rawText: string): InventoryParseResult {
         continue
       }
 
-      const qty = Number.parseInt(qtyTok, 10)
-      if (Number.isNaN(qty) || qty < 0) {
+      const qty = parseQuantityNumber(qtyTok)
+      if (qty === null || qty < 0) {
         errors.push(`Line ${ln + 1}: invalid quantity "${qtyTok}". Quantity must be non-negative.`)
         continue
       }
@@ -170,8 +190,6 @@ export function parseInventoryInput(rawText: string): InventoryParseResult {
   return { rows, errors, warnings }
 }
 
-// parseSeriesInput treats every token as one die occurrence (vertical, horizontal
-// or spreadsheet layouts). Duplicates are counted per occurrence — never rejected.
 export function parseSeriesInput(rawText: string): SeriesParseResult {
   const tokens = tokenize(rawText)
   const sizes: string[] = []
@@ -182,8 +200,8 @@ export function parseSeriesInput(rawText: string): SeriesParseResult {
   }
 
   for (const { token, line } of tokens) {
-    const { thousands } = normalizeDieSize(token)
-    if (thousands === null) {
+    const { hundredThousands } = normalizeDieSize(token)
+    if (hundredThousands === null) {
       errors.push(`Line ${line}: invalid die size "${token}". Must be a positive number such as 0.625.`)
       continue
     }
@@ -198,11 +216,22 @@ export function parseSeriesInput(rawText: string): SeriesParseResult {
 }
 
 function normalizeDisplay(raw: string): string {
-  return formatDieSize(normalizeDieSize(raw).thousands!)
+  return formatDieSize(normalizeDieSize(raw).hundredThousands!)
+}
+
+function parseQuantityNumber(token: string): number | null {
+  let tok = token.trim().replace(/[;,]$/, '')
+  if (tok.includes('.')) {
+    const parts = tok.split('.')
+    if (parts.length === 2 && /^0+$/.test(parts[1])) {
+      tok = parts[0]
+    }
+  }
+  if (!/^\d+$/.test(tok)) return null
+  const n = Number.parseInt(tok, 10)
+  return Number.isFinite(n) && n >= 0 ? n : null
 }
 
 function isQuantityToken(token: string): boolean {
-  if (!/^[+-]?\d+$/.test(token)) return false
-  const n = Number.parseInt(token, 10)
-  return Number.isFinite(n)
+  return parseQuantityNumber(token) !== null
 }

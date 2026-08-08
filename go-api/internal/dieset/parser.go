@@ -65,13 +65,13 @@ func ParseInventoryText(raw string) ([]InventoryItem, []string, []string) {
 		}
 
 		// A die-only line: a single die token, or every token carries a decimal
-		// point ("0.200 0.205 0.210"). Pure integers are treated as quantities,
-		// so a line like "0.620 4" takes the pair path below.
-		diesOnly := len(tokens) == 1 && NormalizeDieSizeOrNil(tokens[0]) != nil
+		// point ("0.200 0.205 0.210"). Pure integers or whole-number floats (4.0) are treated as quantities,
+		// so a line like "0.620 4.0" takes the pair path below.
+		diesOnly := len(tokens) == 1 && NormalizeDieSizeOrNil(tokens[0]) != nil && !isQuantity(tokens[0])
 		if !diesOnly && len(tokens) > 1 {
 			all := true
 			for _, t := range tokens {
-				if !strings.Contains(t, ".") || NormalizeDieSizeOrNil(t) == nil {
+				if isQuantity(t) || !strings.Contains(t, ".") || NormalizeDieSizeOrNil(t) == nil {
 					all = false
 					break
 				}
@@ -89,19 +89,25 @@ func ParseInventoryText(raw string) ([]InventoryItem, []string, []string) {
 		}
 
 		// Otherwise walk the line as (size, quantity) pairs.
-		for i := 0; i < len(tokens); i += 2 {
+		for i := 0; i < len(tokens); {
 			sizeTok := tokens[i]
+			i++
+			if i < len(tokens) && isUnitToken(tokens[i]) {
+				sizeTok += " " + tokens[i]
+				i++
+			}
 			th, err := NormalizeDieSize(sizeTok)
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("Line %d: invalid die size %q. Must be a positive number like 0.620.", ln+1, sizeTok))
 				continue
 			}
-			if i+1 >= len(tokens) {
+			if i >= len(tokens) {
 				missingQty++
 				addRow(th, 0)
-				continue
+				break
 			}
-			qtyTok := tokens[i+1]
+			qtyTok := tokens[i]
+			i++
 			qty, ok := parseQuantity(qtyTok)
 			if !ok {
 				errors = append(errors, fmt.Sprintf("Line %d: invalid quantity %q. Quantity must be a non-negative number.", ln+1, qtyTok))
@@ -173,6 +179,14 @@ func NormalizeDieSizeOrNil(raw string) *int64 {
 	return &th
 }
 
+// isUnitToken reports whether a token is a recognized die size unit suffix.
+func isUnitToken(tok string) bool {
+	u := strings.ToLower(strings.TrimSpace(tok))
+	u = strings.TrimSuffix(u, ";")
+	u = strings.TrimSuffix(u, ",")
+	return u == "mm" || u == "in" || u == "inch" || u == "inches" || u == "\""
+}
+
 // isQuantity reports whether a token is a whole non-negative integer quantity.
 func isQuantity(tok string) bool {
 	_, ok := parseQuantity(tok)
@@ -180,10 +194,32 @@ func isQuantity(tok string) bool {
 }
 
 // parseQuantity parses a whole non-negative integer quantity token.
+// Also accepts integer values formatted as float strings (e.g. "4.0" from Excel pastes).
 func parseQuantity(tok string) (int64, bool) {
+	tok = strings.TrimSpace(tok)
+	tok = strings.TrimSuffix(tok, ",")
+	tok = strings.TrimSuffix(tok, ";")
+
 	if tok == "" || strings.HasPrefix(tok, "+") || strings.HasPrefix(tok, "-") {
 		return 0, false
 	}
+
+	if strings.Contains(tok, ".") {
+		parts := strings.Split(tok, ".")
+		if len(parts) == 2 {
+			isZeroFraction := true
+			for _, r := range parts[1] {
+				if r != '0' {
+					isZeroFraction = false
+					break
+				}
+			}
+			if isZeroFraction {
+				tok = parts[0]
+			}
+		}
+	}
+
 	for _, r := range tok {
 		if r < '0' || r > '9' {
 			return 0, false
