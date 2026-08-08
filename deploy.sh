@@ -58,6 +58,10 @@ for i in {1..30}; do
     sleep 1
 done
 
+# Ensure backups directory has correct permissions for the non-root container user
+echo ">>> Setting correct permissions for the backup directory..."
+docker compose -f docker-compose.prod.yml exec -T --user root django chown -R dmsuser:dmsuser /backups || true
+
 echo ">>> Creating/Updating ROOT superuser in Django..."
 docker compose -f docker-compose.prod.yml exec django python manage.py create_root_user
 

@@ -159,7 +159,10 @@ if [ $RETRIES -eq 0 ]; then
     exit 1
 fi
 
-# 5. Apply database migrations
+# 5. Set correct permissions for backups and apply database migrations
+echo ">>> Setting correct permissions for the backup directory..."
+docker compose exec -T --user root django chown -R dmsuser:dmsuser /backups || true
+
 echo ">>> Applying database migrations..."
 docker compose exec django python manage.py migrate
 

@@ -34,7 +34,8 @@ class WearPredictionServiceTests(TestCase):
             punched_width=Decimal('20.000'),
             current_width=Decimal('20.000'),
             punched_thickness=Decimal('2.000'),
-            current_thickness=Decimal('2.000')
+            current_thickness=Decimal('2.000'),
+            radius=Decimal('0.500')
         )
 
     def test_predict_round_die_initial(self):
@@ -50,20 +51,21 @@ class WearPredictionServiceTests(TestCase):
         t2 = now - timedelta(days=5)
 
         # Create history entries simulating wear progression
-        DieHistory.objects.create(
+        h1 = DieHistory.objects.create(
             die=self.round_die,
             field_name='current_size',
             old_value='10.000',
-            new_value='10.010',
-            timestamp=t1
+            new_value='10.010'
         )
-        DieHistory.objects.create(
+        DieHistory.objects.filter(pk=h1.pk).update(timestamp=t1)
+
+        h2 = DieHistory.objects.create(
             die=self.round_die,
             field_name='current_size',
             old_value='10.010',
-            new_value='10.020',
-            timestamp=t2
+            new_value='10.020'
         )
+        DieHistory.objects.filter(pk=h2.pk).update(timestamp=t2)
         self.r_detail.current_size = Decimal('10.030')
         self.r_detail.save()
 
@@ -76,13 +78,13 @@ class WearPredictionServiceTests(TestCase):
         now = timezone.now()
         t1 = now - timedelta(days=10)
 
-        DieHistory.objects.create(
+        h_flat = DieHistory.objects.create(
             die=self.flat_die,
             field_name='current_width',
             old_value='20.000',
-            new_value='20.050',
-            timestamp=t1
+            new_value='20.050'
         )
+        DieHistory.objects.filter(pk=h_flat.pk).update(timestamp=t1)
         self.f_detail.current_width = Decimal('20.080')
         self.f_detail.save()
 
@@ -92,6 +94,29 @@ class WearPredictionServiceTests(TestCase):
         self.assertIn('thickness', pred['dimensions'])
 
     def test_check_all_wear_alerts_task(self):
+        now = timezone.now()
+        t1 = now - timedelta(days=10)
+        t2 = now - timedelta(days=5)
+
+        h1 = DieHistory.objects.create(
+            die=self.round_die,
+            field_name='current_size',
+            old_value='10.000',
+            new_value='10.010'
+        )
+        DieHistory.objects.filter(pk=h1.pk).update(timestamp=t1)
+
+        h2 = DieHistory.objects.create(
+            die=self.round_die,
+            field_name='current_size',
+            old_value='10.010',
+            new_value='10.020'
+        )
+        DieHistory.objects.filter(pk=h2.pk).update(timestamp=t2)
+
+        self.r_detail.current_size = Decimal('10.030')
+        self.r_detail.save()
+
         res = check_all_wear_alerts_task()
         self.assertEqual(res['status'], 'success')
         self.assertGreaterEqual(res['checked_count'], 2)
