@@ -237,6 +237,7 @@ func (h *Handler) HandleLiveness(w http.ResponseWriter, r *http.Request) {
 type DieSetCalculateRequest struct {
 	InventoryText string `json:"inventory_text"`
 	SeriesText    string `json:"series_text"`
+	TargetSets    int64  `json:"target_sets"`
 }
 
 // HandleCalculateDieSet parses the pasted raw text, delegates to the dieset
@@ -261,7 +262,7 @@ func (h *Handler) HandleCalculateDieSet(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := dieset.CalculateSeriesCapacity(inventory, series)
+	res, err := dieset.CalculateSeriesCapacityForTarget(inventory, series, req.TargetSets)
 	if err != nil {
 		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, err.Error())
 		return

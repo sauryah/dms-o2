@@ -171,6 +171,7 @@ Track implementation status across all phases.
 - Added frontend feature `frontend/src/features/die-set-planner/` (pre-check parsers, hook, planner page UI) that sends raw text so the Go engine owns all parsing + math.
 - Registered `/die-set-planner` route/tool: App.tsx, ToolsPage, AuthContext ROOT defaults, Navbar desktop+mobile, UserManager permission toggle.
 - Fixed inventory paste-parser regression: line-based parsing so lone die sizes (no quantity) become zero-quantity stock rows with an aggregated warning instead of mis-pairing tokens and emitting hundreds of false "invalid quantity" errors.
+- Added procurement plan: optional `target_sets` request field; engine returns which die sizes + quantities to buy to reach the target, UI shows a Procurement Plan table.
 - Verified: `go build/vet/test ./...` green, `tsc --noEmit` clean, full Vitest suite 68/68 green, production Vite build succeeds.
 
 ## Overall Progress

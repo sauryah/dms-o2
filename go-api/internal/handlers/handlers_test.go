@@ -1051,6 +1051,39 @@ func TestHandleCalculateDieSet(t *testing.T) {
 		}
 	})
 
+	t.Run("target_sets_returns_procurement_plan", func(t *testing.T) {
+		body := `{"inventory_text":"0.620\t6\n0.625\t2\n0.630\t4","series_text":"0.620\n0.625\n0.625\n0.630\n0.630\n0.630","target_sets":4}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp dieset.Result
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.TargetSets != 4 {
+			t.Errorf("expected target_sets 4, got %d", resp.TargetSets)
+		}
+		if len(resp.Procurement) != 2 {
+			t.Fatalf("expected 2 procurement items, got %d (%v)", len(resp.Procurement), resp.Procurement)
+		}
+		if resp.Procurement[0].DieSize != "0.625" || resp.Procurement[0].Procure != 6 {
+			t.Errorf("expected 0.625 x6 procurement, got %+v", resp.Procurement[0])
+		}
+	})
+
+	t.Run("negative_target_sets_rejected", func(t *testing.T) {
+		body := `{"inventory_text":"0.620\t6","series_text":"0.620","target_sets":-2}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusUnprocessableEntity {
+			t.Errorf("expected Status 422, got %d", w.Code)
+		}
+	})
+
 	t.Run("bad_json_rejected", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader("{not json"))
 		w := httptest.NewRecorder()

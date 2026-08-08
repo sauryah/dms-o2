@@ -11,6 +11,8 @@ import {
   Copy,
   Package,
   Hourglass,
+  ShoppingCart,
+  Target,
 } from 'lucide-react'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { Skeleton } from '../../../components/ui/Skeleton'
@@ -37,6 +39,7 @@ const SERIES_PLACEHOLDER = `0.620
 export function DieSetPlannerPage() {
   const [inventoryText, setInventoryText] = useState('')
   const [seriesText, setSeriesText] = useState('')
+  const [targetSets, setTargetSets] = useState('')
   const [showParseErrors, setShowParseErrors] = useState(false)
   const { result, loading, error, calculate, reset } = useDieSetPlanner()
 
@@ -54,15 +57,26 @@ export function DieSetPlannerPage() {
     // parsing, policy (quantity-less dies, duplicate aggregation) and all math
     // live in the Go engine.
     if (inventoryText.trim() === '' || seriesText.trim() === '') return
+    const parsedTarget = targetSets.trim() === '' ? undefined : Number(targetSets)
+    if (parsedTarget !== undefined && (!Number.isInteger(parsedTarget) || parsedTarget < 0)) {
+      setTargetSets('')
+      await calculate({
+        inventory_text: inventoryText,
+        series_text: seriesText,
+      })
+      return
+    }
     await calculate({
       inventory_text: inventoryText,
       series_text: seriesText,
+      ...(parsedTarget !== undefined && parsedTarget > 0 ? { target_sets: parsedTarget } : {}),
     })
   }
 
   const handleReset = () => {
     setInventoryText('')
     setSeriesText('')
+    setTargetSets('')
     setShowParseErrors(false)
     reset()
   }
@@ -80,11 +94,20 @@ export function DieSetPlannerPage() {
         r.is_bottleneck ? 'YES' : '-',
       ].join('\t'),
     )
+    const procurementSection =
+      result.procurement && result.procurement.length > 0
+        ? [
+            '',
+            `Procurement for ${result.target_sets} sets:`,
+            ...result.procurement.map((p) => `\t${p.die_size}\t${p.procure}`),
+          ]
+        : []
     const text = [
       `Maximum Complete Sets: ${result.maximum_sets} of ${result.total_dies_per_set} dies per set`,
       '',
       header,
       ...lines,
+      ...procurementSection,
     ].join('\n')
     navigator.clipboard?.writeText(text).catch(() => undefined)
   }
@@ -177,8 +200,27 @@ export function DieSetPlannerPage() {
           </div>
         )}
 
-        {/* Calculate */}
-        <div className="flex items-center justify-center">
+        {/* Target sets + Calculate */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+            <Target className="h-4 w-4 text-blue-400" />
+            <label className="text-xs text-[var(--color-muted)] font-semibold" htmlFor="target-sets">
+              Target sets (optional)
+            </label>
+            <input
+              id="target-sets"
+              type="number"
+              min={0}
+              step={1}
+              value={targetSets}
+              onChange={(e) => setTargetSets(e.target.value)}
+              placeholder="e.g. 10"
+              className="w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] font-mono text-xs text-center focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none transition-colors"
+            />
+            <span className="text-[10px] text-[var(--color-muted)]">
+              Procurement plan returned when target exceeds current capacity
+            </span>
+          </div>
           <button
             onClick={handleCalculate}
             disabled={!canCalculate}
@@ -322,6 +364,52 @@ export function DieSetPlannerPage() {
                 </table>
               </div>
             </div>
+
+            {/* Procurement plan */}
+            {result.target_sets !== undefined && result.target_sets !== null && (
+              <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShoppingCart className="h-4 w-4 text-blue-400" />
+                  <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
+                    Procurement Plan — {result.target_sets} complete sets
+                  </h3>
+                </div>
+                {result.procurement && result.procurement.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-[var(--color-border)]">
+                          <th className="px-4 py-2 text-left font-mono font-bold text-[var(--color-muted)] uppercase tracking-wider">Die Size</th>
+                          <th className="px-4 py-2 text-right font-mono font-bold text-[var(--color-muted)] uppercase tracking-wider">Req/Set</th>
+                          <th className="px-4 py-2 text-right font-mono font-bold text-[var(--color-muted)] uppercase tracking-wider">Needed for Target</th>
+                          <th className="px-4 py-2 text-right font-mono font-bold text-[var(--color-muted)] uppercase tracking-wider">In Stock</th>
+                          <th className="px-4 py-2 text-right font-mono font-bold text-blue-400 uppercase tracking-wider">Procure</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.procurement.map((p) => (
+                          <tr
+                            key={p.die_size}
+                            className="border-b border-[var(--color-border)]/50 transition-colors"
+                          >
+                            <td className="px-4 py-2 font-mono font-bold text-[var(--color-text)]">{p.die_size}</td>
+                            <td className="px-4 py-2 font-mono text-[var(--color-text)] text-right">{p.required_per_set}</td>
+                            <td className="px-4 py-2 font-mono text-[var(--color-text)] text-right">{p.target_need}</td>
+                            <td className="px-4 py-2 font-mono text-[var(--color-text)] text-right">{p.available}</td>
+                            <td className="px-4 py-2 font-mono font-bold text-blue-400 text-right">{p.procure}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--color-muted)]">
+                    No dies to procure — current inventory already covers the target of{' '}
+                    {result.target_sets} sets (maximum is {result.maximum_sets}).
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Bottleneck dies */}
             {result.bottlenecks.length > 0 && (

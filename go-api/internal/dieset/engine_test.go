@@ -276,6 +276,67 @@ func TestTotalDiesPerSet(t *testing.T) {
 	}
 }
 
+func TestProcurementPlan(t *testing.T) {
+	inventory := []InventoryItem{
+		{DieSize: "0.620", Quantity: 6},
+		{DieSize: "0.625", Quantity: 2},
+		{DieSize: "0.630", Quantity: 4},
+	}
+	series := []string{"0.620", "0.625", "0.625", "0.630", "0.630", "0.630"}
+
+	t.Run("target beyond capacity lists shortfall per die", func(t *testing.T) {
+		res, err := CalculateSeriesCapacityForTarget(inventory, series, 4)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.TargetSets != 4 {
+			t.Fatalf("TargetSets = %d, want 4", res.TargetSets)
+		}
+		// max possible: 0.620->6, 0.625->1, 0.630->1  => 1 set
+		if res.MaximumSets != 1 {
+			t.Fatalf("MaximumSets = %d, want 1", res.MaximumSets)
+		}
+		if len(res.Procurement) != 2 {
+			t.Fatalf("Procurement len = %d, want 2 (%v)", len(res.Procurement), res.Procurement)
+		}
+		want := map[string]int64{
+			"0.625": 6, // need 4*2=8 - avail 2
+			"0.630": 8, // need 4*3=12 - avail 4
+		}
+		for _, p := range res.Procurement {
+			if p.Procure != want[p.DieSize] {
+				t.Errorf("procure %s = %d, want %d", p.DieSize, p.Procure, want[p.DieSize])
+			}
+		}
+	})
+
+	t.Run("target already achievable by current inventory", func(t *testing.T) {
+		res, err := CalculateSeriesCapacityForTarget(inventory, series, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(res.Procurement) != 0 {
+			t.Fatalf("Procurement = %v, want empty", res.Procurement)
+		}
+	})
+
+	t.Run("target zero equals basic capacity", func(t *testing.T) {
+		res, err := CalculateSeriesCapacityForTarget(inventory, series, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.MaximumSets != 1 || len(res.Procurement) != 0 {
+			t.Fatalf("unexpected result: sets=%d proc=%v", res.MaximumSets, res.Procurement)
+		}
+	})
+
+	t.Run("negative target rejected", func(t *testing.T) {
+		if _, err := CalculateSeriesCapacityForTarget(inventory, series, -1); err == nil {
+			t.Fatal("expected error for negative target sets")
+		}
+	})
+}
+
 func TestParseInventoryText(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -1,5 +1,17 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-08 Add Die Set Procurement Plan (target sets)
+*   **Feature**: Optional `target_sets` in `POST /api/go/tools/calculate/die-set`. When the target exceeds current producible sets, the Go engine computes a `procurement` list: which die sizes to purchase and how many of each (`procure = target*required_per_set - available`, only shortfalls). Frontend gains a "Target Sets" input and a Procurement Plan table (requirement/set, needed for target, in stock, to buy), plus an "already achievable" note when no purchase is needed.
+*   **Affected Modules**: `go-api`, `frontend`, `docs`
+*   **Files Modified**:
+    *   [go-api/internal/dieset/engine.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine.go) - `CalculateSeriesCapacityForTarget`, `ProcurementItem`, refactored shared capacity core.
+    *   [go-api/internal/handlers/handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go) - `target_sets` wired through to the target-capable engine call.
+    *   [go-api/internal/dieset/engine_test.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine_test.go) - Procurement plan table tests (shortfall, already-achievable, zero/negative target).
+    *   [go-api/internal/handlers/handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go) - `target_sets` returns procurement; negative target 422.
+    *   [frontend/src/features/die-set-planner/types.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/types.ts) - `ProcurementItem`, `target_sets` request/result fields.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - Target sets input + Procurement Plan table + Copy Result support.
+* **Testing Performed**: `go build`/`vet`/`test ./...` all green; frontend `tsc --noEmit` clean; eslint 0 errors; full Vitest suite 68/68 green.
+
 ### 2026-08-08 Move Die Set Parsing + Math to Backend (Go authoritative)
 *   **Change**: All parsing, validation, policy (quantity-less dies, duplicate aggregation), and calculation now live in the Go engine. `POST /api/go/tools/calculate/die-set` accepts raw pasted text `{"inventory_text": "...", "series_text": "..."}`; `go-api/internal/dieset/parser.go` is the authoritative line-based parser (lone dies become zero-quantity stock with warning, header-row skip, per-line errors) and `engine.go` computes. The frontend parser is now a client-side pre-check only; the page sends raw text unchanged.
 *   **Affected Modules**: `go-api`, `frontend`, `docs`

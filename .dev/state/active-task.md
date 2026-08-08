@@ -45,6 +45,11 @@ complete sets, bottleneck dies, missing dies, remaining stock, and unused invent
    instead of stealing the next line's tokens. ALL parsing/validation/math now lives in the Go
    engine (`go-api/internal/dieset/parser.go` + `engine.go`): the endpoint accepts raw
    `{inventory_text, series_text}` strings, and the frontend parser is an optional pre-check only.
+6. **Procurement plan** — optional `target_sets` in the request body: the Go engine emits a
+   `procurement` array listing exactly which die sizes to purchase and how many of each to reach
+   the target when it exceeds current capacity (plus a "target already achievable" warning when it
+   does not). Frontend page has a "Target sets" input and a Procurement Plan table with per-die
+   needed/in-stock/buy quantities; also included in Copy Result.
 
 ## Deferred / Explicitly Skipped
 - **No persistence** — tool is stateless; calculations stay reproducible from pasted input.
