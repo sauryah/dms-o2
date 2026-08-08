@@ -967,7 +967,7 @@ func TestHandleCalculateDieSet(t *testing.T) {
 	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
 
 	t.Run("valid_calculation", func(t *testing.T) {
-		body := `{"inventory":[{"die_size":"0.620","quantity":6},{"die_size":"0.625","quantity":10},{"die_size":"0.630","quantity":6},{"die_size":"0.635","quantity":6},{"die_size":"0.640","quantity":6},{"die_size":"0.645","quantity":6},{"die_size":"0.650","quantity":6}],"series":["0.620","0.625","0.625","0.630","0.635","0.635","0.640","0.640","0.645","0.645","0.650","0.650"]}`
+		body := `{"inventory_text":"0.620  6\n0.625  10\n0.630  6\n0.635  6\n0.640  6\n0.645  6\n0.650  6","series_text":"0.620\n0.625\n0.625\n0.630\n0.635\n0.635\n0.640\n0.640\n0.645\n0.645\n0.650\n0.650"}`
 		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
 		w := httptest.NewRecorder()
 		h.HandleCalculateDieSet(w, req)
@@ -989,8 +989,40 @@ func TestHandleCalculateDieSet(t *testing.T) {
 		}
 	})
 
+	t.Run("lone_die_treated_as_zero_stock", func(t *testing.T) {
+		// A die pasted with no quantity must not mis-pair the same line count
+		// as a quantity. It becomes a zero-quantity stock row with a warning.
+		body := `{"inventory_text":"0.550\t4\n0.555\n0.560\t4","series_text":"0.550\n0.555\n0.560\n0.565"}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp dieset.Result
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.MaximumSets != 0 {
+			t.Errorf("expected 0 maximum sets, got %d", resp.MaximumSets)
+		}
+		if len(resp.Missing) != 2 {
+			t.Errorf("expected 2 missing dies (0.555 zero-stock + 0.565 absent), got %d", len(resp.Missing))
+		}
+		foundWarning := false
+		for _, wmsg := range resp.Warnings {
+			if strings.Contains(wmsg, "without a quantity") {
+				foundWarning = true
+				break
+			}
+		}
+		if !foundWarning {
+			t.Errorf("expected a warning about the quantity-less die")
+		}
+	})
+
 	t.Run("missing_die_zero_sets", func(t *testing.T) {
-		body := `{"inventory":[{"die_size":"0.620","quantity":6}],"series":["0.620","0.635"]}`
+		body := `{"inventory_text":"0.620\t6","series_text":"0.620\n0.635"}`
 		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
 		w := httptest.NewRecorder()
 		h.HandleCalculateDieSet(w, req)
@@ -1010,7 +1042,7 @@ func TestHandleCalculateDieSet(t *testing.T) {
 	})
 
 	t.Run("invalid_series_rejected", func(t *testing.T) {
-		body := `{"inventory":[{"die_size":"0.620","quantity":6}],"series":["0.620","junk"]}`
+		body := `{"inventory_text":"0.620\t6","series_text":"0.620\njunk"}`
 		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
 		w := httptest.NewRecorder()
 		h.HandleCalculateDieSet(w, req)

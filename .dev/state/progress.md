@@ -166,10 +166,11 @@ Track implementation status across all phases.
 
 **Completed:**
 - Added Go domain engine `go-api/internal/dieset/` (thousandths-normalized die sizes, capacity/bottleneck/missing/unused calculation, table-driven tests).
-- Added Go API endpoint `POST /api/go/tools/calculate/die-set` with shape-aware handler + validation tests.
-- Added frontend feature `frontend/src/features/die-set-planner/` (paste-parsers with 17 Vitest tests, API hook, planner page UI).
+- Added Go authoritative parser `go-api/internal/dieset/parser.go`: line-based inventory/series parsing, quantity-less dies → zero stock, header skip, per-line errors.
+- Added Go API endpoint `POST /api/go/tools/calculate/die-set` accepting raw `inventory_text`/`series_text` (shape-aware handler + parser + validation tests).
+- Added frontend feature `frontend/src/features/die-set-planner/` (pre-check parsers, hook, planner page UI) that sends raw text so the Go engine owns all parsing + math.
 - Registered `/die-set-planner` route/tool: App.tsx, ToolsPage, AuthContext ROOT defaults, Navbar desktop+mobile, UserManager permission toggle.
-- Fixed inventory paste-parser regression: parsing is now line-based so lone die sizes (no quantity) become zero-quantity stock rows with an aggregated warning instead of mis-pairing tokens and emitting hundreds of false "invalid quantity" errors.
+- Fixed inventory paste-parser regression: line-based parsing so lone die sizes (no quantity) become zero-quantity stock rows with an aggregated warning instead of mis-pairing tokens and emitting hundreds of false "invalid quantity" errors.
 - Verified: `go build/vet/test ./...` green, `tsc --noEmit` clean, full Vitest suite 68/68 green, production Vite build succeeds.
 
 ## Overall Progress

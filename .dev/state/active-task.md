@@ -32,19 +32,19 @@ complete sets, bottleneck dies, missing dies, remaining stock, and unused invent
    detail message on validation failure. Handler tests: valid 3-set calc, missing-die
    zero sets, invalid series 422, bad JSON 400, GET 405.
 3. **Frontend feature** (`frontend/src/features/die-set-planner/`) — `domain/parsers.ts`
-   (line-based spreadsheet/tab/space paste parsing, optional header-row skip,
-   duplicate-aggregation warnings, lone-die-size rows treated as zero-quantity stock
-   with a warning) with 17 Vitest tests; `types.ts`; `useDieSetPlanner` hook; `DieSetPlannerPage.tsx`
+   (client-side pre-check only; raw text is what the page sends), with 17 Vitest tests; `types.ts`;
+   `useDieSetPlanner` hook; `DieSetPlannerPage.tsx`
    (paste cards, Calculate button, loading/empty/error states, hero complete-set count,
    per-die breakdown table, bottleneck chips, missing + unused panels, Copy Result + Reset).
 4. **Tool registration** — `App.tsx` route `/die-set-planner` guarded by
    `ProtectedRoute` with `toolId="die-set-planner"`; `ToolsPage.tsx` card; ROOT default
    tool lists in `AuthContext.tsx`; desktop + mobile `Navbar.tsx` links;
    `UserManager.tsx` permission toggle + badge label.
-5. **Parser regression fix** — inventory parsing is now line-based: a die pasted with no
-   quantity (blank sheet cell) becomes a zero-quantity stock row with an aggregated
-   warning instead of stealing the next line's tokens as its quantity, which previously
-   produced hundreds of false "invalid quantity" errors on real inventory pastes.
+5. **Parser regression fix + backend authority** — inventory parsing is line-based: a die pasted
+   with no quantity (blank sheet cell) becomes a zero-quantity stock row with an aggregated warning
+   instead of stealing the next line's tokens. ALL parsing/validation/math now lives in the Go
+   engine (`go-api/internal/dieset/parser.go` + `engine.go`): the endpoint accepts raw
+   `{inventory_text, series_text}` strings, and the frontend parser is an optional pre-check only.
 
 ## Deferred / Explicitly Skipped
 - **No persistence** — tool is stateless; calculations stay reproducible from pasted input.

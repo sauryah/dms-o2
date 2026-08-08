@@ -32,6 +32,6 @@ export interface DieSetResult {
 }
 
 export interface DieSetCalculateRequest {
-  inventory: { die_size: string; quantity: number }[]
-  series: string[]
+  inventory_text: string
+  series_text: string
 }

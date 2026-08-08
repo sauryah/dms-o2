@@ -275,3 +275,117 @@ func TestTotalDiesPerSet(t *testing.T) {
 		t.Fatalf("TotalDiesPerSet = %d, want 5", res.TotalDiesPerSet)
 	}
 }
+
+func TestParseInventoryText(t *testing.T) {
+	tests := []struct {
+		name        string
+		raw         string
+		wantRows    []InventoryItem
+		wantErrN    int
+		wantWarn []string
+	}{
+		{
+			name:     "pairs per line",
+			raw:      "0.550\t4\n0.555  4\n0.560    4",
+			wantRows: []InventoryItem{{DieSize: "0.550", Quantity: 4}, {DieSize: "0.555", Quantity: 4}, {DieSize: "0.560", Quantity: 4}},
+		},
+		{
+			name:        "lone die treated as zero without stealing next row",
+			raw:         "0.620  4\n0.625\n0.630\t2",
+			wantRows:    []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.625", Quantity: 0}, {DieSize: "0.630", Quantity: 2}},
+			wantWarn: []string{"without a quantity"},
+		},
+		{
+			name:        "block of lone die sizes",
+			raw:         "0.955\n0.965\n1.355\n1.795",
+			wantRows:    []InventoryItem{{DieSize: "0.955", Quantity: 0}, {DieSize: "0.965", Quantity: 0}, {DieSize: "1.355", Quantity: 0}, {DieSize: "1.795", Quantity: 0}},
+			wantWarn: []string{"without a quantity"},
+		},
+		{
+			name:     "header row skipped",
+			raw:      "Die Size\tQty\n0.620\t4\n0.625\t4",
+			wantRows: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.625", Quantity: 4}},
+		},
+		{
+			name:        "duplicates aggregated",
+			raw:         "0.620 4\n0.620 2",
+			wantRows:    []InventoryItem{{DieSize: "0.620", Quantity: 6}},
+			wantWarn: []string{"duplicate"},
+		},
+		{
+			name: "invalid quantity flagged with line number",
+			raw:  "0.625 abc",
+			wantErrN: 1,
+		},
+		{
+			name:     "empty input",
+			raw:      "   \n \n",
+			wantErrN: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows, errs, warns := ParseInventoryText(tt.raw)
+			if tt.wantErrN >= 0 {
+				if len(errs) != tt.wantErrN {
+					t.Fatalf("errors = %v, want %d", errs, tt.wantErrN)
+				}
+			}
+			if len(rows) != len(tt.wantRows) {
+				t.Fatalf("rows = %v, want %v", rows, tt.wantRows)
+			}
+			for i, want := range tt.wantRows {
+				if rows[i] != want {
+					t.Errorf("row[%d] = %+v, want %+v", i, rows[i], want)
+				}
+			}
+			for _, frag := range tt.wantWarn {
+				found := false
+				for _, w := range warns {
+					if strings.Contains(w, frag) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected a warning containing %q, got %v", frag, warns)
+				}
+			}
+		})
+	}
+}
+
+func TestParseSeriesText(t *testing.T) {
+	t.Run("counts duplicates and supports horizontal paste", func(t *testing.T) {
+		sizes, errs := ParseSeriesText("0.620  0.625\t0.625 0.630")
+		if len(errs) != 0 {
+			t.Fatalf("errors = %v", errs)
+		}
+		want := []string{"0.620", "0.625", "0.625", "0.630"}
+		if len(sizes) != len(want) {
+			t.Fatalf("sizes = %v, want %v", sizes, want)
+		}
+		for i := range want {
+			if sizes[i] != want[i] {
+				t.Errorf("sizes[%d] = %q, want %q", i, sizes[i], want[i])
+			}
+		}
+	})
+
+	t.Run("rejects invalid values with line numbers", func(t *testing.T) {
+		sizes, errs := ParseSeriesText("0.620\nnot-a-die\n0.630")
+		if len(errs) != 1 {
+			t.Fatalf("errors = %v", errs)
+		}
+		if len(sizes) != 2 {
+			t.Fatalf("sizes = %v", sizes)
+		}
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		_, errs := ParseSeriesText("")
+		if len(errs) != 1 {
+			t.Fatalf("errors = %v", errs)
+		}
+	})
+}

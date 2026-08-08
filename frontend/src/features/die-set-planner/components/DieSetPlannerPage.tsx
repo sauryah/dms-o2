@@ -45,14 +45,18 @@ export function DieSetPlannerPage() {
 
   const parseErrors = [...inventoryParse.errors, ...seriesParse.errors]
   const hasInput = inventoryText.trim() !== '' || seriesText.trim() !== ''
-  const canCalculate = inventoryParse.rows.length > 0 && seriesParse.sizes.length > 0 && !loading
+  const canCalculate = inventoryText.trim() !== '' && seriesText.trim() !== '' && !loading
 
   const handleCalculate = async () => {
     setShowParseErrors(true)
-    if (parseErrors.length > 0) return
+    // The backend is the authoritative parser and validator. The client-side
+    // parser above only supplies instant UX feedback; the raw text is sent so
+    // parsing, policy (quantity-less dies, duplicate aggregation) and all math
+    // live in the Go engine.
+    if (inventoryText.trim() === '' || seriesText.trim() === '') return
     await calculate({
-      inventory: inventoryParse.rows.map((r) => ({ die_size: r.dieSize, quantity: r.quantity })),
-      series: seriesParse.sizes,
+      inventory_text: inventoryText,
+      series_text: seriesText,
     })
   }
 

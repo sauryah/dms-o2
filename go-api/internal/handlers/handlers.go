@@ -235,13 +235,13 @@ func (h *Handler) HandleLiveness(w http.ResponseWriter, r *http.Request) {
 
 // DieSetCalculateRequest is the input for the die set planner tool.
 type DieSetCalculateRequest struct {
-	Inventory []dieset.InventoryItem `json:"inventory"`
-	Series    []string               `json:"series"`
+	InventoryText string `json:"inventory_text"`
+	SeriesText    string `json:"series_text"`
 }
 
-// HandleCalculateDieSet delegates to the dieset engine and serializes the
-// structured result, translating validation failures into friendly problem
-// details responses.
+// HandleCalculateDieSet parses the pasted raw text, delegates to the dieset
+// engine, and serializes the structured result. Parse and validation failures
+// are translated into friendly problem details responses.
 func (h *Handler) HandleCalculateDieSet(w http.ResponseWriter, r *http.Request) {
 	if !requirePost(w, r) {
 		return
@@ -253,11 +253,21 @@ func (h *Handler) HandleCalculateDieSet(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := dieset.CalculateSeriesCapacity(req.Inventory, req.Series)
+	inventory, invErrors, invWarnings := dieset.ParseInventoryText(req.InventoryText)
+	series, seriesErrors := dieset.ParseSeriesText(req.SeriesText)
+
+	if errs := append(invErrors, seriesErrors...); len(errs) > 0 {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, strings.Join(errs, " "))
+		return
+	}
+
+	res, err := dieset.CalculateSeriesCapacity(inventory, series)
 	if err != nil {
 		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, err.Error())
 		return
 	}
+
+	res.Warnings = append(invWarnings, res.Warnings...)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

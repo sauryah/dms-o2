@@ -8,7 +8,7 @@ User dashboard, CAD vector blueprints renderer, 3D von Mises stress heatmap, the
 - **Resilience**: `lazyWithRetry.ts` for dynamic chunk recovery on new deployments; `ErrorBoundary.tsx` update fallback.
 - **3D Heatmap**: `StressHeatmap3D.tsx` (WebGL von Mises stress visualization, particle flow streams, cutaway slice plane, 3D chevron defect overlay).
 - **Theory Workbench**: `TheoryPanel.tsx` (CAD die inspector SVG, math deformation simulator force equations).
-- **Die Set Planner**: `DieSetPlannerPage.tsx` (paste inventory + series, call go-api `/api/go/tools/calculate/die-set`, render set count, bottleneck/minimum-variants, remaining inventory). Parsers in `domain/parsers.ts` (thousandths normalization, spreadsheet/Excel-style input parsing).
+- **Die Set Planner**: `DieSetPlannerPage.tsx` (paste inventory + series, call go-api `/api/go/tools/calculate/die-set`, render set count, bottleneck/minimum-variants, remaining inventory). Parser usage in `domain/parsers.ts` is a client-side pre-check only; the Go engine is the authoritative parser and calculator, so the frontend sends the raw pasted text (`inventory_text`/`series_text`).
 - **Permissions**: `UserManager.tsx` (indented sub-feature permissions tree) & `AuthContext.tsx` (live background permission auto-sync).
 
 ## Important Files

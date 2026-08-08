@@ -7,6 +7,7 @@ Handles high-throughput read operations: Go search parser, Meilisearch index que
 - [main.go](file:///D:/DMS/dms-o2/go-api/cmd/server/main.go): Service entries and router maps.
 - [handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go): Search handler, scoring, unit normalization, tool calculation endpoints.
 - [dieset/engine.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine.go): Die Set Planner domain engine (thousandths-normalized sizes, complete-set capacity, bottleneck/missing/unused detection) for `POST /api/go/tools/calculate/die-set`.
+- [dieset/parser.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/parser.go): Authoritative line-based parser for pasted inventory + series text (quantity-less dies → zero stock, duplicate aggregation, header-row skip, per-line errors).
 - [database.go](file:///D:/DMS/dms-o2/go-api/internal/database/database.go): Direct PostgreSQL query builder `buildWhereClauses` with parameterized numeric prefix matching.
 - [auth.go](file:///D:/DMS/dms-o2/go-api/internal/auth/auth.go): Token verification client.
 - [events.go](file:///D:/DMS/dms-o2/go-api/internal/events/events.go): SSE listener and channel manager.

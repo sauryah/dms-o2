@@ -1,5 +1,17 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-08 Move Die Set Parsing + Math to Backend (Go authoritative)
+*   **Change**: All parsing, validation, policy (quantity-less dies, duplicate aggregation), and calculation now live in the Go engine. `POST /api/go/tools/calculate/die-set` accepts raw pasted text `{"inventory_text": "...", "series_text": "..."}`; `go-api/internal/dieset/parser.go` is the authoritative line-based parser (lone dies become zero-quantity stock with warning, header-row skip, per-line errors) and `engine.go` computes. The frontend parser is now a client-side pre-check only; the page sends raw text unchanged.
+*   **Affected Modules**: `go-api`, `frontend`, `docs`
+*   **Files Modified/Created**:
+    *   [go-api/internal/dieset/parser.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/parser.go) - New authoritative parser for inventory + series text.
+    *   [go-api/internal/handlers/handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go) - Request struct now `inventory_text`/`series_text`; handler parses via dieset and merges parse warnings.
+    *   [go-api/internal/handlers/handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go) - Raw-text fixture values + lone-die regression via API.
+    *   [go-api/internal/dieset/engine_test.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine_test.go) - ParseInventoryText/ParseSeriesText tests.
+    *   [frontend/src/features/die-set-planner/types.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/types.ts) - Request now raw text fields.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - Sends raw text; client parser is pre-check only.
+* **Testing Performed**: `go build`/`vet`/`test ./...` all green (dieset + handlers incl. new parser suites); frontend `tsc --noEmit` clean; eslint 0 errors; full Vitest suite 68/68 green.
+
 ### 2026-08-08 Fix Die Set Inventory Paste-Parser False Errors
 *   **Fix**: Real pasted inventory sheets contain dies listed without a quantity (blank cell). The flattened token parser treated the next row's die size as that row's quantity, producing hundreds of false `invalid quantity` errors and mis-paired data. Parsing is now line-based: each line is its own row; a lone decimal die size becomes a zero-quantity stock row with an aggregated summary warning; tab/space tolerance and header-row skip preserved; duplicate aggregation now emits a single summary warning.
 *   **Affected Modules**: `frontend`

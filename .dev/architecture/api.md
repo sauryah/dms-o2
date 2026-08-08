@@ -91,7 +91,7 @@ Complete catalog of all API endpoints across Django and Go services.
 | `GET` | `/api/events/` | Ticket Authorized | Server-Sent Events (SSE) stream for real-time inventory updates |
 | `GET` | `/api/go/index-status` | Authenticated | Meilisearch indexing status and document count |
 | `GET` | `/api/go/import-status` | Authenticated | Real-time status of ongoing bulk import tasks |
-| `POST` | `/api/go/tools/calculate/die-set` | Authenticated | Calculate maximum complete die sets from pasted inventory + series, identify bottlenecks, missing dies, and remaining stock |
+| `POST` | `/api/go/tools/calculate/die-set` | Authenticated | Calculate maximum complete die sets from pasted inventory + series, identify bottlenecks, missing dies, and remaining stock. Body: `{"inventory_text": "...", "series_text": "..."}` (raw pasted text). The Go engine is the authoritative parser/validator: it line-parses the inventory (lone quantity-less dies become zero-quantity stock with a warning, duplicates aggregated), parses the series, then computes. `422` problem-details on parse/validation errors |
 
 ## Authentication Flow
 1. Client sends credentials to `/api/v1/auth/login/`
