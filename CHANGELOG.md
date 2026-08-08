@@ -4,6 +4,15 @@ All notable changes to the DMS project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2026-08-08
+
+### Die Set Planner Tool & Industrial Parsing Engine
+- **Die Set Capacity Engine (`go-api/internal/dieset/`)**: Added high-precision domain calculation engine for computing maximum complete die sets from inventory, bottleneck die sizes, missing dies, unused inventory, and remaining stock.
+- **5-Decimal Precision & Industrial Formatting**: Upgraded die size key normalization to 100,000 multiplier (5 decimal places precision) for fine wire dies (e.g. `0.0625`). Implemented unit suffix stripping (`mm`, `in`, `"`, `inch`, `inches`), European decimal comma conversion (`0,620`), and Excel float quantity parsing (`4.0`).
+- **Procurement Planning & Boundary Protection**: Added optional `target_sets` field returning exact per-die shortfall procurement lists when requested sets exceed current stock. Enforced target set upper limit safety validation (`<= 1,000,000,000`).
+- **Live DMS Stock & Sample Loaders**: Added **Load Active Stock** action on `DieSetPlannerPage.tsx` to pull live active dies directly from DMS PostgreSQL/Meilisearch database (`/api/go/search?limit=5000`) and **Sample Data** loader button for 1-click testing.
+- **CSV Export & UX Hardening**: Added downloadable **Export CSV** reports (`die-set-planner-report-YYYY-MM-DD.csv`), breakdown table status filters (**All**, **Bottlenecks**, **Missing**, **OK**), live size search input, and `Ctrl+Enter` shortcut.
+
 ---
 
 ## [1.9.3] - 2026-08-03

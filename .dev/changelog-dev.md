@@ -1,5 +1,17 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-08 Die Set Planner Industrial Parsing, Precision & UX Hardening
+*   **Feature**: Upgraded Go calculation engine (`engine.go` & `parser.go`) to use 100,000 multiplier keys (5 decimal places precision) for fine-wire die sizes (e.g. `0.0625`), unit label stripping (`mm`, `in`, `"`, `inch`, `inches`), European decimal comma conversion (`0,620`), Excel float quantity parsing (`4.0`), and target set upper limit safety checks (`targetSets <= 1,000,000,000`). Upgraded `DieSetPlannerPage.tsx` with **Load Active Stock** action (queries live DMS database `/api/go/search?limit=5000`), **Sample Data** loader button, **Export CSV** downloadable report, breakdown table status filters (**All**, **Bottlenecks**, **Missing**, **OK**), size search input, and `Ctrl+Enter` shortcut.
+*   **Affected Modules**: `go-api`, `frontend`, `docs`
+*   **Files Modified**:
+    *   [go-api/internal/dieset/engine.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine.go) - 100,000 multiplier, unit stripping, European decimal comma, target limits.
+    *   [go-api/internal/dieset/parser.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/parser.go) - `parseQuantity` float string support, `isUnitToken` helper, token walk logic.
+    *   [go-api/internal/dieset/engine_test.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine_test.go) - Updated test assertions for 100k keys + unit/comma/float/limit tests.
+    *   [frontend/src/features/die-set-planner/domain/parsers.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.ts) - Synchronized TypeScript parser functions.
+    *   [frontend/src/features/die-set-planner/domain/parsers.test.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.test.ts) - Updated Vitest tests for 100k keys and industrial formats.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - Load Active Stock, Sample Data, Export CSV, table filters, search, and shortcuts.
+* **Testing Performed**: `go test ./...` all pass (`dieset` + `handlers`); `npx tsc --noEmit` clean (0 errors); Vitest suite 69/69 green; production Vite build clean; git commit `53007fe`.
+
 ### 2026-08-08 Add Die Set Procurement Plan (target sets)
 *   **Feature**: Optional `target_sets` in `POST /api/go/tools/calculate/die-set`. When the target exceeds current producible sets, the Go engine computes a `procurement` list: which die sizes to purchase and how many of each (`procure = target*required_per_set - available`, only shortfalls). Frontend gains a "Target Sets" input and a Procurement Plan table (requirement/set, needed for target, in stock, to buy), plus an "already achievable" note when no purchase is needed.
 *   **Affected Modules**: `go-api`, `frontend`, `docs`

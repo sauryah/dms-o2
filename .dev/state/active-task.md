@@ -48,20 +48,16 @@ complete sets, bottleneck dies, missing dies, remaining stock, and unused invent
 6. **Procurement plan** — optional `target_sets` in the request body: the Go engine emits a
    `procurement` array listing exactly which die sizes to purchase and how many of each to reach
    the target when it exceeds current capacity (plus a "target already achievable" warning when it
-   does not). Frontend page has a "Target sets" input and a Procurement Plan table with per-die
-   needed/in-stock/buy quantities; also included in Copy Result.
+   7. **Industrial parsing & fine-wire 5-decimal precision** — upgraded Go engine (`engine.go` & `parser.go`) to use a 100,000 multiplier (5 decimal places precision) so fine wire sizes like `0.0625` format without rounding errors; added unit label stripping (`mm`, `in`, `"`, `inch`, `inches`), European decimal comma conversion (`0,620`), Excel float quantity parsing (`4.0`), and target set upper limit safety check (`targetSets <= 1,000,000,000`).
+8. **Live DMS inventory integration, CSV export & UX hardening** — added **Load Active Stock** action on `DieSetPlannerPage.tsx` pulling live dies directly from DMS database (`/api/go/search?limit=5000`), **Sample Data** button for 1-click testing, **Export CSV** for report downloads, breakdown table status filters (**All**, **Bottlenecks**, **Missing**, **OK**), size search input, and `Ctrl+Enter` shortcut.
+9. **Full test suite pass & git commit** — Go test suite 100% green (`dieset` and `handlers`), `npx tsc --noEmit` 0 errors, Vitest suite 69/69 green, Vite production build clean, committed to branch `enamel-die-set-planner` (`53007fe`).
 
 ## Deferred / Explicitly Skipped
-- **No persistence** — tool is stateless; calculations stay reproducible from pasted input.
-- **Django backend** — calculation engine added to the Go API (aligned with existing
-  `/api/go/tools/calculate/*` conventions) rather than a new Django module.
+- **No persistence** — tool is stateless; calculations stay reproducible from pasted input or live database pull.
+- **Django backend** — calculation engine added to the Go API (aligned with existing `/api/go/tools/calculate/*` conventions) rather than a new Django module.
 
 ## Next Steps
-- Optionally wire real inventory export (existing dies list) into the inventory paste box.
+- Maintain test coverage and documentation integrity across ledgers.
 
 ## Blockers
-- Django test suite not runnable locally (global Python lacks DRF/psycopg/meili/decouple/
-  celery; no venv). Verified via `py_compile` only.
-- `tsc --noEmit` reports pre-existing errors in legacy test files (SessionTimeoutManager
-  missing `refetchPermissions`, EmptyState/PageHeader/Skeleton/StatusBadge prop mismatches);
-  new feature files are clean.
+- None. All test suites (`go test`, `vitest`, `tsc`, `vite build`) pass cleanly.
