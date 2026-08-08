@@ -67,6 +67,22 @@ export function ToolsPage() {
         'Central burst risk detection',
         'Export job sheet as CSV'
       ]
+    },
+    {
+      id: 'die-set-planner',
+      title: 'Die Set Planner',
+      description: 'Paste current die inventory and a die series to instantly calculate how many complete sets can be built, spot bottleneck dies, and see what remains in stock.',
+      icon: Calculator,
+      color: 'from-cyan-600/20 to-sky-600/20 border-cyan-500/30 text-cyan-400 shadow-cyan-500/10',
+      active: true,
+      path: '/die-set-planner',
+      ctaLabel: 'Open Planner',
+      features: [
+        'Paste inventory & series from Excel',
+        'Complete set count calculation',
+        'Bottleneck & missing die detection',
+        'Remaining inventory breakdown'
+      ]
     }
   ]
 

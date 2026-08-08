@@ -160,6 +160,18 @@ Track implementation status across all phases.
 - Added test suite `test_wear_prediction.py` covering `WearPredictionService`, daily Celery task, and management command.
 - Hardened `PostgresConnStr` default fallback and resolved all pre-existing TypeScript type errors (`tsc --noEmit` 0 errors).
 
+### Die Set Planner Tool (2026-08-08) ✅
+**Status:** Complete
+**Date:** 2026-08-08
+
+**Completed:**
+- Added Go domain engine `go-api/internal/dieset/` (thousandths-normalized die sizes, capacity/bottleneck/missing/unused calculation, table-driven tests).
+- Added Go API endpoint `POST /api/go/tools/calculate/die-set` with shape-aware handler + validation tests.
+- Added frontend feature `frontend/src/features/die-set-planner/` (paste-parsers with 17 Vitest tests, API hook, planner page UI).
+- Registered `/die-set-planner` route/tool: App.tsx, ToolsPage, AuthContext ROOT defaults, Navbar desktop+mobile, UserManager permission toggle.
+- Fixed inventory paste-parser regression: parsing is now line-based so lone die sizes (no quantity) become zero-quantity stock rows with an aggregated warning instead of mis-pairing tokens and emitting hundreds of false "invalid quantity" errors.
+- Verified: `go build/vet/test ./...` green, `tsc --noEmit` clean, full Vitest suite 68/68 green, production Vite build succeeds.
+
 ## Overall Progress
 - **AI-EOS:** 100% complete
 - **Roadmap Phase 1:** 100% complete
@@ -170,6 +182,7 @@ Track implementation status across all phases.
 - **Package Security Audits & Upgrades:** 100% complete
 - **Custom Dev Tools & MCP Integration:** 100% complete
 - **Roadmap Phase 3:** 100% complete
+- **Die Set Planner Tool:** 100% complete
 
 ## Next Actions
 1. Execute continuous testing and build verification

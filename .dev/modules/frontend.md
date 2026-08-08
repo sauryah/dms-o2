@@ -7,7 +7,8 @@ User dashboard, CAD vector blueprints renderer, 3D von Mises stress heatmap, the
 - **State Management**: `useInventoryState.ts` for inventory selection, tree navigation, search filters; `@tanstack/react-query` for API query caching.
 - **Resilience**: `lazyWithRetry.ts` for dynamic chunk recovery on new deployments; `ErrorBoundary.tsx` update fallback.
 - **3D Heatmap**: `StressHeatmap3D.tsx` (WebGL von Mises stress visualization, particle flow streams, cutaway slice plane, 3D chevron defect overlay).
-- **Theory Workbench**: `TheoryPanel.tsx` (CAD die inspector SVG, math deformation simulator, force equations).
+- **Theory Workbench**: `TheoryPanel.tsx` (CAD die inspector SVG, math deformation simulator force equations).
+- **Die Set Planner**: `DieSetPlannerPage.tsx` (paste inventory + series, call go-api `/api/go/tools/calculate/die-set`, render set count, bottleneck/minimum-variants, remaining inventory). Parsers in `domain/parsers.ts` (thousandths normalization, spreadsheet/Excel-style input parsing).
 - **Permissions**: `UserManager.tsx` (indented sub-feature permissions tree) & `AuthContext.tsx` (live background permission auto-sync).
 
 ## Important Files

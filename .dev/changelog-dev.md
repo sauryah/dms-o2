@@ -1,5 +1,33 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-08 Fix Die Set Inventory Paste-Parser False Errors
+*   **Fix**: Real pasted inventory sheets contain dies listed without a quantity (blank cell). The flattened token parser treated the next row's die size as that row's quantity, producing hundreds of false `invalid quantity` errors and mis-paired data. Parsing is now line-based: each line is its own row; a lone decimal die size becomes a zero-quantity stock row with an aggregated summary warning; tab/space tolerance and header-row skip preserved; duplicate aggregation now emits a single summary warning.
+*   **Affected Modules**: `frontend`
+*   **Files Modified**:
+    *   [frontend/src/features/die-set-planner/domain/parsers.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.ts) - Line-based `parseInventoryInput` with die-only row detection (decimal-point heuristic keeps pure integers as quantities).
+    *   [frontend/src/features/die-set-planner/domain/parsers.test.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.test.ts) - Regression tests: mixed paste with lone dies, lone-die blocks, integer-as-quantity bounds.
+* **Testing Performed**: Vitest parser suite 17/17 green; full frontend suite 68/68 green; `tsc --noEmit` clean; `eslint` 0 errors.
+
+### 2026-08-08 · Implement Die Set Planner Tool
+*   **Feature**: Added a Die Set Planner tool that calculates how many complete die sets the current die inventory can produce. Users paste inventory + one die series; the app parses and validates both, then reports maximum complete sets, bottleneck dies, missing dies, used/remaining stock, and unused inventory.
+*   **Affected Modules**: `go-api`, `frontend`, `docs`
+*   **Files Modified/Created**:
+    *   [go-api/internal/dieset/engine.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine.go) - New isolated business-logic engine: `NormalizeDieSize` (thousandths-integer keys, no float equality), `FormatDieSize`, `CalculateSeriesCapacity` (floor division, global minimum, bottleneck/missing/unused detection).
+    *   [go-api/internal/dieset/engine_test.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine_test.go) - Table-driven engine tests (basic, multi-bottleneck, missing, zero, duplicates, decimal normalization, unused, invalid input).
+    *   [go-api/internal/handlers/handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go) - Added `HandleCalculateDieSet` endpoint handler + `DieSetCalculateRequest` struct.
+    *   [go-api/cmd/server/main.go](file:///D:/DMS/dms-o2/go-api/cmd/server/main.go) - Registered `POST /api/go/tools/calculate/die-set`.
+    *   [go-api/internal/handlers/handlers_test.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers_test.go) - Endpoint tests (valid calc, missing die, 422/400/405).
+    *   [frontend/src/features/die-set-planner/domain/parsers.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.ts) - Pure text parsers (spreadsheet/tab/space paste, header skip, duplicate warnings, normalization).
+    *   [frontend/src/features/die-set-planner/domain/parsers.test.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/domain/parsers.test.ts) - 14 Vitest parser tests.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - Planner page (paste, calculate, complete-set hero, breakdown table, bottleneck chips, missing + unused panels, copy/reset).
+    *   [frontend/src/features/die-set-planner/hooks/useDieSetPlanner.ts](file:///D:/DMS/dms-o2/frontend/src/features/die-set-planner/hooks/useDieSetPlanner.ts) - API hook calling the Go endpoint.
+    *   [frontend/src/App.tsx](file:///D:/DMS/dms-o2/frontend/src/App.tsx) - Lazy route `/die-set-planner` guarded by `ProtectedRoute` toolId.
+    *   [frontend/src/pages/ToolsPage.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/ToolsPage.tsx) - New tool card.
+    *   [frontend/src/contexts/AuthContext.tsx](file:///D:/DMS/dms-o2/frontend/src/contexts/AuthContext.tsx) - Added `die-set-planner` to ROOT default authorized tools.
+    *   [frontend/src/components/Navbar.tsx](file:///D:/DMS/dms-o2/frontend/src/components/Navbar.tsx) - Desktop dropdown + mobile links.
+    *   [frontend/src/pages/users/UserManager.tsx](file:///D:/DMS/dms-o2/frontend/src/pages/users/UserManager.tsx) - Permission toggle + badge label.
+* **Testing Performed**: Go `build`/`vet`/`test ./...` all pass (dieset + handler suites); frontend `tsc --noEmit` clean; `eslint` 0 errors (pre-existing warnings only); full Vitest suite 65/65 green; production Vite build succeeds.
+
 ### 2026-08-05 · Implement User Administration Section Upgrades & Visual Alignment Fixes
 *   **Feature**: Implemented client-side Export to CSV feature for Security Audit Logs, added Search Query Highlighting for User Directory and Security Audit Logs search results, and removed unused imports in `UserManager.tsx` to maintain lint cleanliness. Adjusted the "Filters" toggle button in the Die Registry Inventory page to align height and corner rounding with the adjacent SearchBar component. Fixed the blank print page issue on the Die Asset details layout.
 *   **Affected Modules**: `frontend`

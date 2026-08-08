@@ -424,6 +424,7 @@ export function UserManager() {
                                     if (t === 'sizing-calculator') return 'Sizing'
                                     if (t === 'wire-drawing-calculator') return 'Wire Drawing'
                                     if (t === 'die-series-generator') return 'Die Generator'
+                                    if (t === 'die-set-planner') return 'Set Planner'
                                     return t
                                   }).join(', ')
                                 : 'None'}
@@ -846,6 +847,30 @@ export function UserManager() {
                     </div>
                     <span className="text-[9px] font-mono text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded font-extrabold">
                       MODULE GENERATOR
+                    </span>
+                  </div>
+
+                  {/* Top-Level Tool 4: Die Set Planner */}
+                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="tool-die-set-planner"
+                        checked={authorizedToolsInput.includes('die-set-planner')}
+                        onChange={() => {
+                          const isChecked = authorizedToolsInput.includes('die-set-planner');
+                          setAuthorizedToolsInput(prev =>
+                            isChecked ? prev.filter(id => id !== 'die-set-planner') : [...prev, 'die-set-planner']
+                          );
+                        }}
+                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                      />
+                      <label htmlFor="tool-die-set-planner" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
+                        Die Set Planner
+                      </label>
+                    </div>
+                    <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded font-extrabold">
+                      MODULE SET PLANNER
                     </span>
                   </div>
                 </div>

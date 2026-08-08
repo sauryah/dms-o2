@@ -16,6 +16,7 @@ import (
 	"dms-go-api/internal/auth"
 	"dms-go-api/internal/config"
 	"dms-go-api/internal/database"
+	"dms-go-api/internal/dieset"
 	"dms-go-api/internal/events"
 	"github.com/meilisearch/meilisearch-go"
 )
@@ -230,6 +231,37 @@ func (h *Handler) HandleLiveness(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "live"})
+}
+
+// DieSetCalculateRequest is the input for the die set planner tool.
+type DieSetCalculateRequest struct {
+	Inventory []dieset.InventoryItem `json:"inventory"`
+	Series    []string               `json:"series"`
+}
+
+// HandleCalculateDieSet delegates to the dieset engine and serializes the
+// structured result, translating validation failures into friendly problem
+// details responses.
+func (h *Handler) HandleCalculateDieSet(w http.ResponseWriter, r *http.Request) {
+	if !requirePost(w, r) {
+		return
+	}
+
+	var req DieSetCalculateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblemDetails(w, r, "Bad Request", http.StatusBadRequest, "Invalid request JSON payload")
+		return
+	}
+
+	res, err := dieset.CalculateSeriesCapacity(req.Inventory, req.Series)
+	if err != nil {
+		writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
 }
 
 func (h *Handler) HandleReadiness(w http.ResponseWriter, r *http.Request) {

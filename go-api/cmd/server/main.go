@@ -77,6 +77,7 @@ func main() {
 	mux.Handle("POST /api/go/tools/calculate/wire-drawing", jwtAuth(http.HandlerFunc(handler.HandleCalculateWireDrawing)))
 	mux.Handle("POST /api/go/tools/optimize-passes", jwtAuth(http.HandlerFunc(handler.HandleOptimizePasses)))
 	mux.Handle("POST /api/go/tools/calculate/die-series", jwtAuth(http.HandlerFunc(handler.HandleGenerateDieSeries)))
+	mux.Handle("POST /api/go/tools/calculate/die-set", jwtAuth(http.HandlerFunc(handler.HandleCalculateDieSet)))
 
 	port := cfg.Port
 

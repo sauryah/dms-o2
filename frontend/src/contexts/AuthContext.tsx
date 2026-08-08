@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (authTools !== undefined) {
       setAuthorizedTools(authTools)
     } else {
-      setAuthorizedTools(userRole === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-series-generator'] : [])
+      setAuthorizedTools(userRole === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-series-generator', 'die-set-planner'] : [])
     }
   }
 
@@ -219,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username,
       userId,
       isAuthorizedForTools: role === 'ROOT' || isAuthorizedForTools,
-      authorizedTools: role === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-series-generator'] : authorizedTools,
+      authorizedTools: role === 'ROOT' ? ['sizing-calculator', 'wire-drawing-calculator', 'die-series-generator', 'die-set-planner'] : authorizedTools,
       login,
       logout,
       refetchPermissions,

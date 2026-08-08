@@ -1,0 +1,277 @@
+package dieset
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestNormalizeDieSize(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		want    int64
+		wantErr bool
+	}{
+		{name: "three decimals", raw: "0.620", want: 620},
+		{name: "leading dot", raw: ".620", want: 620},
+		{name: "extra precision", raw: "0.6200", want: 620},
+		{name: "trailing spaces", raw: "  0.620  ", want: 620},
+		{name: "integer", raw: "620", want: 620000},
+		{name: "single decimal", raw: "1.5", want: 1500},
+		{name: "rounding", raw: "0.6255", want: 626},
+		{name: "empty", raw: "", wantErr: true},
+		{name: "non numeric", raw: "abc", wantErr: true},
+		{name: "zero", raw: "0", wantErr: true},
+		{name: "negative", raw: "-0.5", wantErr: true},
+		{name: "mixed junk", raw: "0.62x", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NormalizeDieSize(tt.raw)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got %d", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("NormalizeDieSize(%q) = %d, want %d", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatDieSize(t *testing.T) {
+	tests := []struct {
+		in   int64
+		want string
+	}{
+		{620, "0.620"},
+		{625, "0.625"},
+		{620000, "620.000"},
+		{1500, "1.500"},
+	}
+	for _, tt := range tests {
+		if got := FormatDieSize(tt.in); got != tt.want {
+			t.Fatalf("FormatDieSize(%d) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestCalculateSeriesCapacity(t *testing.T) {
+	tests := []struct {
+		name       string
+		inventory  []InventoryItem
+		series     []string
+		wantSets   int64
+		wantReq    map[string]Requirement // keyed by die size
+		wantBottle []string
+		wantMissing []string
+		wantUnused []string
+		wantErr    string
+	}{
+		{
+			name: "basic single die",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 10}},
+			series:    []string{"0.620", "0.620"},
+			wantSets:  5,
+			wantReq: map[string]Requirement{
+				"0.620": {DieSize: "0.620", RequiredPerSet: 2, Available: 10, PossibleSets: 5, Used: 10, Remaining: 0, IsBottleneck: true},
+			},
+			wantBottle: []string{"0.620"},
+		},
+		{
+			name: "multiple dies with one bottleneck",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 10}, {DieSize: "0.625", Quantity: 6}},
+			series:    []string{"0.620", "0.620", "0.625"},
+			wantSets:  5,
+			wantReq: map[string]Requirement{
+				"0.620": {DieSize: "0.620", RequiredPerSet: 2, Available: 10, PossibleSets: 5, Used: 10, Remaining: 0, IsBottleneck: true},
+				"0.625": {DieSize: "0.625", RequiredPerSet: 1, Available: 6, PossibleSets: 6, Used: 5, Remaining: 1, IsBottleneck: false},
+			},
+			wantBottle: []string{"0.620"},
+		},
+		{
+			name:       "missing die yields zero sets",
+			inventory:  []InventoryItem{{DieSize: "0.620", Quantity: 10}},
+			series:     []string{"0.620", "0.625"},
+			wantSets:   0,
+wantReq: map[string]Requirement{
+				"0.620": {DieSize: "0.620", RequiredPerSet: 1, Available: 10, PossibleSets: 10, Used: 0, Remaining: 10, IsBottleneck: false, IsMissing: false},
+				"0.625": {DieSize: "0.625", RequiredPerSet: 1, Available: 0, PossibleSets: 0, Used: 0, Remaining: 0, IsBottleneck: true, IsMissing: true},
+			},
+			wantBottle: []string{"0.625"},
+			wantMissing: []string{"0.625"},
+		},
+		{
+			name: "zero quantity is missing",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 0}},
+			series:    []string{"0.620"},
+			wantSets:  0,
+			wantReq: map[string]Requirement{
+				"0.620": {DieSize: "0.620", RequiredPerSet: 1, Available: 0, PossibleSets: 0, Used: 0, Remaining: 0, IsBottleneck: true, IsMissing: true},
+			},
+			wantBottle: []string{"0.620"},
+			wantMissing: []string{"0.620"},
+		},
+		{
+			name: "duplicate inventory rows aggregated",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.620", Quantity: 6}},
+			series:    []string{"0.620", "0.620"},
+			wantSets:  5,
+		},
+		{
+			name: "multiple bottlenecks identified",
+			inventory: []InventoryItem{
+				{DieSize: "0.620", Quantity: 6}, {DieSize: "0.625", Quantity: 6},
+				{DieSize: "0.630", Quantity: 6}, {DieSize: "0.635", Quantity: 6},
+			},
+			series: []string{"0.620", "0.625", "0.625", "0.630", "0.630", "0.635", "0.635"},
+			wantSets: 3,
+			wantBottle: []string{"0.625", "0.630", "0.635"},
+		},
+		{
+			name: "decimal normalization matches variants",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 6}, {DieSize: ".620", Quantity: 2}},
+			series:    []string{"0.6200", "0.620"},
+			wantSets:  4,
+		},
+		{
+			name: "unused inventory reported separately",
+			inventory: []InventoryItem{{DieSize: "0.600", Quantity: 10}, {DieSize: "0.605", Quantity: 6}, {DieSize: "0.620", Quantity: 10}},
+			series:    []string{"0.620"},
+			wantSets:  10,
+			wantUnused: []string{"0.600", "0.605"},
+		},
+		{
+			name: "negative quantity rejected",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: -1}},
+			series:    []string{"0.620"},
+			wantErr:   "quantity cannot be negative",
+		},
+		{
+			name: "invalid die size rejected",
+			inventory: []InventoryItem{{DieSize: "0.62x", Quantity: 1}},
+			series:    []string{"0.620"},
+			wantErr:   "invalid die size",
+		},
+		{
+			name: "invalid series die rejected",
+			inventory: []InventoryItem{{DieSize: "0.620", Quantity: 1}},
+			series:    []string{"0.620", "junk"},
+			wantErr:   "invalid die size",
+		},
+		{
+			name:    "empty series rejected",
+			series:  []string{},
+			wantErr: "series is empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := CalculateSeriesCapacity(tt.inventory, tt.series)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error = %q, want containing %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if res.MaximumSets != tt.wantSets {
+				t.Fatalf("MaximumSets = %d, want %d", res.MaximumSets, tt.wantSets)
+			}
+
+			if tt.wantReq != nil {
+				for size, want := range tt.wantReq {
+					var found *Requirement
+					for i := range res.Requirements {
+						if res.Requirements[i].DieSize == size {
+							found = &res.Requirements[i]
+							break
+						}
+					}
+					if found == nil {
+						t.Fatalf("requirement for %s not found", size)
+					}
+					if *found != want {
+						t.Fatalf("requirement for %s = %+v, want %+v", size, *found, want)
+					}
+				}
+			}
+
+			if tt.wantBottle != nil {
+				if len(res.Bottlenecks) != len(tt.wantBottle) {
+					t.Fatalf("bottlenecks = %v, want %v", bottleneckSizes(res.Bottlenecks), tt.wantBottle)
+				}
+				got := bottleneckSizes(res.Bottlenecks)
+				for i := range got {
+					if got[i] != tt.wantBottle[i] {
+						t.Fatalf("bottlenecks = %v, want %v", got, tt.wantBottle)
+					}
+				}
+			}
+
+			if tt.wantMissing != nil {
+				got := inventoryLineSizes(res.Missing)
+				if len(got) != len(tt.wantMissing) {
+					t.Fatalf("missing = %v, want %v", got, tt.wantMissing)
+				}
+				for i := range got {
+					if got[i] != tt.wantMissing[i] {
+						t.Fatalf("missing = %v, want %v", got, tt.wantMissing)
+					}
+				}
+			}
+
+			if tt.wantUnused != nil {
+				got := inventoryLineSizes(res.UnusedInventory)
+				if len(got) != len(tt.wantUnused) {
+					t.Fatalf("unused = %v, want %v", got, tt.wantUnused)
+				}
+				for i := range got {
+					if got[i] != tt.wantUnused[i] {
+						t.Fatalf("unused = %v, want %v", got, tt.wantUnused)
+					}
+				}
+			}
+		})
+	}
+}
+
+func bottleneckSizes(b []Bottleneck) []string {
+	out := make([]string, len(b))
+	for i := range b {
+		out[i] = b[i].DieSize
+	}
+	return out
+}
+
+func inventoryLineSizes(l []InventoryLine) []string {
+	out := make([]string, len(l))
+	for i := range l {
+		out[i] = l[i].DieSize
+	}
+	return out
+}
+
+func TestTotalDiesPerSet(t *testing.T) {
+	res, err := CalculateSeriesCapacity(
+		[]InventoryItem{{DieSize: "0.620", Quantity: 100}, {DieSize: "0.625", Quantity: 100}},
+		[]string{"0.620", "0.620", "0.625", "0.625", "0.630"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.TotalDiesPerSet != 5 {
+		t.Fatalf("TotalDiesPerSet = %d, want 5", res.TotalDiesPerSet)
+	}
+}

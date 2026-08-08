@@ -7,64 +7,56 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Frontend TypeScript Type-Safety Hardening & Go Database Driver Test Resilience
+**Task:** Die Set Planner Tool — Inventory Capacity Calculator
 **Status:** Complete
-**Started:** 2026-08-06
-**Confidence:** 100%
+**Started:** 2026-08-08
+**Confidence:** 95%
 
 ## Task Description
-Eliminate all pre-existing TypeScript type errors across frontend components/pages/tests (`npx tsc --noEmit` 0 errors), harden Go API PostgreSQL SSL connection string handling, and update knowledge graph.
+Build a tool that calculates how many complete die sets can be produced from current
+inventory: paste inventory + paste one die series → parse & validate → compute maximum
+complete sets, bottleneck dies, missing dies, remaining stock, and unused inventory.
 
 ## Completed
-1. **Go (`go-api/`)** — `internal/handlers/handlers.go`: extracted `requirePost(w,r)`
-   helper; removed 6 duplicated `"Only POST method is allowed"` guards (was lines 1082,
-   1178, 1244, 1406, 1590, 1942). `internal/database/database.go`: extracted
-   `appendDimensionFilters` helper; removed duplicated size/width/thickness filter blocks
-   in `buildWhereClauses` and `QueryPostgresByIDs`. `cmd/server/main.go`: removed 10
-   redundant inline comments. `gofmt` clean, `go vet`/`build`/`test` all pass.
-2. **Django (`backend/`)** — `users/middleware.py`: removed unused imports
-   (`get_current_user`, `get_current_ip`, `ipaddress`). `machines/signals.py` and
-   `dies/services/search_service.py`: import `get_current_user`/`_thread_locals` from
-   `users.context` (canonical) instead of `users.middleware` re-export.
-   `dms/settings.py`: removed duplicate SECRET_KEY guard (was 15-17 vs 317-320), folded
-   `not SECRET_KEY` check into consolidated guard; deduped `import sys` (was 217, 266);
-   removed redundant `CORS_ALLOW_HEADERS` `x-requested-with` override (already in
-   corsheaders `default_headers`); removed stale Phase-8 comments. All files `py_compile`
-   clean.
-3. **Frontend (`frontend/`)** — verified `tailwind.config.js` extends nothing (Tailwind
-   3.4.1). Removed ~155 occurrences of dead Tailwind classes across 29 files (invalid
-   scale stops `slate-805/850/855/905/750/605`, `rose-455/550/450`, `emerald-450`,
-   `amber-450/655`, `blue-405/550/650`, `indigo-450/550/650/805`, `orange-350/450`,
-   `placeholder-slate-505/550/650`, `z-45`, fractional spacing `px-4.5`/`py-4.5`/`p-4.5`/
-   `gap-4.5`/`h-4.5`/`w-4.5`/`h-5.5`/`w-5.5`/`w-8.5`, `duration-250/350/550`). All
-   were silently ignored (rendered nothing) — removal is behavior-neutral. `tsc --noEmit`
-   shows only pre-existing test/prop errors; `eslint src` 0 errors (467 pre-existing
-   warnings).
-
-4. **Testing-mode detection (`backend/`)** — created `dms/testing.py` exposing
-   `IS_TESTING = 'test' in sys.argv`. `dms/settings.py` (REDIS db selection + Celery
-   eager) and `search/meili.py` now import it instead of sniffing `sys.argv` inline.
-   `py_compile` clean; no circular-import risk (`dms.testing` deps only `sys`).
-5. **Dependency Audit & Upgrades** — Audited frontend, backend, and Go API dependencies. Upgraded Django (4.2.30), DRF (3.17.1), SimpleJWT (5.5.1), Celery (5.6.3), Gunicorn (26.0.0), psycopg2 (2.9.12), sentry-sdk (2.66.1), boto3 (1.43.62), django-cors-headers (4.9.0), django-prometheus (2.5.0), lib/pq (v1.12.3), go-redis/v9 (v9.21.0), fasthttp (v1.59.0), golang-jwt/jwt/v4 (v4.5.2), vite (5.4.21), vitest (1.6.1), framer-motion (11.18.2), @tanstack/react-query (5.101.4), and added npm overrides for dompurify (3.4.12) to patch security CVEs. All build checks, Go API test suites, and frontend test suites pass cleanly.
-6. **Workspace Developer Tools** — Added scripts `scripts/env-doctor.sh` (toolchain diagnostics), `scripts/check_pypi.py` (PyPI version inspector), `scripts/dependency-auditor.sh` (unified dependency auditor), and `scripts/sync-meili.sh` (Meilisearch synchronization helper).
-7. **Antigravity Custom Extensions** — Created a local JSON-RPC 2.0 Model Context Protocol (MCP) server `scripts/dms_mcp_server.py` exposing PostgreSQL schema, Redis active verify-token hashes, and Meilisearch health tools to the assistant. Developed a project-specific skill `.agents/skills/dms-o2-ops/SKILL.md` to guide agent execution.
+1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
+   `NormalizeDieSize` (thousandths-integer keys so `0.620`, `.620`, `0.6200` compare equal
+   without float equality), `FormatDieSize`, and `CalculateSeriesCapacity` computing
+   `floor(available / requiredPerSet)` per die, the global minimum as maximum sets,
+   bottleneck detection (`possibleSets == maximumSets`), missing-die + zero-quantity
+   handling, used/remaining stock, and unused-inventory reporting. Table-driven tests
+   cover basic, multi-die bottleneck, missing, zero-quantity, duplicate rows, decimal
+   normalization, unused inventory, and invalid input.
+2. **Go API endpoint** — `POST /api/go/tools/calculate/die-set` registered in
+   `cmd/server/main.go`; `internal/handlers/handlers.go` `HandleCalculateDieSet` decodes
+   the JSON payload, delegates to the `dieset` engine, and returns 422 with a friendly
+   detail message on validation failure. Handler tests: valid 3-set calc, missing-die
+   zero sets, invalid series 422, bad JSON 400, GET 405.
+3. **Frontend feature** (`frontend/src/features/die-set-planner/`) — `domain/parsers.ts`
+   (line-based spreadsheet/tab/space paste parsing, optional header-row skip,
+   duplicate-aggregation warnings, lone-die-size rows treated as zero-quantity stock
+   with a warning) with 17 Vitest tests; `types.ts`; `useDieSetPlanner` hook; `DieSetPlannerPage.tsx`
+   (paste cards, Calculate button, loading/empty/error states, hero complete-set count,
+   per-die breakdown table, bottleneck chips, missing + unused panels, Copy Result + Reset).
+4. **Tool registration** — `App.tsx` route `/die-set-planner` guarded by
+   `ProtectedRoute` with `toolId="die-set-planner"`; `ToolsPage.tsx` card; ROOT default
+   tool lists in `AuthContext.tsx`; desktop + mobile `Navbar.tsx` links;
+   `UserManager.tsx` permission toggle + badge label.
+5. **Parser regression fix** — inventory parsing is now line-based: a die pasted with no
+   quantity (blank sheet cell) becomes a zero-quantity stock row with an aggregated
+   warning instead of stealing the next line's tokens as its quantity, which previously
+   produced hundreds of false "invalid quantity" errors on real inventory pastes.
 
 ## Deferred / Explicitly Skipped
-- **`dms/urls.py` legacy `api/` aliases** — NOT deduped. Frontend actively calls non-v1
-  `api/auth/*`, `api/import/*`, `api/history/*`, `api/events/`; `/api/v1/` unused by
-  frontend. Removing either set = public API change → escalate. Dual-path is intentional.
-- **Duplicate ConfirmDialog/EmptyState merge** — canceled per user decision (high caller
-  risk, user-visible).
-- **`settings.py` LAN-IP auto-detect block** (was lines 21-31) — fragile but behavior-
-  relevant; left untouched.
+- **No persistence** — tool is stateless; calculations stay reproducible from pasted input.
+- **Django backend** — calculation engine added to the Go API (aligned with existing
+  `/api/go/tools/calculate/*` conventions) rather than a new Django module.
 
 ## Next Steps
-- Optional: address pre-existing tsc test-file errors (SessionTimeoutManager.test.tsx
-  missing `refetchPermissions`, etc.).
+- Optionally wire real inventory export (existing dies list) into the inventory paste box.
 
 ## Blockers
-- Django test suite not runnable locally (global Python 3.14 lacks DRF/psycopg/meili/
-  decouple/celery; no venv; Django 6.0.7 global vs project 4.2.21). Verified via
-  `py_compile` only.
-- `tsc --noEmit` baseline not clean (pre-existing errors in test files and
-  EmptyState/PageHeader/Skeleton/StatusBadge prop mismatches).
+- Django test suite not runnable locally (global Python lacks DRF/psycopg/meili/decouple/
+  celery; no venv). Verified via `py_compile` only.
+- `tsc --noEmit` reports pre-existing errors in legacy test files (SessionTimeoutManager
+  missing `refetchPermissions`, EmptyState/PageHeader/Skeleton/StatusBadge prop mismatches);
+  new feature files are clean.

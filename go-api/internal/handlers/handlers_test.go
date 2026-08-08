@@ -12,6 +12,7 @@ import (
 
 	"dms-go-api/internal/config"
 	"dms-go-api/internal/database"
+	"dms-go-api/internal/dieset"
 	"github.com/meilisearch/meilisearch-go"
 )
 
@@ -958,6 +959,81 @@ func TestHandleCalculateWireDrawing(t *testing.T) {
 		}
 		if resp.Stats.TotalPasses != 3 {
 			t.Errorf("expected total passes statistic to be 3, got %d", resp.Stats.TotalPasses)
+		}
+	})
+}
+
+func TestHandleCalculateDieSet(t *testing.T) {
+	h := NewHandler(&config.Config{}, &MockDatabase{}, &MockCache{}, &MockSearch{}, nil)
+
+	t.Run("valid_calculation", func(t *testing.T) {
+		body := `{"inventory":[{"die_size":"0.620","quantity":6},{"die_size":"0.625","quantity":10},{"die_size":"0.630","quantity":6},{"die_size":"0.635","quantity":6},{"die_size":"0.640","quantity":6},{"die_size":"0.645","quantity":6},{"die_size":"0.650","quantity":6}],"series":["0.620","0.625","0.625","0.630","0.635","0.635","0.640","0.640","0.645","0.645","0.650","0.650"]}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp dieset.Result
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.MaximumSets != 3 {
+			t.Errorf("expected 3 maximum sets, got %d", resp.MaximumSets)
+		}
+		if resp.TotalDiesPerSet != 12 {
+			t.Errorf("expected 12 dies per set, got %d", resp.TotalDiesPerSet)
+		}
+		if len(resp.Requirements) != 7 {
+			t.Errorf("expected 7 requirements, got %d", len(resp.Requirements))
+		}
+	})
+
+	t.Run("missing_die_zero_sets", func(t *testing.T) {
+		body := `{"inventory":[{"die_size":"0.620","quantity":6}],"series":["0.620","0.635"]}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected Status OK (200), got %d: %s", w.Code, w.Body.String())
+		}
+		var resp dieset.Result
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if resp.MaximumSets != 0 {
+			t.Errorf("expected 0 maximum sets, got %d", resp.MaximumSets)
+		}
+		if len(resp.Missing) != 1 {
+			t.Errorf("expected 1 missing die, got %d", len(resp.Missing))
+		}
+	})
+
+	t.Run("invalid_series_rejected", func(t *testing.T) {
+		body := `{"inventory":[{"die_size":"0.620","quantity":6}],"series":["0.620","junk"]}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusUnprocessableEntity {
+			t.Errorf("expected Status 422, got %d", w.Code)
+		}
+	})
+
+	t.Run("bad_json_rejected", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/die-set", strings.NewReader("{not json"))
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected Status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("get_method_rejected", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/go/tools/calculate/die-set", nil)
+		w := httptest.NewRecorder()
+		h.HandleCalculateDieSet(w, req)
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("expected Status 405, got %d", w.Code)
 		}
 	})
 }

@@ -25,6 +25,7 @@ const ToolsPage = lazyWithRetry(() => import('./pages/ToolsPage').then(m => ({ d
 const WireDrawingCalculatorPage = lazyWithRetry(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 const DieSeriesGeneratorPage = lazyWithRetry(() => import('./pages/DieSeriesGeneratorPage').then(m => ({ default: m.DieSeriesGeneratorPage })))
 const PassOptimizerPage = lazyWithRetry(() => import('./features/pass-optimizer/components/PassOptimizerPage').then(m => ({ default: m.PassOptimizerPage })))
+const DieSetPlannerPage = lazyWithRetry(() => import('./features/die-set-planner/components/DieSetPlannerPage').then(m => ({ default: m.DieSetPlannerPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -238,6 +239,13 @@ function AppContent() {
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="pass-optimizer">
                   <PassOptimizerPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
+            <Route path="/die-set-planner" element={
+              <ErrorBoundary>
+                <ProtectedRoute requireToolAuth toolId="die-set-planner">
+                  <DieSetPlannerPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
