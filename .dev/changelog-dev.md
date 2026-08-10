@@ -1,5 +1,19 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-10 Enamel Die Inventory, Machine Stock & Monthly Audits (Stocktake)
+*   **Feature**: Created a comprehensive machine-specific die stock inventory and monthly recount system. Added Django backend models: `MachineDieStock` (live stock tracker), `DieInventoryRecount` (audit sheet header), and `DieInventoryRecountItem` (audit quantities by size). Implemented DRF serializers, registered viewsets, and created a transaction-wrapped `/submit/` action that updates live machine stock from audited tallies. Refactored the React frontend (`DieSetPlannerPage.tsx`) to support a tabbed interface (Calculator, Live Machine Stock, Stocktake & Recounts), dropdown options to quick-load machine/recount stocks, and spreadsheet-like modals for creating and committing audits.
+*   **Affected Modules**: `backend`, `frontend`
+*   **Files Modified**:
+    *   [backend/dies/models.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/models.py) - Added MachineDieStock, DieInventoryRecount, DieInventoryRecountItem.
+    *   [backend/dies/serializers.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/serializers.py) - Added serializers for stock and recounts.
+    *   [backend/dies/views.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/views.py) - Added MachineDieStockViewSet and DieInventoryRecountViewSet with submit action.
+    *   [backend/dms/urls.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dms/urls.py) - Registered views in router.
+    *   [backend/dies/tests/test_inventory_recount.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/tests/test_inventory_recount.py) - New unit tests verifying inventory APIs.
+    *   [frontend/src/features/die-set-planner/types.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/types.ts) - Added TypeScript interfaces.
+    *   [frontend/src/features/die-set-planner/hooks/useDieInventory.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/hooks/useDieInventory.ts) - Added React Query hooks.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - Tabbed layout, loaders, stocktables, and modals.
+*   **Testing Performed**: Ran Django unit tests (`python manage.py test dies.tests.test_inventory_recount` 4/4 passed; full Django suite 172/172 passed); TypeScript type checks passed; Vitest frontend test suite 69/69 passed; Vite production build compiled successfully in 5.88s.
+
 ### 2026-08-10 Die Set Planner Unit Safety, Active Stock Validation & UX Hardening
 *   **Feature**: Implemented physical unit conversion (inches to mm) in the Go engine (`NormalizeDieSize`) and TypeScript frontend (`normalizeDieSize`), resolving the unit safety issue where inches were stripped but treated as mm. Integrated contract-aligned `isDieActive` validation when loading live inventory to prevent planning against unusable (damaged/scrapped/missing/maintenance) dies. Hardened target validation (decimals/negative values) in the frontend with a clean alert panel, and added `Enter` key handlers on the target input. Designed visual "Capacity Explanation" and "Target Sets Assessment" cards for quick operational insight. Fixed accessibility issues by linking `InputCard` inputs to `<label>` elements.
 *   **Affected Modules**: `go-api`, `frontend`

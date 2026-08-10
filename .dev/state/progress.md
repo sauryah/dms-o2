@@ -160,7 +160,7 @@ Track implementation status across all phases.
 - Added test suite `test_wear_prediction.py` covering `WearPredictionService`, daily Celery task, and management command.
 - Hardened `PostgresConnStr` default fallback and resolved all pre-existing TypeScript type errors (`tsc --noEmit` 0 errors).
 
-### Die Set Planner Tool (2026-08-10) ✅
+### Die Set Planner & Enamel Die Inventory System (2026-08-10) ✅
 **Status:** Complete
 **Date:** 2026-08-10
 
@@ -179,6 +179,12 @@ Track implementation status across all phases.
 - Added frontend validation check for `target_sets` input (decimals/negative values) displaying in the alert panel, and wired the target sets input key listeners for immediate submission.
 - Created "Capacity Explanation" and "Target Sets Assessment" panels for immediate visual explanation of capacity constraints and gap shortfall metrics.
 - Linked `InputCard` inputs to `<label>` elements via `id` to ensure screen-reader accessibility.
+- Created machine-specific die stock inventory models (`MachineDieStock`, `DieInventoryRecount`, `DieInventoryRecountItem`) to track drawing dies allocated per machine and maintain historical logs of monthly recount audits.
+- Implemented transaction-wrapped `/submit/` endpoint action in Django to commit recounted tallies into live stock levels atomically.
+- Refactored `DieSetPlannerPage.tsx` with a multi-tab view (Calculator, Live Machine Stock, Stocktake & Recounts) using framer-motion animations.
+- Integrated quick stock loaders in the capacity planner allowing operators to pre-populate inventory from live machine stock levels or saved recount sheets.
+- Built a spreadsheet-like recount editor modal enabling users to record tallies, initialize drafts, prefill baselines from stock levels, and commit sheet audits.
+- Added comprehensive Python unit tests for the recount and stock ViewSets, and verified frontend compilation and test suites pass completely.
 - Verified: all tests green across Go API (`dieset`, `handlers`, `database`) and TypeScript Vitest suite (69/69 green), typescript compiles without errors (`tsc --noEmit`), and Vite production build succeeds.
 
 ## Overall Progress

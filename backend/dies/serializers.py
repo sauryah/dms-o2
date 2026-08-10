@@ -2,7 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.db import transaction
 from dies.contracts import DIE_STATUSES
-from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog, WearAlert, DieTolerance
+from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog, WearAlert, DieTolerance, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem
 from history.models import DieHistory
 
 class DieHistorySerializer(serializers.ModelSerializer):
@@ -283,3 +283,60 @@ class ImportLogSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField)
     def get_imported_by_username(self, obj):
         return obj.imported_by.username if obj.imported_by else ''
+
+
+class MachineDieStockSerializer(serializers.ModelSerializer):
+    machine_name = serializers.CharField(source='machine.name', read_only=True)
+
+    class Meta:
+        model = MachineDieStock
+        fields = ['id', 'machine', 'machine_name', 'die_size', 'quantity', 'updated_at']
+        read_only_fields = ['id', 'updated_at']
+
+
+class DieInventoryRecountItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DieInventoryRecountItem
+        fields = ['id', 'die_size', 'quantity']
+        read_only_fields = ['id']
+
+
+class DieInventoryRecountSerializer(serializers.ModelSerializer):
+    machine_name = serializers.CharField(source='machine.name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    items = DieInventoryRecountItemSerializer(many=True, required=False)
+
+    class Meta:
+        model = DieInventoryRecount
+        fields = ['id', 'name', 'machine', 'machine_name', 'recount_date', 'created_at', 'created_by', 'created_by_username', 'status', 'items']
+        read_only_fields = ['id', 'created_at', 'created_by', 'status']
+
+    @transaction.atomic
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        recount = DieInventoryRecount.objects.create(**validated_data)
+        for item_data in items_data:
+            DieInventoryRecountItem.objects.create(recount=recount, **item_data)
+        return recount
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        if instance.status == 'SUBMITTED':
+            raise serializers.ValidationError("Cannot modify a submitted recount sheet.")
+        
+        items_data = validated_data.pop('items', None)
+        
+        # Update header fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update items if provided
+        if items_data is not None:
+            # Delete existing items and rebuild to avoid complex merge logic
+            instance.items.all().delete()
+            for item_data in items_data:
+                DieInventoryRecountItem.objects.create(recount=instance, **item_data)
+                
+        return instance
+

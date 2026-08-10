@@ -52,13 +52,13 @@ complete sets, bottleneck dies, missing dies, remaining stock, and unused invent
 8. **Live DMS inventory integration, CSV export & UX hardening** — added **Load Active Stock** action on `DieSetPlannerPage.tsx` pulling live dies directly from DMS database (`/api/go/search?limit=5000`), **Sample Data** button for 1-click testing, **Export CSV** for report downloads, breakdown table status filters (**All**, **Bottlenecks**, **Missing**, **OK**), size search input, and `Ctrl+Enter` shortcut.
 9. **Full test suite pass & git commit** — Go test suite 100% green (`dieset` and `handlers`), `npx tsc --noEmit` 0 errors, Vitest suite 69/69 green, Vite production build clean, committed to branch `enamel-die-set-planner` (`53007fe`).
 10. **Hardening, Unit Safety & Accessibility (2026-08-10)** — Implemented physical unit conversion (inches to mm) in backend & frontend parsers. Added active status filtering (`isDieActive`) when querying database stock. Implemented frontend target input validation, keyboard enter key submission, capacity explanation card, target assessment card, and connected inputs with `id`/`htmlFor` for accessibility. Full test suites pass green.
+11. **Enamel Die Inventory & Recount Sheets (2026-08-10)** — Implemented machine-specific stock tracking (`MachineDieStock`) and monthly recount sheets (`DieInventoryRecount`, `DieInventoryRecountItem`) in Django. Added ViewSets, transaction-wrapped stock submission updates, and full Django API tests (4/4 tests passed). Refactored frontend `DieSetPlannerPage` to support tabs (Calculator, Live Machine Stock, Recount Sheets) with framer-motion animations, quick-load stock options, and spreadsheet-like modal auditors.
 
 ## Deferred / Explicitly Skipped
-- **No persistence** — tool is stateless; calculations stay reproducible from pasted input or live database pull.
-- **Django backend** — calculation engine added to the Go API (aligned with existing `/api/go/tools/calculate/*` conventions) rather than a new Django module.
+- **Django backend calculation** — calculation engine remains in the Go API (aligned with existing `/api/go/tools/calculate/*` conventions) while inventory storage and audit sheets are persisted in Django (Python), matching DMS-O2 split write/read architecture.
 
 ## Next Steps
 - Maintain test coverage and documentation integrity across ledgers.
 
 ## Blockers
-- None. All test suites (`go test`, `vitest`, `tsc`, `vite build`) pass cleanly.
+- None. All test suites (`go test`, `django test`, `vitest`, `tsc`, `vite build`) pass cleanly.

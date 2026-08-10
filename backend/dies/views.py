@@ -6,11 +6,12 @@ from django.utils.decorators import method_decorator
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert
+from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem
 from dies.serializers import (
     DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
     serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer,
-    DieToleranceSerializer, WearAlertSerializer
+    DieToleranceSerializer, WearAlertSerializer, MachineDieStockSerializer,
+    DieInventoryRecountSerializer
 )
 from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate, IsAdminOrRootOnly
 from search.meili import client as meili_client, INDEX_NAME
@@ -429,3 +430,55 @@ class WearAlertViewSet(viewsets.ReadOnlyModelViewSet):
         if die_id is not None:
             qs = qs.filter(die__die_id=die_id)
         return qs
+
+
+class MachineDieStockViewSet(viewsets.ModelViewSet):
+    queryset = MachineDieStock.objects.select_related('machine').all()
+    serializer_class = MachineDieStockSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        machine_id = self.request.query_params.get('machine')
+        if machine_id:
+            qs = qs.filter(machine_id=machine_id)
+        return qs
+
+
+class DieInventoryRecountViewSet(viewsets.ModelViewSet):
+    queryset = DieInventoryRecount.objects.select_related('machine', 'created_by').prefetch_related('items').all()
+    serializer_class = DieInventoryRecountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='submit')
+    @transaction.atomic
+    def submit(self, request, pk=None):
+        recount = self.get_object()
+        if recount.status == 'SUBMITTED':
+            return Response({"detail": "This recount sheet is already submitted."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Lock recount for update
+        recount = DieInventoryRecount.objects.select_for_update().get(id=recount.id)
+        
+        # 1. Delete all existing stock for this machine to match audit recount exactly
+        MachineDieStock.objects.filter(machine=recount.machine).delete()
+        
+        # 2. Re-create machine stock records from recount items
+        for item in recount.items.all():
+            MachineDieStock.objects.create(
+                machine=recount.machine,
+                die_size=item.die_size,
+                quantity=item.quantity
+            )
+            
+        # 3. Mark recount sheet as submitted
+        recount.status = 'SUBMITTED'
+        recount.save()
+        
+        return Response({"detail": "Recount sheet submitted and stock levels updated successfully."})
+

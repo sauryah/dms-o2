@@ -147,3 +147,46 @@ class OutboxTask(models.Model):
 
     def __str__(self):
         return f"OutboxTask {self.task_type} - Processed: {self.is_processed}"
+
+
+class MachineDieStock(models.Model):
+    machine = models.ForeignKey('machines.Machine', on_delete=models.CASCADE, related_name='die_stocks')
+    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    quantity = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['machine', 'die_size']
+        ordering = ['machine', 'die_size']
+
+    def __str__(self):
+        return f"{self.machine.name} - size {self.die_size}: {self.quantity}"
+
+
+class DieInventoryRecount(models.Model):
+    name = models.CharField(max_length=100)
+    machine = models.ForeignKey('machines.Machine', on_delete=models.CASCADE, related_name='recounts')
+    recount_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    status = models.CharField(max_length=20, choices=[('DRAFT', 'Draft'), ('SUBMITTED', 'Submitted')], default='DRAFT')
+
+    class Meta:
+        ordering = ['-recount_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.machine.name} ({self.status})"
+
+
+class DieInventoryRecountItem(models.Model):
+    recount = models.ForeignKey(DieInventoryRecount, on_delete=models.CASCADE, related_name='items')
+    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ['recount', 'die_size']
+        ordering = ['die_size']
+
+    def __str__(self):
+        return f"{self.recount.name} - size {self.die_size}: {self.quantity}"
+

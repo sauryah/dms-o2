@@ -46,3 +46,33 @@ export interface DieSetCalculateRequest {
   series_text: string
   target_sets?: number
 }
+
+export interface MachineDieStock {
+  id: number
+  machine: number
+  machine_name: string
+  die_size: string
+  quantity: number
+  updated_at: string
+}
+
+export interface DieInventoryRecountItem {
+  id?: number
+  die_size: string
+  quantity: number
+}
+
+export type RecountStatus = 'DRAFT' | 'SUBMITTED'
+
+export interface DieInventoryRecount {
+  id: number
+  name: string
+  machine: number
+  machine_name: string
+  recount_date: string
+  created_at: string
+  created_by?: number
+  created_by_username: string
+  status: RecountStatus
+  items: DieInventoryRecountItem[]
+}
