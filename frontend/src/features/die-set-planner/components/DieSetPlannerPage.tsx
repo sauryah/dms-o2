@@ -37,6 +37,7 @@ import { isDieActive } from '../../../utils/dieHelpers'
 import {
   useMachineDieStocks,
   useDieInventoryRecounts,
+  useAllSubmittedRecounts,
   useDieInventoryRecount,
   useCreateRecount,
   useUpdateRecount,
@@ -133,7 +134,11 @@ export function DieSetPlannerPage() {
 
   const { data: machines, refetch: refetchMachines } = useEnamelMachines()
   const { data: liveStocks, isLoading: isLoadingStocks, refetch: refetchStocks } = useMachineDieStocks(selectedMachineId)
-  const { data: recounts, isLoading: isLoadingRecounts } = useDieInventoryRecounts()
+  
+  const [recountsPage, setRecountsPage] = useState(1)
+  const { data: recountsData, isLoading: isLoadingRecounts } = useDieInventoryRecounts(recountsPage)
+  const recounts = recountsData?.results || []
+  const { data: submittedRecounts } = useAllSubmittedRecounts()
 
   const createRecount = useCreateRecount()
   const updateRecount = useUpdateRecount()
@@ -198,6 +203,16 @@ export function DieSetPlannerPage() {
     setTableFilter('all')
     setTableSearch('')
     reset()
+  }
+
+  const confirmLoadStock = (callback: () => void) => {
+    if (inventoryText.trim() !== '') {
+      if (window.confirm('Loading new stock will overwrite your current inventory inputs. Do you want to proceed?')) {
+        callback()
+      }
+    } else {
+      callback()
+    }
   }
 
   const handleLoadSample = () => {
@@ -750,14 +765,14 @@ export function DieSetPlannerPage() {
                 <select
                   onChange={(e) => {
                     if (e.target.value === 'all-dms') {
-                      handleLoadActiveStock()
+                      confirmLoadStock(() => handleLoadActiveStock())
                     } else if (e.target.value.startsWith('mach-')) {
                       const id = Number(e.target.value.split('-')[1])
-                      handleLoadMachineStock(id)
+                      confirmLoadStock(() => handleLoadMachineStock(id))
                     } else if (e.target.value.startsWith('rec-')) {
                       const id = Number(e.target.value.split('-')[1])
-                      const recountObj = recounts?.find(r => r.id === id)
-                      handleLoadRecountStock(id, recountObj?.name || '')
+                      const recountObj = submittedRecounts?.find(r => r.id === id)
+                      confirmLoadStock(() => handleLoadRecountStock(id, recountObj?.name || ''))
                     }
                     e.target.value = ''
                   }}
@@ -773,9 +788,9 @@ export function DieSetPlannerPage() {
                       ))}
                     </optgroup>
                   )}
-                  {recounts && recounts.filter(r => r.status === 'SUBMITTED').length > 0 && (
+                  {submittedRecounts && submittedRecounts.length > 0 && (
                     <optgroup label="Submitted Recount Sheets">
-                      {recounts.filter(r => r.status === 'SUBMITTED').map(r => (
+                      {submittedRecounts.map(r => (
                         <option key={`rec-${r.id}`} value={`rec-${r.id}`}>{r.name} ({r.enamel_machine_name})</option>
                       ))}
                     </optgroup>
@@ -1533,6 +1548,29 @@ export function DieSetPlannerPage() {
                     </tbody>
                   </table>
                 </div>
+                {recountsData && recountsData.count > 100 && (
+                  <div className="px-4 py-3 border-t border-[var(--color-border)] flex items-center justify-between">
+                    <div className="text-xs text-[var(--color-muted)] font-mono">
+                      Page {recountsPage} of {Math.ceil(recountsData.count / 100)} (Total {recountsData.count} records)
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setRecountsPage(prev => Math.max(prev - 1, 1))}
+                        disabled={!recountsData.previous}
+                        className="px-3 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs text-[var(--color-text)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setRecountsPage(prev => prev + 1)}
+                        disabled={!recountsData.next}
+                        className="px-3 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs text-[var(--color-text)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-16 text-center">
@@ -2024,7 +2062,38 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-end">
+        <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => {
+              if (recount) {
+                const csvLines = [
+                  `RECOUNT AUDIT: ${recount.name}`,
+                  `Enamel Machine,${recount.enamel_machine_name}`,
+                  `Audit Date,${recount.recount_date}`,
+                  `Audited By,${recount.created_by_username}`,
+                  '',
+                  'Die Size,Audited Quantity'
+                ]
+                recount.items?.forEach((item: any) => {
+                  csvLines.push(`"${item.die_size}",${item.quantity}`)
+                })
+                const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.setAttribute('download', `recount-audit-${recount.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.csv`)
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+              }
+            }}
+            disabled={!recount || !recount.items || recount.items.length === 0}
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
           <button
             type="button"
             onClick={onClose}

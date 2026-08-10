@@ -11,11 +11,26 @@ export function useMachineDieStocks(enamelMachineId: number | undefined) {
   })
 }
 
-export function useDieInventoryRecounts() {
+export interface PaginatedResponse<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+export function useDieInventoryRecounts(page: number = 1) {
+  const { request } = useApi()
+  return useQuery<PaginatedResponse<DieInventoryRecount>>({
+    queryKey: ['dieInventoryRecounts', page],
+    queryFn: () => request(`/api/inventory-recounts/?page=${page}`),
+  })
+}
+
+export function useAllSubmittedRecounts() {
   const { request } = useApi()
   return useQuery<DieInventoryRecount[]>({
-    queryKey: ['dieInventoryRecounts'],
-    queryFn: () => request('/api/inventory-recounts/'),
+    queryKey: ['dieInventoryRecounts', 'all-submitted'],
+    queryFn: () => request('/api/inventory-recounts/?all=true&status=SUBMITTED'),
   })
 }
 

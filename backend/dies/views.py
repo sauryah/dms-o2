@@ -438,6 +438,15 @@ class EnamelMachineViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.recounts.exists() or instance.die_stocks.exists():
+            return Response(
+                {"detail": "Cannot delete this machine because it has active stock records or recount history associated with it."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
+
 
 class MachineDieStockViewSet(viewsets.ModelViewSet):
     queryset = MachineDieStock.objects.select_related('enamel_machine').all()
@@ -457,7 +466,18 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
     queryset = DieInventoryRecount.objects.select_related('enamel_machine', 'created_by').prefetch_related('items').all()
     serializer_class = DieInventoryRecountSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = None
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get('all') == 'true':
+            return None
+        return super().paginate_queryset(queryset)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
