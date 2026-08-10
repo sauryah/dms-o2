@@ -1835,7 +1835,7 @@ export function DieSetPlannerPage() {
                   /* Excel Import Input */
                   <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-5 space-y-4">
                     <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">Upload Spreadsheet (.xlsx, .xls, .csv)</div>
-                    <div className="border-2 border-dashed border-[var(--color-border)] hover:border-blue-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors relative">
+                    <div className="border-2 border-dashed border-[var(--color-border)] hover:border-blue-500/50 rounded-xl p-6 text-center cursor-pointer relative">
                       <input
                         type="file"
                         accept=".xlsx,.xls,.csv"
@@ -1844,17 +1844,18 @@ export function DieSetPlannerPage() {
                       />
                       <FileSpreadsheet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
                       <div className="text-xs font-semibold text-[var(--color-text)] mb-1">Click or drag spreadsheet file here to upload</div>
-                      <div className="flex items-center justify-center gap-2 text-[10px] text-[var(--color-muted)]">
-                        <span>Supports Excel (.xlsx, .xls) and CSV files</span>
-                        <span>·</span>
-                        <button
-                          type="button"
-                          onClick={handleDownloadTemplate}
-                          className="text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer"
-                        >
-                          Download Excel Template
-                        </button>
-                      </div>
+                      <p className="text-[10px] text-[var(--color-muted)]">Supports Excel (.xlsx, .xls) and CSV files</p>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-[var(--color-muted)] px-1">
+                      <span>Need a starting point?</span>
+                      <button
+                        type="button"
+                        onClick={handleDownloadTemplate}
+                        className="text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download Excel Template
+                      </button>
                     </div>
                     <div className="bg-[var(--color-surface)]/50 border border-[var(--color-border)]/60 rounded-lg p-3 text-[10px] text-[var(--color-muted)] leading-relaxed">
                       <strong>Required Format:</strong> The sheet must have die sizes in the first column (e.g. <code>0.620</code> or <code>16.00</code>) and quantities in the second column. Headers like "Size" or "Quantity" are automatically detected and skipped.
