@@ -119,6 +119,8 @@ export function DieSetPlannerPage() {
   // Recount size input form states
   const [newSize, setNewSize] = useState('')
   const [newQty, setNewQty] = useState('')
+  const [isBulkRecountMode, setIsBulkRecountMode] = useState(false)
+  const [bulkRecountText, setBulkRecountText] = useState('')
 
   // Enamel Machine Management Form States
   const [newMachineName, setNewMachineName] = useState('')
@@ -403,6 +405,8 @@ export function DieSetPlannerPage() {
     setRecountMachineId(machines && machines.length > 0 ? machines[0].id : undefined)
     setRecountDate(new Date().toISOString().slice(0, 10))
     setRecountItems([])
+    setIsBulkRecountMode(false)
+    setBulkRecountText('')
     setIsModalOpen(true)
   }
 
@@ -412,6 +416,8 @@ export function DieSetPlannerPage() {
     setRecountMachineId(r.enamel_machine)
     setRecountDate(r.recount_date)
     setRecountItems(r.items.map((i: any) => ({ die_size: i.die_size, quantity: i.quantity })))
+    setIsBulkRecountMode(false)
+    setBulkRecountText('')
     setIsModalOpen(true)
   }
 
@@ -425,6 +431,38 @@ export function DieSetPlannerPage() {
         }
       })
       .catch(() => undefined)
+  }
+
+  const handleImportBulkRecount = (merge: boolean) => {
+    if (!bulkRecountText.trim()) return
+    const parsed = parseInventoryInput(bulkRecountText)
+    
+    const newItems = parsed.rows.map((row) => ({
+      die_size: row.dieSize,
+      quantity: row.quantity,
+    }))
+
+    if (parsed.errors.length > 0) {
+      alert(`Parsed with some warnings:\n${parsed.errors.join('\n')}`)
+    }
+
+    if (merge) {
+      const merged = [...recountItems]
+      newItems.forEach((newItem) => {
+        const idx = merged.findIndex((i) => i.die_size === newItem.die_size)
+        if (idx > -1) {
+          merged[idx].quantity = newItem.quantity
+        } else {
+          merged.push(newItem)
+        }
+      })
+      setRecountItems(merged)
+    } else {
+      setRecountItems(newItems)
+    }
+
+    setBulkRecountText('')
+    setIsBulkRecountMode(false)
   }
 
   const handleAddRecountItem = () => {
@@ -1575,50 +1613,107 @@ export function DieSetPlannerPage() {
                   </button>
                 )}
 
-                {/* Add Item Row Input */}
-                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3">
-                  <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-2">Add or Update Tally</div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        placeholder="Die Size (mm or inch)"
-                        value={newSize}
-                        onChange={(e) => setNewSize(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleAddRecountItem()
-                          }
-                        }}
-                        className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-[var(--color-text)] font-mono focus:border-blue-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="w-24">
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={newQty}
-                        onChange={(e) => setNewQty(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleAddRecountItem()
-                          }
-                        }}
-                        min={0}
-                        className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-[var(--color-text)] text-center font-mono focus:border-blue-500 focus:outline-none"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddRecountItem}
-                      className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
-                    >
-                      Add
-                    </button>
-                  </div>
+                {/* Input Mode Selector */}
+                <div className="flex border-b border-[var(--color-border)] mb-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkRecountMode(false)}
+                    className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-all ${
+                      !isBulkRecountMode
+                        ? 'border-blue-500 text-blue-400 font-bold'
+                        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                    }`}
+                  >
+                    Single Size Input
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkRecountMode(true)}
+                    className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-all ${
+                      isBulkRecountMode
+                        ? 'border-blue-500 text-blue-400 font-bold'
+                        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                    }`}
+                  >
+                    Bulk Paste Data
+                  </button>
                 </div>
+
+                {!isBulkRecountMode ? (
+                  /* Add Item Row Input */
+                  <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3">
+                    <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-2">Add or Update Tally</div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Die Size (mm or inch)"
+                          value={newSize}
+                          onChange={(e) => setNewSize(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleAddRecountItem()
+                            }
+                          }}
+                          className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-[var(--color-text)] font-mono focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          value={newQty}
+                          onChange={(e) => setNewQty(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleAddRecountItem()
+                            }
+                          }}
+                          min={0}
+                          className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-[var(--color-text)] text-center font-mono focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddRecountItem}
+                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Bulk Paste Input */
+                  <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3 space-y-3">
+                    <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">Bulk Import Recount Data</div>
+                    <textarea
+                      placeholder="Paste size + quantity pairs (e.g. from Excel, tab or space-separated):&#10;0.620  4&#10;0.625  2"
+                      value={bulkRecountText}
+                      onChange={(e) => setBulkRecountText(e.target.value)}
+                      className="w-full h-24 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs font-mono text-[var(--color-text)] focus:border-blue-500 focus:outline-none resize-none placeholder:text-slate-600"
+                    />
+                    <div className="flex items-center justify-end gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => handleImportBulkRecount(true)}
+                        disabled={!bulkRecountText.trim()}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600/10 border border-blue-500/30 text-blue-300 hover:bg-blue-600/20 text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        Merge & Update
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleImportBulkRecount(false)}
+                        disabled={!bulkRecountText.trim()}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        Overwrite All
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Items Grid */}
                 <div className="border border-[var(--color-border)] rounded-lg overflow-hidden max-h-56 overflow-y-auto">
