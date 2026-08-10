@@ -45,12 +45,13 @@ describe('parseInventoryInput', () => {
     ])
   })
 
-  it('parses float quantities from Excel and unit suffixes', () => {
-    const res = parseInventoryInput('0.620mm 4.0\n0,625 in 6.00')
+  it('parses float quantities from Excel and unit suffixes with conversion', () => {
+    const res = parseInventoryInput('0.620mm 4.0\n0,625 in 6.00\n0.024 in 1')
     expect(res.errors).toEqual([])
     expect(res.rows).toEqual([
       { dieSize: '0.620', quantity: 4 },
-      { dieSize: '0.625', quantity: 6 },
+      { dieSize: '15.875', quantity: 6 },
+      { dieSize: '0.6096', quantity: 1 },
     ])
   })
 

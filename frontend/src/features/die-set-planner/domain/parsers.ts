@@ -47,13 +47,46 @@ export function isUnitToken(tok: string): boolean {
 }
 
 export function normalizeDieSize(raw: string): { hundredThousands: number | null; thousands: number | null; display: string } {
-  const cleaned = sanitizeDieSizeString(raw)
-  if (!cleaned) return { hundredThousands: null, thousands: null, display: '' }
-  if (!/^\d+(\.\d+)?$/.test(cleaned)) return { hundredThousands: null, thousands: null, display: raw }
-  const num = Number.parseFloat(cleaned)
+  let val = raw.trim()
+  val = val.replace(/[;,]$/, '')
+  const lower = val.toLowerCase()
+  
+  let isInch = false
+  const inchSuffixes = ['in', 'inch', 'inches', '"']
+  for (const u of inchSuffixes) {
+    if (lower.endsWith(u)) {
+      isInch = true
+      val = val.slice(0, val.length - u.length).trim()
+      break
+    }
+  }
+  
+  if (!isInch && lower.endsWith('mm')) {
+    val = val.slice(0, val.length - 2).trim()
+  }
+
+  if (val.includes(',') && !val.includes('.')) {
+    val = val.replace(',', '.')
+  }
+  if (val.startsWith('.')) {
+    val = `0${val}`
+  }
+
+  if (!val) return { hundredThousands: null, thousands: null, display: '' }
+  if (!/^\d+(\.\d+)?$/.test(val)) return { hundredThousands: null, thousands: null, display: raw }
+  let num = Number.parseFloat(val)
   if (!Number.isFinite(num) || num <= 0) return { hundredThousands: null, thousands: null, display: raw }
+  
+  if (isInch) {
+    num = num * 25.4
+  }
+
   const hundredThousands = Math.round(num * 100000)
-  return { hundredThousands, thousands: Math.round(num * 1000), display: cleaned }
+  return { 
+    hundredThousands, 
+    thousands: Math.round(num * 1000), 
+    display: formatDieSize(hundredThousands) 
+  }
 }
 
 export function formatDieSize(hundredThousands: number): string {

@@ -50,11 +50,39 @@ func sanitizeDieSizeString(raw string) string {
 	return val
 }
 
-// NormalizeDieSize converts a die size string into a hundred-thousandths integer key.
+// NormalizeDieSize converts a die size string into a hundred-thousandths integer key of millimetres.
 // "0.620", ".620", "0.6200", "620", "0.620mm", "0,620" all normalize to 62000.
-// Fine wire sizes up to 5 decimal places (e.g. 0.0625) are preserved exactly as 6250.
+// If the unit is inches ("in", "inch", "inches", '"'), the value is converted to millimetres by multiplying by 25.4.
+// For example, "0.024 in" is converted to 0.024 * 25.4 = 0.6096 mm, which normalizes to 60960.
+// Fine wire sizes up to 5 decimal places (e.g. 0.0625) are preserved exactly.
 func NormalizeDieSize(raw string) (int64, error) {
-	val := sanitizeDieSizeString(raw)
+	val := strings.TrimSpace(raw)
+	val = strings.TrimSuffix(val, ";")
+	val = strings.TrimSuffix(val, ",")
+	val = strings.TrimSpace(val)
+
+	lower := strings.ToLower(val)
+	isInch := false
+
+	inchSuffixes := []string{"mm", "in", "inch", "inches", "\""}
+	for _, u := range inchSuffixes {
+		if strings.HasSuffix(lower, u) {
+			if u != "mm" {
+				isInch = true
+			}
+			val = strings.TrimSpace(val[:len(val)-len(u)])
+			break
+		}
+	}
+
+	if strings.Contains(val, ",") && !strings.Contains(val, ".") {
+		val = strings.ReplaceAll(val, ",", ".")
+	}
+
+	if strings.HasPrefix(val, ".") {
+		val = "0" + val
+	}
+
 	if val == "" {
 		return 0, fmt.Errorf("die size is empty")
 	}
@@ -68,6 +96,10 @@ func NormalizeDieSize(raw string) (int64, error) {
 	}
 	if math.IsNaN(num) || math.IsInf(num, 0) {
 		return 0, fmt.Errorf("invalid die size %q: not a finite number", strings.TrimSpace(raw))
+	}
+
+	if isInch {
+		num = num * 25.4
 	}
 
 	return int64(math.Round(num * 100000.0)), nil

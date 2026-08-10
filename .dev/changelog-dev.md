@@ -1,5 +1,16 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-10 Die Set Planner Unit Safety, Active Stock Validation & UX Hardening
+*   **Feature**: Implemented physical unit conversion (inches to mm) in the Go engine (`NormalizeDieSize`) and TypeScript frontend (`normalizeDieSize`), resolving the unit safety issue where inches were stripped but treated as mm. Integrated contract-aligned `isDieActive` validation when loading live inventory to prevent planning against unusable (damaged/scrapped/missing/maintenance) dies. Hardened target validation (decimals/negative values) in the frontend with a clean alert panel, and added `Enter` key handlers on the target input. Designed visual "Capacity Explanation" and "Target Sets Assessment" cards for quick operational insight. Fixed accessibility issues by linking `InputCard` inputs to `<label>` elements.
+*   **Affected Modules**: `go-api`, `frontend`
+*   **Files Modified**:
+    *   [go-api/internal/dieset/engine.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/dieset/engine.go) - Physical unit conversion (inches to mm, multiplying by 25.4).
+    *   [go-api/internal/dieset/engine_test.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/dieset/engine_test.go) - Updated unit suffix tests for converted values.
+    *   [frontend/src/features/die-set-planner/domain/parsers.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/domain/parsers.ts) - Client-side unit conversion synchronization.
+    *   [frontend/src/features/die-set-planner/domain/parsers.test.ts](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/domain/parsers.test.ts) - Converted value test case.
+    *   [frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx) - `isDieActive` stock load validation, Capacity Explanation and Target Assessment panels, key handlers, label accessibility.
+*   **Testing Performed**: `go test ./...` all passed; frontend `npx tsc --noEmit` type checked successfully; full Vitest suite 69/69 passed; production Vite build compiled cleanly.
+
 ### 2026-08-08 Die Set Planner Industrial Parsing, Precision & UX Hardening
 *   **Feature**: Upgraded Go calculation engine (`engine.go` & `parser.go`) to use 100,000 multiplier keys (5 decimal places precision) for fine-wire die sizes (e.g. `0.0625`), unit label stripping (`mm`, `in`, `"`, `inch`, `inches`), European decimal comma conversion (`0,620`), Excel float quantity parsing (`4.0`), and target set upper limit safety checks (`targetSets <= 1,000,000,000`). Upgraded `DieSetPlannerPage.tsx` with **Load Active Stock** action (queries live DMS database `/api/go/search?limit=5000`), **Sample Data** loader button, **Export CSV** downloadable report, breakdown table status filters (**All**, **Bottlenecks**, **Missing**, **OK**), size search input, and `Ctrl+Enter` shortcut.
 *   **Affected Modules**: `go-api`, `frontend`, `docs`

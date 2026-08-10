@@ -24,6 +24,7 @@ import { Skeleton } from '../../../components/ui/Skeleton'
 import { parseInventoryInput, parseSeriesInput, normalizeDieSize, formatDieSize } from '../domain/parsers'
 import { useDieSetPlanner } from '../hooks/useDieSetPlanner'
 import { useApi } from '../../../hooks/useApi'
+import { isDieActive } from '../../../utils/dieHelpers'
 
 const SAMPLE_INVENTORY = `0.550    4
 0.555    4
@@ -67,6 +68,7 @@ export function DieSetPlannerPage() {
   const [inventoryText, setInventoryText] = useState('')
   const [seriesText, setSeriesText] = useState('')
   const [targetSets, setTargetSets] = useState('')
+  const [targetError, setTargetError] = useState<string | null>(null)
   const [showParseErrors, setShowParseErrors] = useState(false)
   const [tableFilter, setTableFilter] = useState<FilterStatus>('all')
   const [tableSearch, setTableSearch] = useState('')
@@ -79,22 +81,34 @@ export function DieSetPlannerPage() {
   const inventoryParse = useMemo(() => parseInventoryInput(inventoryText), [inventoryText])
   const seriesParse = useMemo(() => parseSeriesInput(seriesText), [seriesText])
 
-  const parseErrors = [...inventoryParse.errors, ...seriesParse.errors]
+  const parseErrors = useMemo(() => {
+    return [
+      ...inventoryParse.errors,
+      ...seriesParse.errors,
+      ...(targetError ? [targetError] : []),
+    ]
+  }, [inventoryParse.errors, seriesParse.errors, targetError])
+
   const hasInput = inventoryText.trim() !== '' || seriesText.trim() !== ''
   const canCalculate = inventoryText.trim() !== '' && seriesText.trim() !== '' && !loading
 
   const handleCalculate = async () => {
     setShowParseErrors(true)
+    setTargetError(null)
     if (inventoryText.trim() === '' || seriesText.trim() === '') return
+
     const parsedTarget = targetSets.trim() === '' ? undefined : Number(targetSets)
-    if (parsedTarget !== undefined && (!Number.isInteger(parsedTarget) || parsedTarget < 0)) {
-      setTargetSets('')
-      await calculate({
-        inventory_text: inventoryText,
-        series_text: seriesText,
-      })
-      return
+    if (parsedTarget !== undefined) {
+      if (!Number.isInteger(parsedTarget) || parsedTarget < 0) {
+        setTargetError('Target sets must be a positive whole number.')
+        return
+      }
+      if (parsedTarget > 1000000000) {
+        setTargetError('Target sets cannot exceed 1,000,000,000.')
+        return
+      }
     }
+
     await calculate({
       inventory_text: inventoryText,
       series_text: seriesText,
@@ -106,6 +120,7 @@ export function DieSetPlannerPage() {
     setInventoryText('')
     setSeriesText('')
     setTargetSets('')
+    setTargetError(null)
     setShowParseErrors(false)
     setActiveStockNotice(null)
     setTableFilter('all')
@@ -117,6 +132,7 @@ export function DieSetPlannerPage() {
     setInventoryText(SAMPLE_INVENTORY)
     setSeriesText(SAMPLE_SERIES)
     setTargetSets('5')
+    setTargetError(null)
     setShowParseErrors(false)
     setActiveStockNotice('Loaded sample inventory & series for testing.')
   }
@@ -133,7 +149,7 @@ export function DieSetPlannerPage() {
         let totalCount = 0
 
         for (const die of res.results) {
-          if (!die.current_size || (die.status && die.status.toUpperCase() === 'SCRAPPED')) continue
+          if (!die.current_size || !isDieActive(die)) continue
           const { hundredThousands } = normalizeDieSize(die.current_size)
           if (hundredThousands !== null) {
             counts.set(hundredThousands, (counts.get(hundredThousands) || 0) + 1)
@@ -164,6 +180,15 @@ export function DieSetPlannerPage() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault()
+      if (canCalculate) {
+        handleCalculate()
+      }
+    }
+  }
+
+  const handleTargetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
       e.preventDefault()
       if (canCalculate) {
         handleCalculate()
@@ -311,6 +336,7 @@ export function DieSetPlannerPage() {
         {/* Inputs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <InputCard
+            id="inventory-input"
             icon="inventory"
             title="Current Inventory"
             description="Paste die size + quantity rows — supports tabs, spaces, Excel cells, units (mm/in), comma decimals, and duplicate rows."
@@ -328,6 +354,7 @@ export function DieSetPlannerPage() {
             }
           />
           <InputCard
+            id="series-input"
             icon="series"
             title="Die Series"
             badge={
@@ -392,6 +419,7 @@ export function DieSetPlannerPage() {
               step={1}
               value={targetSets}
               onChange={(e) => setTargetSets(e.target.value)}
+              onKeyDown={handleTargetKeyDown}
               placeholder="e.g. 10"
               className="w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] font-mono text-xs text-center focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none transition-colors"
             />
@@ -509,6 +537,104 @@ export function DieSetPlannerPage() {
                 <p className="text-xs text-amber-300/90 leading-relaxed">{msg}</p>
               </div>
             ))}
+
+            {/* Capacity Explanation and Target Assessment */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Capacity Explanation Card */}
+              <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-4 w-4 text-blue-400" />
+                    <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
+                      Capacity Explanation
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[var(--color-muted)] leading-relaxed mb-4">
+                    {result.maximum_sets === 0 ? (
+                      <>
+                        Production is blocked (<strong>0 sets</strong>) because you are missing{' '}
+                        <strong className="text-rose-400">{result.missing_dies.length}</strong> required die sizes. 
+                        Assemble or procure these sizes to enable set assembly.
+                      </>
+                    ) : (
+                      <>
+                        Your production limit of <strong>{result.maximum_sets}</strong> complete{' '}
+                        {result.maximum_sets === 1 ? 'set' : 'sets'} is determined by your{' '}
+                        <strong className="text-rose-400">{result.bottlenecks.length}</strong> bottleneck{' '}
+                        {result.bottlenecks.length === 1 ? 'size' : 'sizes'}. Stocking more of these sizes will directly increase capacity.
+                      </>
+                    )}
+                  </p>
+                </div>
+                
+                {result.bottlenecks.length > 0 && (
+                  <div className="bg-[var(--color-bg)] rounded-lg p-3.5 border border-[var(--color-border)] space-y-2">
+                    <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">
+                      Primary Constraints:
+                    </div>
+                    <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
+                      {result.bottlenecks.map((b) => (
+                        <div key={b.die_size} className="flex items-center justify-between text-xs font-mono">
+                          <span className="text-[var(--color-text)] font-bold">{b.die_size}</span>
+                          <span className="text-[var(--color-muted)] text-[11px]">
+                            {b.available} in stock / {b.required_per_set} per set &rarr;{' '}
+                            <strong className="text-rose-400">{b.possible_sets} possible</strong>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Target Assessment Card */}
+              {result.target_sets !== undefined && result.target_sets !== null && (
+                <div className={`border rounded-xl p-5 flex flex-col justify-between ${
+                  !result.procurement || result.procurement.length === 0
+                    ? 'bg-emerald-500/5 border-emerald-500/30'
+                    : 'bg-blue-500/5 border-blue-500/30'
+                }`}>
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="h-4 w-4 text-blue-400" />
+                      <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
+                        Target Sets Assessment
+                      </h3>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-xs text-[var(--color-muted)]">Requested Target:</span>
+                      <span className="text-lg font-mono font-black text-[var(--color-text)]">{result.target_sets} sets</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-xs text-[var(--color-muted)]">Target Achievable?</span>
+                      <span className={`text-sm font-bold uppercase ${
+                        !result.procurement || result.procurement.length === 0
+                          ? 'text-emerald-400'
+                          : 'text-blue-300'
+                      }`}>
+                        {!result.procurement || result.procurement.length === 0 ? 'YES' : 'NO (Procurement Needed)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--color-bg)]/40 rounded-lg p-3 border border-[var(--color-border)]/50 text-[11px] text-[var(--color-muted)] leading-relaxed">
+                    {!result.procurement || result.procurement.length === 0 ? (
+                      <span className="text-emerald-300 font-medium">
+                        ✔ Current stock satisfies the target. No additional purchases are required.
+                      </span>
+                    ) : (
+                      <span>
+                        ℹ To achieve the target of {result.target_sets} sets, you must procure{' '}
+                        <strong className="text-blue-400">
+                          {result.procurement.reduce((acc, p) => acc + p.procure, 0)}
+                        </strong>{' '}
+                        additional dies across <strong className="text-blue-400">{result.procurement.length}</strong> unique sizes.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Requirements breakdown table with filters & search */}
             <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
@@ -790,6 +916,7 @@ export function DieSetPlannerPage() {
 }
 
 function InputCard({
+  id,
   title,
   description,
   value,
@@ -799,6 +926,7 @@ function InputCard({
   badge,
   icon,
 }: {
+  id: string
   title: string
   description: string
   value: string
@@ -814,9 +942,9 @@ function InputCard({
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-blue-400" />
-          <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
+          <label htmlFor={id} className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading cursor-pointer">
             {title}
-          </h3>
+          </label>
         </div>
         {badge && (
           <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-300">
@@ -826,6 +954,7 @@ function InputCard({
       </div>
       <p className="text-[11px] text-[var(--color-muted)] mb-3">{description}</p>
       <textarea
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}

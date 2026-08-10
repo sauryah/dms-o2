@@ -20,8 +20,9 @@ func TestNormalizeDieSize(t *testing.T) {
 		{name: "single decimal", raw: "1.5", want: 150000},
 		{name: "fine wire 4 decimals", raw: "0.0625", want: 6250},
 		{name: "unit suffix mm", raw: "0.620mm", want: 62000},
-		{name: "unit suffix inch", raw: "0.620 in", want: 62000},
-		{name: "unit suffix quote", raw: "0.620\"", want: 62000},
+		{name: "unit suffix inch", raw: "0.620 in", want: 1574800},
+		{name: "unit suffix quote", raw: "0.620\"", want: 1574800},
+		{name: "fine wire inch", raw: "0.024 in", want: 60960},
 		{name: "european comma decimal", raw: "0,620", want: 62000},
 		{name: "empty", raw: "", wantErr: true},
 		{name: "non numeric", raw: "abc", wantErr: true},
@@ -381,7 +382,7 @@ func TestParseInventoryText(t *testing.T) {
 		{
 			name:     "float quantity from excel and unit suffix",
 			raw:      "0.620mm 4.0\n0,625 in 6.00",
-			wantRows: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "0.625", Quantity: 6}},
+			wantRows: []InventoryItem{{DieSize: "0.620", Quantity: 4}, {DieSize: "15.875", Quantity: 6}},
 		},
 		{
 			name:        "duplicates aggregated",

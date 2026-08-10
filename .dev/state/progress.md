@@ -160,9 +160,9 @@ Track implementation status across all phases.
 - Added test suite `test_wear_prediction.py` covering `WearPredictionService`, daily Celery task, and management command.
 - Hardened `PostgresConnStr` default fallback and resolved all pre-existing TypeScript type errors (`tsc --noEmit` 0 errors).
 
-### Die Set Planner Tool (2026-08-08) ✅
+### Die Set Planner Tool (2026-08-10) ✅
 **Status:** Complete
-**Date:** 2026-08-08
+**Date:** 2026-08-10
 
 **Completed:**
 - Added Go domain engine `go-api/internal/dieset/` (thousandths-normalized die sizes, capacity/bottleneck/missing/unused calculation, table-driven tests).
@@ -174,7 +174,12 @@ Track implementation status across all phases.
 - Added procurement plan: optional `target_sets` request field; engine returns which die sizes + quantities to buy to reach the target, UI shows a Procurement Plan table.
 - Upgraded Go domain engine (`engine.go` & `parser.go`) to 5-decimal precision (100,000 multiplier) for fine wire die sizes (e.g. `0.0625`), unit label stripping (`mm`, `in`, `"`, `inch`, `inches`), European decimal comma conversion (`0,620`), Excel float quantity parsing (`4.0`), and target set limit checks (`targetSets <= 1,000,000,000`).
 - Upgraded `DieSetPlannerPage.tsx` with **Load Active Stock** action (queries live DMS inventory `/api/go/search?limit=5000`), **Sample Data** button, **Export CSV** downloadable report, table status filtering (**All**, **Bottlenecks**, **Missing**, **OK**), size search input, and `Ctrl+Enter` shortcut.
-- Verified: `go test` green across `dieset` & `handlers`, `tsc --noEmit` clean (0 errors), full Vitest suite 69/69 green, production Vite build succeeds. Committed as `53007fe`.
+- Implemented physical unit conversion (inches to mm) in backend (`NormalizeDieSize`) and frontend (`normalizeDieSize`) so that inches (in, inch, inches, ") are converted by 25.4 to mm instead of raw-stripped, ensuring physical unit safety.
+- Integrated `isDieActive` validation when loading active stock from the DMS database to ensure calculations are performed only against active dies (excluding damaged, scrapped, missing, and maintenance statuses).
+- Added frontend validation check for `target_sets` input (decimals/negative values) displaying in the alert panel, and wired the target sets input key listeners for immediate submission.
+- Created "Capacity Explanation" and "Target Sets Assessment" panels for immediate visual explanation of capacity constraints and gap shortfall metrics.
+- Linked `InputCard` inputs to `<label>` elements via `id` to ensure screen-reader accessibility.
+- Verified: all tests green across Go API (`dieset`, `handlers`, `database`) and TypeScript Vitest suite (69/69 green), typescript compiles without errors (`tsc --noEmit`), and Vite production build succeeds.
 
 ## Overall Progress
 - **AI-EOS:** 100% complete
