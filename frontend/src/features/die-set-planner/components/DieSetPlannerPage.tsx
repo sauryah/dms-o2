@@ -552,7 +552,7 @@ export function DieSetPlannerPage() {
         const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][]
         
         const parsedRows: Array<{ die_size: string; quantity: number }> = []
-        let warningMsgs: string[] = []
+        const warningMsgs: string[] = []
 
         for (let rIdx = 0; rIdx < data.length; rIdx++) {
           const row = data[rIdx]
