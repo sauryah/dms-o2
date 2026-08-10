@@ -72,6 +72,11 @@ export function normalizeDieSize(raw: string): { hundredThousands: number | null
     val = `0${val}`
   }
 
+  // Auto-prepend "0." for 3-digit integers (e.g. 500 -> 0.500, 365 -> 0.365)
+  if (/^\d{3}$/.test(val)) {
+    val = `0.${val}`
+  }
+
   if (!val) return { hundredThousands: null, thousands: null, display: '' }
   if (!/^\d+(\.\d+)?$/.test(val)) return { hundredThousands: null, thousands: null, display: raw }
   let num = Number.parseFloat(val)
