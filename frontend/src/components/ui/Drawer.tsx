@@ -37,6 +37,13 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
         const firstEl = focusables[0]
         const lastEl = focusables[focusables.length - 1]
 
+        const isActiveInside = Array.from(focusables).includes(document.activeElement as HTMLElement)
+        if (!isActiveInside) {
+          firstEl.focus()
+          e.preventDefault()
+          return
+        }
+
         if (e.shiftKey) {
           if (document.activeElement === firstEl) {
             lastEl.focus()

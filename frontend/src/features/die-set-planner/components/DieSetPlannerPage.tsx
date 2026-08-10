@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -87,6 +87,58 @@ const SERIES_PLACEHOLDER = `0.620
 type FilterStatus = 'all' | 'bottleneck' | 'missing' | 'ok'
 type TabType = 'calculator' | 'live-stock' | 'recounts'
 
+function useFocusTrap(isOpen: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (e.key === 'Tab') {
+        const el = ref.current
+        if (!el) return
+
+        const focusables = el.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusables.length === 0) return
+
+        const firstEl = focusables[0]
+        const lastEl = focusables[focusables.length - 1]
+
+        const isActiveInside = Array.from(focusables).includes(document.activeElement as HTMLElement)
+        if (!isActiveInside) {
+          firstEl.focus()
+          e.preventDefault()
+          return
+        }
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl) {
+            lastEl.focus()
+            e.preventDefault()
+          }
+        } else {
+          if (document.activeElement === lastEl) {
+            firstEl.focus()
+            e.preventDefault()
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  return ref
+}
+
 export function DieSetPlannerPage() {
   const [activeTab, setActiveTab] = useState<TabType>('calculator')
 
@@ -110,6 +162,10 @@ export function DieSetPlannerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isManageMachinesOpen, setIsManageMachinesOpen] = useState(false)
+
+  // Focus traps for custom modals
+  const manageMachinesRef = useFocusTrap(isManageMachinesOpen, () => setIsManageMachinesOpen(false))
+  const editRecountRef = useFocusTrap(isModalOpen, () => setIsModalOpen(false))
   
   // Create / Edit Recount Form States
   const [recountId, setRecountId] = useState<number | undefined>(undefined) // undefined = create, otherwise edit
@@ -1593,6 +1649,7 @@ export function DieSetPlannerPage() {
         {isManageMachinesOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
+              ref={manageMachinesRef}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -1688,6 +1745,7 @@ export function DieSetPlannerPage() {
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
+              ref={editRecountRef}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -1981,10 +2039,12 @@ export function DieSetPlannerPage() {
 // Subcomponent to view recount sheet details (keeps parent component code smaller and clean)
 function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: () => void }) {
   const { data: recount, isLoading } = useDieInventoryRecount(recountId)
+  const dialogRef = useFocusTrap(true, onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
+        ref={dialogRef}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
