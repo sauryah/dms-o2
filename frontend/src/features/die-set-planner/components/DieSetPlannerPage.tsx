@@ -550,6 +550,24 @@ export function DieSetPlannerPage() {
     reader.readAsBinaryString(file)
   }
 
+  const handleDownloadTemplate = () => {
+    const data = [
+      ['Die Size (mm or inch)', 'Quantity'],
+      ['0.620', 5],
+      ['0.625', 3],
+      ['16.00', 8],
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(data)
+    ws['!cols'] = [
+      { wch: 22 },
+      { wch: 12 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Template')
+    XLSX.writeFile(wb, 'die_recount_template.xlsx')
+  }
+
+
   const handleAddRecountItem = () => {
     if (!newSize || !newQty) return
     const { hundredThousands } = normalizeDieSize(newSize)
@@ -1826,7 +1844,17 @@ export function DieSetPlannerPage() {
                       />
                       <FileSpreadsheet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
                       <div className="text-xs font-semibold text-[var(--color-text)] mb-1">Click or drag spreadsheet file here to upload</div>
-                      <p className="text-[10px] text-[var(--color-muted)]">Supports Excel (.xlsx, .xls) and CSV files</p>
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-[var(--color-muted)]">
+                        <span>Supports Excel (.xlsx, .xls) and CSV files</span>
+                        <span>·</span>
+                        <button
+                          type="button"
+                          onClick={handleDownloadTemplate}
+                          className="text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer"
+                        >
+                          Download Excel Template
+                        </button>
+                      </div>
                     </div>
                     <div className="bg-[var(--color-surface)]/50 border border-[var(--color-border)]/60 rounded-lg p-3 text-[10px] text-[var(--color-muted)] leading-relaxed">
                       <strong>Required Format:</strong> The sheet must have die sizes in the first column (e.g. <code>0.620</code> or <code>16.00</code>) and quantities in the second column. Headers like "Size" or "Quantity" are automatically detected and skipped.
