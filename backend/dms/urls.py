@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly, IsAdminOrRoot
-from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet, MachineDieStockViewSet, DieInventoryRecountViewSet
+from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet, MachineDieStockViewSet, DieInventoryRecountViewSet, EnamelMachineViewSet
 from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, LivenessCheckView, ReadinessCheckView, ServerInfoView, VerifyTokenView, TokenRefreshView
 from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
@@ -23,6 +23,7 @@ router.register('tolerances', DieToleranceViewSet, basename='tolerance')
 router.register('wear-alerts', WearAlertViewSet, basename='wear-alert')
 router.register('machine-die-stock', MachineDieStockViewSet, basename='machine-die-stock')
 router.register('inventory-recounts', DieInventoryRecountViewSet, basename='inventory-recount')
+router.register('enamel-machines', EnamelMachineViewSet, basename='enamel-machine')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '../../../hooks/useApi'
-import type { MachineDieStock, DieInventoryRecount } from '../types'
+import type { MachineDieStock, DieInventoryRecount, EnamelMachine } from '../types'
 
-export function useMachineDieStocks(machineId: number | undefined) {
+export function useMachineDieStocks(enamelMachineId: number | undefined) {
   const { request } = useApi()
   return useQuery<MachineDieStock[]>({
-    queryKey: ['machineDieStocks', machineId],
-    queryFn: () => request(`/api/machine-die-stock/?machine=${machineId}`),
-    enabled: !!machineId,
+    queryKey: ['machineDieStocks', enamelMachineId],
+    queryFn: () => request(`/api/machine-die-stock/?enamel_machine=${enamelMachineId}`),
+    enabled: !!enamelMachineId,
   })
 }
 
@@ -75,10 +75,55 @@ export function useSubmitRecount() {
   })
 }
 
-export function useMachinesQuery() {
+// Enamel Machine CRUD hooks
+export function useEnamelMachines() {
   const { request } = useApi()
-  return useQuery<{ id: number; name: string }[]>({
-    queryKey: ['machinesList'],
-    queryFn: () => request('/api/machines/'),
+  return useQuery<EnamelMachine[]>({
+    queryKey: ['enamelMachinesList'],
+    queryFn: () => request('/api/enamel-machines/'),
+  })
+}
+
+export function useCreateEnamelMachine() {
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+  return useMutation<EnamelMachine, Error, Partial<EnamelMachine>>({
+    mutationFn: (payload) =>
+      request('/api/enamel-machines/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enamelMachinesList'] })
+    },
+  })
+}
+
+export function useUpdateEnamelMachine() {
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+  return useMutation<EnamelMachine, Error, { id: number; data: Partial<EnamelMachine> }>({
+    mutationFn: ({ id, data }) =>
+      request(`/api/enamel-machines/${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enamelMachinesList'] })
+    },
+  })
+}
+
+export function useDeleteEnamelMachine() {
+  const { request } = useApi()
+  const queryClient = useQueryClient()
+  return useMutation<void, Error, number>({
+    mutationFn: (id) =>
+      request(`/api/enamel-machines/${id}/`, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enamelMachinesList'] })
+    },
   })
 }

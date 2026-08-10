@@ -2,7 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.db import transaction
 from dies.contracts import DIE_STATUSES
-from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog, WearAlert, DieTolerance, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem
+from dies.models import Die, RoundDie, FlatDie, ImportLog, MaintenanceLog, WearAlert, DieTolerance, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem, EnamelMachine
 from history.models import DieHistory
 
 class DieHistorySerializer(serializers.ModelSerializer):
@@ -285,12 +285,18 @@ class ImportLogSerializer(serializers.ModelSerializer):
         return obj.imported_by.username if obj.imported_by else ''
 
 
+class EnamelMachineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EnamelMachine
+        fields = ['id', 'name', 'description']
+
+
 class MachineDieStockSerializer(serializers.ModelSerializer):
-    machine_name = serializers.CharField(source='machine.name', read_only=True)
+    enamel_machine_name = serializers.CharField(source='enamel_machine.name', read_only=True)
 
     class Meta:
         model = MachineDieStock
-        fields = ['id', 'machine', 'machine_name', 'die_size', 'quantity', 'updated_at']
+        fields = ['id', 'enamel_machine', 'enamel_machine_name', 'die_size', 'quantity', 'updated_at']
         read_only_fields = ['id', 'updated_at']
 
 
@@ -302,13 +308,13 @@ class DieInventoryRecountItemSerializer(serializers.ModelSerializer):
 
 
 class DieInventoryRecountSerializer(serializers.ModelSerializer):
-    machine_name = serializers.CharField(source='machine.name', read_only=True)
+    enamel_machine_name = serializers.CharField(source='enamel_machine.name', read_only=True)
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     items = DieInventoryRecountItemSerializer(many=True, required=False)
 
     class Meta:
         model = DieInventoryRecount
-        fields = ['id', 'name', 'machine', 'machine_name', 'recount_date', 'created_at', 'created_by', 'created_by_username', 'status', 'items']
+        fields = ['id', 'name', 'enamel_machine', 'enamel_machine_name', 'recount_date', 'created_at', 'created_by', 'created_by_username', 'status', 'items']
         read_only_fields = ['id', 'created_at', 'created_by', 'status']
 
     @transaction.atomic
@@ -339,4 +345,5 @@ class DieInventoryRecountSerializer(serializers.ModelSerializer):
                 DieInventoryRecountItem.objects.create(recount=instance, **item_data)
                 
         return instance
+
 

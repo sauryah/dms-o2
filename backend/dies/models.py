@@ -149,23 +149,34 @@ class OutboxTask(models.Model):
         return f"OutboxTask {self.task_type} - Processed: {self.is_processed}"
 
 
+class EnamelMachine(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class MachineDieStock(models.Model):
-    machine = models.ForeignKey('machines.Machine', on_delete=models.CASCADE, related_name='die_stocks')
+    enamel_machine = models.ForeignKey(EnamelMachine, on_delete=models.CASCADE, related_name='die_stocks')
     die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
     quantity = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['machine', 'die_size']
-        ordering = ['machine', 'die_size']
+        unique_together = ['enamel_machine', 'die_size']
+        ordering = ['enamel_machine', 'die_size']
 
     def __str__(self):
-        return f"{self.machine.name} - size {self.die_size}: {self.quantity}"
+        return f"{self.enamel_machine.name} - size {self.die_size}: {self.quantity}"
 
 
 class DieInventoryRecount(models.Model):
     name = models.CharField(max_length=100)
-    machine = models.ForeignKey('machines.Machine', on_delete=models.CASCADE, related_name='recounts')
+    enamel_machine = models.ForeignKey(EnamelMachine, on_delete=models.CASCADE, related_name='recounts')
     recount_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
@@ -175,7 +186,7 @@ class DieInventoryRecount(models.Model):
         ordering = ['-recount_date', '-created_at']
 
     def __str__(self):
-        return f"{self.name} - {self.machine.name} ({self.status})"
+        return f"{self.name} - {self.enamel_machine.name} ({self.status})"
 
 
 class DieInventoryRecountItem(models.Model):

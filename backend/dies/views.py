@@ -6,12 +6,12 @@ from django.utils.decorators import method_decorator
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem
+from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem, EnamelMachine
 from dies.serializers import (
     DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
     serialize_die_list_fast, ImportLogSerializer, MaintenanceLogSerializer,
     DieToleranceSerializer, WearAlertSerializer, MachineDieStockSerializer,
-    DieInventoryRecountSerializer
+    DieInventoryRecountSerializer, EnamelMachineSerializer
 )
 from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate, IsAdminOrRootOnly
 from search.meili import client as meili_client, INDEX_NAME
@@ -432,22 +432,29 @@ class WearAlertViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
+class EnamelMachineViewSet(viewsets.ModelViewSet):
+    queryset = EnamelMachine.objects.all()
+    serializer_class = EnamelMachineSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+
 class MachineDieStockViewSet(viewsets.ModelViewSet):
-    queryset = MachineDieStock.objects.select_related('machine').all()
+    queryset = MachineDieStock.objects.select_related('enamel_machine').all()
     serializer_class = MachineDieStockSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
     def get_queryset(self):
         qs = super().get_queryset()
-        machine_id = self.request.query_params.get('machine')
-        if machine_id:
-            qs = qs.filter(machine_id=machine_id)
+        enamel_machine_id = self.request.query_params.get('enamel_machine')
+        if enamel_machine_id:
+            qs = qs.filter(enamel_machine_id=enamel_machine_id)
         return qs
 
 
 class DieInventoryRecountViewSet(viewsets.ModelViewSet):
-    queryset = DieInventoryRecount.objects.select_related('machine', 'created_by').prefetch_related('items').all()
+    queryset = DieInventoryRecount.objects.select_related('enamel_machine', 'created_by').prefetch_related('items').all()
     serializer_class = DieInventoryRecountSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
@@ -465,13 +472,13 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         # Lock recount for update
         recount = DieInventoryRecount.objects.select_for_update().get(id=recount.id)
         
-        # 1. Delete all existing stock for this machine to match audit recount exactly
-        MachineDieStock.objects.filter(machine=recount.machine).delete()
+        # 1. Delete all existing stock for this enamel machine to match audit recount exactly
+        MachineDieStock.objects.filter(enamel_machine=recount.enamel_machine).delete()
         
         # 2. Re-create machine stock records from recount items
         for item in recount.items.all():
             MachineDieStock.objects.create(
-                machine=recount.machine,
+                enamel_machine=recount.enamel_machine,
                 die_size=item.die_size,
                 quantity=item.quantity
             )
@@ -481,4 +488,5 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         recount.save()
         
         return Response({"detail": "Recount sheet submitted and stock levels updated successfully."})
+
 

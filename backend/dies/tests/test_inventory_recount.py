@@ -5,8 +5,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User, UserSession
 import hashlib
 from decimal import Decimal
-from dies.models import MachineDieStock, DieInventoryRecount, DieInventoryRecountItem
-from machines.models import Machine, MachineCategory
+from dies.models import MachineDieStock, DieInventoryRecount, DieInventoryRecountItem, EnamelMachine
 
 class DieInventoryRecountAPITests(APITestCase):
     def setUp(self):
@@ -26,26 +25,25 @@ class DieInventoryRecountAPITests(APITestCase):
         )
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.operator_token}')
 
-        # Setup Category & Machine
-        self.category = MachineCategory.objects.create(name="Drawing Machines")
-        self.machine_a = Machine.objects.create(category=self.category, name="Machine A")
-        self.machine_b = Machine.objects.create(category=self.category, name="Machine B")
+        # Setup EnamelMachine
+        self.machine_a = EnamelMachine.objects.create(name="Enamel Machine A")
+        self.machine_b = EnamelMachine.objects.create(name="Enamel Machine B")
 
         # Initial stock levels
         self.stock_1 = MachineDieStock.objects.create(
-            machine=self.machine_a,
+            enamel_machine=self.machine_a,
             die_size=Decimal("0.620"),
             quantity=5
         )
         self.stock_2 = MachineDieStock.objects.create(
-            machine=self.machine_a,
+            enamel_machine=self.machine_a,
             die_size=Decimal("0.625"),
             quantity=3
         )
 
     def test_get_machine_die_stock_list(self):
         url = reverse('machine-die-stock-list')
-        response = self.client.get(url, {'machine': self.machine_a.id})
+        response = self.client.get(url, {'enamel_machine': self.machine_a.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]['die_size'], '0.620')
@@ -55,7 +53,7 @@ class DieInventoryRecountAPITests(APITestCase):
         url = reverse('inventory-recount-list')
         data = {
             "name": "August 2026 Audit",
-            "machine": self.machine_a.id,
+            "enamel_machine": self.machine_a.id,
             "recount_date": "2026-08-10",
             "items": [
                 {"die_size": "0.620", "quantity": 6},
@@ -77,7 +75,7 @@ class DieInventoryRecountAPITests(APITestCase):
     def test_update_inventory_recount_draft(self):
         recount = DieInventoryRecount.objects.create(
             name="September 2026 Audit",
-            machine=self.machine_a,
+            enamel_machine=self.machine_a,
             recount_date="2026-09-01",
             created_by=self.operator_user
         )
@@ -86,7 +84,7 @@ class DieInventoryRecountAPITests(APITestCase):
         url = reverse('inventory-recount-detail', args=[recount.id])
         data = {
             "name": "September 2026 Audit - Revised",
-            "machine": self.machine_a.id,
+            "enamel_machine": self.machine_a.id,
             "recount_date": "2026-09-02",
             "items": [
                 {"die_size": "0.620", "quantity": 7},
@@ -106,7 +104,7 @@ class DieInventoryRecountAPITests(APITestCase):
     def test_submit_inventory_recount_updates_live_stock(self):
         recount = DieInventoryRecount.objects.create(
             name="August 2026 Audit",
-            machine=self.machine_a,
+            enamel_machine=self.machine_a,
             recount_date="2026-08-10",
             created_by=self.operator_user
         )
@@ -121,7 +119,7 @@ class DieInventoryRecountAPITests(APITestCase):
         self.assertEqual(recount.status, 'SUBMITTED')
 
         # Live stock checks
-        stock = MachineDieStock.objects.filter(machine=self.machine_a)
+        stock = MachineDieStock.objects.filter(enamel_machine=self.machine_a)
         # Size 0.625 (originally had 3) should be deleted/missing now because recount audit resets active stock
         self.assertEqual(stock.count(), 2)
         self.assertEqual(stock.get(die_size=Decimal("0.620")).quantity, 8)
@@ -131,7 +129,7 @@ class DieInventoryRecountAPITests(APITestCase):
         url_detail = reverse('inventory-recount-detail', args=[recount.id])
         update_data = {
             "name": "August 2026 Audit - Mod",
-            "machine": self.machine_a.id,
+            "enamel_machine": self.machine_a.id,
             "recount_date": "2026-08-10",
             "items": []
         }

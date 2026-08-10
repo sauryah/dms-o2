@@ -25,6 +25,7 @@ import {
   Trash2,
   Check,
   TrendingUp,
+  Settings,
 } from 'lucide-react'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { Skeleton } from '../../../components/ui/Skeleton'
@@ -39,7 +40,10 @@ import {
   useCreateRecount,
   useUpdateRecount,
   useSubmitRecount,
-  useMachinesQuery,
+  useEnamelMachines,
+  useCreateEnamelMachine,
+  useUpdateEnamelMachine,
+  useDeleteEnamelMachine,
 } from '../hooks/useDieInventory'
 
 const SAMPLE_INVENTORY = `0.550    4
@@ -103,6 +107,7 @@ export function DieSetPlannerPage() {
   const [selectedRecountId, setSelectedRecountId] = useState<number | undefined>(undefined)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [isManageMachinesOpen, setIsManageMachinesOpen] = useState(false)
   
   // Create / Edit Recount Form States
   const [recountId, setRecountId] = useState<number | undefined>(undefined) // undefined = create, otherwise edit
@@ -115,17 +120,31 @@ export function DieSetPlannerPage() {
   const [newSize, setNewSize] = useState('')
   const [newQty, setNewQty] = useState('')
 
+  // Enamel Machine Management Form States
+  const [newMachineName, setNewMachineName] = useState('')
+  const [newMachineDesc, setNewMachineDesc] = useState('')
+
   // API Hooks
   const { result, loading, error, calculate, reset } = useDieSetPlanner()
   const { request } = useApi()
 
-  const { data: machines } = useMachinesQuery()
+  const { data: machines, refetch: refetchMachines } = useEnamelMachines()
   const { data: liveStocks, isLoading: isLoadingStocks, refetch: refetchStocks } = useMachineDieStocks(selectedMachineId)
   const { data: recounts, isLoading: isLoadingRecounts } = useDieInventoryRecounts()
 
   const createRecount = useCreateRecount()
   const updateRecount = useUpdateRecount()
   const submitRecount = useSubmitRecount()
+
+  const createMachine = useCreateEnamelMachine()
+  const deleteMachine = useDeleteEnamelMachine()
+
+  // Auto-select first machine when lists load
+  useMemo(() => {
+    if (machines && machines.length > 0 && selectedMachineId === undefined) {
+      setSelectedMachineId(machines[0].id)
+    }
+  }, [machines, selectedMachineId])
 
   // Parsing & calculations helpers for manual inputs
   const inventoryParse = useMemo(() => parseInventoryInput(inventoryText), [inventoryText])
@@ -234,12 +253,12 @@ export function DieSetPlannerPage() {
 
     setLoadingActiveStock(true)
     setActiveStockNotice(null)
-    request(`/api/machine-die-stock/?machine=${machId}`)
+    request(`/api/machine-die-stock/?enamel_machine=${machId}`)
       .then((stocks: any) => {
         if (Array.isArray(stocks) && stocks.length > 0) {
           const formattedRows = stocks.map((s: any) => `${s.die_size}\t${s.quantity}`)
           setInventoryText(formattedRows.join('\n'))
-          setActiveStockNotice(`Loaded stock levels for machine: ${selectedMachine.name}.`)
+          setActiveStockNotice(`Loaded stock levels for enamel machine: ${selectedMachine.name}.`)
         } else {
           setActiveStockNotice(`No inventory stock records found for machine ${selectedMachine.name}.`)
         }
@@ -390,7 +409,7 @@ export function DieSetPlannerPage() {
   const handleOpenEditRecount = (r: any) => {
     setRecountId(r.id)
     setRecountName(r.name)
-    setRecountMachineId(r.machine)
+    setRecountMachineId(r.enamel_machine)
     setRecountDate(r.recount_date)
     setRecountItems(r.items.map((i: any) => ({ die_size: i.die_size, quantity: i.quantity })))
     setIsModalOpen(true)
@@ -398,7 +417,7 @@ export function DieSetPlannerPage() {
 
   const handleLoadBaselineFromStock = () => {
     if (!recountMachineId) return
-    request(`/api/machine-die-stock/?machine=${recountMachineId}`)
+    request(`/api/machine-die-stock/?enamel_machine=${recountMachineId}`)
       .then((stocks: any) => {
         if (Array.isArray(stocks)) {
           const items = stocks.map((s: any) => ({ die_size: s.die_size, quantity: s.quantity }))
@@ -454,7 +473,7 @@ export function DieSetPlannerPage() {
 
     const payload = {
       name: recountName,
-      machine: recountMachineId,
+      enamel_machine: recountMachineId,
       recount_date: recountDate,
       items: recountItems,
     }
@@ -485,11 +504,45 @@ export function DieSetPlannerPage() {
     }
   }
 
+  // Enamel Machine Management Methods
+  const handleCreateEnamelMachine = async () => {
+    if (!newMachineName.trim()) {
+      alert('Machine Name is required')
+      return
+    }
+    try {
+      await createMachine.mutateAsync({
+        name: newMachineName,
+        description: newMachineDesc,
+      })
+      setNewMachineName('')
+      setNewMachineDesc('')
+      refetchMachines()
+    } catch (err: any) {
+      alert(`Failed to create enamel machine: ${err.message || err}`)
+    }
+  }
+
+  const handleDeleteEnamelMachine = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this enamel machine? All associated stock levels and recounts will also be deleted.')) {
+      return
+    }
+    try {
+      await deleteMachine.mutateAsync(id)
+      refetchMachines()
+      if (selectedMachineId === id) {
+        setSelectedMachineId(undefined)
+      }
+    } catch (err: any) {
+      alert(`Failed to delete machine: ${err.message || err}`)
+    }
+  }
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)]">
       <PageHeader
         title="Die Set Planner"
-        subtitle="Operational planning, live stock ledger and monthly stocktake audit sheets"
+        subtitle="Operational planning, live stock ledger and monthly stocktake audit sheets for enamel dies"
         breadcrumbs={[
           { label: 'Tools', href: '/tools' },
           { label: 'Die Set Planner' },
@@ -572,16 +625,20 @@ export function DieSetPlannerPage() {
                 >
                   <option value="" disabled>-- Choose Stock Source --</option>
                   <option value="all-dms">Authoritative Active DMS Stock (All)</option>
-                  <optgroup label="Machine Live Stocks">
-                    {machines?.map(m => (
-                      <option key={`mach-${m.id}`} value={`mach-${m.id}`}>{m.name}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Submitted Recount Sheets">
-                    {recounts?.filter(r => r.status === 'SUBMITTED').map(r => (
-                      <option key={`rec-${r.id}`} value={`rec-${r.id}`}>{r.name} ({r.machine_name})</option>
-                    ))}
-                  </optgroup>
+                  {machines && machines.length > 0 && (
+                    <optgroup label="Enamel Machine Live Stocks">
+                      {machines.map(m => (
+                        <option key={`mach-${m.id}`} value={`mach-${m.id}`}>{m.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {recounts && recounts.filter(r => r.status === 'SUBMITTED').length > 0 && (
+                    <optgroup label="Submitted Recount Sheets">
+                      {recounts.filter(r => r.status === 'SUBMITTED').map(r => (
+                        <option key={`rec-${r.id}`} value={`rec-${r.id}`}>{r.name} ({r.enamel_machine_name})</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -942,7 +999,7 @@ export function DieSetPlannerPage() {
                           type="text"
                           placeholder="Search die size..."
                           value={tableSearch}
-                          onChange={(e) => setStockSearch(e.target.value)}
+                          onChange={(e) => setTableSearch(e.target.value)}
                           className="pl-9 pr-4 py-1.5 w-44 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs text-[var(--color-text)] focus:border-blue-500 focus:outline-none transition-colors"
                         />
                       </div>
@@ -1130,21 +1187,32 @@ export function DieSetPlannerPage() {
                 <Database className="h-5 w-5 text-blue-400 animate-pulse" />
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-text)]">Live Allocation Stocks</h3>
-                  <p className="text-xs text-[var(--color-muted)]">Track what die sizes and quantities are physically inside each drawing machine.</p>
+                  <p className="text-xs text-[var(--color-muted)]">Track what die sizes and quantities are physically inside each enameling machine.</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider font-heading">Selected Machine:</span>
+                <span className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider font-heading">Enamel Machine:</span>
                 <select
                   value={selectedMachineId || ''}
                   onChange={(e) => setSelectedMachineId(Number(e.target.value))}
                   className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-text)] font-bold focus:border-blue-500 focus:outline-none"
                 >
+                  <option value="" disabled>-- Select Enamel Machine --</option>
                   {machines?.map((m) => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
+                
+                {/* Manage Enamel Machines Config Button */}
+                <button
+                  onClick={() => setIsManageMachinesOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+                  title="Configure Enamel Machines List"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  Manage List
+                </button>
               </div>
             </div>
 
@@ -1216,7 +1284,9 @@ export function DieSetPlannerPage() {
                 <Database className="h-10 w-10 text-[var(--color-border)] mx-auto mb-4" />
                 <h3 className="text-sm font-bold text-[var(--color-text)] mb-2">No Active Stock Levels</h3>
                 <p className="text-xs text-[var(--color-muted)] max-w-md mx-auto leading-relaxed mb-6">
-                  No stock records have been initialized for this machine yet. To record dies, complete and submit a recount sheet in the **Stocktake & Recounts** tab.
+                  {selectedMachineId
+                    ? "No stock records have been initialized for this machine yet. To record dies, complete and submit a recount sheet in the **Stocktake & Recounts** tab."
+                    : "Please select or create an enamel machine to view stock levels."}
                 </p>
               </div>
             )}
@@ -1231,13 +1301,14 @@ export function DieSetPlannerPage() {
                 <ClipboardPaste className="h-5 w-5 text-blue-400" />
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-text)]">Monthly Audits & Recounts</h3>
-                  <p className="text-xs text-[var(--color-muted)]">Record monthly audits of dies on a recount sheet, and commit them to update live machine stocks.</p>
+                  <p className="text-xs text-[var(--color-muted)]">Record monthly audits of dies on a recount sheet, and commit them to update live enamel machine stocks.</p>
                 </div>
               </div>
               
               <button
                 onClick={handleOpenCreateRecount}
                 className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                disabled={!machines || machines.length === 0}
               >
                 <Plus className="h-4 w-4" />
                 Create Recount Sheet
@@ -1256,7 +1327,7 @@ export function DieSetPlannerPage() {
                     <thead>
                       <tr className="bg-[var(--color-bg)]/50 border-b border-[var(--color-border)] font-mono text-[10px] text-[var(--color-muted)] uppercase tracking-wider">
                         <th className="py-3 px-4 font-semibold">Audit Name</th>
-                        <th className="py-3 px-4 font-semibold">Machine</th>
+                        <th className="py-3 px-4 font-semibold">Enamel Machine</th>
                         <th className="py-3 px-4 text-center font-semibold">Audit Date</th>
                         <th className="py-3 px-4 text-center font-semibold">Created By</th>
                         <th className="py-3 px-4 text-center font-semibold">Status</th>
@@ -1267,7 +1338,7 @@ export function DieSetPlannerPage() {
                       {recounts.map((r) => (
                         <tr key={r.id} className="hover:bg-slate-900/10 transition-colors">
                           <td className="py-3.5 px-4 font-bold text-[var(--color-text)]">{r.name}</td>
-                          <td className="py-3.5 px-4 text-[var(--color-text)]">{r.machine_name}</td>
+                          <td className="py-3.5 px-4 text-[var(--color-text)]">{r.enamel_machine_name}</td>
                           <td className="py-3.5 px-4 text-center text-xs font-mono text-[var(--color-muted)]">{r.recount_date}</td>
                           <td className="py-3.5 px-4 text-center text-[var(--color-muted)]">
                             <span className="inline-flex items-center gap-1">
@@ -1327,7 +1398,9 @@ export function DieSetPlannerPage() {
                 <ClipboardPaste className="h-10 w-10 text-[var(--color-border)] mx-auto mb-4" />
                 <h3 className="text-sm font-bold text-[var(--color-text)] mb-2">No Audits Recorded</h3>
                 <p className="text-xs text-[var(--color-muted)] max-w-md mx-auto leading-relaxed mb-6">
-                  You haven't created any audit sheets yet. Create one to begin auditing and tracking your dies monthly.
+                  {machines && machines.length > 0
+                    ? "You haven't created any audit sheets yet. Click 'Create Recount Sheet' above to begin auditing your enamel dies."
+                    : "Create one or more enamel machines under 'Live Machine Stock' first to write audit sheets."}
                 </p>
               </div>
             )}
@@ -1335,6 +1408,101 @@ export function DieSetPlannerPage() {
         )}
 
       </div>
+
+      {/* Modal - Manage Enamel Machines List */}
+      <AnimatePresence>
+        {isManageMachinesOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col"
+            >
+              <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+                <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-wider font-heading flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-blue-400" />
+                  Manage Enamel Machines
+                </h3>
+                <button
+                  onClick={() => setIsManageMachinesOpen(false)}
+                  className="text-[var(--color-muted)] hover:text-[var(--color-text)] text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto space-y-4 flex-1">
+                {/* Form to Add */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3.5 space-y-3">
+                  <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">Add New Enamel Machine</div>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Machine Name (e.g. Enamel Line 1)"
+                      value={newMachineName}
+                      onChange={(e) => setNewMachineName(e.target.value)}
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-text)] focus:border-blue-500 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description (Optional)"
+                      value={newMachineDesc}
+                      onChange={(e) => setNewMachineDesc(e.target.value)}
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs text-[var(--color-text)] focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateEnamelMachine}
+                    className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
+                  >
+                    Add Machine
+                  </button>
+                </div>
+
+                {/* Machines List */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-1">Configured Enamel Machines</div>
+                  {machines && machines.length > 0 ? (
+                    machines.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-[var(--color-text)]">{m.name}</div>
+                          {m.description && <div className="text-[10px] text-[var(--color-muted)]">{m.description}</div>}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteEnamelMachine(m.id)}
+                          className="p-1 rounded text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-[var(--color-muted)] text-xs font-sans">
+                      No enamel machines defined yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsManageMachinesOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal - Create/Edit Recount Sheet */}
       <AnimatePresence>
@@ -1372,7 +1540,7 @@ export function DieSetPlannerPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-1">Machine</label>
+                    <label className="block text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-1">Enamel Machine</label>
                     <select
                       value={recountMachineId || ''}
                       onChange={(e) => setRecountMachineId(Number(e.target.value))}
@@ -1539,7 +1707,7 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl max-w-md w-full max-h-[75vh] flex flex-col animate-in fade-in zoom-in-95 duration-150"
+        className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl max-w-md w-full max-h-[75vh] flex flex-col"
       >
         <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
           <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
@@ -1568,8 +1736,8 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
                   <span className="font-bold text-[var(--color-text)]">{recount.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--color-muted)]">Machine:</span>
-                  <span className="font-bold text-[var(--color-text)]">{recount.machine_name}</span>
+                  <span className="text-[var(--color-muted)]">Enamel Machine:</span>
+                  <span className="font-bold text-[var(--color-text)]">{recount.enamel_machine_name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--color-muted)]">Audit Date:</span>

@@ -47,10 +47,16 @@ export interface DieSetCalculateRequest {
   target_sets?: number
 }
 
+export interface EnamelMachine {
+  id: number
+  name: string
+  description: string
+}
+
 export interface MachineDieStock {
   id: number
-  machine: number
-  machine_name: string
+  enamel_machine: number
+  enamel_machine_name: string
   die_size: string
   quantity: number
   updated_at: string
@@ -67,8 +73,8 @@ export type RecountStatus = 'DRAFT' | 'SUBMITTED'
 export interface DieInventoryRecount {
   id: number
   name: string
-  machine: number
-  machine_name: string
+  enamel_machine: number
+  enamel_machine_name: string
   recount_date: string
   created_at: string
   created_by?: number
