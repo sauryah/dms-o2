@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from 'react'
+import * as XLSX from 'xlsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ClipboardPaste,
@@ -119,7 +120,7 @@ export function DieSetPlannerPage() {
   // Recount size input form states
   const [newSize, setNewSize] = useState('')
   const [newQty, setNewQty] = useState('')
-  const [isBulkRecountMode, setIsBulkRecountMode] = useState(false)
+  const [inputMode, setInputMode] = useState<'single' | 'bulk' | 'excel'>('single')
   const [bulkRecountText, setBulkRecountText] = useState('')
 
   // Enamel Machine Management Form States
@@ -405,7 +406,7 @@ export function DieSetPlannerPage() {
     setRecountMachineId(machines && machines.length > 0 ? machines[0].id : undefined)
     setRecountDate(new Date().toISOString().slice(0, 10))
     setRecountItems([])
-    setIsBulkRecountMode(false)
+    setInputMode('single')
     setBulkRecountText('')
     setIsModalOpen(true)
   }
@@ -416,7 +417,7 @@ export function DieSetPlannerPage() {
     setRecountMachineId(r.enamel_machine)
     setRecountDate(r.recount_date)
     setRecountItems(r.items.map((i: any) => ({ die_size: i.die_size, quantity: i.quantity })))
-    setIsBulkRecountMode(false)
+    setInputMode('single')
     setBulkRecountText('')
     setIsModalOpen(true)
   }
@@ -462,7 +463,91 @@ export function DieSetPlannerPage() {
     }
 
     setBulkRecountText('')
-    setIsBulkRecountMode(false)
+    setInputMode('single')
+  }
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result
+        if (!bstr) return
+        const wb = XLSX.read(bstr, { type: 'binary' })
+        const wsname = wb.SheetNames[0]
+        const ws = wb.Sheets[wsname]
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][]
+        
+        const parsedRows: Array<{ die_size: string; quantity: number }> = []
+        let warningMsgs: string[] = []
+
+        for (let rIdx = 0; rIdx < data.length; rIdx++) {
+          const row = data[rIdx]
+          if (!Array.isArray(row) || row.length === 0) continue
+
+          const sizeVal = row[0]
+          const qtyVal = row[1]
+
+          if (sizeVal === undefined || sizeVal === null) continue
+
+          const sizeStr = String(sizeVal).trim()
+          if (!sizeStr) continue
+
+          // Skip headers (non-numeric first column like "Size", "Die Size", "Name")
+          if (sizeStr.toLowerCase().includes('size') || sizeStr.toLowerCase().includes('die') || sizeStr.toLowerCase().includes('name') || sizeStr.toLowerCase().includes('dimension')) {
+            continue
+          }
+
+          const { hundredThousands } = normalizeDieSize(sizeStr)
+          if (hundredThousands === null) {
+            if (isNaN(Number(sizeStr.replace(/[^\d.-]/g, '')))) {
+              continue // skip probable header row silently
+            }
+            warningMsgs.push(`Row ${rIdx + 1}: Invalid size format "${sizeStr}"`)
+            continue
+          }
+
+          let qty = 0
+          if (qtyVal !== undefined && qtyVal !== null) {
+            qty = parseInt(String(qtyVal))
+            if (isNaN(qty) || qty < 0) {
+              warningMsgs.push(`Row ${rIdx + 1}: Invalid quantity "${qtyVal}". Defaulted to 0.`)
+              qty = 0
+            }
+          }
+
+          const cleanSize = formatDieSize(hundredThousands)
+          
+          const existing = parsedRows.find(item => item.die_size === cleanSize)
+          if (existing) {
+            existing.quantity += qty
+          } else {
+            parsedRows.push({
+              die_size: cleanSize,
+              quantity: qty
+            })
+          }
+        }
+
+        if (parsedRows.length === 0) {
+          alert("No valid die size & quantity rows found. Please verify Column A has sizes (e.g. 0.620) and Column B has quantities (e.g. 5).")
+          return
+        }
+
+        if (warningMsgs.length > 0) {
+          alert(`Imported with some warnings:\n${warningMsgs.slice(0, 5).join('\n')}${warningMsgs.length > 5 ? '\n...and more warnings' : ''}`)
+        }
+
+        setRecountItems(parsedRows)
+        alert(`Successfully imported ${parsedRows.length} items from ${file.name}!`)
+        setInputMode('single')
+      } catch (err: any) {
+        alert(`Failed to parse Excel file: ${err.message || err}`)
+      }
+    }
+    reader.readAsBinaryString(file)
   }
 
   const handleAddRecountItem = () => {
@@ -1617,9 +1702,9 @@ export function DieSetPlannerPage() {
                 <div className="flex border-b border-[var(--color-border)] mb-2 mt-4">
                   <button
                     type="button"
-                    onClick={() => setIsBulkRecountMode(false)}
+                    onClick={() => setInputMode('single')}
                     className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-all ${
-                      !isBulkRecountMode
+                      inputMode === 'single'
                         ? 'border-blue-500 text-blue-400 font-bold'
                         : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
                     }`}
@@ -1628,18 +1713,29 @@ export function DieSetPlannerPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsBulkRecountMode(true)}
+                    onClick={() => setInputMode('bulk')}
                     className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-all ${
-                      isBulkRecountMode
+                      inputMode === 'bulk'
                         ? 'border-blue-500 text-blue-400 font-bold'
                         : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
                     }`}
                   >
                     Bulk Paste Data
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode('excel')}
+                    className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-all ${
+                      inputMode === 'excel'
+                        ? 'border-blue-500 text-blue-400 font-bold'
+                        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                    }`}
+                  >
+                    Import Excel / CSV
+                  </button>
                 </div>
 
-                {!isBulkRecountMode ? (
+                {inputMode === 'single' && (
                   /* Add Item Row Input */
                   <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3">
                     <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)] mb-2">Add or Update Tally</div>
@@ -1684,7 +1780,9 @@ export function DieSetPlannerPage() {
                       </button>
                     </div>
                   </div>
-                ) : (
+                )}
+
+                {inputMode === 'bulk' && (
                   /* Bulk Paste Input */
                   <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-3 space-y-3">
                     <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">Bulk Import Recount Data</div>
@@ -1711,6 +1809,27 @@ export function DieSetPlannerPage() {
                       >
                         Overwrite All
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {inputMode === 'excel' && (
+                  /* Excel Import Input */
+                  <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-5 space-y-4">
+                    <div className="text-[10px] uppercase font-mono font-bold text-[var(--color-muted)]">Upload Spreadsheet (.xlsx, .xls, .csv)</div>
+                    <div className="border-2 border-dashed border-[var(--color-border)] hover:border-blue-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors relative">
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleExcelImport}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <FileSpreadsheet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                      <div className="text-xs font-semibold text-[var(--color-text)] mb-1">Click or drag spreadsheet file here to upload</div>
+                      <p className="text-[10px] text-[var(--color-muted)]">Supports Excel (.xlsx, .xls) and CSV files</p>
+                    </div>
+                    <div className="bg-[var(--color-surface)]/50 border border-[var(--color-border)]/60 rounded-lg p-3 text-[10px] text-[var(--color-muted)] leading-relaxed">
+                      <strong>Required Format:</strong> The sheet must have die sizes in the first column (e.g. <code>0.620</code> or <code>16.00</code>) and quantities in the second column. Headers like "Size" or "Quantity" are automatically detected and skipped.
                     </div>
                   </div>
                 )}
