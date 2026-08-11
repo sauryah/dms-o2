@@ -2,13 +2,14 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from './useApi'
 import { useAuth } from '../contexts/AuthContext'
-import { DIE_UPDATE_EVENT, SET_UPDATE_EVENT, MACHINE_UPDATE_EVENT, BACKUP_UPDATE_EVENT } from '../contracts/dieContracts'
+import { DIE_UPDATE_EVENT, SET_UPDATE_EVENT, MACHINE_UPDATE_EVENT, BACKUP_UPDATE_EVENT, RECOUNT_UPDATE_EVENT } from '../contracts/dieContracts'
 
 const EVENT_QUERY_KEYS: Record<string, string[][]> = {
   [DIE_UPDATE_EVENT]: [['dies'], ['search'], ['stats']],
   [SET_UPDATE_EVENT]: [['sets'], ['machines']],
   [MACHINE_UPDATE_EVENT]: [['machines'], ['categories']],
   [BACKUP_UPDATE_EVENT]: [['backups']],
+  [RECOUNT_UPDATE_EVENT]: [['machineDieStocks'], ['dieInventoryRecounts']],
 }
 
 export function useRealtimeSync(options: {
@@ -148,6 +149,24 @@ export function useRealtimeSync(options: {
                 const msg = `Backup "${filename}" uploaded successfully.`
                 options.onShowToast(msg, 'success')
                 options.onAddNotification('Backup Uploaded', msg, 'success')
+                options.onAnnounce(msg)
+              }
+            } else if (payload.type === RECOUNT_UPDATE_EVENT) {
+              const action = payload.data?.action
+              if (action === 'submit') {
+                const msg = 'Audit recount sheet submitted. Live stocks updated.'
+                options.onShowToast(msg, 'success')
+                options.onAddNotification('Stock Audited', msg, 'success')
+                options.onAnnounce(msg)
+              } else if (action === 'create') {
+                const msg = 'New audit recount sheet created.'
+                options.onShowToast(msg, 'info')
+                options.onAddNotification('Audit Created', msg, 'info')
+                options.onAnnounce(msg)
+              } else if (action === 'save') {
+                const msg = 'Audit recount sheet updated.'
+                options.onShowToast(msg, 'info')
+                options.onAddNotification('Audit Updated', msg, 'info')
                 options.onAnnounce(msg)
               }
             }

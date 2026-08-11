@@ -25,6 +25,7 @@ export const DIE_WORKFLOW_EVENT_TYPES = [
   'set_update',
   'machine_update',
   'backup_update',
+  'recount_update',
 ] as const
 export type DieWorkflowEventType = typeof DIE_WORKFLOW_EVENT_TYPES[number]
 
@@ -32,6 +33,7 @@ export const DIE_UPDATE_EVENT = DIE_WORKFLOW_EVENT_TYPES[0]
 export const SET_UPDATE_EVENT = DIE_WORKFLOW_EVENT_TYPES[1]
 export const MACHINE_UPDATE_EVENT = DIE_WORKFLOW_EVENT_TYPES[2]
 export const BACKUP_UPDATE_EVENT = DIE_WORKFLOW_EVENT_TYPES[3]
+export const RECOUNT_UPDATE_EVENT = DIE_WORKFLOW_EVENT_TYPES[4]
 
 export const DIE_WORKFLOW_ACTIONS = [
   'save',

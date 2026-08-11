@@ -480,7 +480,24 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        recount = serializer.save(created_by=self.request.user)
+        from dms.events import broadcast_event
+        from django.db import transaction
+        transaction.on_commit(lambda: broadcast_event("recount_update", {
+            "id": recount.id,
+            "enamel_machine_id": recount.enamel_machine.id,
+            "action": "create"
+        }))
+
+    def perform_update(self, serializer):
+        recount = serializer.save()
+        from dms.events import broadcast_event
+        from django.db import transaction
+        transaction.on_commit(lambda: broadcast_event("recount_update", {
+            "id": recount.id,
+            "enamel_machine_id": recount.enamel_machine.id,
+            "action": "save"
+        }))
 
     @action(detail=True, methods=['post'], url_path='submit')
     @transaction.atomic
@@ -491,6 +508,17 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         
         # Lock recount for update
         recount = DieInventoryRecount.objects.select_for_update().get(id=recount.id)
+        
+        # Capture current stocks to save as previous_quantity for audit history
+        current_stocks = {
+            s.die_size: s.quantity 
+            for s in MachineDieStock.objects.filter(enamel_machine=recount.enamel_machine)
+        }
+        
+        # Set previous_quantity on recount items
+        for item in recount.items.all():
+            item.previous_quantity = current_stocks.get(item.die_size, 0)
+            item.save(update_fields=['previous_quantity'])
         
         # 1. Delete all existing stock for this enamel machine to match audit recount exactly
         MachineDieStock.objects.filter(enamel_machine=recount.enamel_machine).delete()
@@ -506,6 +534,14 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         # 3. Mark recount sheet as submitted
         recount.status = 'SUBMITTED'
         recount.save()
+        
+        # 4. Broadcast recount update real-time event
+        from dms.events import broadcast_event
+        transaction.on_commit(lambda: broadcast_event("recount_update", {
+            "id": recount.id,
+            "enamel_machine_id": recount.enamel_machine.id,
+            "action": "submit"
+        }))
         
         return Response({"detail": "Recount sheet submitted and stock levels updated successfully."})
 

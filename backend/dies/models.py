@@ -193,6 +193,7 @@ class DieInventoryRecountItem(models.Model):
     recount = models.ForeignKey(DieInventoryRecount, on_delete=models.CASCADE, related_name='items')
     die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
     quantity = models.PositiveIntegerField()
+    previous_quantity = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ['recount', 'die_size']

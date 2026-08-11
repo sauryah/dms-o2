@@ -27,7 +27,12 @@ import {
   Check,
   TrendingUp,
   Settings,
+  Upload,
 } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer
+} from 'recharts'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { Skeleton } from '../../../components/ui/Skeleton'
 import { parseInventoryInput, parseSeriesInput, normalizeDieSize, formatDieSize } from '../domain/parsers'
@@ -173,6 +178,58 @@ export function DieSetPlannerPage() {
   const [recountMachineId, setRecountMachineId] = useState<number | undefined>(undefined)
   const [recountDate, setRecountDate] = useState(new Date().toISOString().slice(0, 10))
   const [recountItems, setRecountItems] = useState<{ die_size: string; quantity: number }[]>([])
+
+  const [hasDraft, setHasDraft] = useState(false)
+
+  // Auto-save draft recount sheet to localStorage when creating a sheet
+  useEffect(() => {
+    if (isModalOpen && recountId === undefined && recountMachineId) {
+      const draft = {
+        name: recountName,
+        date: recountDate,
+        items: recountItems
+      }
+      localStorage.setItem(`dms_draft_recount_${recountMachineId}`, JSON.stringify(draft))
+    }
+  }, [recountName, recountDate, recountItems, recountMachineId, isModalOpen, recountId])
+
+  // Check if draft exists when modal opens or machine changes
+  useEffect(() => {
+    if (isModalOpen && recountId === undefined && recountMachineId) {
+      const draftStr = localStorage.getItem(`dms_draft_recount_${recountMachineId}`)
+      if (draftStr) {
+        try {
+          const draft = JSON.parse(draftStr)
+          if (draft && (draft.items.length > 0 || draft.name !== `Audit - ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`)) {
+            setHasDraft(true)
+            return
+          }
+        } catch (_) {}
+      }
+    }
+    setHasDraft(false)
+  }, [recountMachineId, isModalOpen, recountId, recountName])
+
+  const handleRestoreDraft = () => {
+    if (!recountMachineId) return
+    const draftStr = localStorage.getItem(`dms_draft_recount_${recountMachineId}`)
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr)
+        setRecountName(draft.name)
+        setRecountDate(draft.date)
+        setRecountItems(draft.items)
+        setHasDraft(false)
+      } catch (_) {}
+    }
+  }
+
+  const clearLocalDraft = useCallback(() => {
+    if (recountMachineId) {
+      localStorage.removeItem(`dms_draft_recount_${recountMachineId}`)
+      setHasDraft(false)
+    }
+  }, [recountMachineId])
   
   // Recount size input form states
   const [newSize, setNewSize] = useState('')
@@ -695,6 +752,7 @@ export function DieSetPlannerPage() {
         await updateRecount.mutateAsync({ id: recountId, data: payload })
       } else {
         await createRecount.mutateAsync(payload)
+        clearLocalDraft()
       }
       setIsModalOpen(false)
     } catch (err: any) {
@@ -1190,6 +1248,8 @@ export function DieSetPlannerPage() {
                     </div>
                   )}
                 </div>
+
+                <BottleneckChart result={result} />
 
                 {/* Requirements breakdown table with filters & search */}
                 <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
@@ -1802,14 +1862,27 @@ export function DieSetPlannerPage() {
 
                 {/* Baseline prefill option (only for Create) */}
                 {!recountId && (
-                  <button
-                    type="button"
-                    onClick={handleLoadBaselineFromStock}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded bg-blue-600/10 border border-blue-500/30 text-blue-300 hover:bg-blue-600/20 transition-colors"
-                  >
-                    <Database className="h-3.5 w-3.5" />
-                    Load current stocks as baseline prefill
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleLoadBaselineFromStock}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded bg-blue-600/10 border border-blue-500/30 text-blue-300 hover:bg-blue-600/20 transition-colors"
+                    >
+                      <Database className="h-3.5 w-3.5" />
+                      Load current stocks as baseline prefill
+                    </button>
+
+                    {hasDraft && (
+                      <button
+                        type="button"
+                        onClick={handleRestoreDraft}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-colors"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                        Restore unsaved draft count
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {/* Input Mode Selector */}
@@ -2036,6 +2109,79 @@ export function DieSetPlannerPage() {
   )
 }
 
+// Subcomponent to render Recharts bottleneck and required stock deficits
+function BottleneckChart({ result }: { result: any }) {
+  const chartData = useMemo(() => {
+    if (!result || !Array.isArray(result.requirements)) return []
+    
+    // Determine the target amount
+    const targetSets = result.target_sets !== undefined && result.target_sets !== null
+      ? result.target_sets
+      : (result.maximum_sets + 1)
+      
+    // Filter to show bottleneck sizes or missing sizes
+    const items = result.requirements
+      .filter((req: any) => {
+        const isBottleneck = req.possible_sets === result.maximum_sets
+        const isMissing = req.available < req.required_per_set
+        const isProcure = result.procurement?.some((p: any) => p.die_size === req.die_size)
+        return isBottleneck || isMissing || isProcure
+      })
+      .slice(0, 10) // Limit to top 10 sizes
+      .map((req: any) => {
+        const requiredQty = req.required_per_set * targetSets
+        return {
+          size: `${req.die_size} mm`,
+          Available: req.available,
+          Required: requiredQty,
+        }
+      })
+    return items
+  }, [result])
+
+  if (chartData.length === 0) return null
+
+  return (
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 select-none space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-blue-400" />
+        <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider font-heading">
+          Bottleneck & Deficit Analytics
+        </h3>
+      </div>
+      <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
+        Comparing available stock against requirements to reach target/next set.
+      </p>
+      
+      <div className="h-64 w-full text-xs font-mono">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
+            <XAxis dataKey="size" stroke="#64748b" tickLine={false} />
+            <YAxis stroke="#64748b" tickLine={false} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                borderRadius: '8px',
+                color: 'var(--color-text)',
+                fontFamily: 'monospace',
+                fontSize: '11px',
+              }}
+            />
+            <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '11px' }} />
+            <Bar dataKey="Available" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
+            <Bar dataKey="Required" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
 // Subcomponent to view recount sheet details (keeps parent component code smaller and clean)
 function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: () => void }) {
   const { data: recount, isLoading } = useDieInventoryRecount(recountId)
@@ -2096,19 +2242,31 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
                   <thead>
                     <tr className="bg-[var(--color-bg)]/60 border-b border-[var(--color-border)] font-mono text-[9px] text-[var(--color-muted)] uppercase tracking-wider">
                       <th className="py-2.5 px-3 font-semibold">Die Size (mm)</th>
-                      <th className="py-2.5 px-3 text-right font-semibold">Audited Quantity</th>
+                      <th className="py-2.5 px-3 text-center font-semibold">Audited Qty</th>
+                      <th className="py-2.5 px-3 text-right font-semibold">Adjustment</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border)]/60 font-mono">
-                    {recount.items?.map((item: any) => (
-                      <tr key={item.id} className="hover:bg-slate-900/10">
-                        <td className="py-2 px-3 font-bold text-[var(--color-text)]">{item.die_size}</td>
-                        <td className="py-2 px-3 text-right font-black text-blue-400">{item.quantity}</td>
-                      </tr>
-                    ))}
+                    {recount.items?.map((item: any) => {
+                      const prev = item.previous_quantity !== undefined && item.previous_quantity !== null
+                        ? item.previous_quantity
+                        : 0
+                      const diff = item.quantity - prev
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-900/10">
+                          <td className="py-2 px-3 font-bold text-[var(--color-text)]">{item.die_size}</td>
+                          <td className="py-2 px-3 text-center font-black text-blue-400">{item.quantity}</td>
+                          <td className={`py-2 px-3 text-right font-bold ${
+                            diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-rose-400' : 'text-[var(--color-muted)]'
+                          }`}>
+                            {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0'}
+                          </td>
+                        </tr>
+                      )
+                    })}
                     {(!recount.items || recount.items.length === 0) && (
                       <tr>
-                        <td colSpan={2} className="py-6 text-center text-[var(--color-muted)] font-sans">
+                        <td colSpan={3} className="py-6 text-center text-[var(--color-muted)] font-sans">
                           No items registered on this audit sheet.
                         </td>
                       </tr>
@@ -2133,10 +2291,12 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
                   `Audit Date,${recount.recount_date}`,
                   `Audited By,${recount.created_by_username}`,
                   '',
-                  'Die Size,Audited Quantity'
+                  'Die Size,Audited Quantity,Previous Quantity,Adjustment'
                 ]
                 recount.items?.forEach((item: any) => {
-                  csvLines.push(`"${item.die_size}",${item.quantity}`)
+                  const prev = item.previous_quantity !== undefined && item.previous_quantity !== null ? item.previous_quantity : 0
+                  const diff = item.quantity - prev
+                  csvLines.push(`"${item.die_size}",${item.quantity},${prev},${diff}`)
                 })
                 const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })
                 const url = URL.createObjectURL(blob)
@@ -2189,6 +2349,63 @@ function InputCard({
   icon: 'inventory' | 'series'
 }) {
   const Icon = icon === 'inventory' ? Layers : icon === 'series' ? FileSpreadsheet : Package
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result
+        if (!bstr) return
+        const wb = XLSX.read(bstr, { type: 'binary' })
+        const wsname = wb.SheetNames[0]
+        const ws = wb.Sheets[wsname]
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][]
+        
+        const rows: string[] = []
+        for (let rIdx = 0; rIdx < data.length; rIdx++) {
+          const row = data[rIdx]
+          if (!Array.isArray(row) || row.length === 0) continue
+
+          const sizeVal = row[0]
+          const qtyVal = row[1]
+
+          if (sizeVal === undefined || sizeVal === null) continue
+
+          const sizeStr = String(sizeVal).trim()
+          if (!sizeStr) continue
+
+          // Skip headers
+          if (sizeStr.toLowerCase().includes('size') || sizeStr.toLowerCase().includes('die') || sizeStr.toLowerCase().includes('name') || sizeStr.toLowerCase().includes('dimension')) {
+            continue
+          }
+
+          let qty = 1
+          if (qtyVal !== undefined && qtyVal !== null) {
+            const parsedQty = parseInt(String(qtyVal))
+            if (!isNaN(parsedQty) && parsedQty >= 0) {
+              qty = parsedQty
+            }
+          }
+          
+          rows.push(`${sizeStr}\t${qty}`)
+        }
+
+        if (rows.length === 0) {
+          alert("No valid data rows found in spreadsheet. Column A should contain sizes (e.g. 0.620) and Column B should contain quantities.")
+          return
+        }
+
+        onChange(rows.join('\n'))
+      } catch (err: any) {
+        alert(`Failed to parse file: ${err.message || err}`)
+      }
+    }
+    reader.readAsBinaryString(file)
+  }
+
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
       <div className="flex items-center justify-between mb-1">
@@ -2198,11 +2415,24 @@ function InputCard({
             {title}
           </label>
         </div>
-        {badge && (
-          <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-300">
-            {badge}
-          </span>
-        )}
+        
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded cursor-pointer transition-colors border border-slate-700/50">
+            <Upload className="h-3 w-3" />
+            <span>Upload Spreadsheet</span>
+            <input 
+              type="file" 
+              accept=".xlsx,.xls,.csv" 
+              className="hidden" 
+              onChange={handleFileUpload} 
+            />
+          </label>
+          {badge && (
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-300">
+              {badge}
+            </span>
+          )}
+        </div>
       </div>
       <p className="text-[11px] text-[var(--color-muted)] mb-3">{description}</p>
       <textarea

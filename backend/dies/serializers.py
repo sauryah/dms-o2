@@ -303,7 +303,7 @@ class MachineDieStockSerializer(serializers.ModelSerializer):
 class DieInventoryRecountItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = DieInventoryRecountItem
-        fields = ['id', 'die_size', 'quantity']
+        fields = ['id', 'die_size', 'quantity', 'previous_quantity']
         read_only_fields = ['id']
 
 
