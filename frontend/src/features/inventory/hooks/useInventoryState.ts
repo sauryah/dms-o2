@@ -149,8 +149,13 @@ export function useInventoryState() {
         }
       }
 
-      params.append('limit', String(pageSize))
-      params.append('offset', String((page - 1) * pageSize))
+      const isPaginated = !selectedNode || selectedNode.type === 'search' || selectedNode.type === 'unassigned'
+      if (isPaginated) {
+        params.append('limit', String(pageSize))
+        params.append('offset', String((page - 1) * pageSize))
+      } else {
+        params.append('limit', '5000')
+      }
       
       if (params.toString()) {
         url += `?${params.toString()}`

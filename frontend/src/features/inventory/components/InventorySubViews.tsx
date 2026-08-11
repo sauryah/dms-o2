@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Search, Database, Cpu, Layers, Activity, Sliders, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { isDieActive } from '../../../utils/dieHelpers'
 import { RackLayoutGrid } from './RackLayoutGrid'
@@ -294,6 +294,17 @@ export function MachineView({
   const columns = getInventoryColumns(navigate)
   const machineDies = selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
 
+  const [localPage, setLocalPage] = useState(1)
+  const localPageSize = 25
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [selectedMachine])
+
+  const paginatedMachineDies = useMemo(() => {
+    return machineDies.slice((localPage - 1) * localPageSize, localPage * localPageSize)
+  }, [machineDies, localPage])
+
   return (
     <div className="space-y-8">
       {selectedMachine ? (
@@ -362,15 +373,61 @@ export function MachineView({
                 </div>
               )
             ) : viewMode === 'list' ? (
-              <div className="animate-fadeIn">
+              <div className="animate-fadeIn space-y-4">
                 <DataTable 
                   columns={columns} 
-                  rows={machineDies} 
+                  rows={paginatedMachineDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
                   selectedIds={selectedDieIds}
                   onSelectId={onSelectId}
                   onSelectAll={onSelectAll}
                 />
+                
+                {machineDies.length > localPageSize && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
+                    <div className="text-xs text-slate-400">
+                      Showing {(localPage - 1) * localPageSize + 1} to {Math.min(localPage * localPageSize, machineDies.length)} of {machineDies.length} entries
+                    </div>
+                    <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+                      <button
+                        onClick={() => setLocalPage(p => Math.max(1, p - 1))}
+                        disabled={localPage === 1}
+                        className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                      >
+                        Previous
+                      </button>
+                      {Array.from({ length: Math.ceil(machineDies.length / localPageSize) }).map((_, i) => {
+                        const pageNum = i + 1
+                        if (pageNum === 1 || pageNum === Math.ceil(machineDies.length / localPageSize) || Math.abs(pageNum - localPage) <= 1) {
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setLocalPage(pageNum)}
+                              className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                                localPage === pageNum
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          )
+                        }
+                        if (pageNum === 2 || pageNum === Math.ceil(machineDies.length / localPageSize) - 1) {
+                          return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+                        }
+                        return null
+                      })}
+                      <button
+                        onClick={() => setLocalPage(p => Math.min(Math.ceil(machineDies.length / localPageSize), p + 1))}
+                        disabled={localPage === Math.ceil(machineDies.length / localPageSize)}
+                        className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <RackLayoutGrid 
@@ -425,6 +482,12 @@ export function SetView({
   const setDies = selectedSetData?.set.dies || []
 
   const [sizeSort, setSizeSort] = useState<'none' | 'asc' | 'desc'>('none')
+  const [localPage, setLocalPage] = useState(1)
+  const localPageSize = 25
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [selectedSetData, sizeSort])
 
   const getDieSize = (die: any) => {
     if (die.die_type === 'ROUND') {
@@ -442,6 +505,56 @@ export function SetView({
       return sizeSort === 'desc' ? sizeB - sizeA : sizeA - sizeB
     })
   }, [setDies, sizeSort])
+
+  const paginatedSetDies = useMemo(() => {
+    return sortedSetDies.slice((localPage - 1) * localPageSize, localPage * localPageSize)
+  }, [sortedSetDies, localPage])
+
+  const renderPaginationControls = () => (
+    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
+      <div className="text-xs text-slate-400">
+        Showing {(localPage - 1) * localPageSize + 1} to {Math.min(localPage * localPageSize, sortedSetDies.length)} of {sortedSetDies.length} entries
+      </div>
+      <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+        <button
+          onClick={() => setLocalPage(p => Math.max(1, p - 1))}
+          disabled={localPage === 1}
+          className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+        >
+          Previous
+        </button>
+        {Array.from({ length: Math.ceil(sortedSetDies.length / localPageSize) }).map((_, i) => {
+          const pageNum = i + 1
+          if (pageNum === 1 || pageNum === Math.ceil(sortedSetDies.length / localPageSize) || Math.abs(pageNum - localPage) <= 1) {
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setLocalPage(pageNum)}
+                className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                  localPage === pageNum
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                }`}
+              >
+                {pageNum}
+              </button>
+            )
+          }
+          if (pageNum === 2 || pageNum === Math.ceil(sortedSetDies.length / localPageSize) - 1) {
+            return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+          }
+          return null
+        })}
+        <button
+          onClick={() => setLocalPage(p => Math.min(Math.ceil(sortedSetDies.length / localPageSize), p + 1))}
+          disabled={localPage === Math.ceil(sortedSetDies.length / localPageSize)}
+          className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-8">
@@ -529,25 +642,29 @@ export function SetView({
             </div>
             
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
-                {sortedSetDies.map((die: any) => (
-                  <DieCard 
-                    key={die.die_id} 
-                    die={die} 
-                    onClick={() => navigate(`/dies/${die.die_id}`)} 
-                  />
-                ))}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
+                  {paginatedSetDies.map((die: any) => (
+                    <DieCard 
+                      key={die.die_id} 
+                      die={die} 
+                      onClick={() => navigate(`/dies/${die.die_id}`)} 
+                    />
+                  ))}
+                </div>
+                {sortedSetDies.length > localPageSize && renderPaginationControls()}
               </div>
             ) : viewMode === 'list' ? (
-              <div className="animate-fadeIn">
+              <div className="animate-fadeIn space-y-4">
                 <DataTable 
                   columns={columns} 
-                  rows={sortedSetDies} 
+                  rows={paginatedSetDies} 
                   onRowClick={(row) => navigate(`/dies/${row.die_id}`)}
                   selectedIds={selectedDieIds}
                   onSelectId={onSelectId}
                   onSelectAll={onSelectAll}
                 />
+                {sortedSetDies.length > localPageSize && renderPaginationControls()}
               </div>
             ) : (
               <RackLayoutGrid 
