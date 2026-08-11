@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, X, Search, Filter, Shield, Key, Mail, User, ShieldAlert, Monitor, Smartphone } from 'lucide-react'
+import { Plus, Trash2, X, Search, Filter, Shield, Key, Mail, User, ShieldAlert, Monitor, Smartphone, Download, CheckCircle2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { parseUserAgent } from '../../utils/parseUserAgent'
 
 export function UserManager() {
   const { request } = useApi()
@@ -21,6 +23,9 @@ export function UserManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [page, setPage] = useState(1)
+  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set())
+  const [bulkActionType, setBulkActionType] = useState<'activate'|'suspend'|'delete'|null>(null)
   
   const toggleUserLogs = (username: string) => {
     if (expandedUserLogs === username) {
@@ -46,9 +51,27 @@ export function UserManager() {
   const [userToDelete, setUserToDelete] = useState<any>(null)
 
   // Fetch Users
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ['usersListAdmin'],
-    queryFn: () => request('/api/users/')
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['usersListAdmin', page, searchQuery, roleFilter, statusFilter],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      if (searchQuery.trim()) params.set('search', searchQuery.trim())
+      if (roleFilter !== 'ALL') params.set('role', roleFilter)
+      if (statusFilter !== 'ALL') params.set('status', statusFilter.toLowerCase())
+      return request(`/api/users/?${params.toString()}`, { keepMetadata: true })
+    }
+  })
+  
+  const users = data?.results ?? []
+  const totalCount = data?.count ?? 0
+  const totalPages = Math.ceil(totalCount / 25)
+
+  // Fetch Password Policy
+  const { data: passwordPolicy } = useQuery({
+    queryKey: ['passwordPolicy'],
+    queryFn: () => request('/api/users/password_policy/'),
+    staleTime: Infinity
   })
 
   // Create User Mutation
@@ -109,6 +132,30 @@ export function UserManager() {
     },
     onError: (err) => {
       showToast(err.message || 'Failed to delete user', 'error')
+    }
+  })
+
+  // Bulk Action Mutation
+  const bulkActionMutation = useMutation({
+    mutationFn: ({ action, user_ids }: { action: string, user_ids: number[] }) => request('/api/users/bulk_action/', {
+      method: 'POST',
+      body: JSON.stringify({ action, user_ids })
+    }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
+      queryClient.invalidateQueries({ queryKey: ['adminCounts'] })
+      setSelectedUsers(new Set())
+      setBulkActionType(null)
+      const failedCount = Array.isArray(data?.failed) ? data.failed.length : 0
+      const succeededCount = Array.isArray(data?.succeeded) ? data.succeeded.length : 0
+      if (failedCount > 0) {
+        showToast(`Completed: ${succeededCount} succeeded, ${failedCount} failed`, 'error')
+      } else {
+        showToast(`Bulk action completed: ${succeededCount} user(s) updated`, 'success')
+      }
+    },
+    onError: (err) => {
+      showToast(err.message || 'Bulk action failed', 'error')
     }
   })
 
@@ -200,25 +247,74 @@ export function UserManager() {
   }
 
   // Filter Logic
-  const filteredUsers = users.filter((user: any) => {
-    const matchesSearch = 
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (`${user.first_name || ''} ${user.last_name || ''}`).toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter
-    const matchesStatus = 
-      statusFilter === 'ALL' || 
-      (statusFilter === 'ACTIVE' && user.is_active) || 
-      (statusFilter === 'INACTIVE' && !user.is_active)
+  // Filter Logic is now handled by the backend, so we don't need to manually filter `users` unless we want client-side search over the current page. But we should just use `users`.
+  const filteredUsers = users
+  
+  const handleExportUsers = async () => {
+    try {
+      const token = localStorage.getItem('dms_token') || ''
+      const params = new URLSearchParams()
+      if (searchQuery.trim()) params.set('search', searchQuery.trim())
+      if (roleFilter !== 'ALL') params.set('role', roleFilter)
+      if (statusFilter !== 'ALL') params.set('status', statusFilter.toLowerCase())
       
-    return matchesSearch && matchesRole && matchesStatus
-  })
+      const res = await fetch(`/api/v1/users/export/?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      
+      if (!res.ok) throw new Error('Export failed')
+      
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      showToast(err.message || 'Failed to export users', 'error')
+    }
+  }
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setRoleFilter('ALL')
+    setStatusFilter('ALL')
+    setPage(1)
+  }
+
+  const hasActiveFilters = searchQuery.trim() !== '' || roleFilter !== 'ALL' || statusFilter !== 'ALL'
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === filteredUsers.length && filteredUsers.length > 0) {
+      setSelectedUsers(new Set())
+    } else {
+      const newSet = new Set<number>()
+      filteredUsers.forEach((u: any) => {
+        if (u.username !== currentUsername) newSet.add(u.id)
+      })
+      setSelectedUsers(newSet)
+    }
+  }
+
+  const toggleSelectUser = (id: number) => {
+    setSelectedUsers(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleBulkAction = (action: 'activate'|'suspend'|'delete') => {
+    if (selectedUsers.size === 0) return
+    setBulkActionType(action)
+  }
 
   // Get dynamic background and color for user avatar
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return <span>{text}</span>
-    const regex = new RegExp(`(${query.replace(/[/\\^$*+?.()|[\]{}-]/g, '\\$&')})`, 'gi')
+    const regex = new RegExp(`(${query.replace(/[/\\^$*+?.()|[\]{}-]/g, '\\$&')})`, 'i')
     const parts = text.split(regex)
     return (
       <span>
@@ -261,7 +357,7 @@ export function UserManager() {
             type="text"
             placeholder="Search username, name, or email..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
           />
         </div>
@@ -272,7 +368,7 @@ export function UserManager() {
             <Filter className="h-3.5 w-3.5 text-slate-500" />
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
               className="bg-transparent border-none text-[11px] text-slate-300 focus:outline-none cursor-pointer font-semibold font-mono"
             >
               <option value="ALL" className="bg-slate-950">ALL ROLES</option>
@@ -287,7 +383,7 @@ export function UserManager() {
             <Shield className="h-3.5 w-3.5 text-slate-500" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="bg-transparent border-none text-[11px] text-slate-300 focus:outline-none cursor-pointer font-semibold font-mono"
             >
               <option value="ALL" className="bg-slate-950">ALL STATUS</option>
@@ -295,6 +391,24 @@ export function UserManager() {
               <option value="INACTIVE" className="bg-slate-950">INACTIVE ONLY</option>
             </select>
           </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+              <span>Clear Filters</span>
+            </button>
+          )}
+
+          <button 
+            onClick={handleExportUsers}
+            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
+          >
+            <Download className="h-4 w-4" />
+            <span>Export CSV</span>
+          </button>
 
           <button 
             onClick={openAddForm}
@@ -333,10 +447,34 @@ export function UserManager() {
         </div>
       ) : (
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-sm">
+          {/* Bulk Action Bar */}
+          <AnimatePresence>
+            {selectedUsers.size > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-indigo-900/30 border-b border-indigo-500/20 px-6 py-3 flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-xs font-bold text-indigo-300 bg-indigo-500/20 px-2 py-1 rounded-full">{selectedUsers.size} selected</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button onClick={() => handleBulkAction('activate')} className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Activate</button>
+                  <button onClick={() => handleBulkAction('suspend')} className="text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Suspend</button>
+                  <button onClick={() => handleBulkAction('delete')} className="text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Delete</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="overflow-x-auto max-h-[600px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-[10px] font-bold uppercase tracking-wider select-none">
+                  <th className="px-4 py-3.5 w-12 text-center">
+                    <input type="checkbox" checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0} onChange={toggleSelectAll} className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer" />
+                  </th>
                   <th className="px-6 font-mono">Username Identity</th>
                   <th className="px-6 hidden sm:table-cell font-mono">Full Name</th>
                   <th className="px-6 hidden md:table-cell font-mono">Email Address</th>
@@ -353,8 +491,16 @@ export function UserManager() {
                   
                   return (
                     <React.Fragment key={user.id}>
-                      <tr className="group transition-all duration-150">
-                        
+                      <tr className={`group transition-all duration-150 ${selectedUsers.has(user.id) ? 'bg-indigo-500/5' : ''}`}>
+                        <td className="px-4 py-3.5 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedUsers.has(user.id)} 
+                            onChange={() => toggleSelectUser(user.id)} 
+                            disabled={isSelf}
+                            className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40" 
+                          />
+                        </td>
                         {/* Username Column with Avatar Initial */}
                         <td className="py-3.5 px-6 font-bold text-white">
                           <div className="flex items-center space-x-3">
@@ -431,7 +577,7 @@ export function UserManager() {
                             >
                               {user.authorized_tools && user.authorized_tools.length > 0
                                 ? `${user.authorized_tools.length} MODULES`
-                                : 'NO LISCENSE'}
+                                : 'NO LICENSE'}
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 text-[9px] font-extrabold rounded border bg-slate-800 text-slate-500 border-slate-700/80 font-mono tracking-wide select-none">
@@ -501,6 +647,31 @@ export function UserManager() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/60 text-xs select-none">
+              <div className="text-slate-400 font-mono">
+                Showing page <span className="font-semibold text-white">{page}</span> of <span className="font-semibold text-white">{totalPages}</span> (<span className="text-slate-300">{totalCount}</span> total users)
+              </div>
+              <div className="flex space-x-2 font-mono">
+                <button
+                  onClick={() => setPage(p => Math.max(p - 1, 1))}
+                  disabled={page === 1}
+                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+                  disabled={page === totalPages}
+                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -590,6 +761,43 @@ export function UserManager() {
                     placeholder={editingUser ? "••••••••" : "Min 8 characters"}
                   />
                 </div>
+                
+                {passwordInput.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-slate-400">Password Strength</span>
+                      <span className={`text-[10px] font-bold ${
+                        [
+                          /[A-Z]/.test(passwordInput) || /[0-9]/.test(passwordInput) || /[^A-Za-z0-9]/.test(passwordInput) ? 'text-rose-400' : 'text-rose-400',
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) <= 1 ? 'text-rose-400' : 
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 2 ? 'text-amber-400' :
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 3 ? 'text-blue-400' :
+                          'text-emerald-400'
+                        ][1]
+                      }`}>
+                        {[
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) <= 1 ? 'Weak' : 
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 2 ? 'Fair' :
+                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 3 ? 'Good' :
+                          'Strong'
+                        ][0]}
+                      </span>
+                    </div>
+                    <div className="flex space-x-1 h-1.5">
+                      {[0, 1, 2, 3].map(i => {
+                        const score = (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0)
+                        const color = score <= 1 ? 'bg-rose-500' : score === 2 ? 'bg-amber-500' : score === 3 ? 'bg-blue-500' : 'bg-emerald-500'
+                        return <div key={i} className={`flex-1 rounded-full ${i < score ? color : 'bg-slate-800'}`} />
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {passwordPolicy && (
+                  <div className="text-[9px] text-slate-500 mt-1">
+                    Password must be at least {passwordPolicy.min_length || 8} characters.
+                  </div>
+                )}
               </div>
 
               {/* Verify Current Password (If updating sensitive profile) */}
@@ -661,7 +869,7 @@ export function UserManager() {
                   }}
                 >
                   <div className="space-y-0.5">
-                    <span className="block text-xs font-semibold text-white">Status Status</span>
+                    <span className="block text-xs font-semibold text-white">Account Status</span>
                     <span className="block text-[10px] text-slate-400">Suspend/Activate credentials</span>
                   </div>
                   <input 
@@ -913,6 +1121,21 @@ export function UserManager() {
         }}
         onCancel={() => setUserToDelete(null)}
       />
+
+      {/* Bulk Action Confirmation */}
+      <ConfirmDialog
+        isOpen={!!bulkActionType}
+        title={`Bulk ${bulkActionType ? bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1) : ''} Users`}
+        message={`Are you sure you want to ${bulkActionType} ${selectedUsers.size} selected user(s)?`}
+        confirmText={`Confirm ${bulkActionType ? bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1) : ''}`}
+        isDestructive={bulkActionType === 'delete' || bulkActionType === 'suspend'}
+        onConfirm={() => {
+          if (bulkActionType) {
+            bulkActionMutation.mutate({ action: bulkActionType, user_ids: Array.from(selectedUsers) })
+          }
+        }}
+        onCancel={() => setBulkActionType(null)}
+      />
     </div>
   )
 }
@@ -948,31 +1171,6 @@ function UserActivityLogSection({ username }: { username: string }) {
         No activity logs recorded for this user.
       </div>
     )
-  }
-
-  const parseUserAgent = (uaString: string) => {
-    if (!uaString) return { deviceType: 'desktop', label: 'Unknown Client' }
-    const ua = uaString.toLowerCase()
-    
-    let os = 'Other OS'
-    if (ua.includes('windows')) os = 'Windows'
-    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS'
-    else if (ua.includes('linux')) os = 'Linux'
-    else if (ua.includes('android')) os = 'Android'
-    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS'
-
-    let browser = 'Browser'
-    if (ua.includes('firefox')) browser = 'Firefox'
-    else if (ua.includes('chrome') && !ua.includes('chromium')) browser = 'Chrome'
-    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari'
-    else if (ua.includes('edge') || ua.includes('edg')) browser = 'Edge'
-    
-    const isMobile = ua.includes('mobi') || ua.includes('android') || ua.includes('iphone')
-
-    return {
-      deviceType: isMobile ? 'mobile' : 'desktop',
-      label: `${browser} on ${os}`
-    }
   }
 
   return (

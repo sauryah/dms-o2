@@ -34,6 +34,13 @@ class UserActivityLog(models.Model):
         ('LOGOUT', 'Logout'),
         ('FAILED_LOGIN', 'Failed Login'),
         ('SESSION_EXPIRED', 'Session Expired'),
+        ('ADMIN_ACTION', 'Admin Action'),
+        ('USER_CREATED', 'User Created'),
+        ('USER_DELETED', 'User Deleted'),
+        ('ROLE_CHANGED', 'Role Changed'),
+        ('ACCOUNT_SUSPENDED', 'Account Suspended'),
+        ('ACCOUNT_ACTIVATED', 'Account Activated'),
+        ('PERMISSIONS_CHANGED', 'Permissions Changed'),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     username = models.CharField(max_length=150)

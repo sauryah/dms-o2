@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Database, ClipboardList, Shield, Activity } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useApi } from '../hooks/useApi'
 import { UserManager } from './users/UserManager'
 import { BackupManager } from './users/BackupManager'
 import { SessionAuditLogs } from './users/SessionAuditLogs'
@@ -12,12 +14,13 @@ export function UsersPage() {
   const { role } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('users') // 'users', 'backups', 'logs', or 'sessions'
+  const { request } = useApi()
 
-  useEffect(() => {
-    if (role !== 'ROOT') {
-      navigate('/')
-    }
-  }, [role, navigate])
+  const { data: counts } = useQuery({
+    queryKey: ['adminCounts'],
+    queryFn: () => request('/api/users/counts/'),
+    staleTime: 30000
+  })
 
   if (role !== 'ROOT') {
     return (
@@ -34,10 +37,10 @@ export function UsersPage() {
   }
 
   const tabs = [
-    { id: 'users', label: 'User Directory', icon: Users, desc: 'Manage administrative credentials, system roles, and account statuses.' },
-    { id: 'backups', label: 'Database Backups', icon: Database, desc: 'Create, manage, and restore database backup archives (PostgreSQL format).' },
-    { id: 'logs', label: 'Security Audit Logs', icon: ClipboardList, desc: 'View real-time login, logout, failed attempt, and session expiration audit logs.' },
-    { id: 'sessions', label: 'Active Sessions', icon: Activity, desc: 'Monitor currently logged-in devices and force-logout active sessions.' }
+    { id: 'users', label: 'User Directory', count: counts?.total_users, icon: Users, desc: 'Manage administrative credentials, system roles, and account statuses.' },
+    { id: 'backups', label: 'Database Backups', count: counts?.total_backups, icon: Database, desc: 'Create, manage, and restore database backup archives (PostgreSQL format).' },
+    { id: 'logs', label: 'Security Audit Logs', count: undefined, icon: ClipboardList, desc: 'View real-time login, logout, failed attempt, and session expiration audit logs.' },
+    { id: 'sessions', label: 'Active Sessions', count: counts?.active_sessions, icon: Activity, desc: 'Monitor currently logged-in devices and force-logout active sessions.' }
   ]
 
   const currentTab = tabs.find(t => t.id === activeTab) || tabs[0]
@@ -91,6 +94,11 @@ export function UsersPage() {
             >
               <Icon className={`h-4 w-4 ${isActive ? 'text-blue-400' : 'text-slate-500'}`} />
               <span>{tab.label}</span>
+              {tab.count !== undefined && (
+                <span className="bg-slate-700 text-slate-300 text-[9px] font-mono px-1.5 py-0.5 rounded">
+                  {tab.count}
+                </span>
+              )}
               {isActive && (
                 <motion.div 
                   layoutId="activeTabUnderline"

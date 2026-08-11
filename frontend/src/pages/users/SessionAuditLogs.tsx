@@ -2,15 +2,18 @@ import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search, Clock, ShieldAlert, LogOut, Info, Monitor, Smartphone, Download } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
+import { parseUserAgent } from '../../utils/parseUserAgent'
 
 export function SessionAuditLogs() {
   const { request } = useApi()
   const [page, setPage] = useState(1)
   const [usernameSearch, setUsernameSearch] = useState('')
   const [actionFilter, setActionFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['sessionActivityLogs', page, usernameSearch, actionFilter],
+    queryKey: ['sessionActivityLogs', page, usernameSearch, actionFilter, dateFrom, dateTo],
     queryFn: () => {
       let url = `/api/activity-logs/?page=${page}`
       if (usernameSearch.trim()) {
@@ -18,6 +21,12 @@ export function SessionAuditLogs() {
       }
       if (actionFilter) {
         url += `&action=${encodeURIComponent(actionFilter)}`
+      }
+      if (dateFrom) {
+        url += `&date_from=${encodeURIComponent(dateFrom)}`
+      }
+      if (dateTo) {
+        url += `&date_to=${encodeURIComponent(dateTo)}`
       }
       return request(url, { keepMetadata: true })
     }
@@ -34,6 +43,24 @@ export function SessionAuditLogs() {
 
   const handleActionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setActionFilter(e.target.value)
+    setPage(1)
+  }
+
+  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateFrom(e.target.value)
+    setPage(1)
+  }
+
+  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateTo(e.target.value)
+    setPage(1)
+  }
+
+  const clearFilters = () => {
+    setUsernameSearch('')
+    setActionFilter('')
+    setDateFrom('')
+    setDateTo('')
     setPage(1)
   }
 
@@ -176,31 +203,6 @@ export function SessionAuditLogs() {
     return `${hrs}h ${mins}m`;
   };
 
-  const parseUserAgent = (uaString: string) => {
-    if (!uaString) return { deviceType: 'desktop', label: 'Unknown Client' }
-    const ua = uaString.toLowerCase()
-    
-    let os = 'Other OS'
-    if (ua.includes('windows')) os = 'Windows'
-    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS'
-    else if (ua.includes('linux')) os = 'Linux'
-    else if (ua.includes('android')) os = 'Android'
-    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS'
-
-    let browser = 'Browser'
-    if (ua.includes('firefox')) browser = 'Firefox'
-    else if (ua.includes('chrome') && !ua.includes('chromium')) browser = 'Chrome'
-    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari'
-    else if (ua.includes('edge') || ua.includes('edg')) browser = 'Edge'
-    
-    const isMobile = ua.includes('mobi') || ua.includes('android') || ua.includes('iphone')
-
-    return {
-      deviceType: isMobile ? 'mobile' : 'desktop',
-      label: `${browser} on ${os}`
-    }
-  }
-
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return <span>{text}</span>
     const regex = new RegExp(`(${query.replace(/[/\\^$*+?.()|[\]{}-]/g, '\\$&')})`, 'gi')
@@ -265,7 +267,7 @@ export function SessionAuditLogs() {
   return (
     <div className="space-y-6 font-sans">
       {/* Filters & Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl backdrop-blur-sm select-none">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl backdrop-blur-sm select-none items-center">
         <div className="relative">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
             <Search className="h-4 w-4" />
@@ -293,7 +295,28 @@ export function SessionAuditLogs() {
           </select>
         </div>
 
-        <div className="flex justify-end items-center space-x-2">
+        <div>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={handleDateFromChange}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+            title="From Date"
+          />
+        </div>
+        
+        <div>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={handleDateToChange}
+            min={dateFrom}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+            title="To Date"
+          />
+        </div>
+
+        <div className="flex justify-end items-center space-x-2 lg:col-span-1 sm:col-span-2">
           <button
             onClick={handleExportCSV}
             disabled={groupedSessions.length === 0}
@@ -336,7 +359,15 @@ export function SessionAuditLogs() {
         <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto select-none">
           <Info className="h-10 w-10 text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-white mb-1 font-mono">No Audit Logs</h3>
-          <p className="text-slate-400 text-sm">No user session activities match the query filter criteria.</p>
+          <p className="text-slate-400 text-sm mb-4">No user session activities match the query filter criteria.</p>
+          {(usernameSearch || actionFilter || dateFrom || dateTo) && (
+            <button
+              onClick={clearFilters}
+              className="text-blue-400 hover:text-blue-300 text-xs font-bold transition"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-sm">

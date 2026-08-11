@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Trash2, Clock, Info, Zap, Monitor, Smartphone, ShieldAlert } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
+import { parseUserAgent } from '../../utils/parseUserAgent'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -14,6 +15,7 @@ export function ActiveSessionsList() {
   const [sessionToRevoke, setSessionToRevoke] = useState<{ id: number; username: string } | null>(null)
   const [showRevokeAllConfirm, setShowRevokeAllConfirm] = useState(false)
   const [showBulkRevokeConfirm, setShowBulkRevokeConfirm] = useState(false)
+  const [preserveOwn, setPreserveOwn] = useState(true)
 
   const { data: sessions = [], isLoading, error } = useQuery({
     queryKey: ['activeSessions'],
@@ -25,26 +27,32 @@ export function ActiveSessionsList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeSessions'] })
       queryClient.invalidateQueries({ queryKey: ['sessionActivityLogs'] })
+      queryClient.invalidateQueries({ queryKey: ['adminCounts'] })
       setSessionToRevoke(null)
     }
   })
 
   const clearAllMutation = useMutation({
-    mutationFn: () => request('/api/active-sessions/all/', { method: 'DELETE' }),
+    mutationFn: () => request(`/api/active-sessions/all/?preserve_own=${preserveOwn}`, { method: 'DELETE' }),
     onSuccess: () => {
       setSelected(new Set())
       queryClient.invalidateQueries({ queryKey: ['activeSessions'] })
       queryClient.invalidateQueries({ queryKey: ['sessionActivityLogs'] })
+      queryClient.invalidateQueries({ queryKey: ['adminCounts'] })
       setShowRevokeAllConfirm(false)
     }
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => request('/api/active-sessions/bulk/', { method: 'DELETE', body: JSON.stringify({ ids }) }),
+    mutationFn: (ids: number[]) => request('/api/active-sessions/bulk/', { 
+      method: 'DELETE', 
+      body: JSON.stringify({ ids, preserve_own: true }) 
+    }),
     onSuccess: () => {
       setSelected(new Set())
       queryClient.invalidateQueries({ queryKey: ['activeSessions'] })
       queryClient.invalidateQueries({ queryKey: ['sessionActivityLogs'] })
+      queryClient.invalidateQueries({ queryKey: ['adminCounts'] })
       setShowBulkRevokeConfirm(false)
     }
   })
@@ -87,33 +95,12 @@ export function ActiveSessionsList() {
         return 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
       case 'ADMIN':
         return 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.05)]'
+      case 'OPERATOR':
+        return 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
+      case 'REGULAR':
+        return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
       default:
         return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-    }
-  }
-
-  const parseUserAgent = (uaString: string) => {
-    if (!uaString) return { deviceType: 'desktop', label: 'Unknown Client' }
-    const ua = uaString.toLowerCase()
-    
-    let os = 'Other OS'
-    if (ua.includes('windows')) os = 'Windows'
-    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS'
-    else if (ua.includes('linux')) os = 'Linux'
-    else if (ua.includes('android')) os = 'Android'
-    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS'
-
-    let browser = 'Browser'
-    if (ua.includes('firefox')) browser = 'Firefox'
-    else if (ua.includes('chrome') && !ua.includes('chromium')) browser = 'Chrome'
-    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari'
-    else if (ua.includes('edge') || ua.includes('edg')) browser = 'Edge'
-    
-    const isMobile = ua.includes('mobi') || ua.includes('android') || ua.includes('iphone')
-
-    return {
-      deviceType: isMobile ? 'mobile' : 'desktop',
-      label: `${browser} on ${os}`
     }
   }
 
@@ -297,7 +284,20 @@ export function ActiveSessionsList() {
       <ConfirmDialog
         isOpen={showRevokeAllConfirm}
         title="Revoke All Sessions"
-        message={`CRITICAL: Are you sure you want to terminate ALL ${sessions.length} active sessions? This will disconnect all logged-in users.`}
+        message={
+          <div className="space-y-4">
+            <p>CRITICAL: Are you sure you want to terminate ALL {sessions.length} active sessions? This will disconnect all logged-in users. Your current session will be preserved unless you uncheck the option below.</p>
+            <label className="flex items-center space-x-2 text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-slate-800 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={preserveOwn} 
+                onChange={(e) => setPreserveOwn(e.target.checked)} 
+                className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
+              />
+              <span className="text-sm font-semibold">Preserve my current session</span>
+            </label>
+          </div>
+        }
         confirmText="Force Logout All"
         isDestructive={true}
         onConfirm={() => {
@@ -309,7 +309,12 @@ export function ActiveSessionsList() {
       <ConfirmDialog
         isOpen={showBulkRevokeConfirm}
         title="Revoke Selected Sessions"
-        message={`Are you sure you want to force log out the ${selected.size} selected session(s)?`}
+        message={
+          <div className="space-y-2">
+            <p>Are you sure you want to force log out the {selected.size} selected session(s)?</p>
+            <p className="text-amber-400 text-xs italic">Note: Your current session, if selected, will be automatically excluded.</p>
+          </div>
+        }
         confirmText="Logout Selected"
         isDestructive={true}
         onConfirm={() => {
