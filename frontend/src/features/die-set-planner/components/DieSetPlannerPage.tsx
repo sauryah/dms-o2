@@ -204,7 +204,9 @@ export function DieSetPlannerPage() {
             setHasDraft(true)
             return
           }
-        } catch (_) {}
+        } catch (e) {
+          console.warn('Failed to parse draft count', e)
+        }
       }
     }
     setHasDraft(false)
@@ -220,7 +222,9 @@ export function DieSetPlannerPage() {
         setRecountDate(draft.date)
         setRecountItems(draft.items)
         setHasDraft(false)
-      } catch (_) {}
+      } catch (e) {
+        console.warn('Failed to restore draft count', e)
+      }
     }
   }
 
