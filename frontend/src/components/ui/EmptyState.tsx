@@ -11,15 +11,15 @@ export interface EmptyStateProps {
 export function EmptyState({ title, description, message, actionLabel, onAction }: EmptyStateProps) {
   const displayTitle = title || message
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8">
+    <div className="flex flex-col items-center justify-center text-center p-6 font-mono">
       {/* Muted title / message text */}
       {displayTitle && (
-        <h3 className="text-xs sm:text-sm font-semibold text-[var(--color-muted)] font-sans max-w-sm leading-relaxed">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-[#6b7280] max-w-sm leading-relaxed font-mono">
           {displayTitle}
         </h3>
       )}
       {description && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]/80">
+        <p className="mt-1 text-xs text-[#404040] font-mono">
           {description}
         </p>
       )}
@@ -29,7 +29,7 @@ export function EmptyState({ title, description, message, actionLabel, onAction 
         <button
           type="button"
           onClick={onAction}
-          className="mt-4 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition focus-ring cursor-pointer"
+          className="mt-3 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
         >
           {actionLabel}
         </button>

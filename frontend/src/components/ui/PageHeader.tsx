@@ -16,11 +16,11 @@ export interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, breadcrumbs = [], actions }: PageHeaderProps) {
   return (
-    <div className="border-b border-[var(--color-border)] pb-5 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-      <div className="space-y-1.5">
+    <div className="border-b border-[#2a2a2a] pb-3 mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+      <div className="space-y-1">
         {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-[10px] font-medium uppercase tracking-wider text-[#6b7280] font-mono">
             {breadcrumbs.map((item, idx) => {
               const isLast = idx === breadcrumbs.length - 1
               return (
@@ -28,17 +28,17 @@ export function PageHeader({ title, subtitle, breadcrumbs = [], actions }: PageH
                   {item.href && !isLast ? (
                     <Link 
                       to={item.href} 
-                      className="hover:text-[var(--color-text)] transition-colors duration-150"
+                      className="text-blue-500 hover:opacity-80 transition-opacity"
                     >
                       {item.label}
                     </Link>
                   ) : (
-                    <span className={isLast ? 'text-[var(--color-text)]' : ''}>
+                    <span className={isLast ? 'text-[#e4e4e4]' : ''}>
                       {item.label}
                     </span>
                   )}
                   {!isLast && (
-                    <ChevronRight className="h-3 w-3 text-[var(--color-muted)] shrink-0" />
+                    <ChevronRight className="h-3 w-3 text-[#404040] shrink-0" />
                   )}
                 </React.Fragment>
               )
@@ -47,11 +47,11 @@ export function PageHeader({ title, subtitle, breadcrumbs = [], actions }: PageH
         )}
 
         {/* Title */}
-        <h1 className="text-xl md:text-2xl font-black text-white tracking-tight leading-none">
+        <h1 className="text-base md:text-lg font-medium text-[#e4e4e4] uppercase tracking-[0.05em] leading-none font-mono">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-xs text-[var(--color-muted)] font-medium">
+          <p className="text-xs text-[#6b7280] font-mono">
             {subtitle}
           </p>
         )}
@@ -59,7 +59,7 @@ export function PageHeader({ title, subtitle, breadcrumbs = [], actions }: PageH
 
       {/* Actions slot */}
       {actions && (
-        <div className="flex flex-wrap items-center gap-3 md:self-end">
+        <div className="flex flex-wrap items-center gap-2 md:self-end">
           {actions}
         </div>
       )}

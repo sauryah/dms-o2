@@ -16,30 +16,30 @@ import { useAuth } from '../contexts/AuthContext';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
-// Premium skeleton loading fallbacks for async component resolution
+// Skeleton loading fallbacks
 const ChartSkeleton = () => (
-  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[300px] flex flex-col justify-between animate-pulse">
-    <div className="h-4 w-1/3 bg-slate-800 rounded" />
-    <div className="h-40 bg-slate-900/50 rounded flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[260px] flex flex-col justify-between animate-pulse font-mono">
+    <div className="h-3 w-1/3 bg-[#141414]" />
+    <div className="h-36 bg-[#0a0a0a] flex items-center justify-center">
+      <div className="w-5 h-5 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
     </div>
-    <div className="h-4 w-2/3 bg-slate-800 rounded" />
+    <div className="h-3 w-2/3 bg-[#141414]" />
   </div>
 );
 
 const BlueprintSkeleton = () => (
-  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[280px] flex items-center justify-center animate-pulse">
-    <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[240px] flex items-center justify-center animate-pulse">
+    <div className="w-6 h-6 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
   </div>
 );
 
 const PanelSkeleton = () => (
-  <div className="bg-[#0b1428]/45 border border-slate-800/40 rounded-xl p-6 h-[400px] flex items-center justify-center animate-pulse">
-    <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[300px] flex items-center justify-center animate-pulse">
+    <div className="w-6 h-6 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
   </div>
 );
 
-// Lazy components using our automatic chunk failure recovery wrapper
+// Lazy components using automatic chunk failure recovery wrapper
 const DieBlueprint = lazyWithRetry(() =>
   import('../features/inventory/components/CadRenderer').then(m => ({ default: m.DieBlueprint }))
 );
@@ -99,7 +99,6 @@ export function WireDrawingCalculatorPage() {
           signal: controller.signal
         });
         if (res) {
-          // Map snake_case response fields to camelCase expected by frontend components
           setPasses(res.passes.map((p: any) => ({
             pass: p.pass,
             fromDie: p.from_die,
@@ -165,17 +164,17 @@ export function WireDrawingCalculatorPage() {
   }, [undo, redo]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#0B1220] py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono">
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            background: '#1E293B',
-            color: '#F8FAFC',
-            borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.08)',
-            fontSize: 13,
-            fontFamily: 'Inter',
+            background: '#0f0f0f',
+            color: '#e4e4e4',
+            borderRadius: '2px',
+            border: '1px solid #2a2a2a',
+            fontSize: '12px',
+            fontFamily: 'monospace',
           },
         }}
       />
@@ -187,7 +186,7 @@ export function WireDrawingCalculatorPage() {
 
         {passes.length > 0 && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">
                 <ResultsTable
                   passes={passes}
@@ -215,10 +214,9 @@ export function WireDrawingCalculatorPage() {
                   } : null;
 
                   return simulatedDie ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-5 bg-blue-600 rounded-sm" />
-                        <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-heading">Pass CAD Visualizer</h3>
+                    <div className="space-y-3 font-mono">
+                      <div className="flex items-center gap-1.5 border-b border-[#1a1a1a] pb-1.5">
+                        <span className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">Pass CAD Visualizer</span>
                       </div>
                       <Suspense fallback={<BlueprintSkeleton />}>
                         <DieBlueprint 
@@ -227,17 +225,16 @@ export function WireDrawingCalculatorPage() {
                           onHoverDim={() => {}}
                         />
                       </Suspense>
-                      <div className="bg-[#0b1428]/45 border border-slate-800/40 p-4 rounded-xl text-xs space-y-2">
-                        <h4 className="font-bold text-slate-300 font-sans uppercase tracking-wider text-[10px]">Simulated Pass Operations</h4>
-                        <p className="text-slate-400 leading-relaxed font-sans text-[11px]">
-                          Visualizing the draft progression geometry for **Pass #{selectedPass?.pass}**. 
-                          Click any row in the results table to select that draft, zoom/pan the viewport, or view the internal cross-sectional channel.
+                      <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-3 rounded-sm text-xs space-y-1">
+                        <h4 className="font-bold text-[#e4e4e4] uppercase tracking-wider text-[10px]">Pass #{selectedPass?.pass} Telemetry</h4>
+                        <p className="text-[#6b7280] leading-normal text-[11px]">
+                          Visualizing draft geometry. Click any row in the results table to select that draft.
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[#0b1428]/20 border border-slate-800/40 p-6 rounded-xl text-slate-500 text-xs text-center flex items-center justify-center h-[280px]">
-                      Select a pass row in the results table to activate live CAD simulation.
+                    <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-6 rounded-sm text-[#6b7280] text-xs text-center flex items-center justify-center h-[240px]">
+                      Select a pass row in the results table to activate CAD simulation.
                     </div>
                   );
                 })()}
@@ -246,7 +243,7 @@ export function WireDrawingCalculatorPage() {
 
             <DieProgression dies={dies} onDiesChange={handleDiesChange} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Suspense fallback={<ChartSkeleton />}>
                 <ElongationChart passes={passes} />
               </Suspense>
@@ -255,16 +252,16 @@ export function WireDrawingCalculatorPage() {
               </Suspense>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {stats && <StatisticsPanel stats={stats} />}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {consistency && <PassConsistency consistency={consistency} />}
                 {stats && <ExportPanel passes={passes} stats={stats} dies={dies} />}
                 <SaveLoad dies={dies} onLoad={setDies} />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <TargetChecker passes={passes} />
               <DieSuggester dies={dies} />
             </div>
@@ -273,14 +270,14 @@ export function WireDrawingCalculatorPage() {
           </>
         )}
 
-        {/* 3D Stress Heatmap Module (Rendered dynamically for authorized users) */}
+        {/* 3D Stress Heatmap Module */}
         {canAccess3DHeatmap && passes.length > 0 && (
           <Suspense fallback={<PanelSkeleton />}>
             <StressHeatmap3D passes={passes} />
           </Suspense>
         )}
 
-        {/* Theory & Fundamentals Module (Rendered dynamically for authorized users) */}
+        {/* Theory & Fundamentals Module */}
         {canAccessTheory && (
           <Suspense fallback={<PanelSkeleton />}>
             <TheoryPanel />

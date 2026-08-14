@@ -4,7 +4,7 @@ import { Trash2, Clock, Info, Zap, Monitor, Smartphone, ShieldAlert } from 'luci
 import { useApi } from '../../hooks/useApi'
 import { parseUserAgent } from '../../utils/parseUserAgent'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 
 export function ActiveSessionsList() {
   const { request } = useApi()
@@ -15,7 +15,7 @@ export function ActiveSessionsList() {
   const [sessionToRevoke, setSessionToRevoke] = useState<{ id: number; username: string } | null>(null)
   const [showRevokeAllConfirm, setShowRevokeAllConfirm] = useState(false)
   const [showBulkRevokeConfirm, setShowBulkRevokeConfirm] = useState(false)
-  const [preserveOwn, setPreserveOwn] = useState(true)
+  const [preserveOwn] = useState(true)
 
   const { data: sessions = [], isLoading, error } = useQuery({
     queryKey: ['activeSessions'],
@@ -92,83 +92,71 @@ export function ActiveSessionsList() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ROOT':
-        return 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
+        return 'bg-[#141414] text-purple-400 border border-purple-500/30'
       case 'ADMIN':
-        return 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.05)]'
+        return 'bg-[#141414] text-blue-400 border border-blue-500/30'
       case 'OPERATOR':
-        return 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
-      case 'REGULAR':
-        return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+        return 'bg-[#141414] text-amber-400 border border-amber-500/30'
       default:
-        return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+        return 'bg-[#141414] text-[#6b7280] border border-[#2a2a2a]'
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 font-mono">
       {isLoading ? (
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 overflow-hidden">
-          <div className="flex justify-between items-center mb-6">
-            <div className="h-4 w-32 bg-slate-800 rounded animate-pulse" />
-            <div className="h-8 w-24 bg-slate-800 rounded animate-pulse" />
-          </div>
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex gap-4 items-center">
-                <div className="h-4 w-4 bg-slate-800 rounded animate-pulse" />
-                <div className="h-10 w-full bg-slate-800 rounded animate-pulse" />
-              </div>
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 overflow-hidden">
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 w-full bg-[#141414] animate-pulse" />
             ))}
           </div>
         </div>
       ) : error ? (
-        <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 shadow-lg max-w-xl mx-auto">
-          <ShieldAlert className="h-10 w-10 text-rose-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-          <p className="text-rose-400 font-mono text-sm">{(error as any).message}</p>
+        <div className="text-center py-8 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-6 max-w-xl mx-auto">
+          <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">Query Failure</h3>
+          <p className="text-red-400 font-mono text-xs">{(error as any).message}</p>
         </div>
       ) : sessions.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 shadow-xl max-w-lg mx-auto select-none">
-          <Info className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-1">No Active Sessions</h3>
-          <p className="text-slate-400 text-sm">No connected client devices are registered at this time.</p>
+        <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 max-w-md mx-auto select-none">
+          <Info className="h-8 w-8 text-[#404040] mx-auto mb-2" />
+          <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">No Active Sessions</h3>
+          <p className="text-[#6b7280] text-xs">No connected client devices are registered at this time.</p>
         </div>
       ) : (
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-sm">
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden font-mono">
           {/* Action Header */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 px-6 py-4 bg-slate-950/40 border-b border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-300 font-mono">
-                {sessions.length} Client Session{sessions.length !== 1 ? 's' : ''}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-2.5 bg-[#0a0a0a] border-b border-[#1a1a1a]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-[#e4e4e4] uppercase">
+                01 ACTIVE SESSIONS ({sessions.length})
               </span>
               {selected.size > 0 && (
-                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full animate-pulse">
+                <span className="text-[10px] font-mono text-amber-400 bg-[#141414] border border-amber-500/30 px-1.5 py-0.2 rounded-sm uppercase">
                   {selected.size} selected
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <AnimatePresence>
                 {selected.size > 0 && (
-                  <motion.button
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
+                  <button
                     onClick={handleBulkDelete}
                     disabled={bulkDeleteMutation.isPending}
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 hover:border-amber-500/30 rounded-xl text-xs font-semibold transition cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-amber-400 border border-amber-500/40 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Clear {selected.size} Selected</span>
-                  </motion.button>
+                    <Trash2 className="h-3 w-3" />
+                    <span>Clear ({selected.size})</span>
+                  </button>
                 )}
               </AnimatePresence>
               <button
                 onClick={handleClearAll}
                 disabled={clearAllMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-semibold transition cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-red-400 border border-red-500/40 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
               >
-                <Zap className="h-3.5 w-3.5" />
+                <Zap className="h-3 w-3" />
                 <span>Force Logout All</span>
               </button>
             </div>
@@ -176,28 +164,28 @@ export function ActiveSessionsList() {
 
           {/* Sticky Table Wrapper */}
           <div className="overflow-x-auto max-h-[500px]">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-xs font-mono">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
-                  <th className="py-4 px-6 w-12">
+                <tr className="sticky top-0 z-10 border-b border-[#1a1a1a] bg-[#0a0a0a] text-[#6b7280] uppercase tracking-wider select-none">
+                  <th className="py-2.5 px-4 w-8">
                     <input
                       type="checkbox"
                       checked={allSelected}
                       ref={(el) => { if (el) el.indeterminate = someSelected }}
                       onChange={toggleSelectAll}
-                      className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
+                      className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                     />
                   </th>
-                  <th className="py-4 px-6 font-mono">User ID</th>
-                  <th className="py-4 px-6 font-mono">Role</th>
-                  <th className="py-4 px-6 font-mono">Login Time</th>
-                  <th className="py-4 px-6 font-mono">Last Seen</th>
-                  <th className="py-4 px-6 font-mono">IP Address</th>
-                  <th className="py-4 px-6 font-mono">Device Environment</th>
-                  <th className="py-4 px-6 font-mono text-right">Revoke</th>
+                  <th className="py-2.5 px-4">User ID</th>
+                  <th className="py-2.5 px-4">Role</th>
+                  <th className="py-2.5 px-4">Login Time</th>
+                  <th className="py-2.5 px-4">Last Seen</th>
+                  <th className="py-2.5 px-4">IP Address</th>
+                  <th className="py-2.5 px-4">Device</th>
+                  <th className="py-2.5 px-4 text-right">Revoke</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/40">
+              <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
                 {sessions.map((sess: any) => {
                   const client = parseUserAgent(sess.device)
                   const isSessSelected = selected.has(sess.id)
@@ -205,56 +193,56 @@ export function ActiveSessionsList() {
                   return (
                     <tr
                       key={sess.id}
-                      className={`group  transition-all duration-150 ${
-                        isSessSelected ? 'bg-blue-500/[0.03]' : ''
+                      className={`hover:bg-[#141414] transition-colors ${
+                        isSessSelected ? 'bg-[#141414]' : ''
                       }`}
                     >
-                      <td className="py-4 px-6">
+                      <td className="py-2.5 px-4">
                         <input
                           type="checkbox"
                           checked={isSessSelected}
                           onChange={() => toggleSelect(sess.id)}
-                          className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
+                          className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="py-4 px-6 font-bold text-white font-mono">
+                      <td className="py-2.5 px-4 font-bold text-[#e4e4e4]">
                         {sess.username}
                       </td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${getRoleBadge(sess.role)}`}>
+                      <td className="py-2.5 px-4">
+                        <span className={`px-1.5 py-0.2 text-[9px] font-mono uppercase rounded-sm border ${getRoleBadge(sess.role)}`}>
                           {sess.role}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-slate-300 text-xs font-mono">
+                      <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
                         {new Date(sess.created_at).toLocaleString()}
                       </td>
-                      <td className="py-4 px-6 text-slate-300 text-xs font-mono">
-                        <div className="flex items-center space-x-1.5">
-                          <Clock className="h-3.5 w-3.5 text-blue-400" />
+                      <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-3 w-3 text-blue-400" />
                           <span>{new Date(sess.last_seen).toLocaleString()}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-slate-400 text-xs font-mono">
+                      <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
                         {sess.ip_address || '—'}
                       </td>
-                      <td className="py-4 px-6 text-slate-300 text-xs">
-                        <div className="flex items-center space-x-2" title={sess.device || 'Unknown'}>
+                      <td className="py-2.5 px-4 text-[#e4e4e4]">
+                        <div className="flex items-center space-x-1.5" title={sess.device || 'Unknown'}>
                           {client.deviceType === 'mobile' ? (
-                            <Smartphone className="h-4 w-4 text-slate-500 shrink-0" />
+                            <Smartphone className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
                           ) : (
-                            <Monitor className="h-4 w-4 text-slate-500 shrink-0" />
+                            <Monitor className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
                           )}
-                          <span className="truncate max-w-[200px] font-medium">{client.label}</span>
+                          <span className="truncate max-w-[180px]">{client.label}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-2.5 px-4 text-right">
                         <button
                           onClick={() => handleRevoke(sess.id, sess.username)}
                           disabled={revokeMutation.isPending}
-                          className="p-2 bg-slate-950/20 group-hover:bg-rose-500/10 text-slate-500 group-hover:text-rose-400 border border-slate-800/80 group-hover:border-rose-500/20 rounded-xl transition-all duration-200 disabled:opacity-40 cursor-pointer"
+                          className="p-1 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-red-400 border border-[#2a2a2a] rounded-sm transition cursor-pointer"
                           title="Force log out device"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -268,11 +256,11 @@ export function ActiveSessionsList() {
 
       {/* Confirmation Dialogs */}
       <ConfirmDialog
-        isOpen={!!sessionToRevoke}
+        open={!!sessionToRevoke}
         title="Revoke Session"
         message={`Are you sure you want to force log out user "${sessionToRevoke?.username}"? Their active login session will be immediately terminated.`}
-        confirmText="Revoke Session"
-        isDestructive={true}
+        confirmLabel="Revoke Session"
+        danger={true}
         onConfirm={() => {
           if (sessionToRevoke) {
             revokeMutation.mutate(sessionToRevoke.id)
@@ -282,24 +270,11 @@ export function ActiveSessionsList() {
       />
 
       <ConfirmDialog
-        isOpen={showRevokeAllConfirm}
+        open={showRevokeAllConfirm}
         title="Revoke All Sessions"
-        message={
-          <div className="space-y-4">
-            <p>CRITICAL: Are you sure you want to terminate ALL {sessions.length} active sessions? This will disconnect all logged-in users. Your current session will be preserved unless you uncheck the option below.</p>
-            <label className="flex items-center space-x-2 text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-slate-800 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={preserveOwn} 
-                onChange={(e) => setPreserveOwn(e.target.checked)} 
-                className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer"
-              />
-              <span className="text-sm font-semibold">Preserve my current session</span>
-            </label>
-          </div>
-        }
-        confirmText="Force Logout All"
-        isDestructive={true}
+        message={`Are you sure you want to terminate ALL ${sessions.length} active sessions? This will disconnect all logged-in users.`}
+        confirmLabel="Force Logout All"
+        danger={true}
         onConfirm={() => {
           clearAllMutation.mutate()
         }}
@@ -307,16 +282,11 @@ export function ActiveSessionsList() {
       />
 
       <ConfirmDialog
-        isOpen={showBulkRevokeConfirm}
+        open={showBulkRevokeConfirm}
         title="Revoke Selected Sessions"
-        message={
-          <div className="space-y-2">
-            <p>Are you sure you want to force log out the {selected.size} selected session(s)?</p>
-            <p className="text-amber-400 text-xs italic">Note: Your current session, if selected, will be automatically excluded.</p>
-          </div>
-        }
-        confirmText="Logout Selected"
-        isDestructive={true}
+        message={`Are you sure you want to force log out the ${selected.size} selected session(s)?`}
+        confirmLabel="Logout Selected"
+        danger={true}
         onConfirm={() => {
           bulkDeleteMutation.mutate(Array.from(selected))
         }}
@@ -325,4 +295,3 @@ export function ActiveSessionsList() {
     </div>
   )
 }
-

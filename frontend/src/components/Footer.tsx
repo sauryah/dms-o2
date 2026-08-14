@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { AboutModal } from './AboutModal'
 import { Info } from 'lucide-react'
 import { APP_VERSION } from '../version'
@@ -8,34 +8,34 @@ export function Footer() {
 
   return (
     <>
-      <footer role="contentinfo" className="border-t border-slate-900/60 bg-slate-950/40 backdrop-blur-md py-6 mt-auto">
+      <footer role="contentinfo" className="border-t border-[#1a1a1a] bg-[#0a0a0a] py-3 mt-auto font-mono text-[11px] select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-300">DMS</span>
-              <span className="text-slate-700">•</span>
-              <span>Die Management System</span>
-              <span className="text-slate-700">•</span>
-              <span className="font-mono text-[10px] text-slate-500 bg-slate-900/50 border border-slate-800 px-1.5 py-0.5 rounded">v{APP_VERSION}</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[#6b7280]">
+            <div className="flex items-center space-x-2">
+              <span className="text-[#e4e4e4] font-medium uppercase">DMS</span>
+              <span className="text-[#2a2a2a]">/</span>
+              <span>DIE MANAGEMENT SYSTEM</span>
+              <span className="text-[#2a2a2a]">/</span>
+              <span className="font-mono text-[10px] text-[#6b7280] bg-[#141414] border border-[#2a2a2a] px-1.5 py-0.2 rounded-sm">V{APP_VERSION}</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 text-[11px]">
               <span>
-                Developed by{' '}
+                ENGINEERING:{' '}
                 <button 
                   onClick={() => setIsAboutOpen(true)}
-                  className="text-slate-400 hover:text-blue-400 transition-colors font-bold underline decoration-blue-500/30 decoration-2 hover:decoration-blue-400 cursor-pointer"
+                  className="text-[#e4e4e4] hover:text-blue-400 transition-colors uppercase font-mono cursor-pointer"
                 >
-                  Sahil & Antigravity
+                  SAHIL & ANTIGRAVITY
                 </button>
               </span>
-              <span className="text-slate-800">|</span>
+              <span className="text-[#2a2a2a]">|</span>
               <button 
                 onClick={() => setIsAboutOpen(true)}
-                className="flex items-center space-x-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                className="flex items-center space-x-1 text-[#6b7280] hover:text-[#e4e4e4] transition-colors cursor-pointer uppercase"
                 aria-label="About this application"
               >
-                <Info className="h-3.5 w-3.5" />
-                <span>About App</span>
+                <Info className="h-3 w-3" />
+                <span>SYSINFO</span>
               </button>
             </div>
           </div>

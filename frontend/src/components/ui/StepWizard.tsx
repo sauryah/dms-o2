@@ -40,9 +40,9 @@ export function StepWizard({
   }
 
   return (
-    <div className="flex flex-col space-y-6 select-none font-sans w-full">
+    <div className="flex flex-col space-y-4 select-none font-mono w-full">
       {/* Step Indicator Header Row */}
-      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-4 mb-2">
+      <div className="flex items-center justify-between w-full border-b border-[#2a2a2a] pb-3 mb-1">
         {steps.map((step, idx) => {
           const isActive = idx === currentStep
           const isCompleted = idx < currentStep
@@ -52,38 +52,38 @@ export function StepWizard({
               {/* Connecting line */}
               {idx > 0 && (
                 <div 
-                  className={`absolute left-0 right-1/2 top-4 -translate-y-1/2 h-0.5 z-0 ${
-                    isCompleted ? 'bg-blue-600' : 'bg-[var(--color-border)]'
+                  className={`absolute left-0 right-1/2 top-3 -translate-y-1/2 h-[1px] z-0 ${
+                    isCompleted ? 'bg-blue-500' : 'bg-[#2a2a2a]'
                   }`} 
                 />
               )}
               {idx < steps.length - 1 && (
                 <div 
-                  className={`absolute left-1/2 right-0 top-4 -translate-y-1/2 h-0.5 z-0 ${
-                    idx < currentStep ? 'bg-blue-600' : 'bg-[var(--color-border)]'
+                  className={`absolute left-1/2 right-0 top-3 -translate-y-1/2 h-[1px] z-0 ${
+                    idx < currentStep ? 'bg-blue-500' : 'bg-[#2a2a2a]'
                   }`} 
                 />
               )}
 
-              {/* Step Circle */}
+              {/* Step Block */}
               <div 
-                className={`relative z-10 flex items-center justify-center h-8 w-8 rounded-full font-mono text-xs font-bold transition-all duration-300 border ${
+                className={`relative z-10 flex items-center justify-center h-6 w-6 rounded-sm font-mono text-xs font-medium transition-colors border ${
                   isActive 
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/10'
+                    ? 'bg-[#141414] text-blue-400 border-blue-500'
                     : isCompleted
-                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                    : 'bg-[var(--color-surface)] text-[var(--color-muted)] border-[var(--color-border)]'
+                    ? 'bg-[#141414] text-emerald-400 border-emerald-500/40'
+                    : 'bg-[#0f0f0f] text-[#6b7280] border-[#2a2a2a]'
                 }`}
               >
-                {idx + 1}
+                0{idx + 1}
               </div>
 
-              {/* Step Label (Hidden on small mobile if not active) */}
+              {/* Step Label */}
               <span 
-                className={`mt-2 text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${
+                className={`mt-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors ${
                   isActive 
-                    ? 'text-white' 
-                    : 'text-[var(--color-muted)]'
+                    ? 'text-[#e4e4e4]' 
+                    : 'text-[#6b7280]'
                 } hidden sm:block`}
               >
                 {step.label}
@@ -94,24 +94,24 @@ export function StepWizard({
       </div>
 
       {/* Step Content Area */}
-      <div className="flex-1 min-h-[220px]">
+      <div className="flex-1 min-h-[200px]">
         {steps[currentStep]?.content}
       </div>
 
       {/* Step Wizard Action Buttons */}
-      <div className="border-t border-[var(--color-border)] pt-4 flex justify-between items-center gap-3">
+      <div className="border-t border-[#2a2a2a] pt-3 flex justify-between items-center gap-3">
         {/* Back Button */}
         {!isFirstStep ? (
           <button
             type="button"
             onClick={handleBackClick}
             disabled={isSubmitting}
-            className="bg-slate-950 hover:bg-slate-900 disabled:opacity-40 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition focus-ring"
+            className="bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-4 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring"
           >
             Back
           </button>
         ) : (
-          <div /> // Spacer
+          <div />
         )}
 
         {/* Next / Submit Button */}
@@ -120,7 +120,7 @@ export function StepWizard({
             type="button"
             onClick={handleNextClick}
             disabled={nextDisabled || isSubmitting}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
+            className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] hover:border-blue-500 text-blue-400 hover:text-blue-300 disabled:opacity-40 px-4 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
           >
             Next
           </button>
@@ -129,7 +129,7 @@ export function StepWizard({
             type="submit"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 focus-ring cursor-pointer"
+            className="bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500 text-blue-400 hover:text-blue-300 disabled:opacity-40 px-5 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
           >
             {isSubmitting ? 'Creating...' : 'Submit'}
           </button>

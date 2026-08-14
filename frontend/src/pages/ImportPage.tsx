@@ -250,33 +250,32 @@ export function ImportPage() {
   ]
 
   const errorColumns = [
-    { key: 'row', label: 'Row #', render: (row: any) => <span className="font-mono text-slate-400 font-bold">{row.row}</span> },
-    { key: 'die_id', label: 'Die ID', render: (row: any) => <span className="font-mono text-blue-400 font-semibold">{row.die_id ?? 'N/A'}</span> },
-    { key: 'field', label: 'Field', render: (row: any) => <span className="font-bold text-slate-300">{row.field ?? 'General'}</span> },
-    { key: 'error', label: 'Error Message', render: (row: any) => <span className="text-rose-400 whitespace-normal font-mono text-[11px] block max-w-md">{row.error}</span> }
+    { key: 'row', label: 'Row #', render: (row: any) => <span className="font-mono text-[#e4e4e4] font-bold">{row.row}</span> },
+    { key: 'die_id', label: 'Die ID', render: (row: any) => <span className="font-mono text-blue-400 font-bold">{row.die_id ?? 'N/A'}</span> },
+    { key: 'field', label: 'Field', render: (row: any) => <span className="text-[#6b7280] uppercase">{row.field ?? 'General'}</span> },
+    { key: 'error', label: 'Error Message', render: (row: any) => <span className="text-red-400 whitespace-normal font-mono text-xs block max-w-md">{row.error}</span> }
   ]
 
   const headerActions = (
     <button
       type="button"
       onClick={downloadTemplate}
-      className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300"
+      className="flex items-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
     >
-      <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-      <span>Download template (Excel)</span>
+      <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-500" />
+      <span>Template (.xlsx)</span>
     </button>
   )
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-mono">
       {/* Back Link */}
       <div className="flex items-center justify-between print:hidden">
         <button 
           onClick={() => navigate('/inventory')}
-          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-950 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl transition-all duration-300 hover:text-white"
+          className="flex items-center space-x-1.5 text-xs uppercase font-mono text-[#6b7280] bg-[#141414] border border-[#2a2a2a] hover:border-[#3a3a3a] px-3 py-1 rounded-sm transition-colors hover:text-[#e4e4e4] cursor-pointer"
         >
-          <ArrowLeft className="h-3.5 w-3.5 text-blue-500" />
+          <ArrowLeft className="h-3 w-3 text-blue-500" />
           <span>Back to Inventory</span>
         </button>
       </div>
@@ -287,16 +286,21 @@ export function ImportPage() {
         actions={headerActions}
       />
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
-        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+      <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 space-y-4 font-mono">
+        <div className="border-b border-[#1a1a1a] pb-2">
+          <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">01 SPREADSHEET FILE INGESTION</h2>
+          <p className="text-[#6b7280] text-xs mt-0.5">Upload CSV or Excel file containing batch die master records.</p>
+        </div>
+
+        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
           <div 
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 bg-slate-950/40 focus-within:ring-2 focus-within:ring-blue-500 ${
+            className={`border border-dashed rounded-sm p-8 text-center transition-colors bg-[#0a0a0a] ${
               isDragging 
-                ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
-                : 'border-slate-800 hover:border-slate-700'
+                ? 'border-blue-500 bg-[#141414]' 
+                : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
             }`}
           >
             <input 
@@ -309,95 +313,92 @@ export function ImportPage() {
             />
             <label htmlFor="file-upload" className="cursor-pointer block outline-none">
               <div className="flex flex-col items-center">
-                <div className={`p-4 rounded-full border mb-4 transition-all duration-300 ${
-                  file ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-900 border-slate-800 text-slate-400'
+                <div className={`p-3 rounded-sm border mb-3 ${
+                  file ? 'bg-[#141414] border-emerald-500/40 text-emerald-400' : 'bg-[#141414] border-[#2a2a2a] text-[#6b7280]'
                 }`}>
-                  {file ? <FileSpreadsheet className="h-8 w-8" /> : <UploadCloud className="h-8 w-8" />}
+                  {file ? <FileSpreadsheet className="h-6 w-6" /> : <UploadCloud className="h-6 w-6" />}
                 </div>
-                <span className="text-slate-200 font-bold mb-1 text-sm">
-                  {file ? file.name : 'Click or drag spreadsheet file here'}
+                <span className="text-[#e4e4e4] text-xs font-mono font-bold uppercase mb-0.5">
+                  {file ? file.name : 'Click or drop spreadsheet file here'}
                 </span>
-                <span className="text-slate-500 text-xs mt-0.5">Supports CSV and XLSX spreadsheets</span>
+                <span className="text-[#6b7280] text-[10px] uppercase">Accepts .CSV and .XLSX datasets</span>
               </div>
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-1">
             <button 
               type="button"
               disabled={!file || progress}
               onClick={(e) => handleSubmit(e, true)}
-              className="w-full sm:w-auto bg-slate-950 hover:bg-slate-900 disabled:opacity-40 border border-slate-800 text-slate-300 hover:text-white px-6 py-3 rounded-xl font-bold text-xs transition cursor-pointer"
+              className="w-full sm:w-auto bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] px-4 py-1.5 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
             >
               Preview (Dry Run)
             </button>
             <button 
               type="submit"
               disabled={!file || progress}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:from-slate-800 text-white px-8 py-3 rounded-xl font-bold text-xs shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer"
+              className="w-full sm:w-auto bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 border border-blue-500/50 text-blue-400 hover:text-blue-300 px-5 py-1.5 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
             >
               {progress ? (
-                <div className="flex items-center space-x-2">
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Processing...</span>
+                <div className="flex items-center space-x-1.5">
+                  <div className="animate-spin h-3.5 w-3.5 border border-white border-t-transparent rounded-none" />
+                  <span>Processing Ingestion...</span>
                 </div>
               ) : (
-                <span>Import Data</span>
+                <span>Execute Import</span>
               )}
             </button>
           </div>
         </form>
 
         {importStatus && importStatus.status === 'importing' && (
-          <div className="mt-8 p-6 bg-slate-950/40 border border-slate-800 rounded-2xl space-y-4 animate-fadeIn">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-              <span className="truncate max-w-xs sm:max-w-sm">Importing: {importStatus.filename}</span>
-              <span className="font-mono text-blue-400">
+          <div className="mt-4 p-4 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm space-y-2 font-mono animate-fadeIn">
+            <div className="flex justify-between items-center text-xs text-[#6b7280] uppercase">
+              <span className="truncate max-w-xs">INGESTING: {importStatus.filename}</span>
+              <span className="font-mono text-blue-400 font-bold tabular-nums">
                 {importStatus.total > 0 ? `${Math.round((importStatus.progress / importStatus.total) * 100)}%` : '0%'}
               </span>
             </div>
-            <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800/80">
+            <div className="w-full bg-[#141414] h-2 rounded-none overflow-hidden border border-[#2a2a2a]">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300 ease-out"
+                className="bg-blue-500 h-2 transition-all duration-150"
                 style={{ width: `${importStatus.total > 0 ? (importStatus.progress / importStatus.total) * 100 : 0}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <span>Processed {importStatus.progress} of {importStatus.total} rows</span>
-              <span className="animate-pulse text-blue-500">Running in background...</span>
+            <div className="flex justify-between text-[10px] text-[#6b7280] uppercase">
+              <span>PROCESSED {importStatus.progress} OF {importStatus.total} ROWS</span>
+              <span className="text-blue-400 animate-pulse">TRANSACTION RUNNING...</span>
             </div>
           </div>
         )}
 
         {statusMsg && (
-          <div className={`mt-8 p-5 rounded-2xl border flex items-start gap-3 animate-fadeIn ${
+          <div className={`mt-4 p-3 rounded-sm border flex items-start gap-2.5 font-mono text-xs ${
             statusMsg.type === 'success' 
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+              ? 'bg-[#141414] border-emerald-500/30 text-emerald-400' 
+              : 'bg-[#141414] border-red-500/30 text-red-400'
           }`}>
-            {statusMsg.type === 'success' ? <CheckCircle className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
-            <p className="font-bold text-sm leading-relaxed">{statusMsg.text}</p>
+            {statusMsg.type === 'success' ? <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" /> : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+            <p className="leading-normal">{statusMsg.text}</p>
           </div>
         )}
 
         {importResult && (
-          <div className="mt-8 space-y-6 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-950/40 border border-slate-800 p-5 rounded-2xl">
-              <div className="flex flex-wrap items-center gap-6">
-                <span className="text-xs font-bold text-slate-400">
-                  <span className="text-emerald-500 font-extrabold mr-1 text-sm">✓</span> {importResult.created} created
+          <div className="mt-4 space-y-4 font-mono animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
+              <div className="flex flex-wrap items-center gap-4 text-xs">
+                <span className="text-emerald-400 font-mono font-bold">
+                  ▲ {importResult.created} CREATED
                 </span>
-                <span className="text-xs font-bold text-slate-400">
-                  <span className="font-extrabold mr-1 text-sm">✓</span> {importResult.updated} updated
+                <span className="text-blue-400 font-mono font-bold">
+                  ● {importResult.updated} UPDATED
                 </span>
-                <span className="text-xs font-bold text-slate-400">
-                  <span className="text-slate-500 font-extrabold mr-1 text-sm">✓</span> {importResult.skipped} skipped
+                <span className="text-[#6b7280] font-mono">
+                  — {importResult.skipped} SKIPPED
                 </span>
-                <span className="text-xs font-bold text-slate-400">
-                  <span className="text-rose-500 font-extrabold mr-1 text-sm">✗</span> {importResult.errors.length} errors
+                <span className="text-red-400 font-mono font-bold">
+                  ▼ {importResult.errors.length} ERRORS
                 </span>
               </div>
               
@@ -405,17 +406,17 @@ export function ImportPage() {
                 <button
                   type="button"
                   onClick={downloadErrorReport}
-                  className="px-4 py-2 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all border border-slate-800 hover:border-slate-700"
+                  className="px-3 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] rounded-sm text-xs font-mono uppercase transition-colors border border-[#2a2a2a] cursor-pointer"
                 >
-                  Download Error Report (CSV)
+                  Error Report (.csv)
                 </button>
               )}
             </div>
 
             {importResult.errors.length > 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-4 border-b border-slate-800 bg-slate-950/20">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Import Row Errors</h3>
+              <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden font-mono">
+                <div className="p-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
+                  <h3 className="text-xs font-medium text-red-400 uppercase tracking-wider">02 IMPORT ROW ERRORS</h3>
                 </div>
                 <DataTable columns={errorColumns} rows={importResult.errors} />
               </div>
@@ -426,59 +427,59 @@ export function ImportPage() {
 
       {showPreviewModal && dryRunResult && (
         <div
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 bg-[#0a0a0a]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto font-mono"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="dry-run-title"
-            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 relative overflow-hidden shadow-2xl space-y-6 animate-fadeIn"
+            className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm max-w-xl w-full p-5 relative overflow-hidden shadow-2xl space-y-4 animate-fadeIn font-mono"
           >
-            <div>
-              <h2 id="dry-run-title" className="text-lg font-bold text-white font-heading">Import Preview (Dry Run)</h2>
-              <p className="text-slate-400 text-xs mt-1">Review the results of the simulated import before writing to database.</p>
+            <div className="border-b border-[#1a1a1a] pb-2">
+              <h2 id="dry-run-title" className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">01 SIMULATION PREVIEW (DRY RUN)</h2>
+              <p className="text-[#6b7280] text-xs mt-0.5">Dry-run validation results prior to database write commit.</p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Create</span>
-                <span className="text-xl font-mono font-bold text-emerald-400 mt-1 block">{dryRunResult.created}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm text-center">
+                <span className="text-[10px] text-[#6b7280] uppercase block">TO CREATE</span>
+                <span className="text-lg font-mono font-bold text-emerald-400 mt-0.5 block tabular-nums">{dryRunResult.created}</span>
               </div>
-              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Update</span>
-                <span className="text-xl font-mono font-bold text-blue-400 mt-1 block">{dryRunResult.updated}</span>
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm text-center">
+                <span className="text-[10px] text-[#6b7280] uppercase block">TO UPDATE</span>
+                <span className="text-lg font-mono font-bold text-blue-400 mt-0.5 block tabular-nums">{dryRunResult.updated}</span>
               </div>
-              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">To Skip</span>
-                <span className="text-xl font-mono font-bold text-slate-400 mt-1 block">{dryRunResult.skipped}</span>
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm text-center">
+                <span className="text-[10px] text-[#6b7280] uppercase block">TO SKIP</span>
+                <span className="text-lg font-mono font-bold text-[#6b7280] mt-0.5 block tabular-nums">{dryRunResult.skipped}</span>
               </div>
-              <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl text-center">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Errors</span>
-                <span className={`text-xl font-mono font-bold mt-1 block ${dryRunResult.errors.length > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm text-center">
+                <span className="text-[10px] text-[#6b7280] uppercase block">ERRORS</span>
+                <span className={`text-lg font-mono font-bold mt-0.5 block tabular-nums ${dryRunResult.errors.length > 0 ? 'text-red-400' : 'text-[#6b7280]'}`}>
                   {dryRunResult.errors.length}
                 </span>
               </div>
             </div>
 
             {dryRunResult.errors.length > 0 && (
-              <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-xl">
-                <span className="text-xs text-rose-300 font-bold block mb-2">Simulated Errors:</span>
-                <ul className="text-xs font-mono max-h-40 overflow-y-auto space-y-1.5 list-disc list-inside">
+              <div className="bg-[#0a0a0a] border border-red-500/30 p-3 rounded-sm">
+                <span className="text-xs text-red-400 font-bold block mb-1 uppercase">Validation Errors:</span>
+                <ul className="text-xs font-mono max-h-36 overflow-y-auto space-y-1 list-disc list-inside text-[#e4e4e4]">
                   {dryRunResult.errors.map((err, i) => (
                     <li key={i}>
-                      Row {err.row}: {err.error}
+                      ROW {err.row}: {err.error}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-800/80">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-3 border-t border-[#1a1a1a]">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-6 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition"
+                className="px-4 py-1.5 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] rounded-sm text-xs font-mono uppercase transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -486,9 +487,9 @@ export function ImportPage() {
                 type="button"
                 disabled={progress}
                 onClick={(e) => handleSubmit(e, false)}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer"
+                className="px-5 py-1.5 bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500/50 text-blue-400 hover:text-blue-300 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
               >
-                Confirm Import
+                Confirm Ingestion
               </button>
             </div>
           </div>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Database, ClipboardList, Shield, Activity } from 'lucide-react'
@@ -12,7 +11,6 @@ import { ActiveSessionsList } from './users/ActiveSessionsList'
 
 export function UsersPage() {
   const { role } = useAuth()
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('users') // 'users', 'backups', 'logs', or 'sessions'
   const { request } = useApi()
 
@@ -24,12 +22,12 @@ export function UsersPage() {
 
   if (role !== 'ROOT') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen text-slate-100 font-sans">
-        <div className="flex flex-col items-center justify-center text-center p-16 space-y-4">
-          <Shield className="h-12 w-12 text-slate-600" />
-          <h2 className="text-lg font-bold text-slate-300">Access Denied</h2>
-          <p className="text-sm text-slate-500 max-w-md">
-            You do not have sufficient privileges to view this page. Root authorization is required.
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen text-[#e4e4e4] font-mono">
+        <div className="flex flex-col items-center justify-center text-center p-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm space-y-3">
+          <Shield className="h-8 w-8 text-red-500" />
+          <h2 className="text-xs font-medium uppercase tracking-[0.05em] text-[#e4e4e4]">01 ACCESS DENIED</h2>
+          <p className="text-xs text-[#6b7280] max-w-md">
+            Insufficient authorization privileges. ROOT node key required.
           </p>
         </div>
       </div>
@@ -46,36 +44,33 @@ export function UsersPage() {
   const currentTab = tabs.find(t => t.id === activeTab) || tabs[0]
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen text-slate-100 font-sans">
-      {/* Title Header with Glowing Accent */}
-      <div className="relative overflow-hidden bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 md:p-8 mb-8 backdrop-blur-md shadow-xl">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2.5">
-              <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400">
-                <Shield className="h-5 w-5" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen text-[#e4e4e4] font-mono">
+      {/* Title Header */}
+      <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 md:p-5 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center space-x-2">
+              <div className="p-1 bg-[#141414] border border-[#2a2a2a] rounded-sm text-blue-400">
+                <Shield className="h-4 w-4" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight font-mono">
-                System Administration
+              <h1 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em] font-mono">
+                01 SYSTEM ADMINISTRATION NODE
               </h1>
             </div>
-            <p className="text-slate-400 text-sm max-w-2xl mt-2 leading-relaxed">
+            <p className="text-[#6b7280] text-xs mt-1">
               {currentTab.desc}
             </p>
           </div>
           
-          <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl px-4 py-2 font-mono text-xs text-slate-400 select-none flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Root Authorization Node</span>
+          <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-1 font-mono text-[10px] uppercase text-[#6b7280] select-none flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>ROOT AUTHORIZATION: ACTIVE</span>
           </div>
         </div>
       </div>
 
-      {/* Modern Tabs Navigation */}
-      <div className="flex flex-wrap border-b border-slate-800/80 gap-1 md:gap-2 mb-8 select-none">
+      {/* Tabs Navigation */}
+      <div className="flex flex-wrap border-b border-[#1a1a1a] gap-2 mb-6 select-none font-mono">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -86,49 +81,31 @@ export function UsersPage() {
               role="tab"
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
-              className={`relative flex items-center space-x-2 px-4 py-3 text-xs md:text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex items-center space-x-2 px-3 py-2 text-xs font-mono uppercase transition-colors cursor-pointer border-b-2 ${
                 isActive 
-                  ? 'text-white font-bold' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-blue-500 text-blue-400 font-bold bg-[#0f0f0f]' 
+                  : 'border-transparent text-[#6b7280] hover:text-[#e4e4e4]'
               }`}
             >
-              <Icon className={`h-4 w-4 ${isActive ? 'text-blue-400' : 'text-slate-500'}`} />
+              <Icon className="h-3.5 w-3.5" />
               <span>{tab.label}</span>
               {tab.count !== undefined && (
-                <span className="bg-slate-700 text-slate-300 text-[9px] font-mono px-1.5 py-0.5 rounded">
+                <span className="bg-[#141414] text-[#6b7280] border border-[#2a2a2a] text-[10px] font-mono px-1.5 py-0.2 rounded-sm tabular-nums">
                   {tab.count}
                 </span>
-              )}
-              {isActive && (
-                <motion.div 
-                  layoutId="activeTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
               )}
             </button>
           )
         })}
       </div>
 
-      {/* Tab Panels with Framer Motion Transition */}
-      <div className="relative">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          >
-            {activeTab === 'users' && <div id="panel-users" role="tabpanel"><UserManager /></div>}
-            {activeTab === 'backups' && <div id="panel-backups" role="tabpanel"><BackupManager /></div>}
-            {activeTab === 'logs' && <div id="panel-logs" role="tabpanel"><SessionAuditLogs /></div>}
-            {activeTab === 'sessions' && <div id="panel-sessions" role="tabpanel"><ActiveSessionsList /></div>}
-          </motion.div>
-        </AnimatePresence>
+      {/* Tab Panels */}
+      <div>
+        {activeTab === 'users' && <div id="panel-users" role="tabpanel"><UserManager /></div>}
+        {activeTab === 'backups' && <div id="panel-backups" role="tabpanel"><BackupManager /></div>}
+        {activeTab === 'logs' && <div id="panel-logs" role="tabpanel"><SessionAuditLogs /></div>}
+        {activeTab === 'sessions' && <div id="panel-sessions" role="tabpanel"><ActiveSessionsList /></div>}
       </div>
     </div>
   )
 }
-

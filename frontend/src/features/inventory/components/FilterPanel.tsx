@@ -1,6 +1,6 @@
 import React from 'react'
 import { RangeFilter } from '../../../components/ui/RangeFilter'
-import { Layers, Activity, Box, MapPin, Hash, Sparkles } from 'lucide-react'
+import { Layers, Activity, Box, MapPin } from 'lucide-react'
 
 export interface FilterPanelProps {
   dieType: string
@@ -60,14 +60,14 @@ export function FilterPanel({
   }
 
   const statuses = [
-    { value: 'AVAILABLE', label: 'Available', color: 'var(--color-available)' },
-    { value: 'RUNNING', label: 'Running', color: 'var(--color-running)' },
-    { value: 'CLEANING', label: 'Cleaning', color: 'var(--color-cleaning)' },
-    { value: 'POLISHING', label: 'Polishing', color: 'var(--color-polishing)' },
-    { value: 'DAMAGED', label: 'Damaged', color: 'var(--color-damaged)' },
-    { value: 'SCRAPPED', label: 'Scrapped', color: 'var(--color-scrapped)' },
-    { value: 'MISSING', label: 'Missing', color: 'var(--color-missing)' },
-    { value: 'MAINTENANCE', label: 'Maintenance', color: 'var(--color-maintenance)' }
+    { value: 'AVAILABLE', label: 'AVAILABLE', color: '#10b981' },
+    { value: 'RUNNING', label: 'RUNNING', color: '#3b82f6' },
+    { value: 'CLEANING', label: 'CLEANING', color: '#f59e0b' },
+    { value: 'POLISHING', label: 'POLISHING', color: '#8b5cf6' },
+    { value: 'DAMAGED', label: 'DAMAGED', color: '#f97316' },
+    { value: 'SCRAPPED', label: 'SCRAPPED', color: '#ef4444' },
+    { value: 'MISSING', label: 'MISSING', color: '#6b7280' },
+    { value: 'MAINTENANCE', label: 'MAINTENANCE', color: '#f59e0b' }
   ]
 
   const handleStatusToggle = (status: string) => {
@@ -79,82 +79,82 @@ export function FilterPanel({
   }
 
   return (
-    <div className="flex flex-col space-y-6 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-5 shrink-0 font-sans">
+    <div className="flex flex-col space-y-4 w-full bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-3.5 shrink-0 font-mono text-xs">
       
       {/* 1. Die Type Toggles */}
-      <div className="space-y-2.5">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono flex items-center">
-          <Layers className="h-3.5 w-3.5 mr-1 text-blue-400" />
-          <span>Die Type Class</span>
+      <div className="space-y-1.5">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-[#6b7280] font-mono flex items-center">
+          <Layers className="h-3 w-3 mr-1 text-blue-400" />
+          <span>01 DIE TYPE</span>
         </span>
-        <div className="flex bg-slate-950 p-1 rounded-xl border border-[var(--color-border)]">
+        <div className="flex bg-[#0a0a0a] p-0.5 rounded-sm border border-[#2a2a2a]">
           <button
             type="button"
             onClick={() => handleDieTypeChange('')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1 rounded-sm text-[10px] uppercase font-mono tracking-wider transition-colors ${
               dieType === ''
-                ? 'bg-slate-800 text-white shadow'
-                : 'text-[var(--color-muted)] hover:text-white'
+                ? 'bg-[#141414] text-[#e4e4e4] border border-[#2a2a2a]'
+                : 'text-[#6b7280] hover:text-[#e4e4e4]'
             }`}
           >
-            All
+            ALL
           </button>
           <button
             type="button"
             onClick={() => handleDieTypeChange('ROUND')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1 rounded-sm text-[10px] uppercase font-mono tracking-wider transition-colors ${
               dieType === 'ROUND'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-[var(--color-muted)] hover:text-white'
+                ? 'bg-[#141414] text-blue-400 border border-blue-500/40'
+                : 'text-[#6b7280] hover:text-[#e4e4e4]'
             }`}
           >
-            Round
+            ROUND
           </button>
           <button
             type="button"
             onClick={() => handleDieTypeChange('FLAT')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold tracking-wider uppercase transition-all ${
+            className={`flex-1 py-1 rounded-sm text-[10px] uppercase font-mono tracking-wider transition-colors ${
               dieType === 'FLAT'
-                ? 'bg-purple-600 text-white shadow'
-                : 'text-[var(--color-muted)] hover:text-white'
+                ? 'bg-[#141414] text-purple-400 border border-purple-500/40'
+                : 'text-[#6b7280] hover:text-[#e4e4e4]'
             }`}
           >
-            Flat
+            FLAT
           </button>
         </div>
       </div>
 
       {/* 2. Status Checkbox List */}
-      <div className="space-y-3">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono flex items-center">
-          <Activity className="h-3.5 w-3.5 mr-1 text-emerald-500" />
-          <span>Status Registry</span>
+      <div className="space-y-2">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-[#6b7280] font-mono flex items-center">
+          <Activity className="h-3 w-3 mr-1 text-emerald-500" />
+          <span>02 STATUS</span>
         </span>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {statuses.map((item) => {
             const isChecked = statusVal === item.value
             return (
               <div 
                 key={item.value} 
                 onClick={() => handleStatusToggle(item.value)}
-                className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer transition ${
+                className={`flex items-center justify-between p-1.5 rounded-sm border cursor-pointer transition-colors ${
                   isChecked 
-                    ? 'bg-slate-950/40 border-[var(--color-border)] text-white' 
-                    : 'border-transparent text-[var(--color-muted)] hover:text-white'
+                    ? 'bg-[#141414] border-[#2a2a2a] text-[#e4e4e4]' 
+                    : 'border-transparent text-[#6b7280] hover:text-[#e4e4e4] hover:bg-[#141414]'
                 }`}
               >
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2">
                   <span 
                     style={{ backgroundColor: item.color }} 
-                    className="h-2 w-2 rounded-full shadow-sm shrink-0" 
+                    className="h-1.5 w-1.5 rounded-full shrink-0" 
                   />
-                  <span className="text-xs font-semibold">{item.label}</span>
+                  <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
                 </div>
                 <input
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => {}} // Click handler on wrapper
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 focus:ring-offset-0 cursor-pointer pointer-events-none"
+                  className="h-3.5 w-3.5 rounded-sm border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 focus:ring-0 focus:ring-offset-0 cursor-pointer pointer-events-none"
                 />
               </div>
             )
@@ -163,10 +163,10 @@ export function FilterPanel({
       </div>
 
       {/* 3. Casing Text Input */}
-      <div className="space-y-2">
-        <label htmlFor="filter-casing" className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono flex items-center">
-          <Box className="h-3.5 w-3.5 mr-1 text-indigo-400" />
-          <span>Casing specs</span>
+      <div className="space-y-1.5">
+        <label htmlFor="filter-casing" className="text-[10px] font-medium uppercase tracking-wider text-[#6b7280] font-mono flex items-center">
+          <Box className="h-3 w-3 mr-1 text-indigo-400" />
+          <span>03 CASING</span>
         </label>
         <input
           id="filter-casing"
@@ -174,7 +174,7 @@ export function FilterPanel({
           placeholder="e.g. 25x10"
           value={casing}
           onChange={(e) => onCasingChange(e.target.value)}
-          className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl py-2 px-3 text-xs text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-blue-950/20 transition-all font-mono"
+          className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 px-2 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono uppercase"
         />
       </div>
 
@@ -191,7 +191,7 @@ export function FilterPanel({
       )}
 
       {dieType === 'FLAT' && (
-        <div className="space-y-5">
+        <div className="space-y-3">
           <RangeFilter
             label="Die Plate Width"
             minValue={widthMin}
@@ -212,10 +212,10 @@ export function FilterPanel({
       )}
 
       {/* 5. Physical Location Input */}
-      <div className="space-y-2">
-        <label htmlFor="filter-location" className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-muted)] font-mono flex items-center">
-          <MapPin className="h-3.5 w-3.5 mr-1 text-amber-500" />
-          <span>Physical Location</span>
+      <div className="space-y-1.5">
+        <label htmlFor="filter-location" className="text-[10px] font-medium uppercase tracking-wider text-[#6b7280] font-mono flex items-center">
+          <MapPin className="h-3 w-3 mr-1 text-amber-500" />
+          <span>04 LOCATION</span>
         </label>
         <div className="relative">
           <input
@@ -224,7 +224,7 @@ export function FilterPanel({
             placeholder="e.g. Rack A"
             value={locationQuery}
             onChange={(e) => onLocationChange(e.target.value)}
-            className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl py-2 px-3 text-xs text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-blue-950/20 transition-all"
+            className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 px-2 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono uppercase"
           />
         </div>
       </div>

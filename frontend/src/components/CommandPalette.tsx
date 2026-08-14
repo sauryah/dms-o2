@@ -64,34 +64,34 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     const list: PaletteAction[] = [
       {
         id: 'nav-dashboard',
-        title: 'Go to Dashboard',
+        title: 'GO TO DASHBOARD',
         subtitle: 'View general statistics, activity logs, and status circles',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-blue-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/'); onClose() }
       },
       {
         id: 'nav-wire-drawing-calculator',
-        title: 'Go to Wire Drawing Calculator',
+        title: 'GO TO WIRE DRAWING CALCULATOR',
         subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-indigo-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/wire-drawing-calculator'); onClose() }
       },
       {
         id: 'nav-inventory',
-        title: 'Go to Die Inventory',
+        title: 'GO TO DIE INVENTORY',
         subtitle: 'Browse and filter all extrusion dies in the catalog',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-indigo-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/inventory'); onClose() }
       },
       {
         id: 'nav-machines',
-        title: 'Go to Machine Sets',
+        title: 'GO TO MACHINE SETS',
         subtitle: 'Configure categories, machines, and die sets mapping',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-violet-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/machines'); onClose() }
       }
     ]
@@ -99,18 +99,18 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     if (role === 'ROOT' || role === 'ADMIN') {
       list.push({
         id: 'nav-history',
-        title: 'Go to Audit History',
+        title: 'GO TO AUDIT HISTORY',
         subtitle: 'View detailed system logs and operator audit trails',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-emerald-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-emerald-400" />,
         perform: () => { navigate('/history'); onClose() }
       })
       list.push({
         id: 'nav-import',
-        title: 'Go to Bulk Import',
+        title: 'GO TO BULK IMPORT',
         subtitle: 'Upload CSV/XLSX spreadsheets to create or update dies',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-amber-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-amber-400" />,
         perform: () => { navigate('/import'); onClose() }
       })
     }
@@ -118,10 +118,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     if (role === 'ROOT') {
       list.push({
         id: 'nav-users',
-        title: 'Go to Users & Backups',
+        title: 'GO TO USERS & BACKUPS',
         subtitle: 'Administer user accounts and manage database backups',
         category: 'Navigation',
-        icon: <Compass className="h-4 w-4 text-rose-400" />,
+        icon: <Compass className="h-3.5 w-3.5 text-red-400" />,
         perform: () => { navigate('/users'); onClose() }
       })
     }
@@ -146,10 +146,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       if (validStatuses.includes(targetStatus as any)) {
         list.push({
           id: `status-direct-${targetDieId}-${targetStatus}`,
-          title: `Set die ${targetDieId} to ${targetStatus}`,
+          title: `SET DIE ${targetDieId} TO ${targetStatus}`,
           subtitle: `Execute status change operation immediately`,
           category: 'Status Updates',
-          icon: <Settings className="h-4 w-4 text-amber-400" />,
+          icon: <Settings className="h-3.5 w-3.5 text-amber-400" />,
           perform: async () => {
             try {
               await request(`/api/dies/${targetDieId}/`, {
@@ -171,10 +171,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       // Navigation result
       list.push({
         id: `search-die-${die.die_id}`,
-        title: `Go to Die: ${die.die_id}`,
+        title: `DIE ${die.die_id}`,
         subtitle: `Type: ${die.die_type} | Casing: ${die.casing || 'N/A'} | Status: ${die.status}`,
         category: 'Search Results',
-        icon: <Search className="h-4 w-4 text-blue-400" />,
+        icon: <Search className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate(`/dies/${die.die_id}`); onClose() }
       })
 
@@ -184,10 +184,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           if (st !== die.status) {
             list.push({
               id: `status-${die.die_id}-${st}`,
-              title: `Set ${die.die_id} to ${st}`,
+              title: `SET ${die.die_id} TO ${st}`,
               subtitle: `Change state from current status (${die.status})`,
               category: 'Status Updates',
-              icon: <Settings className="h-4 w-4 text-violet-400" />,
+              icon: <Settings className="h-3.5 w-3.5 text-amber-400" />,
               perform: async () => {
                 try {
                   await request(`/api/dies/${die.die_id}/`, {
@@ -268,6 +268,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   // Group actions by category
   const categories = ['Navigation', 'Search Results', 'Status Updates'] as const
+  const categoryLabels = {
+    'Navigation': '01 NAVIGATION',
+    'Search Results': '02 SEARCH RESULTS',
+    'Status Updates': '03 STATUS UPDATES'
+  }
   const groupedActions = categories.reduce((acc, cat) => {
     acc[cat] = actions.filter(a => a.category === cat)
     return acc
@@ -292,9 +297,9 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     const catOffset = categoryOffsets[cat]
 
     return (
-      <div key={cat} className="space-y-1.5 pb-3" role="group" aria-label={cat}>
-        <h4 className="text-[10px] font-bold font-mono tracking-widest text-slate-500 uppercase px-4 pt-2">
-          {cat}
+      <div key={cat} className="space-y-1 pb-2" role="group" aria-label={cat}>
+        <h4 className="text-[10px] font-medium font-mono tracking-widest text-[#6b7280] uppercase px-3 pt-2">
+          {categoryLabels[cat]}
         </h4>
         <div className="space-y-0.5">
           {catActions.map((action, localIdx) => {
@@ -307,33 +312,33 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 aria-selected={isActive}
                 id={`palette-option-${currentFlatIndex}`}
                 onClick={() => action.perform()}
-                className={`flex items-center justify-between px-4 py-2.5 mx-2 rounded-xl transition-all duration-200 cursor-pointer select-none group border-l-4 ${
+                className={`flex items-center justify-between px-3 py-2 mx-1.5 rounded-sm transition-colors cursor-pointer select-none group border-l-2 font-mono ${
                   isActive
-                    ? 'bg-blue-600/15 border-blue-500 text-white shadow-lg shadow-blue-950/20'
-                    : 'border-transparent text-slate-300 hover:bg-slate-800/40 hover:text-slate-200'
+                    ? 'bg-[#141414] border-l-blue-500 text-[#e4e4e4]'
+                    : 'border-transparent text-[#6b7280] hover:bg-[#141414] hover:text-[#e4e4e4]'
                 }`}
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className={`p-1.5 rounded-lg transition-colors duration-200 ${
-                    isActive ? 'bg-blue-500/20' : 'bg-slate-900'
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`p-1 rounded-sm ${
+                    isActive ? 'bg-[#1f1f1f] text-blue-400' : 'bg-[#0a0a0a]'
                   }`}>
                     {action.icon}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold truncate tracking-wide leading-tight">
+                    <p className="text-xs font-medium truncate tracking-wider uppercase leading-tight text-[#e4e4e4]">
                       {action.title}
                     </p>
                     {action.subtitle && (
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium leading-none">
+                      <p className="text-[10px] text-[#6b7280] truncate mt-0.5 font-mono leading-none">
                         {action.subtitle}
                       </p>
                     )}
                   </div>
                 </div>
                 {isActive && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold font-mono text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20 shrink-0">
-                    <span>Select</span>
-                    <CornerDownLeft className="h-3 w-3" />
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-blue-400 bg-[#0a0a0a] px-1.5 py-0.5 rounded-sm border border-blue-500/30 shrink-0">
+                    <span>SELECT</span>
+                    <CornerDownLeft className="h-2.5 w-2.5" />
                   </span>
                 )}
               </div>
@@ -345,19 +350,16 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   })
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/65 backdrop-blur-md pt-12 sm:pt-20 p-4" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-[#0a0a0a]/80 pt-12 sm:pt-16 p-4" role="dialog" aria-modal="true" aria-label="Command palette">
       {/* Backdrop Dismiss Click Area */}
       <div className="absolute inset-0 cursor-default" onClick={onClose} />
       
       {/* Command Palette Card Box */}
-      <div className="relative w-full max-w-2xl bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 flex flex-col max-h-[500px] border-blue-500/10 hover:border-blue-500/20 transition-colors">
-        
-        {/* Glowing Neon Accent Border line */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 shadow-[0_1px_10px_rgba(59,130,246,0.5)]" />
+      <div className="relative w-full max-w-2xl bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm overflow-hidden animate-fadeIn flex flex-col max-h-[480px] font-mono">
         
         {/* Search Bar Input section */}
-        <div className="flex items-center border-b border-slate-800/80 px-4 py-4 gap-3.5 relative z-10">
-          <Search className="h-5 w-5 text-slate-400 shrink-0" />
+        <div className="flex items-center border-b border-[#2a2a2a] px-3.5 py-2.5 gap-2.5 relative z-10 bg-[#0a0a0a]">
+          <Search className="h-4 w-4 text-[#6b7280] shrink-0" />
           <input
             type="text"
             autoFocus
@@ -366,34 +368,34 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             aria-controls="palette-listbox"
             aria-activedescendant={activeIndex >= 0 ? `palette-option-${activeIndex}` : undefined}
             aria-label="Search commands and dies"
-            placeholder="Type a command or die ID (e.g. R-101, 'Set die R-101 to RUNNING')..."
+            placeholder="Type command or die ID (e.g. R-101)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none text-base font-medium tracking-wide"
+            className="w-full bg-transparent text-[#e4e4e4] placeholder-[#404040] focus:outline-none text-xs font-mono tracking-wider uppercase"
           />
           <button
             type="button"
             onClick={onClose}
             aria-label="Close command palette"
-            className="p-1 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800/60 transition cursor-pointer"
+            className="p-0.5 text-[#6b7280] hover:text-[#e4e4e4] rounded-sm hover:bg-[#141414] transition cursor-pointer"
           >
-            <span className="text-xs font-mono font-bold border border-slate-800 px-1.5 py-0.5 rounded bg-slate-950/80">ESC</span>
+            <span className="text-[10px] font-mono border border-[#2a2a2a] px-1 py-0.5 rounded-sm bg-[#141414]">ESC</span>
           </button>
         </div>
 
         {/* Status syntax hint */}
-        <div className="px-5 py-1.5 text-[10px] font-medium text-slate-500 border-b border-slate-800/50">
-          Type <span className="font-mono text-slate-400">status:name</span> to change status (e.g. <span className="font-mono text-slate-400">status:RUNNING</span>)
+        <div className="px-3 py-1 text-[10px] text-[#6b7280] border-b border-[#1a1a1a] bg-[#0f0f0f]">
+          Type <span className="text-[#e4e4e4]">status:NAME</span> to update die status (e.g. <span className="text-[#e4e4e4]">status:RUNNING</span>)
         </div>
 
         {/* Content Action Items List */}
-        <div id="palette-listbox" role="listbox" className="flex-1 overflow-y-auto py-2 divide-y divide-slate-800/30" ref={listRef}>
+        <div id="palette-listbox" role="listbox" className="flex-1 overflow-y-auto py-1 divide-y divide-[#1a1a1a]" ref={listRef}>
           {actions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <HelpCircle className="h-10 w-10 text-slate-500 mb-3" />
-              <p className="text-sm font-bold text-slate-300">No matching commands or dies found</p>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs leading-normal">
-                Try searching for existing die IDs, common navigation keywords, or use the status syntax: 'Set die ID to STATUS'.
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <HelpCircle className="h-8 w-8 text-[#404040] mb-2" />
+              <p className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">No matching commands or dies found</p>
+              <p className="text-[11px] text-[#6b7280] mt-1 max-w-xs leading-normal font-mono">
+                Try searching for existing die IDs or navigation keywords.
               </p>
             </div>
           ) : (
@@ -402,14 +404,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </div>
 
         {/* Footer shortcuts helper panel */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 text-[11px] font-medium font-sans text-slate-400 tracking-wide select-none">
-          <div className="flex items-center">
-            <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">↑↓</span> Move</span>
-            <span className="flex items-center gap-1"><span className="border border-slate-800 px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px]">Enter</span> Select</span>
+        <div className="flex items-center justify-between px-3 py-2 border-t border-[#2a2a2a] bg-[#0a0a0a] text-[10px] font-mono text-[#6b7280] tracking-wide select-none">
+          <div className="flex items-center space-x-3">
+            <span className="flex items-center gap-1"><span className="border border-[#2a2a2a] px-1 py-0.2 rounded-sm bg-[#141414] text-[9px]">↑↓</span> MOVE</span>
+            <span className="flex items-center gap-1"><span className="border border-[#2a2a2a] px-1 py-0.2 rounded-sm bg-[#141414] text-[9px]">ENTER</span> SELECT</span>
           </div>
           <div className="flex items-center gap-1">
             <Command className="h-3 w-3" />
-            <span>Search Command Palette</span>
+            <span>COMMAND PALETTE</span>
           </div>
         </div>
       </div>

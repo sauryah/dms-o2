@@ -9,7 +9,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={clsx(
-        'animate-skeleton bg-slate-800 rounded-lg pointer-events-none',
+        'animate-skeleton bg-[#1a1a1a] rounded-none pointer-events-none',
         className
       )}
       aria-hidden="true"
@@ -19,19 +19,19 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function CardSkeleton() {
   return (
-    <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-6 rounded-xl space-y-4 h-full">
+    <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-4 rounded-sm space-y-3 h-full">
       <div className="flex justify-between items-start">
         <div className="space-y-2 flex-1">
           <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-36" />
         </div>
-        <Skeleton className="h-10 w-10 shrink-0" />
+        <Skeleton className="h-8 w-8 shrink-0" />
       </div>
-      <div className="border-t border-slate-800/80 pt-4 mt-2 grid grid-cols-2 gap-4">
+      <div className="border-t border-[#1a1a1a] pt-3 mt-2 grid grid-cols-2 gap-3">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="space-y-1">
             <Skeleton className="h-2 w-12" />
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3.5 w-20" />
           </div>
         ))}
       </div>
@@ -41,10 +41,10 @@ export function CardSkeleton() {
 
 export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
   return (
-    <tr className="border-b border-slate-800/60 bg-slate-900/20">
+    <tr className="border-b border-[#1a1a1a] bg-transparent">
       {[...Array(cols)].map((_, i) => (
-        <td key={i} className="py-4 px-6">
-          <Skeleton className="h-4 w-5/6" />
+        <td key={i} className="py-2.5 px-3">
+          <Skeleton className="h-3.5 w-5/6" />
         </td>
       ))}
     </tr>
@@ -53,14 +53,14 @@ export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden animate-fadeIn">
-      <div className="py-4 px-6 border-b border-slate-800 bg-slate-950/40 flex gap-4">
+    <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden animate-fadeIn">
+      <div className="py-2.5 px-3 border-b border-[#2a2a2a] bg-[#0a0a0a] flex gap-4">
         {[...Array(cols)].map((_, i) => (
-          <Skeleton key={i} className="h-3 w-24" />
+          <Skeleton key={i} className="h-3 w-20" />
         ))}
       </div>
       <table className="w-full text-left border-collapse">
-        <tbody className="divide-y divide-slate-800/60">
+        <tbody className="divide-y divide-[#1a1a1a]">
           {[...Array(rows)].map((_, i) => (
             <TableRowSkeleton key={i} cols={cols} />
           ))}

@@ -10,14 +10,14 @@ export interface SkeletonProps {
 export function Skeleton({
   width = 'w-full',
   height = 'h-4',
-  rounded = true,
+  rounded = false,
   className = ''
 }: SkeletonProps) {
   return (
     <div 
       aria-hidden="true"
-      className={`bg-slate-800/45 animate-pulse shrink-0 ${width} ${height} ${
-        rounded ? 'rounded-xl' : 'rounded-none'
+      className={`bg-[#1a1a1a] animate-pulse shrink-0 ${width} ${height} ${
+        rounded ? 'rounded-sm' : 'rounded-none'
       } ${className}`}
     />
   )

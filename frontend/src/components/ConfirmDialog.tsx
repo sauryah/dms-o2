@@ -1,40 +1,50 @@
 import React, { useEffect, useRef } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 
-interface ConfirmDialogProps {
-  isOpen: boolean
+export interface ConfirmDialogProps {
+  isOpen?: boolean
+  open?: boolean
   title: string
   message: React.ReactNode
   confirmText?: string
+  confirmLabel?: string
   cancelText?: string
+  cancelLabel?: string
   requireMatchText?: string
   isDestructive?: boolean
+  danger?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
 
 export function ConfirmDialog({
   isOpen,
+  open,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  confirmLabel,
+  cancelText,
+  cancelLabel,
   requireMatchText,
-  isDestructive = false,
+  isDestructive,
+  danger,
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
+  const visible = open !== undefined ? open : (isOpen !== undefined ? isOpen : false)
+  const cText = confirmLabel || confirmText || 'Confirm'
+  const canText = cancelLabel || cancelText || 'Cancel'
+  const isDanger = danger !== undefined ? danger : (isDestructive !== undefined ? isDestructive : false)
+
   const [matchInput, setMatchInput] = React.useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isOpen) {
+    if (visible) {
       setMatchInput('')
-      // Focus on the cancel button first to prevent accidental confirmation
       const cancelButton = modalRef.current?.querySelector('[data-cancel-btn]') as HTMLElement
       cancelButton?.focus()
-
-      // Lock scroll
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -43,7 +53,7 @@ export function ConfirmDialog({
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen])
+  }, [visible])
 
   // Trap focus
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -75,13 +85,13 @@ export function ConfirmDialog({
     }
   }
 
-  if (!isOpen) return null
+  if (!visible) return null
 
   const isConfirmedDisabled = requireMatchText ? matchInput !== requireMatchText : false
 
   return (
     <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 transition-all duration-300 animate-fadeIn"
+      className="fixed inset-0 bg-[#0a0a0a]/80 z-[9999] flex items-center justify-center p-4 transition-all duration-150 animate-fadeIn"
       onClick={onCancel}
       onKeyDown={handleKeyDown}
       role="dialog"
@@ -91,66 +101,66 @@ export function ConfirmDialog({
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden focus-ring"
+        className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm max-w-md w-full overflow-hidden focus-ring font-mono"
         tabIndex={-1}
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-          <div className="flex items-center space-x-2.5">
-            <AlertTriangle className={`h-5 w-5 ${isDestructive ? 'text-rose-500' : 'text-amber-500'}`} />
-            <h2 id="confirm-dialog-title" className="text-lg font-bold text-white font-heading">
+        <div className="p-3.5 border-b border-[#2a2a2a] bg-[#0a0a0a] flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className={`h-4 w-4 ${isDanger ? 'text-red-500' : 'text-amber-500'}`} />
+            <h2 id="confirm-dialog-title" className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] font-mono">
               {title}
             </h2>
           </div>
           <button
             onClick={onCancel}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition focus-ring"
+            className="text-[#6b7280] hover:text-[#e4e4e4] p-1 rounded-sm hover:bg-[#141414] transition focus-ring cursor-pointer"
             aria-label="Close dialog"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-slate-300 font-sans leading-relaxed">
+        <div className="p-4 space-y-3">
+          <div className="text-xs text-[#6b7280] font-mono leading-relaxed">
             {message}
-          </p>
+          </div>
 
           {requireMatchText && (
-            <div className="space-y-2 pt-2">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Type <span className="text-rose-500 font-bold">{requireMatchText}</span> to confirm:
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-[11px] font-medium text-[#6b7280] uppercase tracking-wider font-mono">
+                Type <span className="text-red-400 font-bold">{requireMatchText}</span> to confirm:
               </label>
               <input
                 type="text"
                 value={matchInput}
                 onChange={(e) => setMatchInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none placeholder-slate-700 transition"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm py-1.5 px-2.5 text-xs text-[#e4e4e4] focus:outline-none placeholder-[#404040] transition font-mono"
                 placeholder={`Type ${requireMatchText}`}
               />
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="border-t border-slate-800/80 pt-4 mt-2 flex justify-end space-x-3">
+          <div className="border-t border-[#1a1a1a] pt-3 mt-2 flex justify-end space-x-2">
             <button
               onClick={onCancel}
               data-cancel-btn
-              className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 py-2 rounded-xl text-xs font-semibold transition focus-ring"
+              className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
             >
-              {cancelText}
+              {canText}
             </button>
             <button
               onClick={onConfirm}
               disabled={isConfirmedDisabled}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold transition focus-ring shadow-md ${
-                isDestructive
-                  ? 'bg-rose-600 hover:bg-rose-500 text-white disabled:bg-rose-800/40 disabled:text-rose-400/50 shadow-rose-600/10'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white disabled:bg-blue-800/40 disabled:text-blue-400/50 shadow-blue-600/10'
+              className={`px-4 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring border cursor-pointer ${
+                isDanger
+                  ? 'bg-[#141414] hover:bg-red-950/40 text-red-400 border-red-500/50 disabled:opacity-40'
+                  : 'bg-[#141414] hover:bg-blue-950/40 text-blue-400 border-blue-500/50 disabled:opacity-40'
               }`}
             >
-              {confirmText}
+              {cText}
             </button>
           </div>
         </div>

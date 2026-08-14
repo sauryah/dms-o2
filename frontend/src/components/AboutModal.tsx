@@ -12,71 +12,67 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto animate-fadeIn"
+      className="fixed inset-0 bg-[#0a0a0a]/80 z-[100] flex items-center justify-center p-4 overflow-y-auto animate-fadeIn font-mono select-none"
       onClick={onClose}
     >
       <div 
-        className="relative bg-slate-900/90 border border-slate-800 rounded-2xl max-w-2xl w-full p-8 shadow-2xl shadow-blue-500/5 overflow-hidden"
+        className="relative bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm max-w-2xl w-full p-5 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Background glow effects */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700 transition duration-200 cursor-pointer"
+          className="absolute top-3.5 right-3.5 p-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4] hover:border-[#3b82f6] transition duration-150 cursor-pointer"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center space-x-3.5 mb-8">
-          <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/15">
-            <Info className="h-6 w-6 text-white" />
+        <div className="flex items-center space-x-3 mb-5 border-b border-[#1a1a1a] pb-3">
+          <div className="p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm text-blue-400">
+            <Info className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-white tracking-tight">CREDITS & CONTRIBUTORS</h2>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">DMS | Die Management System (v{APP_VERSION})</p>
+            <h2 className="text-sm font-medium text-[#e4e4e4] uppercase tracking-[0.05em] font-mono">01 CREDITS & SYSTEM ARCHITECTURE</h2>
+            <p className="text-[10px] text-[#6b7280] mt-0.5 font-mono uppercase">DMS | DIE MANAGEMENT SYSTEM (V{APP_VERSION})</p>
           </div>
         </div>
 
         {/* Contributors Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
           {/* Sahil */}
-          <div className="relative group p-6 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-950/60 hover:border-blue-500/30 transition-all duration-300">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400 shrink-0">
-                <Code2 className="h-6 w-6" />
+          <div className="p-3.5 rounded-sm border border-[#1a1a1a] bg-[#141414]">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-[#0f0f0f] rounded-sm border border-[#2a2a2a] text-blue-400 shrink-0">
+                <Code2 className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Sahil</h3>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">Lead Developer & Architect</p>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">Responsible for core system architecture, Django backend APIs, PostgreSQL integration, and responsive React frontend components.</p>
+                <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">Sahil</h3>
+                <p className="text-[10px] text-[#6b7280] font-mono mt-0.5">Lead Developer & Architect</p>
+                <p className="text-[11px] text-[#6b7280] mt-1.5 leading-relaxed font-mono">Responsible for core system architecture, Django backend APIs, PostgreSQL integration, and React interface.</p>
                 
-                <div className="mt-4 flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 text-[9px] font-bold text-blue-400 bg-blue-400/5 border border-blue-400/10 rounded">Founder</span>
-                  <span className="px-2 py-0.5 text-[9px] font-bold text-slate-400 bg-slate-800/40 border border-slate-800 rounded">Full-Stack</span>
+                <div className="mt-3 flex items-center gap-1.5 font-mono">
+                  <span className="px-1.5 py-0.5 text-[9px] font-medium text-blue-400 bg-[#0f0f0f] border border-blue-500/30 rounded-sm">FOUNDER</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-medium text-[#6b7280] bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm">FULL-STACK</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Antigravity */}
-          <div className="relative group p-6 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-950/60 hover:border-indigo-500/30 transition-all duration-300">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-indigo-400 shrink-0">
-                <Cpu className="h-6 w-6" />
+          <div className="p-3.5 rounded-sm border border-[#1a1a1a] bg-[#141414]">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-[#0f0f0f] rounded-sm border border-[#2a2a2a] text-emerald-400 shrink-0">
+                <Cpu className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">Antigravity</h3>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">AI Assistant & Integration Partner</p>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">Powered by Google DeepMind. Assists in code generation, test writing, performance optimizations, bug resolution, and real-time support.</p>
+                <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">Antigravity</h3>
+                <p className="text-[10px] text-[#6b7280] font-mono mt-0.5">AI Assistant & Integration Partner</p>
+                <p className="text-[11px] text-[#6b7280] mt-1.5 leading-relaxed font-mono">Powered by Google DeepMind. Assists in autonomous engineering, design systems, test suites, and real-time execution.</p>
                 
-                <div className="mt-4 flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 text-[9px] font-bold text-indigo-400 bg-indigo-400/5 border border-indigo-400/10 rounded">AI Engine</span>
-                  <span className="px-2 py-0.5 text-[9px] font-bold text-slate-400 bg-slate-800/40 border border-slate-800 rounded">DeepMind</span>
+                <div className="mt-3 flex items-center gap-1.5 font-mono">
+                  <span className="px-1.5 py-0.5 text-[9px] font-medium text-emerald-400 bg-[#0f0f0f] border border-emerald-500/30 rounded-sm">AI ENGINE</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-medium text-[#6b7280] bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm">DEEPMIND</span>
                 </div>
               </div>
             </div>
@@ -84,20 +80,20 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
         </div>
 
         {/* Footer info: Tech stack */}
-        <div className="border-t border-slate-800 pt-6">
-          <h4 className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-3">System Stack & Components</h4>
-          <div className="grid grid-cols-3 gap-4 text-xs font-medium text-slate-400 font-mono">
-            <div>
-              <span className="block text-slate-500 font-bold mb-1">FRONTEND</span>
-              React v18 • TypeScript • Vite • TailwindCSS
+        <div className="border-t border-[#1a1a1a] pt-3 font-mono">
+          <h4 className="text-[10px] font-medium tracking-widest uppercase text-[#6b7280] mb-2">02 SYSTEM STACK & COMPONENTS</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[#6b7280] font-mono">
+            <div className="p-2 bg-[#141414] border border-[#1a1a1a] rounded-sm">
+              <span className="block text-[#e4e4e4] text-[10px] font-medium mb-0.5 uppercase">FRONTEND</span>
+              React 18 • TypeScript • Vite • TailwindCSS
             </div>
-            <div>
-              <span className="block text-slate-500 font-bold mb-1">BACKEND API</span>
-              Django v4.2 • REST Framework • PostgreSQL
+            <div className="p-2 bg-[#141414] border border-[#1a1a1a] rounded-sm">
+              <span className="block text-[#e4e4e4] text-[10px] font-medium mb-0.5 uppercase">BACKEND API</span>
+              Django 4.2 • REST Framework • PostgreSQL 18
             </div>
-            <div>
-              <span className="block text-slate-500 font-bold mb-1">SEARCH & SSE</span>
-              Go v1.22 • Meilisearch • Redis • SSE Sync
+            <div className="p-2 bg-[#141414] border border-[#1a1a1a] rounded-sm">
+              <span className="block text-[#e4e4e4] text-[10px] font-medium mb-0.5 uppercase">SEARCH & SSE</span>
+              Go 1.22 • Meilisearch • Redis 7 • SSE Sync
             </div>
           </div>
         </div>

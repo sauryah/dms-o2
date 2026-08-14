@@ -45,43 +45,43 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
       return (
         this.props.fallback || (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-4">
-            <div className="glass-panel border border-rose-500/30 rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-              <div className="flex justify-center mb-6">
-                <div className="bg-rose-500/20 p-4 rounded-full">
-                  <AlertTriangle className="h-8 w-8 text-rose-400" />
+          <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 font-mono">
+            <div className="bg-[#0f0f0f] border border-red-500/40 rounded-sm p-6 max-w-md w-full text-center">
+              <div className="flex justify-center mb-4">
+                <div className="bg-[#141414] border border-red-500/30 p-2.5 rounded-sm">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
                 </div>
               </div>
               
-              <h1 className="text-2xl font-black text-white mb-2">
-                {isChunkError ? 'New Update Available' : 'Something went wrong'}
+              <h1 className="text-sm font-medium uppercase tracking-[0.05em] text-[#e4e4e4] mb-2 font-mono">
+                {isChunkError ? 'New Update Available' : 'SYSTEM EXCEPTION OCCURRED'}
               </h1>
-              <p className="text-slate-400 text-sm mb-6">
+              <p className="text-[#6b7280] text-xs mb-4 font-mono">
                 {isChunkError
                   ? 'A new version of the application was deployed. Please reload the page to load the latest components.'
                   : (this.state.error?.message || 'An unexpected error occurred')}
               </p>
               
-              <details className="mb-6 text-left">
-                <summary className="cursor-pointer text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-400 transition-colors">
+              <details className="mb-4 text-left">
+                <summary className="cursor-pointer text-[10px] font-medium text-[#6b7280] uppercase tracking-wider hover:text-[#e4e4e4] transition-colors font-mono">
                   Error Details
                 </summary>
-                <pre className="mt-3 bg-slate-900/80 border border-slate-800 rounded-lg p-3 text-xs text-slate-300 overflow-auto max-h-40 text-left">
+                <pre className="mt-2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm p-2 text-[10px] text-[#6b7280] overflow-auto max-h-36 text-left font-mono">
                   {this.state.error?.stack}
                 </pre>
               </details>
               
               <button
                 onClick={() => (isChunkError ? window.location.reload() : this.resetError())}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/60 text-red-400 font-mono text-xs uppercase tracking-wider py-2 px-3 rounded-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3.5 w-3.5" />
                 {isChunkError ? 'Reload Page' : 'Try Again'}
               </button>
               
               <button
                 onClick={() => (window.location.href = '/')}
-                className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-4 rounded-lg transition-colors"
+                className="w-full mt-2 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] font-mono text-xs uppercase tracking-wider py-2 px-3 rounded-sm transition-colors cursor-pointer"
               >
                 Return Home
               </button>

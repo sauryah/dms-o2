@@ -97,41 +97,41 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
   const isWarning = sizeData && sizeData.wear_percentage >= 70 && sizeData.wear_percentage < 100
   const isCritical = sizeData && sizeData.wear_percentage >= 100
   
-  const dimColor = isCritical ? '#f43f5e' : isWarning ? '#fbbf24' : '#10b981'
-  const dimColorHover = isCritical ? '#f43f5e' : isWarning ? '#fbbf24' : '#34d399'
+  const dimColor = isCritical ? '#ef4444' : isWarning ? '#f59e0b' : '#10b981'
+  const dimColorHover = isCritical ? '#ef4444' : isWarning ? '#f59e0b' : '#34d399'
 
   // Optical centers
   const cx = 92
   const cy = 104
 
   return (
-    <div className="relative bg-[#060a13]/85 backdrop-blur-md rounded-xl p-6 border border-slate-900 shadow-2xl flex flex-col justify-between overflow-hidden">
+    <div className="relative bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] flex flex-col justify-between overflow-hidden font-mono">
       {/* Header Info */}
-      <div className="flex justify-between items-start mb-4 pb-4 border-b border-slate-900/60">
+      <div className="flex justify-between items-start mb-3 pb-3 border-b border-[#1a1a1a]">
         <div>
-          <h2 className="text-[#F8FAFC] text-sm font-semibold tracking-tight block">Dimensions Blueprint</h2>
-          <span className="text-slate-500 text-xs block mt-1 font-mono">Scale Vector CAD Simulation (mm)</span>
+          <h2 className="text-[#e4e4e4] text-xs font-medium uppercase tracking-[0.05em] block">01 DIMENSIONS BLUEPRINT</h2>
+          <span className="text-[#6b7280] text-[10px] block mt-0.5 font-mono uppercase">Scale Vector CAD Simulation (mm)</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* View Mode Toggle Segmented Control (ROOT ONLY) */}
           {isRoot && (
-            <div className="inline-flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-900/80 text-xs font-semibold select-none">
+            <div className="inline-flex bg-[#0a0a0a] p-0.5 rounded-sm border border-[#2a2a2a] text-[10px] uppercase font-mono select-none">
               <button
                 onClick={() => setViewMode('extrusion')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
                   viewMode === 'extrusion'
-                    ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-[#141414] text-blue-400 border border-blue-500/40'
+                    : 'text-[#6b7280] hover:text-[#e4e4e4]'
                 }`}
               >
                 Extrusion 2D
               </button>
               <button
                 onClick={() => setViewMode('cross_section')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
                   viewMode === 'cross_section'
-                    ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30 font-bold'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-[#141414] text-blue-400 border border-blue-500/40'
+                    : 'text-[#6b7280] hover:text-[#e4e4e4]'
               }`}
               >
                 Cross-Section
@@ -139,35 +139,35 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
             </div>
           )}
 
-          <span className="px-2 py-0.5 text-xs font-mono font-medium bg-blue-950/20 text-blue-400/80 border border-blue-900/30 rounded-md select-none">
+          <span className="px-2 py-0.5 text-[10px] font-mono uppercase bg-[#141414] text-blue-400 border border-[#2a2a2a] rounded-sm select-none">
             {die.die_type}
           </span>
         </div>
       </div>
 
       {/* CAD Viewport container */}
-      <div className="flex-1 flex items-center justify-center py-4 relative group">
+      <div className="flex-1 flex items-center justify-center py-3 relative group">
         
         {/* Floating Zoom / Pan Controls Overlay (ROOT ONLY) */}
         {isRoot && (
-          <div className="absolute right-2 bottom-2 flex flex-col gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity duration-300 z-10 select-none">
+          <div className="absolute right-2 bottom-2 flex flex-col gap-1 opacity-50 group-hover:opacity-100 transition-opacity z-10 select-none">
             <button
               onClick={handleZoomIn}
-              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              className="p-1 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] transition cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={handleZoomOut}
-              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              className="p-1 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] transition cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={handleZoomReset}
-              className="p-1 rounded bg-[#090d16]/90 border border-slate-900 text-slate-400 hover:text-white hover:border-slate-800 transition cursor-pointer"
+              className="p-1 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] transition cursor-pointer"
               title="Reset ViewPort"
             >
               <RotateCcw className="h-3.5 w-3.5" />
@@ -177,7 +177,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
 
         {isRound ? (
           <svg 
-            className="w-full max-w-[230px] h-[230px] transition-shadow duration-300" 
+            className="w-full max-w-[220px] h-[220px] transition-shadow duration-150" 
             viewBox="0 0 200 200"
             onMouseDown={isRoot ? handleMouseDown : undefined}
             onMouseMove={isRoot ? handleMouseMove : undefined}
@@ -186,20 +186,20 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
             style={{ cursor: isRoot ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
           >
             <style>{`
-              .blueprint-axis { stroke: rgba(59, 130, 246, 0.08); stroke-width: 0.75; stroke-dasharray: 3 3; }
-              .blueprint-outline { stroke: #3b82f6; stroke-width: 2; fill: none; }
-              .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1.25; stroke-dasharray: 4 2; fill: none; }
+              .blueprint-axis { stroke: rgba(59, 130, 246, 0.1); stroke-width: 0.75; stroke-dasharray: 3 3; }
+              .blueprint-outline { stroke: #3b82f6; stroke-width: 1.5; fill: none; }
+              .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1; stroke-dasharray: 4 2; fill: none; }
               .blueprint-dim-line { stroke: ${dimColor}; stroke-width: 0.85; fill: none; }
-              .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 11px; font-weight: 600; }
+              .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 10px; font-weight: 600; }
               .interactive-dim-group:hover .blueprint-dim-text,
-              .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; text-shadow: 0 0 4px ${dimColorHover}60; }
+              .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; }
               .interactive-dim-group:hover .blueprint-dim-line,
               .interactive-dim-group.highlighted .blueprint-dim-line { stroke: ${dimColorHover} !important; stroke-width: 1.25; }
             `}</style>
             
             <defs>
               <pattern id="blueprint-grid-round" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(59, 130, 246, 0.03)" strokeWidth="0.5" />
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="0.5" />
               </pattern>
               <linearGradient id="wire-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#b45309" />
@@ -209,8 +209,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
             </defs>
             
             {/* Viewport border and stationary background grid */}
-            <rect width="200" height="200" fill="rgba(4, 6, 12, 0.3)" stroke="rgba(30, 41, 59, 0.5)" strokeWidth="0.75" rx="6" />
-            <rect width="200" height="200" fill="url(#blueprint-grid-round)" rx="6" pointerEvents="none" />
+            <rect width="200" height="200" fill="#0a0a0a" stroke="#1a1a1a" strokeWidth="1" rx="2" />
+            <rect width="200" height="200" fill="url(#blueprint-grid-round)" rx="2" pointerEvents="none" />
             
             {/* Pan & Zoom interactive group */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${cx}px ${cy}px` }}>
@@ -225,8 +225,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                       cy={cy} 
                       r="55" 
                       fill="none" 
-                      className={`blueprint-outline-secondary transition-all duration-300 ${
-                        activeHighlight === 'punched_size' ? 'stroke-indigo-400 stroke-[2px] drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]' : ''
+                      className={`blueprint-outline-secondary ${
+                        activeHighlight === 'punched_size' ? 'stroke-indigo-400 stroke-[2px]' : ''
                       }`} 
                     />
                   )}
@@ -235,9 +235,9 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                     cy={cy} 
                     r={55 * (parseFloat(die.current_size || '0') / parseFloat(die.punched_size || die.current_size || '1'))} 
                     fill="rgba(59, 130, 246, 0.03)" 
-                    className="blueprint-outline animate-dash" 
+                    className="blueprint-outline" 
                   />
-                  <circle cx={cx} cy={cy} r="2.5" fill="#3b82f6" />
+                  <circle cx={cx} cy={cy} r="2" fill="#3b82f6" />
                   
                   <g
                     className={`interactive-dim-group${activeHighlight === 'current_size' ? ' highlighted' : ''}`}
@@ -270,7 +270,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                     <line x1={cx - 55} y1={cy} x2={cx + 55} y2={cy} className="blueprint-dim-line" strokeDasharray="3 3" />
                     <path d={`M ${cx - 55} ${cy} L ${cx - 49} ${cy - 2.5} L ${cx - 49} ${cy + 2.5} Z`} fill={dimColor} />
                     <path d={`M ${cx + 55} ${cy} L ${cx + 49} ${cy - 2.5} L ${cx + 49} ${cy + 2.5} Z`} fill={dimColor} />
-                    <rect x={cx - 25} y={cy - 7} width="50" height="14" rx="2" fill="#04060c" />
+                    <rect x={cx - 25} y={cy - 7} width="50" height="14" rx="1" fill="#0f0f0f" stroke="#2a2a2a" strokeWidth="0.5" />
                     <text x={cx} y={cy + 3} textAnchor="middle" className="blueprint-dim-text">
                       Ø {die.current_size}
                     </text>
@@ -369,8 +369,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                           <line x1={cx - d/2} y1="107.5" x2={cx + d/2} y2="107.5" className="blueprint-dim-line" />
                           <path d={`M ${cx - d/2} 107.5 L ${cx - d/2 + 4} 105 L ${cx - d/2 + 4} 110 Z`} fill={dimColor} />
                           <path d={`M ${cx + d/2} 107.5 L ${cx + d/2 - 4} 105 L ${cx + d/2 - 4} 110 Z`} fill={dimColor} />
-                          <rect x={cx - 20} y="100.5" width="40" height="13" rx="2" fill="#04060c" />
-                          <text x={cx} y="109.5" textAnchor="middle" className="blueprint-dim-text">
+                          <rect x={cx - 20} y="100.5" width="40" height="13" rx="1" fill="#0f0f0f" stroke="#2a2a2a" strokeWidth="0.5" />
+                          <text x={cx} y={109.5} textAnchor="middle" className="blueprint-dim-text">
                             Ø {die.current_size}
                           </text>
                         </g>
@@ -436,7 +436,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
 
             return (
               <svg 
-                className="w-full max-w-[230px] h-[230px] transition-shadow duration-300" 
+                className="w-full max-w-[220px] h-[220px] transition-shadow duration-150" 
                 viewBox="0 0 200 200"
                 onMouseDown={isRoot ? handleMouseDown : undefined}
                 onMouseMove={isRoot ? handleMouseMove : undefined}
@@ -445,20 +445,20 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                 style={{ cursor: isRoot ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
               >
                 <style>{`
-                  .blueprint-axis { stroke: rgba(59, 130, 246, 0.08); stroke-width: 0.75; stroke-dasharray: 3 3; }
-                  .blueprint-outline { stroke: #3b82f6; stroke-width: 2; fill: none; }
-                  .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1.25; stroke-dasharray: 4 2; fill: none; }
+                  .blueprint-axis { stroke: rgba(59, 130, 246, 0.1); stroke-width: 0.75; stroke-dasharray: 3 3; }
+                  .blueprint-outline { stroke: #3b82f6; stroke-width: 1.5; fill: none; }
+                  .blueprint-outline-secondary { stroke: rgba(59, 130, 246, 0.35); stroke-width: 1; stroke-dasharray: 4 2; fill: none; }
                   .blueprint-dim-line { stroke: ${dimColor}; stroke-width: 0.85; fill: none; }
-                  .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 11px; font-weight: 600; }
+                  .blueprint-dim-text { fill: ${dimColor}; font-family: monospace; font-size: 10px; font-weight: 600; }
                   .interactive-dim-group:hover .blueprint-dim-text,
-                  .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; text-shadow: 0 0 4px ${dimColorHover}60; }
+                  .interactive-dim-group.highlighted .blueprint-dim-text { fill: ${dimColorHover} !important; }
                   .interactive-dim-group:hover .blueprint-dim-line,
                   .interactive-dim-group.highlighted .blueprint-dim-line { stroke: ${dimColorHover} !important; stroke-width: 1.25; }
                 `}</style>
                 
                 <defs>
                   <pattern id="blueprint-grid-flat" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(59, 130, 246, 0.03)" strokeWidth="0.5" />
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="0.5" />
                   </pattern>
                   <linearGradient id="wire-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#b45309" />
@@ -468,11 +468,11 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                 </defs>
 
                 {/* Viewport background */}
-                <rect width="200" height="200" fill="rgba(4, 6, 12, 0.3)" stroke="rgba(30, 41, 59, 0.5)" strokeWidth="0.75" rx="6" />
-                <rect width="200" height="200" fill="url(#blueprint-grid-flat)" rx="6" pointerEvents="none" />
+                <rect width="200" height="200" fill="#0a0a0a" stroke="#1a1a1a" strokeWidth="1" rx="2" />
+                <rect width="200" height="200" fill="url(#blueprint-grid-flat)" rx="2" pointerEvents="none" />
 
                 {/* Pan & Zoom group */}
-            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${cx}px ${cy}px` }}>
+                <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${cx}px ${cy}px` }}>
                   <line x1={cx} y1="10" x2={cx} y2="190" className="blueprint-axis" />
                   <line x1="10" y1={cy} x2="190" y2={cy} className="blueprint-axis" />
                   
@@ -487,8 +487,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                           rx={r} 
                           ry={r} 
                           fill="none" 
-                          className={`blueprint-outline-secondary transition-all duration-300 ${
-                            activeHighlight === 'punched_width_thickness' ? 'stroke-indigo-400 stroke-[2px] drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]' : ''
+                          className={`blueprint-outline-secondary ${
+                            activeHighlight === 'punched_width_thickness' ? 'stroke-indigo-400 stroke-[2px]' : ''
                           }`} 
                         />
                       )}
@@ -500,9 +500,9 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                         rx={r} 
                         ry={r} 
                         fill="rgba(59, 130, 246, 0.03)" 
-                        className="blueprint-outline animate-dash" 
+                        className="blueprint-outline" 
                       />
-                      <circle cx={cx} cy={cy} r="2.5" fill="#3b82f6" />
+                      <circle cx={cx} cy={cy} r="2" fill="#3b82f6" />
                       
                       <g
                         className={`interactive-dim-group${activeHighlight === 'current_width' ? ' highlighted' : ''}`}
@@ -537,7 +537,7 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                         <line x1={x + w} y1={y + t + 8} x2={x + w} y2={y + t + 20} className="blueprint-dim-line" strokeWidth="0.5" />
                         <path d={`M ${x} ${y + t + 15} L ${x + 5} ${y + t + 13} L ${x + 5} ${y + t + 17} Z`} fill={dimColor} />
                         <path d={`M ${x + w} ${y + t + 15} L ${x + w - 5} ${y + t + 13} L ${x + w - 5} ${y + t + 17} Z`} fill={dimColor} />
-                        <rect x={cx - 25} y={y + t + 8} width="50" height="14" rx="2" fill="#04060c" />
+                        <rect x={cx - 25} y={y + t + 8} width="50" height="14" rx="1" fill="#0f0f0f" stroke="#2a2a2a" strokeWidth="0.5" />
                         <text x={cx} y={y + t + 18} textAnchor="middle" className="blueprint-dim-text">
                           W: {die.current_width}
                         </text>
@@ -669,8 +669,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
                               <line x1={cx - d/2} y1="107.5" x2={cx + d/2} y2="107.5" className="blueprint-dim-line" />
                               <path d={`M ${cx - d/2} 107.5 L ${cx - d/2 + 4} 105 L ${cx - d/2 + 4} 110 Z`} fill={dimColor} />
                               <path d={`M ${cx + d/2} 107.5 L ${cx + d/2 - 4} 105 L ${cx + d/2 - 4} 110 Z`} fill={dimColor} />
-                              <rect x={cx - 20} y="100.5" width="40" height="13" rx="2" fill="#04060c" />
-                              <text x={cx} y="109.5" textAnchor="middle" className="blueprint-dim-text">
+                              <rect x={cx - 20} y="100.5" width="40" height="13" rx="1" fill="#0f0f0f" stroke="#2a2a2a" strokeWidth="0.5" />
+                              <text x={cx} y={109.5} textAnchor="middle" className="blueprint-dim-text">
                                 T: {die.current_thickness}
                               </text>
                             </g>
@@ -693,10 +693,10 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
       </div>
       
       {/* Footer Meta */}
-      <div className="flex justify-between items-center text-slate-600 text-xs font-mono select-none mt-6 pt-3 border-t border-slate-900/60 w-full">
+      <div className="flex justify-between items-center text-[#6b7280] text-[10px] font-mono uppercase select-none mt-4 pt-2 border-t border-[#1a1a1a] w-full">
         <span 
-          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
-            activeHighlight === 'casing' ? 'text-blue-400 font-bold scale-105' : ''
+          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors ${
+            activeHighlight === 'casing' ? 'text-blue-400 font-bold' : ''
           }`}
           role="button"
           tabIndex={0}
@@ -724,11 +724,11 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
           )}
           aria-label="Casing information"
         >
-          Casing: {die.casing || '—'}
+          CASING: {die.casing || '—'}
         </span>
         <span 
-          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-all duration-300 ${
-            activeHighlight === 'status' ? 'text-blue-400 font-bold scale-105' : ''
+          className={`hover:text-blue-400 focus-visible:text-blue-400 cursor-pointer outline-none transition-colors ${
+            activeHighlight === 'status' ? 'text-blue-400 font-bold' : ''
           }`}
           role="button"
           tabIndex={0}
@@ -756,34 +756,34 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
           )}
           aria-label="Status information"
         >
-          Status: {die.status}
+          STATUS: {die.status}
         </span>
-        <span>Units: mm</span>
+        <span>UNITS: MM</span>
       </div>
 
       {activeTooltip && (
-        <div className="absolute inset-x-4 bottom-4 bg-[#03060c]/98 backdrop-blur-md border border-slate-800 rounded-lg p-3 text-xs shadow-2xl z-10 animate-fadeIn">
-          <div className="flex justify-between items-start mb-1.5">
-            <h4 className="text-blue-400 font-mono text-xs uppercase font-bold tracking-wider">{activeTooltip.title}</h4>
+        <div className="absolute inset-x-3 bottom-3 bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm p-2.5 text-xs z-10 animate-fadeIn font-mono">
+          <div className="flex justify-between items-start mb-1">
+            <h4 className="text-blue-400 font-mono text-[11px] uppercase font-bold tracking-wider">{activeTooltip.title}</h4>
             <div className="flex items-center gap-1.5 select-none">
               {activeTooltip.isPinned ? (
-                <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1 py-0.2 rounded font-semibold font-mono border border-blue-500/20">Pinned</span>
+                <span className="text-[9px] bg-[#141414] text-blue-400 px-1 py-0.2 rounded-sm font-mono border border-[#2a2a2a] uppercase">Pinned</span>
               ) : (
-                <span className="text-[10px] bg-slate-900 text-slate-500 px-1 py-0.2 rounded font-semibold font-mono border border-slate-800">Hovering</span>
+                <span className="text-[9px] bg-[#0a0a0a] text-[#6b7280] px-1 py-0.2 rounded-sm font-mono border border-[#2a2a2a] uppercase">Hovering</span>
               )}
               <button 
                 onClick={() => setActiveTooltip(null)} 
-                className="text-slate-400 hover:text-white transition-colors font-bold text-sm leading-none"
+                className="text-[#6b7280] hover:text-[#e4e4e4] font-bold text-sm leading-none"
                 aria-label="Close tooltip"
               >
                 &times;
               </button>
             </div>
           </div>
-          <p className="text-slate-300 font-medium mb-1 leading-relaxed text-xs">{activeTooltip.content}</p>
+          <p className="text-[#e4e4e4] text-[11px] mb-1 leading-normal">{activeTooltip.content}</p>
           {activeTooltip.isPinned && (
-            <div className="text-xs text-slate-500 border-t border-slate-900/60 pt-1.5 mt-1.5 leading-normal animate-slideDown">
-              <strong className="text-slate-400">Engineering Note:</strong> {activeTooltip.details}
+            <div className="text-[10px] text-[#6b7280] border-t border-[#1a1a1a] pt-1 mt-1 leading-normal">
+              <strong className="text-[#e4e4e4] uppercase">NOTE:</strong> {activeTooltip.details}
             </div>
           )}
         </div>

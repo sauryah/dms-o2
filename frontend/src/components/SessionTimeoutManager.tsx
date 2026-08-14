@@ -71,28 +71,28 @@ export function SessionTimeoutManager() {
   if (!showWarning) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <h3 className="text-lg font-bold font-heading text-slate-100 flex items-center gap-2">
-          Session Timeout Warning
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0a0a]/80 font-mono">
+      <div className="w-full max-w-md bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm p-5 animate-fadeIn">
+        <h3 className="text-xs font-medium uppercase tracking-[0.05em] text-[#e4e4e4] font-mono">
+          SESSION TIMEOUT WARNING
         </h3>
-        <p className="mt-3 text-sm text-slate-300">
-          You have been idle for a while. For security reasons, you will be logged out in <span className="text-green-400 font-mono font-bold">{countdown}</span> seconds.
+        <p className="mt-2 text-xs text-[#6b7280] font-mono leading-relaxed">
+          You have been idle for a while. For security reasons, you will be logged out in <span className="text-emerald-400 font-mono font-bold tabular-nums">{countdown}</span> seconds.
         </p>
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-4 pt-3 border-t border-[#1a1a1a] flex justify-end gap-2">
           <button
             onClick={() => {
               logout()
               navigate('/login')
               setShowWarning(false)
             }}
-            className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+            className="px-3.5 py-1.5 text-xs font-mono uppercase tracking-wider text-[#6b7280] hover:text-[#e4e4e4] bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] rounded-sm transition cursor-pointer"
           >
             Logout
           </button>
           <button
             onClick={stayLoggedIn}
-            className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-green-950/20 cursor-pointer"
+            className="px-4 py-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-emerald-400 hover:text-emerald-300 border border-emerald-500/50 text-xs font-mono uppercase tracking-wider rounded-sm transition cursor-pointer"
           >
             Stay Logged In
           </button>

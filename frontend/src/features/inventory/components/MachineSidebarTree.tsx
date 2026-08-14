@@ -60,7 +60,6 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
     const [showEmptyNodes, setShowEmptyNodes] = useState(true)
     const [expandedMachines, setExpandedMachines] = useState<Record<string | number, boolean>>({})
     const [expandedSets, setExpandedSets] = useState<Record<string | number, boolean>>({})
-    const [expandedUnassigned, setExpandedUnassigned] = useState(true)
     const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: any } | null>(null)
 
     // Filtered machines list for the tree navigation search
@@ -93,12 +92,10 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
         })
         setExpandedMachines(nextMachs)
         setExpandedSets(nextSets)
-        setExpandedUnassigned(true)
       },
       collapseAll() {
         setExpandedMachines({})
         setExpandedSets({})
-        setExpandedUnassigned(false)
       }
     }))
 
@@ -135,7 +132,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
           const { id: dieId } = data
           onReallocateDie(dieId, targetSetId)
         } else if (data.type === 'set') {
-          const { id: draggedSetId, currentMachineId } = data
+          const { id: draggedSetId } = data
           if (Number(draggedSetId) === Number(targetSetId)) return
           
           const targetMachine = machinesWithData.find((m: any) => Number(m.id) === Number(targetMachineId))
@@ -180,80 +177,80 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
 
     return (
       <div 
-        className={`fixed inset-y-0 left-0 z-50 w-72 glass-panel border-r border-slate-800/40 flex flex-col transform transition-transform duration-300 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-64px)] md:transform-none md:z-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f0f0f] border-r border-[#1a1a1a] flex flex-col transform transition-transform duration-150 ease-in-out shrink-0 md:sticky md:top-0 md:h-[calc(100vh-48px)] md:transform-none md:z-auto font-mono select-none ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${
           isSidebarCollapsed ? 'md:hidden' : 'md:flex'
         }`}
       >
         {/* Sidebar Header with Tree Search */}
-        <div className="p-4 border-b border-slate-800/45 flex flex-col gap-3">
+        <div className="p-3 border-b border-[#2a2a2a] bg-[#0a0a0a] flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-200 text-xs tracking-wider uppercase">Inventory Explorer</span>
+            <span className="font-medium text-[#e4e4e4] text-xs tracking-wider uppercase">01 EXPLORER</span>
             {/* Close button for mobile */}
             <button 
               onClick={() => setIsSidebarOpen(false)}
-              className="md:hidden p-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+              className="md:hidden p-1 bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] rounded-sm transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
           
           {/* Tree Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#6b7280]" />
             <input 
               type="text"
-              placeholder="Search machines or sets..."
+              placeholder="SEARCH TREE..."
               value={treeSearch}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTreeSearch(e.target.value)}
-              className="w-full glass-input rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+              className="w-full bg-[#0f0f0f] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 pl-8 pr-2.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono uppercase"
             />
           </div>
 
           {/* Toggle to show/hide empty nodes */}
           <div 
-            className="flex items-center justify-between px-1 mt-1 text-slate-400 hover:text-slate-200 transition-colors select-none cursor-pointer" 
+            className="flex items-center justify-between px-0.5 mt-0.5 text-[#6b7280] hover:text-[#e4e4e4] transition-colors select-none cursor-pointer" 
             onClick={() => setShowEmptyNodes(!showEmptyNodes)}
           >
-            <span className="text-[10px] font-medium tracking-wider uppercase text-slate-400">Show empty machines & sets</span>
-            <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 shrink-0 ${showEmptyNodes ? 'bg-blue-600' : 'bg-slate-800'}`}>
-              <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${showEmptyNodes ? 'translate-x-4' : 'translate-x-0'}`} />
+            <span className="text-[9px] uppercase tracking-wider">SHOW EMPTY NODES</span>
+            <div className={`relative w-7 h-3.5 rounded-sm transition-colors shrink-0 border border-[#2a2a2a] ${showEmptyNodes ? 'bg-blue-600' : 'bg-[#141414]'}`}>
+              <div className={`absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-none bg-white transition-transform ${showEmptyNodes ? 'translate-x-3.5' : 'translate-x-0'}`} />
             </div>
           </div>
         </div>
 
         {/* Tree Content */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 font-mono">
           <div>
             {/* Search Results Tree Node */}
             {isSearchActive && (
-              <div className="mb-4">
+              <div className="mb-3">
                 <div
                   onClick={() => setSelectedNode({ type: 'search' })}
-                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                  className={`flex items-center w-full rounded-sm transition-colors select-none cursor-pointer py-1.5 px-2 border-l-2 font-mono ${
                     selectedNode?.type === 'search'
-                      ? 'bg-blue-600/10 text-white border-blue-500 glow-blue'
-                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                      ? 'bg-[#141414] text-[#e4e4e4] border-l-blue-500'
+                      : 'text-[#6b7280] hover:bg-[#141414] hover:text-[#e4e4e4] border-transparent'
                   }`}
                 >
-                  <Search className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-slate-500'}`} />
-                  <span className="text-xs font-bold truncate flex-1">Search Results</span>
-                  <span className="bg-slate-950 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                  <Search className={`h-3.5 w-3.5 shrink-0 mr-2 ${selectedNode?.type === 'search' ? 'text-blue-400' : 'text-[#6b7280]'}`} />
+                  <span className="text-xs font-medium truncate flex-1 uppercase">Search Results</span>
+                  <span className="bg-[#0a0a0a] text-blue-400 text-[10px] px-1.5 py-0.2 rounded-sm border border-[#2a2a2a] shrink-0 font-mono tabular-nums">
                     {dies?.length || 0}
                   </span>
                 </div>
               </div>
             )}
 
-            <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              <Database className="h-3.5 w-3.5 text-blue-500" />
-              <span>Machines / Production Sets</span>
+            <div className="px-2 py-1 text-[10px] font-medium text-[#6b7280] uppercase tracking-widest flex items-center gap-1.5">
+              <Database className="h-3 w-3 text-blue-500" />
+              <span>MACHINES & SETS</span>
             </div>
             
-            <div className="space-y-1 mt-2">
+            <div className="space-y-0.5 mt-1">
               {filteredMachines.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-slate-500 italic">No matches found</div>
+                <div className="px-2 py-1.5 text-xs text-[#6b7280] italic">No matches found</div>
               ) : (
                 filteredMachines.map((machine: any) => {
                   const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
@@ -265,17 +262,17 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       {/* Machine Node */}
                       <div 
                         data-testid={`machine-node-${machine.id}`}
-                        className={`group flex items-center w-full rounded-xl transition-all duration-200 select-none border-l-4 ${
+                        className={`group flex items-center w-full rounded-sm transition-colors select-none border-l-2 py-1 px-1.5 font-mono ${
                           isMachineDragOver
-                            ? ' text-white border-blue-500 ring-2 ring-blue-500/20 pl-2 pr-3 py-2'
+                            ? 'bg-[#141414] text-[#e4e4e4] border-l-blue-500'
                             : isMachineSelected 
-                              ? 'bg-blue-600/10 text-white border-blue-500 pl-2 pr-3 py-2 glow-blue' 
-                              : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent pl-2 pr-3 py-2 cursor-pointer'
+                              ? 'bg-[#141414] text-[#e4e4e4] border-l-blue-500' 
+                              : 'text-[#6b7280] hover:bg-[#141414] hover:text-[#e4e4e4] border-transparent cursor-pointer'
                         }`}
                         onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
                         onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
                         onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
-                        onDragLeave={canCreate ? (e: React.DragEvent<HTMLDivElement>) => setDragOverNode(null) : undefined}
+                        onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                         onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnMachine(e, machine.id) : undefined}
                       >
                         <button
@@ -283,31 +280,30 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                             e.stopPropagation()
                             toggleMachine(machine.id)
                           }}
-                          className="p-1 rounded transition mr-1"
+                          className="p-0.5 rounded transition mr-1"
                         >
                           {isMachineExpanded ? (
-                            <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                            <ChevronDown className="h-3 w-3 text-[#6b7280]" />
                           ) : (
-                            <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                            <ChevronRight className="h-3 w-3 text-[#6b7280]" />
                           )}
                         </button>
-                        <Cpu className={`h-4 w-4 shrink-0 mr-2 ${isMachineSelected ? 'text-blue-400' : 'text-slate-500'}`} />
-                        <span className="text-xs font-semibold truncate flex-1">{machine.name}</span>
-                        <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-0.5 rounded-full border border-slate-800 shrink-0 font-medium">
+                        <Cpu className={`h-3.5 w-3.5 shrink-0 mr-1.5 ${isMachineSelected ? 'text-blue-400' : 'text-[#6b7280]'}`} />
+                        <span className="text-xs font-medium truncate flex-1 uppercase">{machine.name}</span>
+                        <span className="bg-[#0a0a0a] text-[#6b7280] text-[9px] px-1.5 py-0.2 rounded-sm border border-[#2a2a2a] shrink-0 tabular-nums">
                           {machine.totalDies}
                         </span>
                       </div>
                       
                       {/* Set Nodes (Children) */}
                       {isMachineExpanded && (
-                        <div className="relative pl-4 space-y-0.5 ml-4 mt-0.5">
+                        <div className="relative pl-3 space-y-0.5 ml-3 mt-0.5">
                           <div className="tree-branch-line" />
                           {machine.sets.map((set: any) => {
                             const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
-                            const activeCount = set.dies.filter(isDieActive).length
                             const isSetDragOver = dragOverNode?.type === 'set' && dragOverNode?.id === set.id
                             return (
-                              <div key={set.id} className="relative pl-6">
+                              <div key={set.id} className="relative pl-4">
                                 <div className="tree-leaf-line" />
                                 <div
                                   data-testid={`set-node-${set.id}`}
@@ -328,21 +324,21 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                                   onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
                                   onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                                   onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id, machine.id) : undefined}
-                                  className={`flex items-center w-full rounded-xl transition-all duration-200 select-none py-1.5 pl-3 pr-3 border-l-4 ${
+                                  className={`flex items-center w-full rounded-sm transition-colors select-none py-1 px-1.5 border-l-2 font-mono ${
                                     canCreate ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                                   } ${
                                     isSetDragOver
-                                      ? 'bg-indigo-600/30 text-white border-indigo-500 ring-2 ring-indigo-500/20'
+                                      ? 'bg-[#141414] text-[#e4e4e4] border-l-purple-500'
                                       : isSetSelected
-                                        ? 'bg-indigo-600/10 text-white border-indigo-500 glow-indigo'
-                                        : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                                        ? 'bg-[#141414] text-[#e4e4e4] border-l-purple-500'
+                                        : 'text-[#6b7280] hover:bg-[#141414] hover:text-[#e4e4e4] border-transparent'
                                   }`}
                                 >
-                                  <Layers className={`h-3.5 w-3.5 shrink-0 mr-2 ${isSetSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
-                                  <span className="text-xs font-medium truncate flex-1">{set.name}</span>
-                                  <span className="flex items-center gap-1.5 text-indigo-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 shrink-0">
+                                  <Layers className={`h-3 w-3 shrink-0 mr-1.5 ${isSetSelected ? 'text-purple-400' : 'text-[#6b7280]'}`} />
+                                  <span className="text-xs font-normal truncate flex-1 uppercase">{set.name}</span>
+                                  <span className="flex items-center gap-1 text-[#e4e4e4] text-[9px] px-1 py-0.2 rounded-sm bg-[#0a0a0a] border border-[#2a2a2a] shrink-0 tabular-nums">
                                     {set.die_count > 0 && (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dot-glow shrink-0 animate-pulse" />
+                                      <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
                                     )}
                                     {set.die_count}
                                   </span>
@@ -358,9 +354,9 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
               )}
             </div>
 
-            {/* Unassigned / Standalone Dies Node */}
+            {/* Unassigned Dies Node */}
             {unassignedCount > 0 && (
-              <div className="pt-4 border-t border-slate-800/60 mt-4">
+              <div className="pt-3 border-t border-[#1a1a1a] mt-3">
                 {(() => {
                   const isUnassignedDragOver = dragOverNode?.type === 'unassigned'
                   return (
@@ -370,17 +366,17 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
                       onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                       onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnUnassigned(e) : undefined}
-                      className={`flex items-center w-full rounded-xl transition-all duration-200 select-none cursor-pointer py-2.5 pl-3 pr-3 border-l-4 ${
+                      className={`flex items-center w-full rounded-sm transition-colors select-none cursor-pointer py-1.5 px-2 border-l-2 font-mono ${
                         isUnassignedDragOver
-                          ? ' text-white border-amber-500 ring-2 ring-amber-500/20'
+                          ? 'bg-[#141414] text-[#e4e4e4] border-l-amber-500'
                           : selectedNode?.type === 'unassigned'
-                            ? 'bg-amber-600/10 text-white border-amber-500 glow-amber'
-                            : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 border-transparent'
+                            ? 'bg-[#141414] text-[#e4e4e4] border-l-amber-500'
+                            : 'text-[#6b7280] hover:bg-[#141414] hover:text-[#e4e4e4] border-transparent'
                       }`}
                     >
-                      <Sliders className={`h-4 w-4 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-slate-500'}`} />
-                      <span className="text-xs font-bold truncate flex-1">Unassigned Dies</span>
-                      <span className="bg-slate-950 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-800 shrink-0">
+                      <Sliders className={`h-3.5 w-3.5 shrink-0 mr-2 ${selectedNode?.type === 'unassigned' ? 'text-amber-400' : 'text-[#6b7280]'}`} />
+                      <span className="text-xs font-medium truncate flex-1 uppercase">Unassigned Dies</span>
+                      <span className="bg-[#0a0a0a] text-amber-400 text-[10px] px-1.5 py-0.2 rounded-sm border border-[#2a2a2a] shrink-0 tabular-nums">
                         {unassignedCount}
                       </span>
                     </div>

@@ -12,13 +12,19 @@ export default {
     extend: {
       colors: {
         brand: {
-          bg: 'var(--color-bg)',
-          surface: 'var(--color-surface)',
-          'surface-hover': 'var(--color-surface-2)',
-          border: 'var(--color-border)',
-          text: 'var(--color-text)',
-          muted: 'var(--color-muted)',
-          accent: 'var(--color-accent)',
+          bg: '#0a0a0a',
+          surface: '#0f0f0f',
+          'surface-hover': '#141414',
+          'surface-elevated': '#141414',
+          border: '#1a1a1a',
+          'border-visible': '#2a2a2a',
+          text: '#e4e4e4',
+          'text-secondary': '#6b7280',
+          muted: '#404040',
+          accent: '#3b82f6',
+          'accent-up': '#10b981',
+          'accent-down': '#ef4444',
+          'accent-neutral': '#f59e0b',
         },
         status: {
           available: 'var(--color-available)',
@@ -32,12 +38,13 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Fira Sans"', 'sans-serif'],
-        mono: ['"Fira Code"', 'monospace'],
-        heading: ['"Outfit"', 'sans-serif'],
+        sans: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', 'monospace'],
+        mono: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', 'monospace'],
+        heading: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', 'monospace'],
       },
       boxShadow: {
-        'premium-glow': '0 0 20px -5px rgba(59, 130, 246, 0.25)',
+        'none': 'none',
+        'premium-glow': 'none',
       }
     },
   },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { AlertCircle, RefreshCw, Globe } from 'lucide-react'
+import { AlertCircle, RefreshCw, Globe, Shield } from 'lucide-react'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -66,55 +66,60 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8 blueprint-grid relative">
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
-      <div className="max-w-md w-full space-y-8 glass-panel border border-slate-800/60 p-10 rounded-2xl shadow-2xl relative z-10 animate-fadeIn">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-white tracking-tight font-heading">Sign In</h2>
-          <p className="text-sm text-slate-400 mt-2">Enter your credentials to manage facility assets.</p>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a] font-mono">
+      <div className="max-w-sm w-full space-y-6 bg-[#0f0f0f] border border-[#2a2a2a] p-6 rounded-sm shadow-2xl font-mono">
+        <div className="border-b border-[#1a1a1a] pb-3 text-left">
+          <div className="flex items-center space-x-2 text-blue-400 mb-1">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-wider font-bold">01 SYSTEM ACCESS</span>
+          </div>
+          <h2 className="text-sm font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Facility Credentials</h2>
+          <p className="text-xs text-[#6b7280] mt-0.5">Authenticate to manage manufacturing assets and line tools.</p>
         </div>
 
         {evictedInfo && (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl p-4 text-xs font-sans animate-fadeIn text-left">
-            <div className="flex items-center gap-2.5 mb-1.5">
-              <AlertCircle className="text-amber-400 shrink-0" />
-              <span className="font-bold text-amber-200">Session Evicted</span>
+          <div className="bg-[#141414] border border-amber-500/30 text-amber-300 rounded-sm p-3 text-xs font-mono text-left">
+            <div className="flex items-center gap-1.5 mb-1">
+              <AlertCircle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span className="font-bold text-amber-200 uppercase">Session Evicted</span>
             </div>
-            <p className="text-slate-400 leading-relaxed">
-              This account was logged in from another device or browser. Your previous session was closed for security.
+            <p className="text-[#6b7280] leading-normal text-[11px]">
+              Logged in from another location. Previous token revoked.
             </p>
             {(evictedInfo.ip || evictedInfo.at) && (
-              <div className="mt-2 pt-2 border-t border-white/[0.04] text-[10px] text-slate-500 font-mono flex flex-wrap gap-x-4">
+              <div className="mt-1.5 pt-1.5 border-t border-[#2a2a2a] text-[10px] text-[#6b7280] font-mono flex flex-wrap gap-x-3">
                 {evictedInfo.ip && <span>IP: {evictedInfo.ip}</span>}
-                {evictedInfo.at && <span>Time: {evictedInfo.at}</span>}
+                {evictedInfo.at && <span>TIME: {evictedInfo.at}</span>}
               </div>
             )}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2 font-mono">Username</label>
+              <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider mb-1 font-mono">Username</label>
               <input 
                 type="text" 
                 required
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                className="w-full glass-input rounded-xl py-3 px-4 text-white focus:outline-none text-base focus-ring"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-2 px-3 text-[#e4e4e4] focus:outline-none text-xs font-mono placeholder-[#404040]"
+                placeholder="Username ID"
                 autoComplete="username"
                 aria-label="Username"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2 font-mono">Password</label>
+              <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider mb-1 font-mono">Password</label>
               <input 
                 type="password" 
                 required
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full glass-input rounded-xl py-3 px-4 text-white focus:outline-none text-base focus-ring"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-2 px-3 text-[#e4e4e4] focus:outline-none text-xs font-mono placeholder-[#404040]"
+                placeholder="••••••••"
                 autoComplete="current-password"
                 aria-label="Password"
               />
@@ -122,8 +127,8 @@ export function LoginPage() {
           </div>
 
           {errorMsg && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-3.5 text-xs font-medium flex items-center gap-2.5 font-sans animate-fadeIn">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="bg-[#141414] border border-red-500/30 text-red-400 rounded-sm p-2.5 text-xs flex items-center gap-2 font-mono">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -131,12 +136,12 @@ export function LoginPage() {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition duration-300 btn-glow flex items-center justify-center space-x-2 disabled:opacity-50 focus-ring"
+            className="w-full bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500/50 text-blue-400 hover:text-blue-300 py-2 rounded-sm text-xs font-mono uppercase font-bold transition flex items-center justify-center space-x-1.5 disabled:opacity-40 cursor-pointer"
           >
             {loading ? (
               <>
-                <RefreshCw className="h-4 w-4 animate-spin text-white" />
-                <span>Signing In...</span>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-400" />
+                <span>Authenticating...</span>
               </>
             ) : (
               <span>Sign In</span>
@@ -145,10 +150,10 @@ export function LoginPage() {
         </form>
 
         {serverInfo && (
-          <div className="text-center mt-4 pt-4 border-t border-white/[0.04]">
-            <p className="text-[10px] text-slate-500 font-mono flex items-center justify-center gap-1.5">
-              <Globe className="h-3 w-3" />
-              <span>LAN: https://{serverInfo.ip}</span>
+          <div className="text-center pt-3 border-t border-[#1a1a1a]">
+            <p className="text-[10px] text-[#6b7280] font-mono flex items-center justify-center gap-1.5 uppercase">
+              <Globe className="h-3 w-3 text-blue-500" />
+              <span>HOST: {serverInfo.ip}</span>
             </p>
           </div>
         )}
@@ -156,4 +161,3 @@ export function LoginPage() {
     </div>
   )
 }
-

@@ -60,97 +60,92 @@ export function SequenceCalculator({
           e.preventDefault();
           document.getElementById('sequence-results')?.scrollIntoView({ behavior: 'smooth' });
         }}
-        className="lg:col-span-4 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 space-y-6 shadow-xl"
+        className="lg:col-span-4 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 space-y-4 font-mono"
       >
-        <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
-              Sequence Limits
+        <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">
+              01 SEQUENCE LIMITS
             </h3>
-            <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-              Live
+            <span className="px-1.5 py-0.2 rounded-sm bg-[#141414] text-purple-400 border border-purple-500/30 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+              LIVE
             </span>
           </div>
-          <span className="text-[10px] font-mono text-slate-500">TAB_2 // DIES_SEQUENCE</span>
+          <span className="text-[10px] font-mono text-[#6b7280]">DIES_SEQUENCE</span>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Start Diameter */}
           <div>
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-2">
+            <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
               Start Stock Diameter (d₀)
             </label>
-            <div className="relative rounded-xl shadow-sm">
+            <div className="relative rounded-sm">
               <input 
                 type="number" 
                 step="0.01" 
                 value={seqStart}
                 onChange={(e) => setSeqStart(e.target.value)}
-                className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-4 py-3.5 pr-16 text-white font-mono text-sm focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/20 focus:outline-none transition-premium"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-12 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
               />
-              <div className="absolute right-3 top-2.5 px-2.5 py-1 bg-[#121A2F] border border-[#2b3a61]/40 rounded-lg text-slate-400 text-xs font-mono font-bold uppercase tracking-wider shadow-inner">
+              <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
                 mm
               </div>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1.5 block">Starting wire dimension (e.g. 8.00mm).</span>
           </div>
 
           {/* Target End Diameter */}
           <div>
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-2">
+            <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
               Target End Size (d_n)
             </label>
-            <div className="relative rounded-xl shadow-sm">
+            <div className="relative rounded-sm">
               <input 
                 type="number" 
                 step="0.01" 
                 value={seqEnd}
                 onChange={(e) => setSeqEnd(e.target.value)}
-                className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-4 py-3.5 pr-16 text-white font-mono text-sm focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/20 focus:outline-none transition-premium"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-12 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
               />
-              <div className="absolute right-3 top-2.5 px-2.5 py-1 bg-[#121A2F] border border-[#2b3a61]/40 rounded-lg text-slate-400 text-xs font-mono font-bold uppercase tracking-wider shadow-inner">
+              <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
                 mm
               </div>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1.5 block">Target finished wire sizing. Must be less than start.</span>
           </div>
 
           {/* Target Reduction/Pass */}
           <div>
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-2">
+            <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
               Pass Area Reduction (R_avg)
             </label>
-            <div className="relative rounded-xl shadow-sm">
+            <div className="relative rounded-sm">
               <input 
                 type="number" 
                 step="0.5" 
                 value={seqReduction}
                 onChange={(e) => setSeqReduction(e.target.value)}
-                className="w-full bg-[#050816] border border-[#1b253b] rounded-xl px-4 py-3.5 pr-14 text-white font-mono text-sm focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/20 focus:outline-none transition-premium"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-10 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
               />
-              <div className="absolute right-3 top-2.5 px-2.5 py-1 bg-[#121A2F] border border-[#2b3a61]/40 rounded-lg text-slate-400 text-xs font-mono font-bold uppercase tracking-wider shadow-inner">
+              <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
                 %
               </div>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1.5 block">
-              Target draft limit per die. High alloy/carbon steel drawings often use lower passes (10%-15%) to minimize fatigue.
-            </span>
           </div>
 
           {/* Sequence Optimization Mode */}
           <div>
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-2">
+            <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
               Pass Optimization Mode
             </label>
-            <div className="bg-[#050816] border border-[#1b253b] rounded-xl p-1 flex gap-1 shadow-inner">
+            <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm p-0.5 flex gap-1">
               <button
                 type="button"
                 onClick={() => setSeqOptMode('constant')}
-                className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-premium ${
+                className={`flex-1 py-1.5 px-2 rounded-sm text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
                   seqOptMode === 'constant'
-                    ? 'bg-[#121A2F] text-purple-400 border border-[#2b3a61]/65 shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#141414] text-purple-400 border border-purple-500/40'
+                    : 'text-[#6b7280] hover:text-[#e4e4e4]'
                 }`}
               >
                 Constant Draft
@@ -158,114 +153,107 @@ export function SequenceCalculator({
               <button
                 type="button"
                 onClick={() => setSeqOptMode('graduated')}
-                className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-premium ${
+                className={`flex-1 py-1.5 px-2 rounded-sm text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
                   seqOptMode === 'graduated'
-                    ? 'bg-[#121A2F] text-purple-400 border border-[#2b3a61]/65 shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#141414] text-purple-400 border border-purple-500/40'
+                    : 'text-[#6b7280] hover:text-[#e4e4e4]'
                 }`}
               >
-                Graduated (Optimized)
+                Graduated
               </button>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1.5 block">
-              {seqOptMode === 'constant'
-                ? 'Reduction per pass remains constant. Ideal for uniform materials.'
-                : 'Gradually reduces draft as wire work-hardens, preventing high-stress wire breakage.'}
-            </span>
           </div>
           
           <button
             type="submit"
-            className="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 mt-4 hover:-translate-y-0.5"
+            className="w-full py-2.5 bg-[#141414] hover:bg-[#1f1f1f] border border-purple-500/50 text-purple-400 hover:text-purple-300 font-bold text-xs uppercase tracking-wider rounded-sm transition flex items-center justify-center gap-1.5 mt-3 cursor-pointer"
           >
-            <Calculator className="" />
+            <Calculator className="h-3.5 w-3.5" />
             Generate Pass Sequence
           </button>
         </div>
       </form>
 
       {/* Sequence Output */}
-      <div id="sequence-results" className="lg:col-span-8 bg-[#0D1325] border border-[#1b253b] rounded-2xl p-6 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-[#1b253b] pb-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading">
-            Sizing Sequence telemetry
+      <div id="sequence-results" className="lg:col-span-8 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 shadow-2xl space-y-4 font-mono">
+        <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
+          <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">
+            02 SIZING SEQUENCE TELEMETRY
           </h3>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={exportSequenceCSV}
-              className="px-3 py-1 bg-purple-600/90 hover:bg-purple-500 text-white text-[10px] font-bold rounded-lg transition duration-200 flex items-center gap-1 shadow"
+              className="px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] text-[10px] uppercase font-bold rounded-sm transition flex items-center gap-1 cursor-pointer"
             >
-              <Table className="h-3.5 w-3.5" />
+              <Table className="h-3 w-3 text-purple-500" />
               Export CSV
             </button>
-            <span className="text-[10px] font-mono text-slate-500">MATRIX // MULTI_PASS</span>
+            <span className="text-[10px] font-mono text-[#6b7280]">MULTI_PASS</span>
           </div>
         </div>
 
         {sequenceResults && sequenceResults.steps.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Sequence Summary cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn">
-              <div className="bg-[#121A2F] border border-[#1b253b] p-4 rounded-xl shadow-inner">
-                <span className="text-[9px] text-slate-400 font-heading font-bold uppercase tracking-wider block mb-1">
-                  Total Passes (Dies)
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fadeIn font-mono">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
+                <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
+                  Total Passes
                 </span>
-                <div className="text-xl font-bold font-mono text-purple-400 flex items-baseline gap-1">
-                  {sequenceResults.steps.length}
-                  <span className="text-[9px] font-sans font-normal text-slate-500">STAGES</span>
+                <div className="text-xl font-bold font-mono text-purple-400 tabular-nums">
+                  {sequenceResults.steps.length} <span className="text-xs text-[#6b7280]">DIES</span>
                 </div>
               </div>
 
-              <div className="bg-[#121A2F] border border-[#1b253b] p-4 rounded-xl shadow-inner">
-                <span className="text-[9px] text-slate-400 font-heading font-bold uppercase tracking-wider block mb-1">
-                  Pass Drawing Ratio
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
+                <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
+                  Pass Ratio
                 </span>
-                <div className="text-xl font-bold font-mono text-indigo-400">
+                <div className="text-xl font-bold font-mono text-indigo-400 tabular-nums">
                   {(1 / (1 - parseFloat(seqReduction) / 100)).toFixed(3)}
                 </div>
               </div>
 
-              <div className="bg-[#121A2F] border border-[#1b253b] p-4 rounded-xl shadow-inner">
-                <span className="text-[9px] text-slate-400 font-heading font-bold uppercase tracking-wider block mb-1">
-                  Total Red. (R_cum)
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
+                <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
+                  Cumulative Red.
                 </span>
-                <div className="text-xl font-bold font-mono text-blue-400">
+                <div className="text-xl font-bold font-mono text-blue-400 tabular-nums">
                   {sequenceResults.totalReduction.toFixed(1)}%
                 </div>
               </div>
 
-              <div className="bg-[#121A2F] border border-[#1b253b] p-4 rounded-xl shadow-inner">
-                <span className="text-[9px] text-slate-400 font-heading font-bold uppercase tracking-wider block mb-1">
-                  Total Length strain
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
+                <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
+                  Length Multiplier
                 </span>
-                <div className="text-xl font-bold font-mono text-emerald-400">
+                <div className="text-xl font-bold font-mono text-emerald-400 tabular-nums">
                   {((sequenceResults.totalElongation / 100) + 1).toFixed(2)}x
                 </div>
               </div>
             </div>
 
             {/* Sizing sequence list */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-8 border border-[#1b253b] rounded-xl overflow-hidden shadow-inner">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-8 border border-[#1a1a1a] rounded-sm overflow-hidden bg-[#0a0a0a]">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse text-xs font-mono">
                     <thead>
-                      <tr className="bg-[#121A2F] border-b border-[#1b253b] text-slate-400 font-heading">
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Pass</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Inlet Dia</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-center">Flow</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Outlet Dia</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Draft Red.</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Tension (N)</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Stress (MPa)</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Power (kW)</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest">Matched Die</th>
-                        <th className="p-3 text-[10px] font-semibold uppercase tracking-widest text-right">Cum. Red.</th>
+                      <tr className="bg-[#0a0a0a] border-b border-[#1a1a1a] text-[#6b7280] uppercase tracking-wider">
+                        <th className="p-2.5 text-[10px]">Pass</th>
+                        <th className="p-2.5 text-[10px]">Inlet</th>
+                        <th className="p-2.5 text-[10px] text-center">Flow</th>
+                        <th className="p-2.5 text-[10px]">Outlet</th>
+                        <th className="p-2.5 text-[10px] text-right">Draft %</th>
+                        <th className="p-2.5 text-[10px] text-right">Tension</th>
+                        <th className="p-2.5 text-[10px] text-right">Stress</th>
+                        <th className="p-2.5 text-[10px] text-right">Power</th>
+                        <th className="p-2.5 text-[10px]">Die</th>
+                        <th className="p-2.5 text-[10px] text-right">Cum. %</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#1b253b]/50 font-mono text-xs text-slate-200">
+                    <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
                       {sequenceResults.steps.map((step: any) => {
-                        // Calculate cumulative reduction at this pass
                         const currentArea = Math.PI * Math.pow(step.outlet / 2, 2)
                         const startArea = Math.PI * Math.pow(parseFloat(seqStart) / 2, 2)
                         const cumulativeRed = ((startArea - currentArea) / startArea) * 100
@@ -273,51 +261,40 @@ export function SequenceCalculator({
                         const limit = getMaterialLimit()
                         const isStepUnsafe = step.reduction > limit
 
-                        // Calculate Physics values
                         const sigmaD = step.drawingStress || 0
                         const forceN = step.drawingForce || 0
                         const powerKw = step.power || 0
                         const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
 
                         return (
-                          <tr key={step.draft} className={`transition-colors duration-150 group ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950/15 hover:bg-rose-950/25 border-l-2 border-l-rose-500' : 'hover:bg-[#121A2F]/40'}`}>
-                            <td className="p-3">
-                              <span className={`  rounded text-[9px] font-bold flex items-center justify-center transition-colors shadow-inner ${(isStepUnsafe || isStressUnsafe) ? 'bg-rose-950 border border-rose-500/40 text-rose-400' : 'bg-[#121A2F] border border-[#2b3a61]/65 text-slate-300 group-hover:border-purple-500/40 group-hover:text-purple-400'}`}>
+                          <tr key={step.draft} className={`hover:bg-[#141414] transition-colors ${(isStepUnsafe || isStressUnsafe) ? 'bg-red-950/20' : ''}`}>
+                            <td className="p-2.5">
+                              <span className={`px-1.5 py-0.2 rounded-sm text-[10px] font-mono font-bold ${(isStepUnsafe || isStressUnsafe) ? 'bg-[#141414] border border-red-500/40 text-red-400' : 'bg-[#141414] border border-[#2a2a2a] text-purple-400'}`}>
                                 #{step.draft}
                               </span>
                             </td>
-                            <td className="p-3 text-slate-300">
+                            <td className="p-2.5 text-[#6b7280] tabular-nums">
                               {step.inlet.toFixed(3)}
-                              <span className="text-[9px] text-slate-500 ml-1">mm</span>
                             </td>
-                            <td className="p-3 text-center">
-                              <div className="inline-flex items-center justify-center rounded bg-[#050816] border border-[#1b253b] shadow-inner">
-                                <ArrowRight className="h-3 w-3 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-premium" />
-                              </div>
+                            <td className="p-2.5 text-center">
+                              <ArrowRight className="h-3 w-3 text-[#6b7280] mx-auto" />
                             </td>
-                            <td className="p-3 font-bold text-white">
+                            <td className="p-2.5 font-bold text-[#e4e4e4] tabular-nums">
                               {step.outlet.toFixed(3)}
-                              <span className="text-[9px] text-slate-400 ml-1 font-normal">mm</span>
                             </td>
-                            <td className={`p-3 text-right ${isStepUnsafe ? 'text-rose-400 font-bold' : 'text-blue-400'}`}>
-                              <div className="flex items-center justify-end gap-1.5">
-                                {isStepUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
-                                <span>{step.reduction.toFixed(1)}%</span>
-                              </div>
+                            <td className={`p-2.5 text-right tabular-nums ${isStepUnsafe ? 'text-red-400 font-bold' : 'text-blue-400'}`}>
+                              {step.reduction.toFixed(1)}%
                             </td>
-                            <td className="p-3 text-right text-indigo-300">
-                              {forceN.toFixed(0)} <span className="text-[9px] text-slate-500">N</span>
+                            <td className="p-2.5 text-right text-[#e4e4e4] tabular-nums">
+                              {forceN.toFixed(0)} N
                             </td>
-                            <td className={`p-3 text-right ${isStressUnsafe ? 'text-rose-400 font-bold' : 'text-indigo-400'}`}>
-                              <div className="flex items-center justify-end gap-1">
-                                {isStressUnsafe && <Info className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
-                                <span>{sigmaD.toFixed(1)} <span className="text-[9px] text-slate-500 font-normal">MPa</span></span>
-                              </div>
+                            <td className={`p-2.5 text-right tabular-nums ${isStressUnsafe ? 'text-red-400 font-bold' : 'text-[#e4e4e4]'}`}>
+                              {sigmaD.toFixed(1)} MPa
                             </td>
-                            <td className="p-3 text-right text-emerald-400 font-semibold">
-                              {powerKw.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">kW</span>
+                            <td className="p-2.5 text-right text-emerald-400 tabular-nums font-semibold">
+                              {powerKw.toFixed(2)} kW
                             </td>
-                            <td className="p-3">
+                            <td className="p-2.5">
                               {matchingDies[step.draft] ? (
                                 <div className="flex flex-col gap-1">
                                   {matchingDies[step.draft].length > 0 ? (
@@ -325,41 +302,31 @@ export function SequenceCalculator({
                                       <a
                                         key={die.die_id}
                                         href={`#/dies/${die.die_id}`}
-                                        className={`inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border transition ${
+                                        className={`inline-flex items-center justify-center px-1.5 py-0.2 rounded-sm text-[9px] font-bold border transition ${
                                           die.status === 'AVAILABLE'
-                                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
-                                            : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                                            ? 'bg-[#141414] border-emerald-500/30 text-emerald-400'
+                                            : 'bg-[#141414] border-amber-500/30 text-amber-400'
                                         }`}
                                       >
-                                        {die.die_id} ({parseFloat(die.current_size).toFixed(3)}mm)
+                                        {die.die_id}
                                       </a>
                                     ))
                                   ) : (
-                                    <span className="text-[10px] text-slate-500 font-mono">No matching dies</span>
+                                    <span className="text-[10px] text-[#6b7280]">None</span>
                                   )}
                                 </div>
                               ) : (
                                 <button
                                   onClick={() => findMatchingDies(step.draft, step.outlet)}
                                   disabled={loadingDies[step.draft]}
-                                  className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-[10px] font-bold rounded border border-blue-600/30 transition flex items-center gap-1 disabled:opacity-50"
+                                  className="px-1.5 py-0.2 bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 text-[10px] font-bold rounded-sm border border-[#2a2a2a] transition disabled:opacity-40 cursor-pointer"
                                 >
-                                  {loadingDies[step.draft] ? 'Searching...' : 'Find Die'}
+                                  {loadingDies[step.draft] ? '...' : 'Scan'}
                                 </button>
                               )}
                             </td>
-                            <td className="p-3 text-right">
-                              <div className="flex items-center justify-end gap-2.5">
-                                <div className="bg-[#050816] h-2 w-16 rounded-full overflow-hidden border border-[#1b253b] relative shadow-inner">
-                                  <div
-                                    className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300"
-                                    style={{ width: `${cumulativeRed}%` }}
-                                  />
-                                </div>
-                                <span className="font-semibold text-slate-300 text-[10px] tracking-tight">
-                                  {cumulativeRed.toFixed(1)}%
-                                </span>
-                              </div>
+                            <td className="p-2.5 text-right tabular-nums text-[#6b7280]">
+                              {cumulativeRed.toFixed(1)}%
                             </td>
                           </tr>
                         )
@@ -370,23 +337,16 @@ export function SequenceCalculator({
               </div>
 
               {/* SVG Visualizer on the right */}
-              <div className="lg:col-span-4 space-y-6">
-                <div className="bg-[#121A2F] border border-[#1b253b] p-5 rounded-xl space-y-4 shadow-inner animate-fadeIn">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-heading flex items-center gap-2">
-                    <Maximize2 className="h-4 w-4 text-blue-500" />
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4 rounded-sm space-y-3 font-mono">
+                  <h4 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider flex items-center gap-1.5 border-b border-[#1a1a1a] pb-2">
+                    <Maximize2 className="h-3.5 w-3.5 text-blue-500" />
                     Draft Reduction Visualizer
                   </h4>
-                  <div className="flex items-center justify-center bg-[#050816] rounded-lg p-6 border border-[#1b253b]/60 relative overflow-hidden">
-                    <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-[0_0_12px_rgba(59,130,246,0.15)]">
-                      <defs>
-                        <pattern id="svg-grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                          <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1b253b" strokeWidth="0.5" strokeOpacity="0.5" />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#svg-grid)" />
-                      
-                      {/* Draw outer circle (start diameter) */}
-                      <circle cx="100" cy="100" r={80} fill="none" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                  <div className="flex items-center justify-center bg-[#0a0a0a] rounded-sm p-4 border border-[#1a1a1a] relative overflow-hidden">
+                    <svg viewBox="0 0 200 200" className="w-40 h-40">
+                      {/* Outer circle */}
+                      <circle cx="100" cy="100" r={80} fill="none" stroke="#2a2a2a" strokeWidth="1" strokeDasharray="3 3" />
                       
                       {/* Draw circles for each step */}
                       {sequenceResults.steps.map((step: any, idx: number) => {
@@ -400,35 +360,30 @@ export function SequenceCalculator({
                             cx="100"
                             cy="100"
                             r={currentRadius}
-                            fill={isLast ? 'rgba(59,130,246,0.15)' : 'none'}
-                            stroke={isLast ? '#3b82f6' : `rgba(168, 85, 247, ${0.3 + (idx / sequenceResults.steps.length) * 0.7})`}
+                            fill={isLast ? 'rgba(59,130,246,0.1)' : 'none'}
+                            stroke={isLast ? '#3b82f6' : '#6b7280'}
                             strokeWidth={isLast ? 2 : 1}
-                            className="transition-all duration-500 ease-in-out"
                           />
                         )
                       })}
                       
-                      {/* Core center point */}
+                      {/* Center point */}
                       <circle cx="100" cy="100" r="2" fill="#3b82f6" />
                     </svg>
-                    
-                    <div className="absolute bottom-2 right-2 text-[9px] font-mono text-slate-500">
-                      SCALE: 1px = {(parseFloat(seqStart) / 160).toFixed(4)} mm
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-[#050816] border border-[#1b253b] rounded-2xl py-20 px-6 flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
-            <div className="w-12 h-12 rounded-xl bg-slate-900 border border-[#1b253b] flex items-center justify-center text-slate-500">
-              <Info className="h-6 w-6" />
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm py-16 px-4 flex flex-col items-center justify-center text-center space-y-2">
+            <div className="p-2 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280]">
+              <Info className="h-5 w-5" />
             </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-slate-300">Awaiting Sequence Range</h4>
-              <p className="text-xs text-slate-500 max-w-sm">
-                Please enter valid stock and target sizes in the configuration panel to plot the draw stage progression matrix.
+            <div className="space-y-0.5">
+              <h4 className="text-xs font-bold text-[#e4e4e4] uppercase">Awaiting Sequence Range</h4>
+              <p className="text-xs text-[#6b7280]">
+                Enter stock and target sizes to plot the draw stage progression matrix.
               </p>
             </div>
           </div>

@@ -46,100 +46,100 @@ const getFieldDisplayName = (fieldName: string) => {
 
 export function Timeline({ history }: TimelineProps) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8">
-      <div className="flex items-center space-x-2.5 mb-8">
-        <Activity className="h-5 w-5 text-blue-500 dot-glow" />
-        <h3 className="text-lg font-black text-white uppercase tracking-wider">Industrial Audit Log</h3>
+    <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 font-mono">
+      <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-[#2a2a2a]">
+        <Activity className="h-4 w-4 text-blue-500" />
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">05 INDUSTRIAL AUDIT LOG</h3>
       </div>
 
       {history && history.length > 0 ? (
-        <div className="relative pl-8 border-l border-slate-800/80 space-y-8 ml-4">
+        <div className="relative pl-6 border-l border-[#2a2a2a] space-y-4 ml-2">
           {history.map((hist, index) => {
             // Determine action details based on field name
             let IconComponent = HelpCircle
-            let iconColor = 'text-slate-400'
-            let bgLightColor = 'bg-slate-500/10'
-            let borderColor = 'border-slate-800/40'
-            let actionTitle = `Updated ${hist.field_name}`
+            let iconColor = 'text-[#6b7280]'
+            let bgLightColor = 'bg-[#141414]'
+            let borderColor = 'border-[#2a2a2a]'
+            let actionTitle = `UPDATED ${hist.field_name.toUpperCase()}`
             
             if (hist.field_name === 'status') {
-              actionTitle = 'Status Transitioned'
+              actionTitle = 'STATUS TRANSITIONED'
               IconComponent = RefreshCw
               iconColor = 'text-emerald-400'
-              bgLightColor = 'bg-emerald-500/10'
-              borderColor = 'border-emerald-500/20'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-emerald-500/30'
             } else if (hist.field_name === 'location') {
-              actionTitle = 'Relocated Asset'
+              actionTitle = 'RELOCATED ASSET'
               IconComponent = MapPin
               iconColor = 'text-blue-400'
-              bgLightColor = 'bg-blue-500/10'
-              borderColor = 'border-blue-500/20'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-blue-500/30'
             } else if (hist.field_name === 'current_set_id') {
-              actionTitle = 'Reallocated Set'
+              actionTitle = 'REALLOCATED SET'
               IconComponent = Layers
-              iconColor = 'text-indigo-400'
-              bgLightColor = 'bg-indigo-500/10'
-              borderColor = 'border-indigo-500/20'
+              iconColor = 'text-purple-400'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-purple-500/30'
             } else if (
               hist.field_name === 'current_size' || 
               hist.field_name === 'current_width' || 
               hist.field_name === 'current_thickness' ||
               hist.field_name === 'radius'
             ) {
-              actionTitle = 'Wear Calibrated'
+              actionTitle = 'WEAR CALIBRATED'
               IconComponent = Activity
               iconColor = 'text-amber-400'
-              bgLightColor = 'bg-amber-500/10'
-              borderColor = 'border-amber-500/20'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-amber-500/30'
             } else if (hist.field_name === 'die_id') {
-              actionTitle = 'Die ID Altered'
+              actionTitle = 'DIE ID ALTERED'
               IconComponent = Key
-              iconColor = 'text-rose-400'
-              bgLightColor = 'bg-rose-500/10'
-              borderColor = 'border-rose-500/20'
+              iconColor = 'text-red-400'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-red-500/30'
             } else if (hist.field_name === 'casing') {
-              actionTitle = 'Casing Modified'
+              actionTitle = 'CASING MODIFIED'
               IconComponent = Settings
-              iconColor = 'text-sky-400'
-              bgLightColor = 'bg-sky-500/10'
-              borderColor = 'border-sky-500/20'
+              iconColor = 'text-blue-400'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-blue-500/30'
             } else if (
               hist.field_name === 'punched_size' ||
               hist.field_name === 'punched_width' ||
               hist.field_name === 'punched_thickness'
             ) {
-              actionTitle = 'Base Dimension Modified'
+              actionTitle = 'BASE DIMENSION MODIFIED'
               IconComponent = Settings
               iconColor = 'text-purple-400'
-              bgLightColor = 'bg-purple-500/10'
-              borderColor = 'border-purple-500/20'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-purple-500/30'
             } else if (hist.field_name === 'remarks') {
-              actionTitle = 'Remarks Logged'
+              actionTitle = 'REMARKS LOGGED'
               IconComponent = FileText
-              iconColor = 'text-slate-400'
-              bgLightColor = 'bg-slate-500/10'
-              borderColor = 'border-slate-500/20'
+              iconColor = 'text-[#6b7280]'
+              bgLightColor = 'bg-[#141414]'
+              borderColor = 'border-[#2a2a2a]'
             }
 
             return (
-              <div key={index} className="relative group transition-all duration-300">
+              <div key={index} className="relative group transition-colors">
                 {/* Timeline Icon Badge */}
-                <div className={`absolute -left-[44px] top-1.5 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-slate-900 transition-transform duration-300 group-hover:scale-110 ${bgLightColor} border ${borderColor} z-10`}>
-                  <IconComponent className={`h-3 w-3 ${iconColor}`} />
+                <div className={`absolute -left-[33px] top-1.5 w-5 h-5 rounded-none flex items-center justify-center bg-[#0a0a0a] border ${borderColor} z-10`}>
+                  <IconComponent className={`h-2.5 w-2.5 ${iconColor}`} />
                 </div>
                 
                 {/* Timeline card */}
-                <div className="bg-slate-950/60 border border-slate-800 hover:border-slate-800 rounded-xl p-5 hover:scale-[1.001] transition-all duration-200 shadow-md">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-white tracking-tight">{actionTitle}</span>
-                      <span className="px-2 py-0.5 text-[10px] font-bold text-slate-400 bg-slate-900 border border-slate-800 rounded font-mono">
+                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm p-3 font-mono">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-[#1a1a1a]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">{actionTitle}</span>
+                      <span className="px-1.5 py-0.2 text-[9px] uppercase text-[#6b7280] bg-[#141414] border border-[#2a2a2a] rounded-sm">
                         {getFieldDisplayName(hist.field_name)}
                       </span>
                     </div>
                     
                     {/* Metadata */}
-                    <div className="flex items-center gap-4 text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-[9px] text-[#6b7280] uppercase tracking-wider tabular-nums">
                       <span>{new Date(hist.timestamp).toLocaleString()}</span>
                       <span>•</span>
                       <span>IP: {hist.ip_address || '127.0.0.1'}</span>
@@ -147,32 +147,32 @@ export function Timeline({ history }: TimelineProps) {
                   </div>
                   
                   {/* Side-by-side comparison panel */}
-                  <div className="flex items-center gap-4 bg-slate-950/80 border border-slate-900/60 rounded-xl p-3.5 shadow-inner">
-                    <div className="flex flex-col min-w-[120px] max-w-[200px]">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Previous</span>
-                      <span className="text-xs text-rose-400 font-mono font-bold select-all truncate" title={hist.old_value || 'Empty'}>
-                        {hist.old_value || <span className="text-slate-600 italic font-sans font-normal">empty</span>}
+                  <div className="flex items-center gap-3 bg-[#141414] border border-[#2a2a2a] rounded-sm p-2">
+                    <div className="flex flex-col min-w-[100px] max-w-[180px]">
+                      <span className="text-[8px] text-[#6b7280] uppercase tracking-wider mb-0.5">PREVIOUS</span>
+                      <span className="text-xs text-red-400 font-mono select-all truncate tabular-nums" title={hist.old_value || 'Empty'}>
+                        {hist.old_value || <span className="text-[#404040]">EMPTY</span>}
                       </span>
                     </div>
                     
-                    <ArrowRight className="h-4 w-4 text-slate-700 shrink-0" />
+                    <ArrowRight className="h-3 w-3 text-[#404040] shrink-0" />
                     
-                    <div className="flex flex-col min-w-[120px] max-w-[200px]">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Updated</span>
-                      <span className="text-xs text-emerald-400 font-mono font-bold select-all truncate" title={hist.new_value || 'Empty'}>
-                        {hist.new_value || <span className="text-slate-600 italic font-sans font-normal">empty</span>}
+                    <div className="flex flex-col min-w-[100px] max-w-[180px]">
+                      <span className="text-[8px] text-[#6b7280] uppercase tracking-wider mb-0.5">UPDATED</span>
+                      <span className="text-xs text-emerald-400 font-mono font-bold select-all truncate tabular-nums" title={hist.new_value || 'Empty'}>
+                        {hist.new_value || <span className="text-[#404040]">EMPTY</span>}
                       </span>
                     </div>
                   </div>
 
                   {/* Operator signature footer */}
-                  <div className="mt-4 pt-3 border-t border-slate-900/60 flex items-center justify-between text-[10px] text-slate-500 font-semibold tracking-wide">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                      <span>Operator Signature: <span className="text-slate-400">{hist.changed_by_username || 'System Daemon'}</span></span>
+                  <div className="mt-2 pt-1.5 border-t border-[#1a1a1a] flex items-center justify-between text-[9px] text-[#6b7280] uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-none bg-[#6b7280]" />
+                      <span>OPERATOR: <span className="text-[#e4e4e4]">{hist.changed_by_username || 'System Daemon'}</span></span>
                     </div>
                     {hist.note && (
-                      <span className="italic text-slate-400">Note: {hist.note}</span>
+                      <span className="text-[#6b7280]">NOTE: {hist.note}</span>
                     )}
                   </div>
                 </div>
@@ -181,9 +181,9 @@ export function Timeline({ history }: TimelineProps) {
           })}
         </div>
       ) : (
-        <div className="text-center py-12 bg-slate-950/40 border border-slate-800 rounded-xl flex flex-col justify-center items-center">
-          <History className="h-8 w-8 text-slate-700 mb-2 animate-pulse" />
-          <p className="text-slate-500 text-sm">No state modifications recorded for this die.</p>
+        <div className="text-center py-8 bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm flex flex-col justify-center items-center font-mono">
+          <History className="h-6 w-6 text-[#404040] mb-2" />
+          <p className="text-[#6b7280] text-xs uppercase">No state modifications recorded for this die.</p>
         </div>
       )}
     </div>

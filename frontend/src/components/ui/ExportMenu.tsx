@@ -51,24 +51,24 @@ export function ExportMenu({ options }: ExportMenuProps) {
   }
 
   return (
-    <div ref={menuRef} className="relative inline-block text-left select-none z-30">
+    <div ref={menuRef} className="relative inline-block text-left select-none z-30 font-mono">
       {/* Dropdown Toggle Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition focus-ring cursor-pointer"
+        className="flex items-center space-x-2 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] px-3 py-1.5 rounded-sm text-xs uppercase tracking-wider transition focus-ring cursor-pointer"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Download className="h-4 w-4 text-emerald-500 shrink-0" />
+        <Download className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
         <span>Export</span>
-        <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
+        <ChevronDown className="h-3 w-3 text-[#6b7280] shrink-0" />
       </button>
 
       {/* Dropdown Options List */}
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl py-1.5 focus:outline-none z-50 animate-fadeIn"
+          className="absolute right-0 mt-1 w-48 bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm py-1 focus:outline-none z-50 animate-fadeIn font-mono"
           role="menu"
         >
           {options.map((option, idx) => (
@@ -76,7 +76,7 @@ export function ExportMenu({ options }: ExportMenuProps) {
               key={idx}
               type="button"
               onClick={() => handleOptionClick(option)}
-              className="w-full text-left px-4 py-2 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors duration-150"
+              className="w-full text-left px-3 py-1.5 text-xs text-[#e4e4e4] hover:bg-[#1a1a1a] transition-colors"
               role="menuitem"
             >
               {option.label}

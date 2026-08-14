@@ -5,7 +5,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { AnimatePresence } from 'framer-motion'
 
 export function BackupManager() {
   const { request } = useApi()
@@ -121,49 +120,48 @@ export function BackupManager() {
   }
 
   return (
-    <div className="space-y-8 select-none font-sans">
+    <div className="space-y-6 select-none font-mono">
       {/* Top Section: Action hub cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* Card A: Create Database Snapshot */}
-        <div className="relative group overflow-hidden bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between space-y-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-950/10">
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/10 transition-all" />
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 flex flex-col justify-between space-y-4 font-mono">
           <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="p-1.5 bg-blue-500/10 border border-blue-500/25 text-blue-400 rounded-lg">
-                <Database className="" />
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#1a1a1a]">
+              <div className="p-1 bg-[#141414] border border-[#2a2a2a] text-blue-400 rounded-sm">
+                <Database className="h-3.5 w-3.5" />
               </div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Database Snapshot Tool</h3>
+              <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">01 SNAPSHOT CREATION</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Compile and export the current database state (dies, physical layout, history logs, machine configurations) into a secure PostgreSQL custom-format archive.
+            <p className="text-xs text-[#6b7280] leading-normal">
+              Compile current system state (dies, physical layout, history logs, machine configurations) into PostgreSQL archive.
             </p>
           </div>
 
-          <div className="space-y-4 pt-2">
+          <div className="space-y-3 pt-1">
             <button 
               onClick={() => createBackupMutation.mutate()}
               disabled={createBackupMutation.isPending}
-              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-semibold text-xs tracking-wider uppercase transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-40 cursor-pointer"
+              className="w-full flex items-center justify-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500/50 text-blue-400 hover:text-blue-300 py-2 rounded-sm text-xs font-mono uppercase transition disabled:opacity-40 cursor-pointer"
             >
               {createBackupMutation.isPending ? (
-                <RefreshCw className="h-4 w-4 animate-spin text-white" />
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Plus className="h-4 w-4 text-white" />
+                <Plus className="h-3.5 w-3.5" />
               )}
               <span>{createBackupMutation.isPending ? 'Writing Snapshot...' : 'Create Backup Now'}</span>
             </button>
 
             {/* Nightly alert banner */}
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/60 text-xs">
-              <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-slate-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-mono">Autonomic Scheduler Active</span>
+            <div className="flex items-start gap-2 p-2.5 rounded-sm bg-[#0a0a0a] border border-[#1a1a1a] text-xs">
+              <Info className="h-3.5 w-3.5 text-blue-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1 font-bold text-[#e4e4e4] text-[10px] uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>AUTONOMIC SCHEDULER ACTIVE</span>
                 </div>
-                <p className="text-slate-400">
-                  Daily database dumps execute at 2:00 AM. Archives older than 14 days are auto-pruned.
+                <p className="text-[#6b7280] text-[10px]">
+                  Daily dumps run at 02:00 UTC. Snapshots older than 14 days auto-pruned.
                 </p>
               </div>
             </div>
@@ -171,38 +169,34 @@ export function BackupManager() {
         </div>
 
         {/* Card B: Upload Offline Backup */}
-        <div className="relative group overflow-hidden bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between space-y-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-indigo-500/30 hover:shadow-indigo-950/10">
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition-all" />
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 flex flex-col justify-between space-y-4 font-mono">
           <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-lg">
-                <Upload className="" />
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#1a1a1a]">
+              <div className="p-1 bg-[#141414] border border-[#2a2a2a] rounded-sm text-purple-400">
+                <Upload className="h-3.5 w-3.5" />
               </div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Ingest Dump Archive</h3>
+              <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">02 INGEST DUMP ARCHIVE</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Load an offline database backup file (`.dump`) into the system volume to make it available for immediate state restoration.
+            <p className="text-xs text-[#6b7280] leading-normal">
+              Load an offline backup file (.dump) into storage volume to make available for state restoration.
             </p>
           </div>
 
           <div 
-            className={`border border-dashed rounded-xl p-5 text-center cursor-pointer transition-all  ${
+            className={`border border-dashed rounded-sm p-4 text-center cursor-pointer transition-colors ${
               isUploading 
-                ? 'border-blue-500/50 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.05)]' 
-                : 'border-slate-800 hover:border-blue-500/40 bg-slate-950/50 hover:bg-slate-950/90'
+                ? 'border-blue-500 bg-[#141414]' 
+                : 'border-[#2a2a2a] hover:border-blue-500/50 bg-[#0a0a0a]'
             }`}
             onClick={() => !isUploading && document.getElementById('backup-file-input-manager')?.click()}
           >
             {isUploading ? (
-              <RefreshCw className="h-6 w-6 text-blue-400 mx-auto mb-2 animate-spin" />
+              <RefreshCw className="h-5 w-5 text-blue-400 mx-auto mb-1 animate-spin" />
             ) : (
-              <Upload className="h-6 w-6 text-slate-500 mx-auto mb-2 group-hover:text-slate-400 transition" />
+              <Upload className="h-5 w-5 text-[#6b7280] mx-auto mb-1" />
             )}
-            <span className="text-xs font-bold text-slate-200 block">
-              {isUploading ? 'Uploading Archive File...' : 'Click to Select Backup File'}
-            </span>
-            <span className="text-[10px] text-slate-500 font-mono mt-1 block uppercase">
-              Accepts ONLY `.dump` Format
+            <span className="text-xs font-bold text-[#e4e4e4] block uppercase">
+              {isUploading ? 'Uploading Archive File...' : 'Select Backup File (.dump)'}
             </span>
             <input 
               type="file" 
@@ -218,119 +212,113 @@ export function BackupManager() {
       </div>
 
       {/* Backups List Table */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="h-4 w-4" />
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Stored Snapshots Registry</h4>
+      <div className="space-y-3 font-mono">
+        <div className="flex items-center justify-between pb-2 border-b border-[#1a1a1a]">
+          <div className="flex items-center space-x-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
+            <h4 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">03 STORED SNAPSHOTS REGISTRY</h4>
           </div>
-          <span className="text-xs text-slate-400 font-mono">
-            {backups && Array.isArray(backups) ? `${backups.length} archives available` : '0 archives'}
+          <span className="text-xs text-[#6b7280] font-mono tabular-nums">
+            {backups && Array.isArray(backups) ? `${backups.length} ARCHIVES AVAILABLE` : '0 ARCHIVES'}
           </span>
         </div>
 
         {isBackupsLoading ? (
-          <div className="space-y-3 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex gap-4 items-center justify-between">
-                <div className="h-4 w-1/3 bg-slate-800 rounded animate-pulse" />
-                <div className="h-4 w-1/4 bg-slate-800 rounded animate-pulse" />
-                <div className="h-8 w-24 bg-slate-800 rounded animate-pulse" />
-              </div>
+          <div className="space-y-2 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-8 bg-[#141414] animate-pulse" />
             ))}
           </div>
         ) : backupsError ? (
-          <div className="text-center py-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 font-mono text-xs text-rose-400">
+          <div className="text-center py-6 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-4 text-xs text-red-400">
             Error loading backups index: {backupsError.message}
           </div>
         ) : !Array.isArray(backups) || backups.length === 0 ? (
-          <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 flex flex-col justify-center items-center">
-            <Database className="h-10 w-10 text-slate-700 mb-3" />
-            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">No backups index found</h5>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No database backup files exist in the `/backups` directory on the server volume.
+          <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 flex flex-col justify-center items-center">
+            <Database className="h-8 w-8 text-[#404040] mb-2" />
+            <h5 className="text-xs font-bold text-[#e4e4e4] uppercase mb-1">No backups index found</h5>
+            <p className="text-xs text-[#6b7280] max-w-sm mx-auto">
+              No database backup files exist in server volume storage.
             </p>
           </div>
         ) : (
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl backdrop-blur-sm">
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden font-mono">
             <div className="overflow-x-auto max-h-[450px]">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse text-xs font-mono">
                 <thead>
-                  <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="py-4 px-6 font-mono">Backup File</th>
-                    <th className="py-4 px-6 font-mono">Date Created</th>
-                    <th className="py-4 px-6 font-mono">Size</th>
-                    <th className="py-4 px-6 font-mono text-right">Actions</th>
+                  <tr className="sticky top-0 z-10 border-b border-[#1a1a1a] bg-[#0a0a0a] text-[#6b7280] uppercase tracking-wider select-none">
+                    <th className="py-2.5 px-4">Backup File</th>
+                    <th className="py-2.5 px-4">Date Created</th>
+                    <th className="py-2.5 px-4">Size</th>
+                    <th className="py-2.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y font-mono text-xs text-slate-300">
-                  <AnimatePresence>
-                    {backups.map((backup: any) => {
-                      const dateStr = new Date(backup.created_at).toLocaleString()
-                      
-                      return (
-                        <tr 
-                          key={backup.filename} 
-                          className="transition-colors duration-150"
-                        >
-                          <td className="py-3.5 px-6 font-semibold text-slate-200">
-                            <div className="flex items-center space-x-2.5">
-                              <Database className="h-3.5 w-3.5 text-blue-500/70 shrink-0" />
-                              <span className="break-all">{backup.filename}</span>
-                            </div>
-                          </td>
+                <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
+                  {backups.map((backup: any) => {
+                    const dateStr = new Date(backup.created_at).toLocaleString()
+                    
+                    return (
+                      <tr 
+                        key={backup.filename} 
+                        className="hover:bg-[#141414] transition-colors"
+                      >
+                        <td className="py-2.5 px-4 font-bold text-[#e4e4e4]">
+                          <div className="flex items-center space-x-2">
+                            <Database className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                            <span className="break-all">{backup.filename}</span>
+                          </div>
+                        </td>
+                        
+                        <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-3 w-3 text-[#6b7280]" />
+                            <span>{dateStr}</span>
+                          </div>
+                        </td>
+                        
+                        <td className="py-2.5 px-4">
+                          <span className="bg-[#141414] text-blue-400 border border-[#2a2a2a] px-1.5 py-0.2 rounded-sm text-[10px] font-mono tabular-nums">
+                            {backup.size_kb >= 1024 
+                              ? `${(backup.size_kb / 1024).toFixed(2)} MB` 
+                              : `${backup.size_kb.toFixed(1)} KB`}
+                          </span>
+                        </td>
+                        
+                        <td className="py-2.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                          {/* Download Button */}
+                          <button
+                            onClick={() => handleDownloadBackup(backup.filename)}
+                            className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] p-1 rounded-sm transition cursor-pointer"
+                            title="Download dump file (.dump)"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </button>
                           
-                          <td className="py-3.5 px-6 text-slate-400">
-                            <div className="flex items-center space-x-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-slate-600" />
-                              <span>{dateStr}</span>
-                            </div>
-                          </td>
+                          {/* Restore Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedBackup(backup)
+                              setShowRestoreConfirmModal(true)
+                            }}
+                            className="bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-sm text-[10px] font-mono uppercase transition cursor-pointer"
+                            title="Restore database to this state"
+                          >
+                            Restore
+                          </button>
                           
-                          <td className="py-3.5 px-6">
-                            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold">
-                              {backup.size_kb >= 1024 
-                                ? `${(backup.size_kb / 1024).toFixed(2)} MB` 
-                                : `${backup.size_kb.toFixed(1)} KB`}
-                            </span>
-                          </td>
-                          
-                          <td className="py-3.5 px-6 text-right space-x-2 whitespace-nowrap">
-                            {/* Download Button */}
-                            <button
-                              onClick={() => handleDownloadBackup(backup.filename)}
-                              className="bg-slate-950/40 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-400 border border-slate-800/80 p-1.5 rounded-xl transition cursor-pointer"
-                              title="Download dump file (.dump)"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                            </button>
-                            
-                            {/* Restore Button */}
-                            <button
-                              onClick={() => {
-                                setSelectedBackup(backup)
-                                setShowRestoreConfirmModal(true)
-                              }}
-                              className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/30 px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-wider uppercase transition cursor-pointer"
-                              title="Restore database to this state"
-                            >
-                              Restore
-                            </button>
-                            
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => setBackupToDelete(backup.filename)}
-                              disabled={deleteBackupMutation.isPending}
-                              className="bg-slate-950/40 hover:bg-rose-500/10 text-slate-400 border border-slate-800/80 p-1.5 rounded-xl transition disabled:opacity-40 cursor-pointer"
-                              title="Delete backup from disk"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </AnimatePresence>
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => setBackupToDelete(backup.filename)}
+                            disabled={deleteBackupMutation.isPending}
+                            className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-red-400 border border-[#2a2a2a] p-1 rounded-sm transition disabled:opacity-40 cursor-pointer"
+                            title="Delete backup from disk"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -340,11 +328,11 @@ export function BackupManager() {
 
       {/* Confirmation Dialogs */}
       <ConfirmDialog
-        isOpen={!!backupToDelete}
+        open={!!backupToDelete}
         title="Delete Backup File"
         message={`Are you sure you want to permanently delete backup "${backupToDelete}" from the server disk? This action is irreversible.`}
-        confirmText="Delete Backup"
-        isDestructive={true}
+        confirmLabel="Delete Backup"
+        danger={true}
         onConfirm={() => {
           if (backupToDelete) {
             deleteBackupMutation.mutate(backupToDelete)
@@ -355,12 +343,11 @@ export function BackupManager() {
       />
 
       <ConfirmDialog
-        isOpen={showRestoreConfirmModal && !!selectedBackup}
+        open={showRestoreConfirmModal && !!selectedBackup}
         title="Confirm Database Overwrite"
-        message="CRITICAL WARNING: Restoring the database will completely overwrite all current files, die status calibrations, machine set configurations, and user accounts. All data created since this backup dump was generated will be permanently lost."
-        confirmText="Execute Restore"
-        isDestructive={true}
-        requireMatchText="RESTORE"
+        message="CRITICAL WARNING: Restoring the database will completely overwrite all current files, die status calibrations, machine set configurations, and user accounts."
+        confirmLabel="Execute Restore"
+        danger={true}
         onConfirm={() => {
           if (selectedBackup) {
             restoreBackupMutation.mutate(selectedBackup.filename)
@@ -374,4 +361,3 @@ export function BackupManager() {
     </div>
   )
 }
-

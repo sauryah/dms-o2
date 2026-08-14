@@ -36,13 +36,13 @@ const queryClient = new QueryClient({
 })
 
 const PageLoader = () => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center py-12 animate-fadeIn">
-    <div className="relative w-16 h-16">
-      <div className="absolute inset-0 rounded-full border-4 border-slate-800/40 animate-pulse" />
-      <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+  <div className="min-h-[60vh] flex flex-col items-center justify-center py-12 animate-fadeIn font-mono">
+    <div className="relative w-8 h-8">
+      <div className="absolute inset-0 border border-[#2a2a2a]" />
+      <div className="absolute inset-0 border-t-2 border-blue-500 animate-spin" />
     </div>
-    <span className="mt-6 text-xs font-heading font-bold tracking-widest text-slate-400 uppercase animate-pulse">
-      Loading Interface...
+    <span className="mt-4 text-[11px] font-mono font-medium tracking-widest text-[#6b7280] uppercase">
+      LOADING INTERFACE...
     </span>
   </div>
 )
@@ -130,26 +130,26 @@ function AppContent() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500 selection:text-white flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#e4e4e4] font-mono selection:bg-[#1f1f1f] selection:text-[#e4e4e4] flex flex-col">
       <div className="flex-grow">
         <Navbar />
         {rebuildStatus && rebuildStatus.status === 'rebuilding' && (
-          <div className="bg-blue-950/80 border-b border-blue-500/20 px-6 py-3 flex items-center justify-between shadow-md animate-fadeIn">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 dot-glow glow-blue animate-pulse shrink-0" />
-              <div className="text-xs">
-                <span className="font-bold text-white">Search index rebuilding...</span>
-                <span className="text-slate-400 ml-2 font-medium">System is synchronizing data after database restore. Search results may be incomplete.</span>
+          <div className="bg-[#0f0f0f] border-b border-[#2a2a2a] px-4 py-2 flex items-center justify-between animate-fadeIn font-mono text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500 dot-glow animate-pulse shrink-0" />
+              <div>
+                <span className="font-medium text-[#e4e4e4] uppercase">Search index rebuilding...</span>
+                <span className="text-[#6b7280] ml-2">Synchronizing data after database restore.</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-32 rounded-full h-1.5 overflow-hidden">
+            <div className="flex items-center gap-3">
+              <div className="w-24 bg-[#141414] border border-[#2a2a2a] h-1.5 overflow-hidden">
                 <div
-                  className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                  className="bg-blue-500 h-full transition-all duration-300"
                   style={{ width: `${rebuildStatus.progress}%` }}
                 />
               </div>
-              <span className="text-xs font-bold font-mono">{rebuildStatus.progress}%</span>
+              <span className="text-xs font-mono tabular-nums text-[#e4e4e4]">{rebuildStatus.progress}%</span>
             </div>
           </div>
         )}

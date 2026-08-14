@@ -324,26 +324,26 @@ export function InventoryPage() {
       <button
         type="button"
         onClick={handleExpandAll}
-        className="flex items-center gap-1.5 bg-[#0b0f19] hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus-ring cursor-pointer shadow-sm"
+        className="flex items-center gap-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] px-3 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition focus-ring cursor-pointer"
       >
-        <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+        <ChevronDown className="h-3 w-3 text-[#6b7280]" />
         Expand Tree
       </button>
       <button
         type="button"
         onClick={handleCollapseAll}
-        className="flex items-center gap-1.5 bg-[#0b0f19] hover:bg-slate-900 text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus-ring cursor-pointer shadow-sm"
+        className="flex items-center gap-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] px-3 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition focus-ring cursor-pointer"
       >
-        <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+        <ChevronUp className="h-3 w-3 text-[#6b7280]" />
         Collapse Tree
       </button>
       <ExportMenu options={exportOptions} />
       {canCreate && (
         <button 
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer focus-ring"
+          className="flex items-center justify-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 hover:text-blue-300 border border-blue-500/50 px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition cursor-pointer focus-ring"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           <span>Add Die</span>
         </button>
       )}
@@ -351,12 +351,12 @@ export function InventoryPage() {
   )
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)] relative bg-slate-950 text-white font-sans">
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-48px)] relative bg-[#0a0a0a] text-[#e4e4e4] font-mono">
       
       {/* Sidebar Overlay (Mobile only) */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm md:hidden transition-opacity duration-300 animate-fadeIn"
+          className="fixed inset-0 bg-[#0a0a0a]/80 md:hidden transition-opacity duration-150 animate-fadeIn"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -382,20 +382,20 @@ export function InventoryPage() {
       />
 
       {/* RIGHT CONTENT WORKSPACE */}
-      <div className="flex-1 min-w-0 bg-slate-950 flex flex-col">
+      <div className="flex-1 min-w-0 bg-[#0a0a0a] flex flex-col font-mono">
         
-        {/* Toggle Sidebar Button for Header Bar */}
-        <div className="border-b border-slate-900 bg-slate-950 p-4 flex md:hidden items-center justify-between z-20">
+        {/* Toggle Sidebar Button for Mobile */}
+        <div className="border-b border-[#2a2a2a] bg-[#0a0a0a] p-3 flex md:hidden items-center justify-between z-20">
           <button 
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition"
+            className="p-1.5 bg-[#141414] border border-[#2a2a2a] rounded-sm text-[#6b7280] hover:text-[#e4e4e4] transition"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </button>
-          <span className="font-bold text-xs font-mono uppercase tracking-wider">Die Registry Navigation</span>
+          <span className="font-medium text-xs uppercase tracking-wider">01 REGISTRY TREE</span>
         </div>
 
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 overflow-y-auto">
+        <div className="flex-1 p-3 sm:p-5 lg:p-6 w-full max-w-7xl mx-auto space-y-4 overflow-y-auto">
           
           {/* Header Block */}
           <PageHeader 
@@ -405,7 +405,7 @@ export function InventoryPage() {
           />
 
           {/* Search Inputs */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center w-full">
+          <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
             <div className="flex-1 w-full">
               <SearchBar 
                 ref={searchInputRef}
@@ -413,26 +413,26 @@ export function InventoryPage() {
                 onChange={setQ}
                 onClear={() => setQ('')}
                 loading={isLoading}
-                placeholder="Search dies by ID, casing, location, set, or machine..."
+                placeholder="SEARCH DIES BY ID, CASING, LOCATION, SET, MACHINE..."
               />
             </div>
             <button 
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border text-sm font-bold transition w-full sm:w-auto shrink-0 justify-center cursor-pointer ${
+              className={`flex items-center space-x-1.5 px-4 py-2 rounded-sm border text-xs font-mono uppercase tracking-wider transition w-full sm:w-auto shrink-0 justify-center cursor-pointer ${
                 showFilters 
-                  ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
-                  : 'bg-slate-950/40 text-slate-300 border-slate-800 hover:border-slate-700'
+                  ? 'bg-[#141414] text-blue-400 border-blue-500/50' 
+                  : 'bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4] border-[#2a2a2a]'
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-3.5 w-3.5" />
               <span>Filters</span>
             </button>
           </div>
 
           {/* Active Chips Row */}
           {activeFiltersList.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 select-none">
+            <div className="flex flex-wrap items-center gap-1.5 select-none font-mono">
               {activeFiltersList.map((chip) => (
                 <FilterChip 
                   key={chip.key} 
@@ -442,7 +442,7 @@ export function InventoryPage() {
               ))}
               <button
                 onClick={clearAllFilters}
-                className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 hover:text-blue-300 transition shrink-0 ml-1 py-1.5"
+                className="text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 transition shrink-0 ml-1 py-1 font-mono cursor-pointer"
               >
                 Clear all
               </button>
@@ -450,11 +450,11 @@ export function InventoryPage() {
           )}
 
           {/* Search Content Split Sidebar-Results */}
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex flex-col lg:flex-row gap-4 items-start">
             
             {/* Collapsible Left Filter Sidebar */}
             {showFilters && (
-              <div className="w-full lg:w-60 shrink-0">
+              <div className="w-full lg:w-64 shrink-0">
                 <FilterPanel
                   dieType={dieType}
                   statusVal={statusVal}
@@ -481,56 +481,56 @@ export function InventoryPage() {
             )}
 
             {/* Results Area */}
-            <div className="flex-1 w-full min-w-0 space-y-4">
+            <div className="flex-1 w-full min-w-0 space-y-3">
               
               {/* Secondary view controls bar */}
-              <div className="flex items-center justify-between select-none">
-                <div className="flex items-center space-x-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 font-mono">
-                  <Compass className="h-4 w-4 text-blue-500" />
+              <div className="flex items-center justify-between select-none font-mono">
+                <div className="flex items-center space-x-1.5 text-[10px] uppercase tracking-wider text-[#6b7280]">
+                  <Compass className="h-3.5 w-3.5 text-blue-500" />
                   <span>
-                    {isLoading ? 'Scanning Registry...' : `${totalCount} ${totalCount === 1 ? 'die' : 'dies'} registered`}
+                    {isLoading ? 'SCANNING REGISTRY...' : `${totalCount} ${totalCount === 1 ? 'DIE' : 'DIES'} REGISTERED`}
                   </span>
                 </div>
 
                 {/* Grid / List / Warehouse view toggles */}
-                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-900">
+                <div className="flex items-center gap-1 bg-[#0f0f0f] p-0.5 rounded-sm border border-[#2a2a2a]">
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-2.5 py-1 rounded-sm text-[10px] uppercase tracking-wider transition-colors flex items-center space-x-1 font-mono ${
                       viewMode === 'grid' 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#141414] text-blue-400 border border-blue-500/40' 
+                        : 'text-[#6b7280] hover:text-[#e4e4e4]'
                     }`}
                     title="Grid View (Cards)"
                   >
-                    <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                    <LayoutGrid className="h-3 w-3 shrink-0" />
                     <span>Grid</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-2.5 py-1 rounded-sm text-[10px] uppercase tracking-wider transition-colors flex items-center space-x-1 font-mono ${
                       viewMode === 'list' 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#141414] text-blue-400 border border-blue-500/40' 
+                        : 'text-[#6b7280] hover:text-[#e4e4e4]'
                     }`}
                     title="List View (Table)"
                   >
-                    <Table2 className="h-3.5 w-3.5 shrink-0" />
+                    <Table2 className="h-3 w-3 shrink-0" />
                     <span>List</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode('rack' as any)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center space-x-1 ${
+                    className={`px-2.5 py-1 rounded-sm text-[10px] uppercase tracking-wider transition-colors flex items-center space-x-1 font-mono ${
                       viewMode === ('rack' as any) 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#141414] text-blue-400 border border-blue-500/40' 
+                        : 'text-[#6b7280] hover:text-[#e4e4e4]'
                     }`}
                     title="Warehouse Rack Placement Grid"
                   >
-                    <Map className="h-3.5 w-3.5 shrink-0" />
+                    <Map className="h-3 w-3 shrink-0" />
                     <span>Racks</span>
                   </button>
                 </div>
@@ -538,23 +538,23 @@ export function InventoryPage() {
 
               {/* View Rendering Selector */}
               {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton width="w-full" height="h-20" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <Skeleton width="w-full" height="h-16" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <Skeleton key={i} width="w-full" height="h-48" />
+                      <Skeleton key={i} width="w-full" height="h-40" />
                     ))}
                   </div>
                 </div>
               ) : error ? (
-                <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-                  <p className="font-mono text-sm">{error.message}</p>
+                <div className="text-center py-8 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-6 max-w-xl mx-auto font-mono">
+                  <h3 className="text-xs font-medium text-red-400 mb-1 uppercase">QUERY FAILURE</h3>
+                  <p className="font-mono text-xs text-[#6b7280]">{error.message}</p>
                 </div>
               ) : !selectedNode ? (
-                <div className="text-center py-20 bg-slate-900/30 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto shadow-xl select-none">
-                  <h3 className="text-lg font-semibold text-white mb-1">No Selection</h3>
-                  <p className="text-slate-400 text-sm">Select a machine, set, or registry node from the left tree navigation sidebar.</p>
+                <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 max-w-md mx-auto select-none font-mono">
+                  <h3 className="text-xs font-medium text-[#e4e4e4] uppercase mb-1">NO SELECTION</h3>
+                  <p className="text-[#6b7280] text-xs">Select a machine, set, or registry node from the left tree navigation sidebar.</p>
                 </div>
               ) : (
                 <div>
@@ -644,73 +644,73 @@ export function InventoryPage() {
 
       {/* Floating Bulk Action Bar */}
       {selectedDieIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 border border-slate-800/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-2xl flex flex-wrap items-center gap-6 max-w-4xl animate-slideUp font-sans select-none">
-          <div className="flex items-center space-x-2.5">
-            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs font-bold text-slate-200 tracking-wider">
-              {selectedDieIds.size} {selectedDieIds.size === 1 ? 'item' : 'items'} selected
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[#0f0f0f] border border-[#2a2a2a] px-4 py-2.5 rounded-sm flex flex-wrap items-center gap-4 max-w-4xl animate-fadeIn font-mono select-none">
+          <div className="flex items-center space-x-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">
+              {selectedDieIds.size} {selectedDieIds.size === 1 ? 'ITEM' : 'ITEMS'} SELECTED
             </span>
           </div>
 
-          <div className="h-5 w-[1px] bg-slate-800" />
+          <div className="h-4 w-[1px] bg-[#2a2a2a]" />
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Status update group */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <select
                 value={bulkStatus}
                 disabled={isUpdating}
                 onChange={(e) => setBulkStatus(e.target.value)}
-                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[#e4e4e4] focus:outline-none font-mono uppercase"
               >
-                <option value="">— Select Status —</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="RUNNING">Running</option>
-                <option value="CLEANING">Cleaning</option>
-                <option value="POLISHING">Polishing</option>
-                <option value="DAMAGED">Damaged</option>
-                <option value="SCRAPPED">Scrapped</option>
-                <option value="MISSING">Missing</option>
-                <option value="MAINTENANCE">Maintenance</option>
+                <option value="">— SELECT STATUS —</option>
+                <option value="AVAILABLE">AVAILABLE</option>
+                <option value="RUNNING">RUNNING</option>
+                <option value="CLEANING">CLEANING</option>
+                <option value="POLISHING">POLISHING</option>
+                <option value="DAMAGED">DAMAGED</option>
+                <option value="SCRAPPED">SCRAPPED</option>
+                <option value="MISSING">MISSING</option>
+                <option value="MAINTENANCE">MAINTENANCE</option>
               </select>
 
               <button
                 onClick={handleBulkStatusUpdate}
                 disabled={!bulkStatus || isUpdating}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
               >
-                {isUpdating ? 'Updating...' : 'Apply Status'}
+                {isUpdating ? 'UPDATING...' : 'APPLY STATUS'}
               </button>
             </div>
 
-            <div className="h-5 w-[1px] bg-slate-800" />
+            <div className="h-4 w-[1px] bg-[#2a2a2a]" />
 
             {/* Location update group */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <input
                 type="text"
                 value={bulkLocation}
                 disabled={isUpdating}
                 onChange={(e) => setBulkLocation(e.target.value)}
                 placeholder="e.g. Rack A - Shelf 3"
-                className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none w-44 font-semibold"
+                className="bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none w-40 font-mono"
               />
 
               <button
                 onClick={handleBulkLocationUpdate}
                 disabled={!bulkLocation.trim() || isUpdating}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
               >
-                {isUpdating ? 'Updating...' : 'Apply Location'}
+                {isUpdating ? 'UPDATING...' : 'APPLY LOCATION'}
               </button>
             </div>
 
-            <div className="h-5 w-[1px] bg-slate-800" />
+            <div className="h-4 w-[1px] bg-[#2a2a2a]" />
 
             <button
               onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
               disabled={isUpdating}
-              className="text-xs text-slate-400 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer"
+              className="text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] hover:bg-[#1f1f1f] transition cursor-pointer"
             >
               Cancel
             </button>

@@ -26,7 +26,7 @@ const getInventoryColumns = (navigate: any): Column[] => [
     key: 'die_type',
     label: 'Type',
     render: (row: any) => (
-      <span className="px-2.5 py-0.5 text-[9px] font-extrabold rounded bg-slate-800 text-slate-300 border border-slate-700/50 font-mono tracking-wider">
+      <span className="px-1.5 py-0.2 text-[9px] uppercase font-mono rounded-sm bg-[#141414] text-[#e4e4e4] border border-[#2a2a2a] tracking-wider">
         {row.die_type}
       </span>
     )
@@ -38,7 +38,7 @@ const getInventoryColumns = (navigate: any): Column[] => [
     render: (row: any) => {
       const isRound = row.die_type === 'ROUND'
       return (
-        <span className="font-mono font-bold text-slate-200">
+        <span className="font-mono text-xs font-bold text-[#e4e4e4] tabular-nums">
           {isRound ? (
             `Ø ${parseFloat(row.current_size || 0).toFixed(3)} mm`
           ) : (
@@ -52,30 +52,30 @@ const getInventoryColumns = (navigate: any): Column[] => [
     key: 'die_id',
     label: 'ID',
     sortable: true,
-    render: (row: any) => <span className="font-mono text-white font-bold">{row.die_id}</span>
+    render: (row: any) => <span className="font-mono text-[#e4e4e4] font-bold">{row.die_id}</span>
   },
   {
     key: 'casing',
     label: 'Casing',
-    render: (row: any) => <span className="font-mono text-slate-400">{row.casing || '—'}</span>
+    render: (row: any) => <span className="font-mono text-[#6b7280]">{row.casing || '—'}</span>
   },
   {
     key: 'location',
     label: 'Location',
     render: (row: any) => {
       const loc = row.rack_name && row.shelf ? `${row.rack_name} - S${row.shelf}` : row.location || '—'
-      return <span className="text-slate-300 font-semibold">{loc}</span>
+      return <span className="text-[#e4e4e4] font-mono">{loc}</span>
     }
   },
   {
     key: 'set_name',
     label: 'Set',
-    render: (row: any) => <span className="text-slate-300">{row.set_name || '—'}</span>
+    render: (row: any) => <span className="text-[#6b7280] font-mono">{row.set_name || '—'}</span>
   },
   {
     key: 'machine_name',
     label: 'Machine',
-    render: (row: any) => <span className="text-slate-300">{row.machine_name || '—'}</span>
+    render: (row: any) => <span className="text-[#6b7280] font-mono">{row.machine_name || '—'}</span>
   },
   {
     key: 'status',
@@ -92,7 +92,7 @@ const getInventoryColumns = (navigate: any): Column[] => [
           e.stopPropagation()
           navigate(`/dies/${row.die_id}`)
         }}
-        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1 rounded-xl text-[11px] font-bold transition focus-ring cursor-pointer"
+        className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] px-2.5 py-0.5 rounded-sm text-[10px] uppercase font-mono transition cursor-pointer"
       >
         Details
       </button>
@@ -135,53 +135,53 @@ export function SearchView({
   const columns = getInventoryColumns(navigate)
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      <div className="border-b border-slate-800/40 pb-5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-          <Search className="h-4 w-4 text-blue-500" />
-          <span>Search & Filter Results</span>
+    <div className="space-y-4 font-mono">
+      <div className="border-b border-[#2a2a2a] pb-3">
+        <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
+          <Search className="h-3.5 w-3.5 text-blue-500" />
+          <span>01 SEARCH & FILTER RESULTS</span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-black text-white">Matching Dies</h2>
-        <p className="text-slate-400 text-xs mt-1">Showing all dies matching active registry filters.</p>
+        <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Matching Dies</h2>
+        <p className="text-[#6b7280] text-xs mt-0.5">Showing all dies matching active registry filters.</p>
       </div>
 
       {dies && dies.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-blue">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Total Matches</span>
-              <span className="text-2xl md:text-3xl font-black text-blue-400 mt-2 relative z-10 font-heading">{totalCount}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-2xl font-mono">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">TOTAL MATCHES</span>
+              <span className="text-xl font-bold font-mono text-blue-400 mt-1 tabular-nums">{totalCount}</span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Active</span>
-              <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-emerald-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">ACTIVE</span>
+              <span className="text-xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">
                 {dies.filter(isDieActive).length}
               </span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
-              <span className="text-2xl md:text-3xl font-black mt-2 relative z-10 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-red-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">INACTIVE</span>
+              <span className="text-xl font-bold font-mono text-red-400 mt-1 tabular-nums">
                 {totalCount - dies.filter(isDieActive).length}
               </span>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between select-none">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Database className="h-4 w-4 text-blue-500" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between select-none font-mono">
+              <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5 text-blue-500" />
                 <span>
-                  {viewMode === 'grid' ? 'Filtered Grid' : viewMode === 'list' ? 'Filtered Catalog' : 'Location Rack Placement'}
+                  {viewMode === 'grid' ? 'FILTERED GRID' : viewMode === 'list' ? 'FILTERED CATALOG' : 'LOCATION RACK PLACEMENT'}
                 </span>
               </h3>
-              <span className="text-sm font-semibold text-slate-400">
-                Showing {dies.length} of {totalCount} {totalCount === 1 ? 'result' : 'results'}
+              <span className="text-xs text-[#6b7280] tabular-nums">
+                SHOWING {dies.length} OF {totalCount} {totalCount === 1 ? 'RESULT' : 'RESULTS'}
               </span>
             </div>
 
             {/* View Mode Router */}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-fadeIn">
                 {dies.map(die => (
                   <DieCard 
                     key={die.die_id} 
@@ -214,15 +214,15 @@ export function SearchView({
             )}
 
             {totalCount > pageSize && (
-              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
-                <div className="text-xs text-slate-400">
-                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} entries
+              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[#1a1a1a] pt-4 gap-3 select-none font-mono">
+                <div className="text-xs text-[#6b7280] tabular-nums">
+                  SHOWING {(page - 1) * pageSize + 1} TO {Math.min(page * pageSize, totalCount)} OF {totalCount} ENTRIES
                 </div>
-                <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+                <div className="flex items-center space-x-1.5 bg-[#0f0f0f] p-1 rounded-sm border border-[#2a2a2a]">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                    className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                   >
                     Previous
                   </button>
@@ -233,10 +233,10 @@ export function SearchView({
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                          className={`w-7 h-7 rounded-sm text-xs font-mono uppercase transition cursor-pointer ${
                             page === pageNum
-                              ? 'bg-blue-600 text-white shadow-md'
-                              : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                              ? 'bg-[#1f1f1f] text-blue-400 border border-blue-500/40'
+                              : 'border border-[#2a2a2a] bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4]'
                           }`}
                         >
                           {pageNum}
@@ -244,14 +244,14 @@ export function SearchView({
                       )
                     }
                     if (pageNum === 2 || pageNum === Math.ceil(totalCount / pageSize) - 1) {
-                      return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+                      return <span key={pageNum} className="text-[#404040] text-xs px-1 select-none">...</span>
                     }
                     return null
                   })}
                   <button
                     onClick={() => setPage(p => Math.min(Math.ceil(totalCount / pageSize), p + 1))}
                     disabled={page === Math.ceil(totalCount / pageSize)}
-                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                    className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                   >
                     Next
                   </button>
@@ -261,10 +261,10 @@ export function SearchView({
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-          <Database className="h-12 w-12 text-slate-600 mb-4 animate-pulse" />
-          <h3 className="text-lg font-bold text-white mb-1">No Matching Dies</h3>
-          <p className="text-slate-400 text-sm max-w-xs leading-relaxed">No dies in the facility match your active search terms or filters. Try adjusting your inputs.</p>
+        <div className="flex flex-col items-center justify-center text-center p-8 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm max-w-md mx-auto select-none font-mono">
+          <Database className="h-8 w-8 text-[#404040] mb-3" />
+          <h3 className="text-xs font-medium uppercase text-[#e4e4e4] mb-1">NO MATCHING DIES</h3>
+          <p className="text-[#6b7280] text-xs leading-normal">No dies in registry match active criteria. Adjust filters.</p>
         </div>
       )}
     </div>
@@ -306,16 +306,16 @@ export function MachineView({
   }, [machineDies, localPage])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 font-mono">
       {selectedMachine ? (
         <>
-          <div className="border-b border-slate-800/40 pb-5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              <Cpu className="h-4 w-4 text-blue-500" />
-              <span>Machine Explorer</span>
+          <div className="border-b border-[#2a2a2a] pb-3">
+            <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
+              <Cpu className="h-3.5 w-3.5 text-blue-500" />
+              <span>01 MACHINE EXPLORER</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white">{selectedMachine.name}</h2>
-            <span className="inline-block px-2.5 py-1 text-xs font-semibold border border-slate-800 text-slate-300 rounded-lg mt-2">
+            <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">{selectedMachine.name}</h2>
+            <span className="inline-block px-2 py-0.5 text-[10px] font-mono uppercase border border-[#2a2a2a] text-[#6b7280] bg-[#0f0f0f] rounded-sm mt-1.5">
               {selectedMachine.category_name || 'Standard Category'}
             </span>
           </div>
@@ -326,21 +326,21 @@ export function MachineView({
             dies={machineDies}
           />
 
-          <div className="pt-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 select-none">
-              <Layers className="h-4 w-4 text-indigo-400" />
+          <div className="pt-2">
+            <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider mb-3 flex items-center gap-1.5 select-none">
+              <Layers className="h-3.5 w-3.5 text-purple-400" />
               <span>
-                {viewMode === 'grid' ? 'Assigned Sets Grid' : viewMode === 'list' ? 'Assigned Sets Table' : 'Location Rack Placement'}
+                {viewMode === 'grid' ? '02 ASSIGNED SETS GRID' : viewMode === 'list' ? '02 ASSIGNED SETS TABLE' : '02 LOCATION RACK PLACEMENT'}
               </span>
             </h3>
 
             {viewMode === 'grid' ? (
               selectedMachine.sets.length === 0 ? (
-                <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 italic border border-slate-800/40">
+                <div className="bg-[#0f0f0f] rounded-sm p-6 text-center text-[#6b7280] text-xs uppercase border border-[#1a1a1a]">
                   No sets found for this machine.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {selectedMachine.sets.map((set: any) => {
                     const sTotal = set.dies.length
                     const sActive = set.dies.filter(isDieActive).length
@@ -349,22 +349,22 @@ export function MachineView({
                       <div
                         key={set.id}
                         onClick={() => setSelectedNode({ type: 'set', id: set.id, machineId: selectedMachine.id })}
-                        className="glass-panel hover:bg-slate-900/40 border border-slate-800/40 hover:border-indigo-500/40 rounded-2xl p-5 cursor-pointer transition-all duration-200 shadow-md group relative overflow-hidden select-none"
+                        className="bg-[#0f0f0f] hover:bg-[#141414] border border-[#1a1a1a] hover:border-[#2a2a2a] rounded-sm p-3.5 cursor-pointer transition-colors select-none font-mono"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="font-extrabold text-white text-base group-hover:text-indigo-400 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-bold text-[#e4e4e4] text-xs uppercase truncate">
                             {set.name}
                           </span>
-                          <span className="text-xs bg-slate-950 text-indigo-400 font-bold px-2.5 py-0.5 rounded-full border border-slate-800">
-                            {sTotal} {sTotal === 1 ? 'Die' : 'Dies'}
+                          <span className="text-[10px] bg-[#0a0a0a] text-purple-400 px-1.5 py-0.2 rounded-sm border border-[#2a2a2a] tabular-nums">
+                            {sTotal} {sTotal === 1 ? 'DIE' : 'DIES'}
                           </span>
                         </div>
-                        <div className="flex gap-4 text-xs text-slate-400 border-t border-slate-800/40 pt-3">
+                        <div className="flex gap-3 text-[10px] text-[#6b7280] border-t border-[#1a1a1a] pt-2 uppercase tabular-nums">
                           <div>
-                            <span className="text-emerald-400 font-bold">{sActive}</span> Active
+                            <span className="text-emerald-400 font-bold">{sActive}</span> ACTIVE
                           </div>
                           <div>
-                            <span className="text-rose-400 font-bold">{sInactive}</span> Inactive
+                            <span className="text-red-400 font-bold">{sInactive}</span> INACTIVE
                           </div>
                         </div>
                       </div>
@@ -373,7 +373,7 @@ export function MachineView({
                 </div>
               )
             ) : viewMode === 'list' ? (
-              <div className="animate-fadeIn space-y-4">
+              <div className="animate-fadeIn space-y-3">
                 <DataTable 
                   columns={columns} 
                   rows={paginatedMachineDies} 
@@ -384,15 +384,15 @@ export function MachineView({
                 />
                 
                 {machineDies.length > localPageSize && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
-                    <div className="text-xs text-slate-400">
-                      Showing {(localPage - 1) * localPageSize + 1} to {Math.min(localPage * localPageSize, machineDies.length)} of {machineDies.length} entries
+                  <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[#1a1a1a] pt-4 gap-3 select-none font-mono">
+                    <div className="text-xs text-[#6b7280] tabular-nums">
+                      SHOWING {(localPage - 1) * localPageSize + 1} TO {Math.min(localPage * localPageSize, machineDies.length)} OF {machineDies.length} ENTRIES
                     </div>
-                    <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+                    <div className="flex items-center space-x-1.5 bg-[#0f0f0f] p-1 rounded-sm border border-[#2a2a2a]">
                       <button
                         onClick={() => setLocalPage(p => Math.max(1, p - 1))}
                         disabled={localPage === 1}
-                        className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                        className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                       >
                         Previous
                       </button>
@@ -403,10 +403,10 @@ export function MachineView({
                             <button
                               key={pageNum}
                               onClick={() => setLocalPage(pageNum)}
-                              className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                              className={`w-7 h-7 rounded-sm text-xs font-mono uppercase transition cursor-pointer ${
                                 localPage === pageNum
-                                  ? 'bg-blue-600 text-white shadow-md'
-                                  : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                                  ? 'bg-[#1f1f1f] text-blue-400 border border-blue-500/40'
+                                  : 'border border-[#2a2a2a] bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4]'
                               }`}
                             >
                               {pageNum}
@@ -414,14 +414,14 @@ export function MachineView({
                           )
                         }
                         if (pageNum === 2 || pageNum === Math.ceil(machineDies.length / localPageSize) - 1) {
-                          return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+                          return <span key={pageNum} className="text-[#404040] text-xs px-1 select-none">...</span>
                         }
                         return null
                       })}
                       <button
                         onClick={() => setLocalPage(p => Math.min(Math.ceil(machineDies.length / localPageSize), p + 1))}
                         disabled={localPage === Math.ceil(machineDies.length / localPageSize)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                        className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                       >
                         Next
                       </button>
@@ -440,17 +440,17 @@ export function MachineView({
           </div>
         </>
       ) : (
-        <div className="space-y-6">
-          <div className="border-b border-slate-800/40 pb-5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              <Cpu className="h-4 w-4 text-blue-500" />
-              <span>Machine Explorer</span>
+        <div className="space-y-4 font-mono">
+          <div className="border-b border-[#2a2a2a] pb-3">
+            <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
+              <Cpu className="h-3.5 w-3.5 text-blue-500" />
+              <span>01 MACHINE EXPLORER</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white">{rawMachine?.name || 'Machine'}</h2>
+            <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">{rawMachine?.name || 'Machine'}</h2>
           </div>
-          <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-            <Cpu className="h-12 w-12 text-slate-600 mb-4 animate-pulse" />
-            <p className="text-slate-400 font-medium">No dies assigned to this machine match the filters.</p>
+          <div className="flex flex-col items-center justify-center text-center p-8 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm max-w-md mx-auto select-none font-mono">
+            <Cpu className="h-8 w-8 text-[#404040] mb-3" />
+            <p className="text-[#6b7280] text-xs uppercase">No dies assigned to this machine match the filters.</p>
           </div>
         </div>
       )}
@@ -511,15 +511,15 @@ export function SetView({
   }, [sortedSetDies, localPage])
 
   const renderPaginationControls = () => (
-    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
-      <div className="text-xs text-slate-400">
-        Showing {(localPage - 1) * localPageSize + 1} to {Math.min(localPage * localPageSize, sortedSetDies.length)} of {sortedSetDies.length} entries
+    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[#1a1a1a] pt-4 gap-3 select-none font-mono">
+      <div className="text-xs text-[#6b7280] tabular-nums">
+        SHOWING {(localPage - 1) * localPageSize + 1} TO {Math.min(localPage * localPageSize, sortedSetDies.length)} OF {sortedSetDies.length} ENTRIES
       </div>
-      <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+      <div className="flex items-center space-x-1.5 bg-[#0f0f0f] p-1 rounded-sm border border-[#2a2a2a]">
         <button
           onClick={() => setLocalPage(p => Math.max(1, p - 1))}
           disabled={localPage === 1}
-          className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+          className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
         >
           Previous
         </button>
@@ -530,10 +530,10 @@ export function SetView({
               <button
                 key={pageNum}
                 onClick={() => setLocalPage(pageNum)}
-                className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                className={`w-7 h-7 rounded-sm text-xs font-mono uppercase transition cursor-pointer ${
                   localPage === pageNum
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                    ? 'bg-[#1f1f1f] text-blue-400 border border-blue-500/40'
+                    : 'border border-[#2a2a2a] bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4]'
                 }`}
               >
                 {pageNum}
@@ -541,14 +541,14 @@ export function SetView({
             )
           }
           if (pageNum === 2 || pageNum === Math.ceil(sortedSetDies.length / localPageSize) - 1) {
-            return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+            return <span key={pageNum} className="text-[#404040] text-xs px-1 select-none">...</span>
           }
           return null
         })}
         <button
           onClick={() => setLocalPage(p => Math.min(Math.ceil(sortedSetDies.length / localPageSize), p + 1))}
           disabled={localPage === Math.ceil(sortedSetDies.length / localPageSize)}
-          className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+          className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
         >
           Next
         </button>
@@ -557,33 +557,33 @@ export function SetView({
   )
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 font-mono">
       {selectedSetData ? (
         <>
-          <div className="border-b border-slate-800/40 pb-5 select-none">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+          <div className="border-b border-[#2a2a2a] pb-3 select-none">
+            <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
               <span>{selectedSetData.machine?.name}</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="text-indigo-400">{selectedSetData.set.name}</span>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-purple-400">{selectedSetData.set.name}</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white">{selectedSetData.set.name}</h2>
-            <p className="text-slate-400 text-xs mt-1">Assigned to machine: {selectedSetData.machine?.name}</p>
+            <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">{selectedSetData.set.name}</h2>
+            <p className="text-[#6b7280] text-xs mt-0.5">Assigned to machine: {selectedSetData.machine?.name}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 select-none">
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Dies</span>
-              <span className="text-2xl md:text-3xl font-black text-white mt-2 font-heading">{setDies.length}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">TOTAL DIES</span>
+              <span className="text-xl font-bold font-mono text-[#e4e4e4] mt-1 tabular-nums">{setDies.length}</span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold">Active Dies</span>
-              <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-emerald-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">ACTIVE DIES</span>
+              <span className="text-xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">
                 {setDies.filter(isDieActive).length}
               </span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold">Inactive Dies</span>
-              <span className="text-2xl md:text-3xl font-black mt-2 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-red-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">INACTIVE DIES</span>
+              <span className="text-xl font-bold font-mono text-red-400 mt-1 tabular-nums">
                 {setDies.length - setDies.filter(isDieActive).length}
               </span>
             </div>
@@ -596,29 +596,29 @@ export function SetView({
             const activePct = total > 0 ? ((active / total) * 100).toFixed(1) : '0.0'
             const inactivePct = total > 0 ? ((inactive / total) * 100).toFixed(1) : '0.0'
             return (
-              <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/40 relative overflow-hidden blueprint-grid select-none">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-emerald-400" />
-                  <span>Operational Ratio</span>
+              <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] select-none font-mono">
+                <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>OPERATIONAL RATIO</span>
                 </h3>
-                <div className="flex justify-between text-xs font-bold mb-2">
-                  <span className="text-emerald-400">Active: {active} ({activePct}%)</span>
-                  <span className="text-rose-400">Inactive: {inactive} ({inactivePct}%)</span>
+                <div className="flex justify-between text-[10px] uppercase mb-1.5 tabular-nums">
+                  <span className="text-emerald-400">ACTIVE: {active} ({activePct}%)</span>
+                  <span className="text-red-400">INACTIVE: {inactive} ({inactivePct}%)</span>
                 </div>
-                <div className="w-full bg-slate-950/80 h-3.5 rounded-full overflow-hidden flex border border-slate-800 p-0.5">
-                  <div className="bg-gradient-to-r from-emerald-600 h-full rounded-full transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${activePct}%` }} />
-                  <div className="bg-gradient-to-r from-rose-600 h-full rounded-full transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)]" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
+                <div className="w-full bg-[#0a0a0a] h-2 rounded-none overflow-hidden flex border border-[#2a2a2a]">
+                  <div className="bg-emerald-500 h-full transition-all" style={{ width: `${activePct}%` }} />
+                  <div className="bg-red-500 h-full transition-all" style={{ width: `${inactivePct}%`, marginLeft: 'auto' }} />
                 </div>
               </div>
             )
           })()}
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center select-none">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Layers className="h-4 w-4 text-indigo-400" />
+          <div className="space-y-3">
+            <div className="flex justify-between items-center select-none font-mono">
+              <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-purple-400" />
                 <span>
-                  {viewMode === 'grid' ? 'Assigned Grid' : viewMode === 'list' ? 'Assigned Catalog' : 'Location Rack Placement'}
+                  {viewMode === 'grid' ? '03 ASSIGNED GRID' : viewMode === 'list' ? '03 ASSIGNED CATALOG' : '03 LOCATION RACK PLACEMENT'}
                 </span>
               </h3>
               
@@ -631,19 +631,19 @@ export function SetView({
                       return 'none'
                     })
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-wider transition duration-150 cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] rounded-sm text-[10px] font-mono uppercase tracking-wider transition cursor-pointer"
                 >
-                  <ArrowUpDown className="h-3.5 w-3.5 text-blue-500" />
+                  <ArrowUpDown className="h-3 w-3 text-blue-500" />
                   <span>
-                    Sort: {sizeSort === 'none' ? 'Default' : sizeSort === 'desc' ? 'Largest First' : 'Smallest First'}
+                    SORT: {sizeSort === 'none' ? 'DEFAULT' : sizeSort === 'desc' ? 'SIZE: DESC' : 'SIZE: ASC'}
                   </span>
                 </button>
               )}
             </div>
             
             {viewMode === 'grid' ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-fadeIn">
                   {paginatedSetDies.map((die: any) => (
                     <DieCard 
                       key={die.die_id} 
@@ -655,7 +655,7 @@ export function SetView({
                 {sortedSetDies.length > localPageSize && renderPaginationControls()}
               </div>
             ) : viewMode === 'list' ? (
-              <div className="animate-fadeIn space-y-4">
+              <div className="animate-fadeIn space-y-3">
                 <DataTable 
                   columns={columns} 
                   rows={paginatedSetDies} 
@@ -677,18 +677,18 @@ export function SetView({
           </div>
         </>
       ) : (
-        <div className="space-y-6">
-          <div className="border-b border-slate-800/40 pb-5 select-none">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <div className="space-y-4 font-mono">
+          <div className="border-b border-[#2a2a2a] pb-3 select-none">
+            <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
               <span>{rawSetData?.machine?.name || 'Machine'}</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="text-indigo-400">{rawSetData?.set?.name || 'Set'}</span>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-purple-400">{rawSetData?.set?.name || 'Set'}</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white">{rawSetData?.set?.name || 'Set'}</h2>
+            <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">{rawSetData?.set?.name || 'Set'}</h2>
           </div>
-          <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-            <Layers className="h-12 w-12 text-slate-600 mb-4 animate-pulse" />
-            <p className="text-slate-400 font-medium">No dies assigned to this set match the filters.</p>
+          <div className="flex flex-col items-center justify-center text-center p-8 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm max-w-md mx-auto select-none font-mono">
+            <Layers className="h-8 w-8 text-[#404040] mb-3" />
+            <p className="text-[#6b7280] text-xs uppercase">No dies assigned to this set match the filters.</p>
           </div>
         </div>
       )}
@@ -725,53 +725,53 @@ export function UnassignedView({
   const columns = getInventoryColumns(navigate)
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      <div className="border-b border-slate-800/40 pb-5 select-none">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-          <Sliders className="h-4 w-4 text-amber-500" />
-          <span>Standalone Inventory</span>
+    <div className="space-y-4 font-mono animate-fadeIn">
+      <div className="border-b border-[#2a2a2a] pb-3 select-none">
+        <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
+          <Sliders className="h-3.5 w-3.5 text-amber-500" />
+          <span>01 STANDALONE INVENTORY</span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-black text-white">Unassigned / Standalone Dies</h2>
-        <p className="text-slate-400 text-xs mt-1">Production dies that are currently unassigned to any machine set.</p>
+        <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Unassigned / Standalone Dies</h2>
+        <p className="text-[#6b7280] text-xs mt-0.5">Production dies that are currently unassigned to any machine set.</p>
       </div>
 
       {unassignedDies && unassignedDies.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl select-none">
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-amber">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Total Standalone</span>
-              <span className="text-2xl md:text-3xl font-black text-amber-400 mt-2 relative z-10 font-heading">{totalCount}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-2xl select-none font-mono">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">TOTAL STANDALONE</span>
+              <span className="text-xl font-bold font-mono text-amber-400 mt-1 tabular-nums">{totalCount}</span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Active</span>
-              <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-emerald-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">ACTIVE</span>
+              <span className="text-xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">
                 {unassignedDies.filter(isDieActive).length}
               </span>
             </div>
-            <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-bold relative z-10">Inactive</span>
-              <span className="text-2xl md:text-3xl font-black mt-2 relative z-10 font-heading">
+            <div className="bg-[#0f0f0f] rounded-sm p-3 border border-[#1a1a1a] border-l-2 border-l-red-500 flex flex-col justify-between">
+              <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">INACTIVE</span>
+              <span className="text-xl font-bold font-mono text-red-400 mt-1 tabular-nums">
                 {totalCount - unassignedDies.filter(isDieActive).length}
               </span>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between select-none">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Sliders className="h-4 w-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between select-none font-mono">
+              <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+                <Sliders className="h-3.5 w-3.5 text-amber-500" />
                 <span>
-                  {viewMode === 'grid' ? 'Standalone Grid' : viewMode === 'list' ? 'Standalone Catalog' : 'Location Rack Placement'}
+                  {viewMode === 'grid' ? 'STANDALONE GRID' : viewMode === 'list' ? 'STANDALONE CATALOG' : 'LOCATION RACK PLACEMENT'}
                 </span>
               </h3>
-              <span className="text-sm font-semibold text-slate-400">
-                Showing {unassignedDies.length} of {totalCount} {totalCount === 1 ? 'result' : 'results'}
+              <span className="text-xs text-[#6b7280] tabular-nums">
+                SHOWING {unassignedDies.length} OF {totalCount} {totalCount === 1 ? 'RESULT' : 'RESULTS'}
               </span>
             </div>
 
             {/* View Mode Router */}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-fadeIn">
                 {unassignedDies.map(die => (
                   <DieCard 
                     key={die.die_id} 
@@ -801,15 +801,15 @@ export function UnassignedView({
             )}
             
             {totalCount > pageSize && (
-              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/40 pt-6 gap-4 select-none">
-                <div className="text-xs text-slate-400">
-                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} entries
+              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[#1a1a1a] pt-4 gap-3 select-none font-mono">
+                <div className="text-xs text-[#6b7280] tabular-nums">
+                  SHOWING {(page - 1) * pageSize + 1} TO {Math.min(page * pageSize, totalCount)} OF {totalCount} ENTRIES
                 </div>
-                <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-900 shadow-inner">
+                <div className="flex items-center space-x-1.5 bg-[#0f0f0f] p-1 rounded-sm border border-[#2a2a2a]">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                    className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                   >
                     Previous
                   </button>
@@ -820,10 +820,10 @@ export function UnassignedView({
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                          className={`w-7 h-7 rounded-sm text-xs font-mono uppercase transition cursor-pointer ${
                             page === pageNum
-                              ? 'bg-blue-600 text-white shadow-md'
-                              : 'border border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                              ? 'bg-[#1f1f1f] text-blue-400 border border-blue-500/40'
+                              : 'border border-[#2a2a2a] bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4]'
                           }`}
                         >
                           {pageNum}
@@ -831,14 +831,14 @@ export function UnassignedView({
                       )
                     }
                     if (pageNum === 2 || pageNum === Math.ceil(totalCount / pageSize) - 1) {
-                      return <span key={pageNum} className="text-slate-600 text-xs px-1 select-none">...</span>
+                      return <span key={pageNum} className="text-[#404040] text-xs px-1 select-none">...</span>
                     }
                     return null
                   })}
                   <button
                     onClick={() => setPage(p => Math.min(Math.ceil(totalCount / pageSize), p + 1))}
                     disabled={page === Math.ceil(totalCount / pageSize)}
-                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-40 transition cursor-pointer"
+                    className="px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] disabled:opacity-40 transition cursor-pointer"
                   >
                     Next
                   </button>
@@ -848,9 +848,9 @@ export function UnassignedView({
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-900/30 border border-slate-800/80 rounded-2xl max-w-md mx-auto shadow-xl select-none">
-          <Sliders className="h-12 w-12 mb-4 animate-pulse" />
-          <p className="text-slate-400 font-medium">No unassigned dies match the current filters.</p>
+        <div className="flex flex-col items-center justify-center text-center p-8 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm max-w-md mx-auto select-none font-mono">
+          <Sliders className="h-8 w-8 text-[#404040] mb-3" />
+          <p className="text-[#6b7280] text-xs uppercase">No unassigned dies match the current filters.</p>
         </div>
       )}
     </div>

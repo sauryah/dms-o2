@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, X, Search, Filter, Shield, Key, Mail, User, ShieldAlert, Monitor, Smartphone, Download, CheckCircle2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Trash2, X, Search, Filter, Shield, User, ShieldAlert, Monitor, Smartphone, Download } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
@@ -106,21 +105,6 @@ export function UserManager() {
     }
   })
 
-  // Toggle user active status directly
-  const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: any, is_active: any }) => request(`/api/users/${id}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ is_active })
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
-      showToast('User status updated successfully', 'success')
-    },
-    onError: (err) => {
-      showToast(err.message || 'Failed to update user status', 'error')
-    }
-  })
-
   // Delete User Mutation
   const deleteUserMutation = useMutation({
     mutationFn: (id: any) => request(`/api/users/${id}/`, {
@@ -135,15 +119,29 @@ export function UserManager() {
     }
   })
 
+  // Toggle Active Status Mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: any, is_active: boolean }) => request(`/api/users/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
+      showToast('User status updated', 'success')
+    },
+    onError: (err) => {
+      showToast(err.message || 'Failed to update status', 'error')
+    }
+  })
+
   // Bulk Action Mutation
   const bulkActionMutation = useMutation({
-    mutationFn: ({ action, user_ids }: { action: string, user_ids: number[] }) => request('/api/users/bulk_action/', {
+    mutationFn: (data: { action: string, user_ids: number[] }) => request('/api/users/bulk_action/', {
       method: 'POST',
-      body: JSON.stringify({ action, user_ids })
+      body: JSON.stringify(data)
     }),
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
-      queryClient.invalidateQueries({ queryKey: ['adminCounts'] })
       setSelectedUsers(new Set())
       setBulkActionType(null)
       const failedCount = Array.isArray(data?.failed) ? data.failed.length : 0
@@ -246,8 +244,6 @@ export function UserManager() {
     setUserToDelete(user)
   }
 
-  // Filter Logic
-  // Filter Logic is now handled by the backend, so we don't need to manually filter `users` unless we want client-side search over the current page. But we should just use `users`.
   const filteredUsers = users
   
   const handleExportUsers = async () => {
@@ -311,7 +307,6 @@ export function UserManager() {
     setBulkActionType(action)
   }
 
-  // Get dynamic background and color for user avatar
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return <span>{text}</span>
     const regex = new RegExp(`(${query.replace(/[/\\^$*+?.()|[\]{}-]/g, '\\$&')})`, 'i')
@@ -320,7 +315,7 @@ export function UserManager() {
       <span>
         {parts.map((part, i) => 
           regex.test(part) ? (
-            <mark key={i} className="bg-blue-500/30 text-blue-200 rounded px-0.5 font-bold normal-case">
+            <mark key={i} className="bg-blue-500/30 text-blue-200 rounded-none px-0.5 font-bold normal-case">
               {part}
             </mark>
           ) : (
@@ -331,278 +326,235 @@ export function UserManager() {
     )
   }
 
-  const getAvatarStyle = (username: string) => {
-    const chars = username.charCodeAt(0) + (username.charCodeAt(1) || 0)
-    const hues = [200, 240, 280, 320, 360, 20, 120, 160]
-    const hue = hues[chars % hues.length]
-    return {
-      background: `hsla(${hue}, 70%, 15%, 0.4)`,
-      color: `hsl(${hue}, 85%, 65%)`,
-      border: `1px solid hsla(${hue}, 70%, 30%, 0.3)`
-    }
-  }
-
   return (
-    <div className="space-y-6 font-sans">
-      
+    <div className="space-y-4 font-mono">
       {/* Top Action Filter Row */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl backdrop-blur-sm select-none">
-        
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[#0f0f0f] p-3 border border-[#1a1a1a] rounded-sm select-none">
         {/* Search */}
         <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-            <Search className="h-4 w-4" />
+          <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#6b7280]">
+            <Search className="h-3.5 w-3.5" />
           </span>
           <input
             type="text"
             placeholder="Search username, name, or email..."
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-950/20 transition-all font-mono"
+            className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm pl-8 pr-3 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono"
           />
         </div>
 
         {/* Filters Group */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 border border-slate-800 rounded-xl">
-            <Filter className="h-3.5 w-3.5 text-slate-500" />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] px-2.5 py-1 border border-[#2a2a2a] rounded-sm">
+            <Filter className="h-3 w-3 text-[#6b7280]" />
             <select
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-              className="bg-transparent border-none text-[11px] text-slate-300 focus:outline-none cursor-pointer font-semibold font-mono"
+              className="bg-transparent border-none text-[10px] text-[#e4e4e4] focus:outline-none cursor-pointer uppercase font-mono"
             >
-              <option value="ALL" className="bg-slate-950">ALL ROLES</option>
-              <option value="ROOT" className="bg-slate-950">ROOT ONLY</option>
-              <option value="ADMIN" className="bg-slate-950">ADMIN ONLY</option>
-              <option value="OPERATOR" className="bg-slate-950">OPERATOR ONLY</option>
-              <option value="REGULAR" className="bg-slate-950">REGULAR ONLY</option>
+              <option value="ALL" className="bg-[#0a0a0a]">ALL ROLES</option>
+              <option value="ROOT" className="bg-[#0a0a0a]">ROOT</option>
+              <option value="ADMIN" className="bg-[#0a0a0a]">ADMIN</option>
+              <option value="OPERATOR" className="bg-[#0a0a0a]">OPERATOR</option>
+              <option value="REGULAR" className="bg-[#0a0a0a]">REGULAR</option>
             </select>
           </div>
 
-          <div className="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 border border-slate-800 rounded-xl">
-            <Shield className="h-3.5 w-3.5 text-slate-500" />
+          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] px-2.5 py-1 border border-[#2a2a2a] rounded-sm">
+            <Shield className="h-3 w-3 text-[#6b7280]" />
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="bg-transparent border-none text-[11px] text-slate-300 focus:outline-none cursor-pointer font-semibold font-mono"
+              className="bg-transparent border-none text-[10px] text-[#e4e4e4] focus:outline-none cursor-pointer uppercase font-mono"
             >
-              <option value="ALL" className="bg-slate-950">ALL STATUS</option>
-              <option value="ACTIVE" className="bg-slate-950">ACTIVE ONLY</option>
-              <option value="INACTIVE" className="bg-slate-950">INACTIVE ONLY</option>
+              <option value="ALL" className="bg-[#0a0a0a]">ALL STATUS</option>
+              <option value="ACTIVE" className="bg-[#0a0a0a]">ACTIVE</option>
+              <option value="INACTIVE" className="bg-[#0a0a0a]">INACTIVE</option>
             </select>
           </div>
 
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="flex items-center space-x-1 px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] rounded-sm text-[10px] uppercase font-mono transition cursor-pointer"
             >
-              <X className="h-3.5 w-3.5" />
-              <span>Clear Filters</span>
+              <X className="h-3 w-3" />
+              <span>Clear</span>
             </button>
           )}
 
           <button 
             onClick={handleExportUsers}
-            className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/85 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
+            className="flex items-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3 py-1 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-3 w-3 text-blue-500" />
             <span>Export CSV</span>
           </button>
 
           <button 
             onClick={openAddForm}
-            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition cursor-pointer"
+            className="flex items-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500/50 text-blue-400 hover:text-blue-300 px-3.5 py-1 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3" />
             <span>Create User</span>
           </button>
         </div>
-
       </div>
 
       {isLoading ? (
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 overflow-hidden">
-          <div className="flex justify-between items-center mb-6">
-            <div className="h-4 w-48 bg-slate-800 rounded animate-pulse" />
-            <div className="h-8 w-28 bg-slate-800 rounded animate-pulse" />
-          </div>
-          <div className="space-y-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-14 w-full bg-slate-800 rounded animate-pulse" />
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 overflow-hidden">
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-8 w-full bg-[#141414] animate-pulse" />
             ))}
           </div>
         </div>
       ) : error ? (
-        <div className="text-center py-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-xl mx-auto shadow-lg">
-          <ShieldAlert className="h-10 w-10 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2">Query Failure</h3>
-          <p className="font-mono text-sm">{error.message}</p>
+        <div className="text-center py-8 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-6 max-w-xl mx-auto font-mono">
+          <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">Query Failure</h3>
+          <p className="font-mono text-xs text-red-400">{error.message}</p>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 max-w-md mx-auto shadow-xl select-none">
-          <User className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-1 font-mono">No Users Match</h3>
-          <p className="text-slate-400 text-sm">Adjust search keywords or role filters to find accounts.</p>
+        <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 max-w-md mx-auto select-none font-mono">
+          <User className="h-8 w-8 text-[#404040] mx-auto mb-2" />
+          <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">No Users Match</h3>
+          <p className="text-[#6b7280] text-xs">Adjust search keywords or role filters to find accounts.</p>
         </div>
       ) : (
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-sm">
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden font-mono">
           {/* Bulk Action Bar */}
-          <AnimatePresence>
-            {selectedUsers.size > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-indigo-900/30 border-b border-indigo-500/20 px-6 py-3 flex items-center justify-between"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-xs font-bold text-indigo-300 bg-indigo-500/20 px-2 py-1 rounded-full">{selectedUsers.size} selected</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <button onClick={() => handleBulkAction('activate')} className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Activate</button>
-                  <button onClick={() => handleBulkAction('suspend')} className="text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Suspend</button>
-                  <button onClick={() => handleBulkAction('delete')} className="text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-xl transition cursor-pointer">Bulk Delete</button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {selectedUsers.size > 0 && (
+            <div className="bg-[#141414] border-b border-[#2a2a2a] px-4 py-2 flex items-center justify-between font-mono">
+              <span className="text-xs text-blue-400 uppercase">
+                {selectedUsers.size} USER(S) SELECTED
+              </span>
+              <div className="flex items-center space-x-2">
+                <button onClick={() => handleBulkAction('activate')} className="text-xs bg-[#141414] hover:bg-[#1f1f1f] text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-sm uppercase transition cursor-pointer">Activate</button>
+                <button onClick={() => handleBulkAction('suspend')} className="text-xs bg-[#141414] hover:bg-[#1f1f1f] text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-sm uppercase transition cursor-pointer">Suspend</button>
+                <button onClick={() => handleBulkAction('delete')} className="text-xs bg-[#141414] hover:bg-[#1f1f1f] text-red-400 border border-red-500/30 px-2.5 py-1 rounded-sm uppercase transition cursor-pointer">Delete</button>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto max-h-[600px]">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-xs font-mono">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md text-slate-400 text-[10px] font-bold uppercase tracking-wider select-none">
-                  <th className="px-4 py-3.5 w-12 text-center">
-                    <input type="checkbox" checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0} onChange={toggleSelectAll} className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer" />
+                <tr className="sticky top-0 z-10 border-b border-[#1a1a1a] bg-[#0a0a0a] text-[#6b7280] uppercase tracking-wider select-none">
+                  <th className="px-3 py-2.5 w-8 text-center">
+                    <input type="checkbox" checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0} onChange={toggleSelectAll} className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer" />
                   </th>
-                  <th className="px-6 font-mono">Username Identity</th>
-                  <th className="px-6 hidden sm:table-cell font-mono">Full Name</th>
-                  <th className="px-6 hidden md:table-cell font-mono">Email Address</th>
-                  <th className="px-6 font-mono">Role</th>
-                  <th className="px-6 font-mono">Status</th>
-                  <th className="px-6 font-mono">Tools Access</th>
-                  <th className="px-6 text-right font-mono">Actions</th>
+                  <th className="px-4 py-2.5">User Identity</th>
+                  <th className="px-4 py-2.5 hidden sm:table-cell">Full Name</th>
+                  <th className="px-4 py-2.5 hidden md:table-cell">Email Address</th>
+                  <th className="px-4 py-2.5">Role</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5">Tools Access</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
                 {filteredUsers.map((user: any) => {
                   const isSelf = user.username === currentUsername
-                  const avatarStyle = getAvatarStyle(user.username)
                   
                   return (
                     <React.Fragment key={user.id}>
-                      <tr className={`group transition-all duration-150 ${selectedUsers.has(user.id) ? 'bg-indigo-500/5' : ''}`}>
-                        <td className="px-4 py-3.5 text-center">
+                      <tr className={`hover:bg-[#141414] transition-colors ${selectedUsers.has(user.id) ? 'bg-[#141414]' : ''}`}>
+                        <td className="px-3 py-2 text-center">
                           <input 
                             type="checkbox" 
                             checked={selectedUsers.has(user.id)} 
                             onChange={() => toggleSelectUser(user.id)} 
                             disabled={isSelf}
-                            className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40" 
+                            className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer disabled:opacity-40" 
                           />
                         </td>
-                        {/* Username Column with Avatar Initial */}
-                        <td className="py-3.5 px-6 font-bold text-white">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              style={avatarStyle}
-                              className="h-8 w-8 rounded-full flex items-center justify-center font-mono text-sm font-extrabold select-none uppercase"
-                            >
-                              {user.username.charAt(0)}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-mono text-sm">{highlightMatch(user.username, searchQuery)}</span>
-                              {isSelf && (
-                                <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold select-none">
-                                  YOU
-                                </span>
-                              )}
-                            </div>
+                        {/* Username Column */}
+                        <td className="py-2 px-4 font-bold text-[#e4e4e4]">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono">{highlightMatch(user.username, searchQuery)}</span>
+                            {isSelf && (
+                              <span className="text-[9px] bg-[#141414] text-blue-400 border border-blue-500/30 px-1.5 py-0.2 rounded-sm font-bold select-none uppercase">
+                                YOU
+                              </span>
+                            )}
                           </div>
                         </td>
                         
                         {/* Full Name */}
-                        <td className="py-3.5 px-6 text-slate-300 hidden sm:table-cell text-sm">
+                        <td className="py-2 px-4 text-[#6b7280] hidden sm:table-cell">
                           {user.first_name || user.last_name ? highlightMatch(`${user.first_name || ''} ${user.last_name || ''}`.trim(), searchQuery) : '—'}
                         </td>
                         
                         {/* Email */}
-                        <td className="py-3.5 px-6 text-slate-300 hidden md:table-cell font-mono text-xs">
+                        <td className="py-2 px-4 text-[#6b7280] hidden md:table-cell font-mono">
                           {user.email ? highlightMatch(user.email, searchQuery) : '—'}
                         </td>
                         
                         {/* Role Badges */}
-                        <td className="py-3.5 px-6">
-                          <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full border tracking-wide font-mono ${
+                        <td className="py-2 px-4">
+                          <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded-sm border uppercase font-mono ${
                             user.role === 'ROOT' 
-                              ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]' 
+                              ? 'bg-[#141414] text-purple-400 border-purple-500/30' 
                               : user.role === 'ADMIN'
-                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.05)]'
+                              ? 'bg-[#141414] text-blue-400 border-blue-500/30'
                               : user.role === 'OPERATOR'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
-                              : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                              ? 'bg-[#141414] text-amber-400 border-amber-500/30'
+                              : 'bg-[#141414] text-[#6b7280] border-[#2a2a2a]'
                           }`}>
                             {user.role}
                           </span>
                         </td>
                         
-                        {/* Status Check indicator */}
-                        <td className="py-3.5 px-6">
-                          <div className="flex items-center space-x-2">
-                            <span className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' : 'bg-rose-500'}`} />
-                            <span className={`text-xs font-semibold ${user.is_active ? '' : ''}`}>
-                              {user.is_active ? 'Active' : 'Deactivated'}
+                        {/* Status */}
+                        <td className="py-2 px-4">
+                          <div className="flex items-center space-x-1.5">
+                            <span className={`h-1.5 w-1.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                            <span className={`text-[11px] uppercase ${user.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {user.is_active ? 'ACTIVE' : 'SUSPENDED'}
                             </span>
                           </div>
                         </td>
                         
                         {/* Tools Access Badge */}
-                        <td className="py-3.5 px-6">
+                        <td className="py-2 px-4">
                           {user.role === 'ROOT' ? (
-                            <span className="px-2 py-0.5 text-[9px] font-extrabold rounded border bg-purple-500/10 text-purple-400 border-purple-500/20 font-mono tracking-wide">
-                              SYSTEM ROOT
+                            <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-sm border bg-[#141414] text-purple-400 border-purple-500/30 font-mono uppercase">
+                              ROOT
                             </span>
                           ) : user.is_authorized_for_tools ? (
                             <span 
-                              className="px-2 py-0.5 text-[9px] font-extrabold rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono tracking-wide cursor-help select-none" 
-                              title={user.authorized_tools && user.authorized_tools.length > 0
-                                ? user.authorized_tools.map((t: string) => {
-                                    if (t === 'sizing-calculator') return 'Sizing'
-                                    if (t === 'wire-drawing-calculator') return 'Wire Drawing'
-                                    if (t === 'die-series-generator') return 'Die Generator'
-                                    if (t === 'die-set-planner') return 'Set Planner'
-                                    return t
-                                  }).join(', ')
-                                : 'None'}
+                              className="px-1.5 py-0.2 text-[9px] font-bold rounded-sm border bg-[#141414] text-emerald-400 border-emerald-500/30 font-mono uppercase cursor-help select-none" 
+                              title={user.authorized_tools?.join(', ') || 'None'}
                             >
                               {user.authorized_tools && user.authorized_tools.length > 0
                                 ? `${user.authorized_tools.length} MODULES`
                                 : 'NO LICENSE'}
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 text-[9px] font-extrabold rounded border bg-slate-800 text-slate-500 border-slate-700/80 font-mono tracking-wide select-none">
+                            <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-sm border bg-[#141414] text-[#6b7280] border-[#2a2a2a] font-mono uppercase select-none">
                               RESTRICTED
                             </span>
                           )}
                         </td>
                         
                         {/* Action buttons */}
-                        <td className="py-3.5 px-6 text-right space-x-2 whitespace-nowrap">
+                        <td className="py-2 px-4 text-right space-x-1.5 whitespace-nowrap">
                           <button 
                             onClick={() => toggleUserLogs(user.username)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                            className={`px-2 py-0.5 rounded-sm text-[10px] uppercase font-mono border transition ${
                               expandedUserLogs === user.username
-                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                : 'bg-slate-950/40 hover:bg-slate-900 text-slate-400 hover:text-white border-slate-800/80'
+                                ? 'bg-[#141414] text-blue-400 border-blue-500/40'
+                                : 'bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border-[#2a2a2a]'
                             }`}
-                            title="View audit activity logs"
                           >
                             {expandedUserLogs === user.username ? 'Hide Logs' : 'Logs'}
                           </button>
                           
                           <button 
                             onClick={() => openEditForm(user)}
-                            className="bg-slate-950/40 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-800/80 px-3 py-1.5 rounded-xl text-xs font-bold transition"
+                            className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-2 py-0.5 rounded-sm text-[10px] uppercase font-mono transition"
                           >
                             Edit
                           </button>
@@ -610,10 +562,10 @@ export function UserManager() {
                           <button 
                             onClick={() => handleToggleActive(user)}
                             disabled={isSelf}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                            className={`px-2 py-0.5 rounded-sm text-[10px] uppercase font-mono border transition ${
                               user.is_active 
-                                ? 'bg-rose-500/10 hover:bg-rose-500/20  border-rose-500/20 disabled:opacity-40' 
-                                : 'bg-emerald-500/10 hover:bg-emerald-500/20  border-emerald-500/20'
+                                ? 'bg-[#141414] hover:bg-[#1f1f1f] text-amber-400 border-amber-500/30 disabled:opacity-40' 
+                                : 'bg-[#141414] hover:bg-[#1f1f1f] text-emerald-400 border-emerald-500/30'
                             }`}
                           >
                             {user.is_active ? 'Suspend' : 'Activate'}
@@ -622,10 +574,10 @@ export function UserManager() {
                           <button 
                             onClick={() => handleDeleteUser(user)}
                             disabled={isSelf}
-                            className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 p-2 rounded-xl text-xs transition disabled:opacity-40"
-                            title={isSelf ? 'You cannot delete yourself' : 'Delete user'}
+                            className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-red-400 p-1 rounded-sm text-xs transition disabled:opacity-40 cursor-pointer"
+                            title={isSelf ? 'Cannot delete self' : 'Delete user'}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3 w-3" />
                           </button>
                         </td>
 
@@ -634,10 +586,8 @@ export function UserManager() {
                       {/* Expanded Activity Logs */}
                       {expandedUserLogs === user.username && (
                         <tr>
-                          <td colSpan={7} className="p-0 bg-slate-950/20 border-t border-b border-slate-800/60">
-                            <div className="px-6 py-4 bg-slate-950/40">
-                              <UserActivityLogSection username={user.username} />
-                            </div>
+                          <td colSpan={8} className="p-3 bg-[#0a0a0a] border-t border-b border-[#1a1a1a]">
+                            <UserActivityLogSection username={user.username} />
                           </td>
                         </tr>
                       )}
@@ -650,22 +600,22 @@ export function UserManager() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/60 text-xs select-none">
-              <div className="text-slate-400 font-mono">
-                Showing page <span className="font-semibold text-white">{page}</span> of <span className="font-semibold text-white">{totalPages}</span> (<span className="text-slate-300">{totalCount}</span> total users)
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#1a1a1a] bg-[#0a0a0a] text-xs select-none">
+              <div className="text-[#6b7280] font-mono tabular-nums">
+                SHOWING PAGE <span className="font-bold text-[#e4e4e4]">{page}</span> OF <span className="font-bold text-[#e4e4e4]">{totalPages}</span> ({totalCount} USERS)
               </div>
-              <div className="flex space-x-2 font-mono">
+              <div className="flex space-x-1.5 font-mono">
                 <button
                   onClick={() => setPage(p => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                  className="px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] rounded-sm uppercase transition disabled:opacity-40 cursor-pointer"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setPage(p => Math.min(p + 1, totalPages))}
                   disabled={page === totalPages}
-                  className="px-3.5 py-2 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-900 cursor-pointer"
+                  className="px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] rounded-sm uppercase transition disabled:opacity-40 cursor-pointer"
                 >
                   Next
                 </button>
@@ -677,124 +627,84 @@ export function UserManager() {
 
       {/* Create / Edit User Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[16px] max-w-lg w-full shadow-xl overflow-hidden animate-fadeIn">
-            
+        <div className="fixed inset-0 bg-[#0a0a0a]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-mono">
+          <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn font-mono">
             {/* Modal Header */}
-            <div className="bg-[var(--color-surface-2)] py-2 px-4 flex justify-between items-center border-b border-[var(--color-border)]">
+            <div className="bg-[#0a0a0a] py-2.5 px-4 flex justify-between items-center border-b border-[#1a1a1a]">
               <div className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-[var(--color-primary)]" />
-                <h2 className="text-base font-semibold text-[var(--color-primary)]">
-                  {editingUser ? `Configure: ${editingUser.username}` : 'Create System Credentials'}
+                <Shield className="h-4 w-4 text-blue-400" />
+                <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">
+                  {editingUser ? `01 CONFIGURE: ${editingUser.username}` : '01 CREATE CREDENTIALS'}
                 </h2>
               </div>
-              <button onClick={closeForm} className="text-[var(--color-muted)] hover:text-[var(--color-text)] p-1 hover:bg-[var(--color-surface-2)] rounded-lg transition cursor-pointer">
-                <X className="h-5 w-5" />
+              <button onClick={closeForm} className="text-[#6b7280] hover:text-[#e4e4e4] p-0.5 rounded-sm transition cursor-pointer">
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Modal Scroll Container */}
-            <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-4 space-y-4">
+            <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-4 space-y-3 font-mono">
               {formError && (
-                <div className="bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-xl p-4 text-xs font-semibold font-mono flex items-center space-x-2">
-                  <ShieldAlert className="shrink-0 text-[var(--color-danger)]" />
+                <div className="bg-[#141414] border border-red-500/30 text-red-400 rounded-sm p-2.5 text-xs font-mono flex items-center space-x-2">
+                  <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-red-500" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              {/* Username Input (Read-only if editing) */}
-              <div className="space-y-1.5">
-                <label className="block text-xs text-[var(--color-muted)] font-medium">Username Identity</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <User className="h-4 w-4" />
-                  </span>
-                  <input 
-                    type="text" 
-                    required
-                    disabled={!!editingUser}
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
-                    placeholder="e.g. jdoe"
-                  />
-                </div>
+              {/* Username Input */}
+              <div className="space-y-1">
+                <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">Username</label>
+                <input 
+                  type="text" 
+                  required
+                  disabled={!!editingUser}
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none font-mono disabled:opacity-50"
+                  placeholder="e.g. jdoe"
+                />
               </div>
 
               {/* First & Last Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs text-[var(--color-muted)] font-medium">First Name</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">First Name</label>
                   <input 
                     type="text" 
                     value={firstNameInput}
                     onChange={(e) => setFirstNameInput(e.target.value)}
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none font-mono"
                     placeholder="John"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="block text-xs text-[var(--color-muted)] font-medium">Last Name</label>
+                <div className="space-y-1">
+                  <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">Last Name</label>
                   <input 
                     type="text" 
                     value={lastNameInput}
                     onChange={(e) => setLastNameInput(e.target.value)}
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none font-mono"
                     placeholder="Doe"
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
-                <label className="block text-xs text-[var(--color-muted)] font-medium">Access Key {editingUser && <span className="text-[var(--color-muted)] font-normal capitalize">(leave blank to keep current)</span>}</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <Key className="h-4 w-4" />
-                  </span>
-                  <input 
-                    type="password" 
-                    required={!editingUser}
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
-                    placeholder={editingUser ? "••••••••" : "Min 8 characters"}
-                  />
-                </div>
-                
-                {passwordInput.length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold text-slate-400">Password Strength</span>
-                      <span className={`text-[10px] font-bold ${
-                        [
-                          /[A-Z]/.test(passwordInput) || /[0-9]/.test(passwordInput) || /[^A-Za-z0-9]/.test(passwordInput) ? 'text-rose-400' : 'text-rose-400',
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) <= 1 ? 'text-rose-400' : 
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 2 ? 'text-amber-400' :
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 3 ? 'text-blue-400' :
-                          'text-emerald-400'
-                        ][1]
-                      }`}>
-                        {[
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) <= 1 ? 'Weak' : 
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 2 ? 'Fair' :
-                          (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0) === 3 ? 'Good' :
-                          'Strong'
-                        ][0]}
-                      </span>
-                    </div>
-                    <div className="flex space-x-1 h-1.5">
-                      {[0, 1, 2, 3].map(i => {
-                        const score = (/[A-Z]/.test(passwordInput) ? 1 : 0) + (/[0-9]/.test(passwordInput) ? 1 : 0) + (/[^A-Za-z0-9]/.test(passwordInput) ? 1 : 0) + (passwordInput.length >= 8 ? 1 : 0)
-                        const color = score <= 1 ? 'bg-rose-500' : score === 2 ? 'bg-amber-500' : score === 3 ? 'bg-blue-500' : 'bg-emerald-500'
-                        return <div key={i} className={`flex-1 rounded-full ${i < score ? color : 'bg-slate-800'}`} />
-                      })}
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">
+                  Access Key {editingUser && <span className="text-[#404040]">(leave blank to keep current)</span>}
+                </label>
+                <input 
+                  type="password" 
+                  required={!editingUser}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none font-mono"
+                  placeholder={editingUser ? "••••••••" : "Min 8 characters"}
+                />
                 
                 {passwordPolicy && (
-                  <div className="text-[9px] text-slate-500 mt-1">
+                  <div className="text-[9px] text-[#404040]">
                     Password must be at least {passwordPolicy.min_length || 8} characters.
                   </div>
                 )}
@@ -802,46 +712,41 @@ export function UserManager() {
 
               {/* Verify Current Password (If updating sensitive profile) */}
               {editingUser && editingUser.username === currentUsername && (passwordInput.trim() || emailInput !== editingUser.email) && (
-                <div className="space-y-1.5 bg-rose-500/5 p-4 border border-rose-500/20 rounded-xl">
-                  <label className="block text-[10px] font-bold text-rose-400 uppercase tracking-wider font-mono">
-                    Verify Profile Identity <span className="text-slate-500 font-normal capitalize">(required to save updates)</span>
+                <div className="space-y-1 bg-[#141414] p-3 border border-red-500/30 rounded-sm">
+                  <label className="block text-[10px] text-red-400 uppercase tracking-wider">
+                    Verify Profile Identity
                   </label>
                   <input 
                     type="password" 
                     required
                     value={currentPasswordInput}
                     onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-rose-800/40 focus:border-rose-500 rounded-xl py-2.5 px-3.5 text-xs text-white focus:outline-none focus:ring-4 focus:ring-rose-950/20 transition-all font-mono"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] focus:outline-none font-mono"
                     placeholder="Enter current password to authorize changes"
                   />
                 </div>
               )}
 
               {/* Email Input */}
-              <div className="space-y-1.5">
-                <label className="block text-xs text-[var(--color-muted)] font-medium">Email Address</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-muted)]">
-                    <Mail className="h-4 w-4" />
-                  </span>
-                  <input 
-                    type="email" 
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] rounded-[12px] pl-9 pr-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all"
-                    placeholder="john@example.com"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">Email Address</label>
+                <input 
+                  type="email" 
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none font-mono"
+                  placeholder="john@example.com"
+                />
               </div>
 
               {/* System role dropdown */}
-              <div className="space-y-1.5">
-                <label className="block text-xs text-[var(--color-muted)] font-medium">System authorization Role</label>
+              <div className="space-y-1">
+                <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider">System Role</label>
                 <select 
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
                   disabled={editingUser && (editingUser.role === 'ROOT' || editingUser.username === currentUsername)}
-                  className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-primary)] disabled:opacity-50 disabled:bg-[var(--color-surface)] rounded-[12px] px-4 py-2.5 text-xs text-[var(--color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 transition-all cursor-pointer"
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 disabled:opacity-50 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] focus:outline-none uppercase font-mono cursor-pointer"
                 >
                   {roleInput === 'ROOT' && (
                     <option value="ROOT">ROOT (SUPERUSER ACCESS)</option>
@@ -853,14 +758,13 @@ export function UserManager() {
               </div>
 
               {/* Checkboxes Row */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 {/* Active Toggle Box */}
                 <div 
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-[12px] border transition cursor-pointer select-none ${
+                  className={`flex-1 flex items-center justify-between p-2.5 rounded-sm border transition cursor-pointer select-none ${
                     isActiveInput 
-                      ? 'border-[var(--color-success)]/20 bg-[var(--color-success)]/[0.02]' 
-                      : 'border-[var(--color-border)] bg-transparent'
+                      ? 'border-emerald-500/30 bg-[#141414]' 
+                      : 'border-[#2a2a2a] bg-[#0a0a0a]'
                   }`}
                   onClick={() => {
                     if (!(editingUser && editingUser.username === currentUsername)) {
@@ -869,24 +773,24 @@ export function UserManager() {
                   }}
                 >
                   <div className="space-y-0.5">
-                    <span className="block text-xs font-semibold text-white">Account Status</span>
-                    <span className="block text-[10px] text-slate-400">Suspend/Activate credentials</span>
+                    <span className="block text-xs font-bold text-[#e4e4e4] uppercase">Account Status</span>
+                    <span className="block text-[10px] text-[#6b7280]">Active Credentials</span>
                   </div>
                   <input 
                     type="checkbox"
                     checked={isActiveInput}
                     disabled={editingUser && editingUser.username === currentUsername}
                     onChange={(e) => setIsActiveInput(e.target.checked)}
-                    className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
+                    className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                   />
                 </div>
 
                 {/* Sizing Tools authorization Box */}
                 <div 
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-[12px] border transition cursor-pointer select-none ${
+                  className={`flex-1 flex items-center justify-between p-2.5 rounded-sm border transition cursor-pointer select-none ${
                     roleInput === 'ROOT' || isAuthorizedForToolsInput 
-                      ? 'border-[var(--color-primary)]/20 bg-[var(--color-primary)]/[0.02]' 
-                      : 'border-[var(--color-border)] bg-transparent'
+                      ? 'border-blue-500/30 bg-[#141414]' 
+                      : 'border-[#2a2a2a] bg-[#0a0a0a]'
                   }`}
                   onClick={() => {
                     if (roleInput !== 'ROOT') {
@@ -899,8 +803,8 @@ export function UserManager() {
                   }}
                 >
                   <div className="space-y-0.5">
-                    <span className="block text-xs font-semibold text-white">Toolbox Licenses</span>
-                    <span className="block text-[10px] text-slate-400">Unlock tool panel features</span>
+                    <span className="block text-xs font-bold text-[#e4e4e4] uppercase">Toolbox Licenses</span>
+                    <span className="block text-[10px] text-[#6b7280]">Unlock Modules</span>
                   </div>
                   <input 
                     type="checkbox"
@@ -913,25 +817,22 @@ export function UserManager() {
                         setAuthorizedToolsInput(['sizing-calculator', 'wire-drawing-calculator'])
                       }
                     }}
-                    className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-0 cursor-pointer disabled:opacity-40"
+                    className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                   />
                 </div>
-
               </div>
 
-              {/* Interactive Module Tree Panel */}
+              {/* Module Tree Panel */}
               {isAuthorizedForToolsInput && roleInput !== 'ROOT' && (
-                <div className="p-4 bg-[var(--color-surface-2)]/60 border-[var(--color-border)]/80 rounded-xl space-y-4 animate-fadeIn">
-                  <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 mb-2">
-                    <Shield className="h-4 w-4 text-blue-400" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 font-mono">
-                      Engineering Permission Matrix Tree
+                <div className="p-3 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm space-y-2">
+                  <div className="border-b border-[#1a1a1a] pb-1 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">
+                      Permission Matrix
                     </span>
                   </div>
 
-                  {/* Top-Level Tool 1: Sizing Calculator */}
-                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="tool-sizing-calculator"
@@ -942,21 +843,17 @@ export function UserManager() {
                             isChecked ? prev.filter(id => id !== 'sizing-calculator') : [...prev, 'sizing-calculator']
                           );
                         }}
-                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                       />
-                      <label htmlFor="tool-sizing-calculator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
+                      <label htmlFor="tool-sizing-calculator" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
                         Sizing & Elongation Calculator
                       </label>
                     </div>
-                    <span className="text-[9px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-extrabold">
-                      MODULE SIZING
-                    </span>
                   </div>
 
-                  {/* Top-Level Tool 2: Wire Drawing Calculator */}
-                  <div className="p-3 bg-slate-900 border rounded-xl space-y-3">
+                  <div className="p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
                           id="tool-wire-drawing-calculator"
@@ -967,76 +864,55 @@ export function UserManager() {
                               isChecked ? prev.filter(id => id !== 'wire-drawing-calculator') : [...prev, 'wire-drawing-calculator']
                             );
                           }}
-                          className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                          className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                         />
-                        <label htmlFor="tool-wire-drawing-calculator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
+                        <label htmlFor="tool-wire-drawing-calculator" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
                           Wire Drawing Calculator (Base)
                         </label>
                       </div>
-                      <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 rounded font-extrabold">
-                        WORKBENCH BASE
-                      </span>
                     </div>
 
-                    {/* Sub-Features Tree Indented Right */}
-                    <div className="ml-5 pl-4 border-l-2 border-slate-800 space-y-2.5 pt-1">
-                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center space-x-1 select-none">
-                        <span>↳ Sub-feature Permissions</span>
+                    <div className="ml-4 pl-3 border-l border-[#2a2a2a] space-y-1.5 pt-1">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="tool-3d-stress-heatmap"
+                          checked={authorizedToolsInput.includes('3d-stress-heatmap')}
+                          onChange={() => {
+                            const isChecked = authorizedToolsInput.includes('3d-stress-heatmap');
+                            setAuthorizedToolsInput(prev =>
+                              isChecked ? prev.filter(id => id !== '3d-stress-heatmap') : [...prev, '3d-stress-heatmap']
+                            );
+                          }}
+                          className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-purple-500 cursor-pointer"
+                        />
+                        <label htmlFor="tool-3d-stress-heatmap" className="text-xs text-[#6b7280] hover:text-[#e4e4e4] cursor-pointer uppercase select-none">
+                          3D von Mises Stress Heatmap
+                        </label>
                       </div>
 
-                      {/* Sub-feature 1: 3D Stress Heatmap */}
-                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-800 rounded-lg">
-                        <div className="flex items-center space-x-2.5">
-                          <input
-                            type="checkbox"
-                            id="tool-3d-stress-heatmap"
-                            checked={authorizedToolsInput.includes('3d-stress-heatmap')}
-                            onChange={() => {
-                              const isChecked = authorizedToolsInput.includes('3d-stress-heatmap');
-                              setAuthorizedToolsInput(prev =>
-                                isChecked ? prev.filter(id => id !== '3d-stress-heatmap') : [...prev, '3d-stress-heatmap']
-                              );
-                            }}
-                            className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-purple-500 cursor-pointer"
-                          />
-                          <label htmlFor="tool-3d-stress-heatmap" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
-                            3D von Mises Stress Heatmap
-                          </label>
-                        </div>
-                        <span className="text-[8px] font-mono text-purple-400 bg-purple-950 border border-purple-800 px-1.5 py-0.5 rounded font-extrabold uppercase">
-                          3D Model
-                        </span>
-                      </div>
-
-                      {/* Sub-feature 2: Theory & Fundamentals */}
-                      <div className="flex items-center justify-between p-2 bg-slate-950/80 border border-slate-800 rounded-lg">
-                        <div className="flex items-center space-x-2.5">
-                          <input
-                            type="checkbox"
-                            id="tool-engineering-theory"
-                            checked={authorizedToolsInput.includes('engineering-theory')}
-                            onChange={() => {
-                              const isChecked = authorizedToolsInput.includes('engineering-theory');
-                              setAuthorizedToolsInput(prev =>
-                                isChecked ? prev.filter(id => id !== 'engineering-theory') : [...prev, 'engineering-theory']
-                              );
-                            }}
-                            className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 cursor-pointer"
-                          />
-                          <label htmlFor="tool-engineering-theory" className="text-xs text-slate-300 hover:text-white cursor-pointer select-none">
-                            Theory & Fundamentals Guide
-                          </label>
-                        </div>
-                        <span className="text-[8px] font-mono text-indigo-400 bg-indigo-950 border px-1.5 py-0.5 rounded font-extrabold uppercase">
-                          Theory Docs
-                        </span>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="tool-engineering-theory"
+                          checked={authorizedToolsInput.includes('engineering-theory')}
+                          onChange={() => {
+                            const isChecked = authorizedToolsInput.includes('engineering-theory');
+                            setAuthorizedToolsInput(prev =>
+                              isChecked ? prev.filter(id => id !== 'engineering-theory') : [...prev, 'engineering-theory']
+                            );
+                          }}
+                          className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="tool-engineering-theory" className="text-xs text-[#6b7280] hover:text-[#e4e4e4] cursor-pointer uppercase select-none">
+                          Theory & Fundamentals Guide
+                        </label>
                       </div>
                     </div>
                   </div>
 
-                  {/* Top-Level Tool 3: Die Series Generator */}
-                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="tool-die-series-generator"
@@ -1047,20 +923,16 @@ export function UserManager() {
                             isChecked ? prev.filter(id => id !== 'die-series-generator') : [...prev, 'die-series-generator']
                           );
                         }}
-                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                       />
-                      <label htmlFor="tool-die-series-generator" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
+                      <label htmlFor="tool-die-series-generator" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
                         Die Series Generator
                       </label>
                     </div>
-                    <span className="text-[9px] font-mono text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded font-extrabold">
-                      MODULE GENERATOR
-                    </span>
                   </div>
 
-                  {/* Top-Level Tool 4: Die Set Planner */}
-                  <div className="flex items-center justify-between p-3 bg-slate-900 border rounded-xl hover:border-slate-700 transition">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="tool-die-set-planner"
@@ -1071,32 +943,29 @@ export function UserManager() {
                             isChecked ? prev.filter(id => id !== 'die-set-planner') : [...prev, 'die-set-planner']
                           );
                         }}
-                        className="rounded border-slate-700 bg-slate-950 text-blue-500 cursor-pointer"
+                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                       />
-                      <label htmlFor="tool-die-set-planner" className="text-xs font-bold text-slate-200 cursor-pointer select-none">
+                      <label htmlFor="tool-die-set-planner" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
                         Die Set Planner
                       </label>
                     </div>
-                    <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded font-extrabold">
-                      MODULE SET PLANNER
-                    </span>
                   </div>
                 </div>
               )}
 
               {/* Submit Buttons */}
-              <div className="border-t pt-5 flex justify-end space-x-3 bg-slate-950/10 -mx-6 -mb-6 p-6">
+              <div className="border-t border-[#1a1a1a] pt-3 flex justify-end space-x-2">
                 <button 
                   type="button" 
                   onClick={closeForm}
-                  className="bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] text-[var(--color-muted)] border border-[var(--color-border)] hover:border-[var(--color-border-dark)] px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                  className="bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-[var(--color-primary)]/10 hover:shadow-[var(--color-primary)]/20 cursor-pointer"
+                  className="bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 hover:text-blue-300 border border-blue-500/50 px-4 py-1 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
                 >
                   {editingUser ? 'Save Changes' : 'Create User'}
                 </button>
@@ -1108,11 +977,11 @@ export function UserManager() {
 
       {/* Delete User Confirmation */}
       <ConfirmDialog
-        isOpen={!!userToDelete}
+        open={!!userToDelete}
         title="Delete User Account"
-        message={`Are you sure you want to permanently delete user "${userToDelete?.username}"? All associated settings and activity history for this account will be removed.`}
-        confirmText="Delete User"
-        isDestructive={true}
+        message={`Are you sure you want to permanently delete user "${userToDelete?.username}"? All associated settings and activity history will be removed.`}
+        confirmLabel="Delete User"
+        danger={true}
         onConfirm={() => {
           if (userToDelete) {
             deleteUserMutation.mutate(userToDelete.id)
@@ -1124,11 +993,11 @@ export function UserManager() {
 
       {/* Bulk Action Confirmation */}
       <ConfirmDialog
-        isOpen={!!bulkActionType}
+        open={!!bulkActionType}
         title={`Bulk ${bulkActionType ? bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1) : ''} Users`}
         message={`Are you sure you want to ${bulkActionType} ${selectedUsers.size} selected user(s)?`}
-        confirmText={`Confirm ${bulkActionType ? bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1) : ''}`}
-        isDestructive={bulkActionType === 'delete' || bulkActionType === 'suspend'}
+        confirmLabel={`Confirm ${bulkActionType ? bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1) : ''}`}
+        danger={bulkActionType === 'delete' || bulkActionType === 'suspend'}
         onConfirm={() => {
           if (bulkActionType) {
             bulkActionMutation.mutate({ action: bulkActionType, user_ids: Array.from(selectedUsers) })
@@ -1149,15 +1018,15 @@ function UserActivityLogSection({ username }: { username: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-6">
-        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center py-4">
+        <div className="animate-spin h-4 w-4 border border-[#2a2a2a] border-t-blue-500"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="text-center text-xs font-semibold py-4 font-mono">
+      <div className="text-center text-xs py-2 font-mono text-red-400">
         Failed to load activity logs: {error.message}
       </div>
     )
@@ -1167,65 +1036,52 @@ function UserActivityLogSection({ username }: { username: string }) {
 
   if (results.length === 0) {
     return (
-      <div className="text-center text-xs text-slate-500 py-4 font-semibold font-mono">
+      <div className="text-center text-xs text-[#6b7280] py-2 font-mono">
         No activity logs recorded for this user.
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 animate-fadeIn text-left select-none font-mono text-xs">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">User Audit Trail</span>
-        <span className="text-[10px] text-slate-500 font-semibold">{results.length} activity entries</span>
+    <div className="space-y-2 font-mono text-xs">
+      <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-1">
+        <span className="text-[10px] text-[#6b7280] uppercase tracking-wider">User Audit Trail</span>
+        <span className="text-[10px] text-[#6b7280] tabular-nums">{results.length} ENTRIES</span>
       </div>
 
-      <div className="relative pl-4 space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-        {/* Vertical Line */}
-        <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-slate-800" />
-
+      <div className="space-y-1.5 max-h-[250px] overflow-y-auto pr-1">
         {results.map((log: any) => {
           const client = parseUserAgent(log.device)
           
           return (
-            <div key={log.id} className="relative flex justify-between items-start gap-4 p-3 bg-slate-900 border border-slate-800 hover:border-slate-800 rounded-xl transition">
-              
-              {/* Event indicator dot */}
-              <div className={`absolute -left-[14px]  w-2 h-2 rounded-full border border-slate-950 ${
-                log.action === 'LOGIN'
-                  ? 'bg-emerald-500'
-                  : log.action === 'FAILED_LOGIN'
-                  ? 'bg-rose-500'
-                  : 'bg-slate-500'
-              }`} />
-
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded ${
+            <div key={log.id} className="flex justify-between items-start gap-2 p-2 bg-[#141414] border border-[#1a1a1a] rounded-sm">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded-sm border uppercase ${
                     log.action === 'LOGIN'
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      ? 'bg-[#141414] text-emerald-400 border-emerald-500/30'
                       : log.action === 'FAILED_LOGIN'
-                      ? 'bg-rose-500/10  border border-rose-500/20 animate-pulse'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      ? 'bg-[#141414] text-red-400 border-red-500/30'
+                      : 'bg-[#141414] text-[#6b7280] border-[#2a2a2a]'
                   }`}>
                     {log.action}
                   </span>
                   {log.ip_address && (
-                    <span className="text-[10px] text-slate-400 font-bold">IP: {log.ip_address}</span>
+                    <span className="text-[10px] text-[#6b7280] font-mono">IP: {log.ip_address}</span>
                   )}
                 </div>
                 {log.device && (
-                  <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 font-sans mt-1">
+                  <div className="flex items-center space-x-1 text-[10px] text-[#6b7280] mt-0.5">
                     {client.deviceType === 'mobile' ? (
-                      <Smartphone className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                      <Smartphone className="h-3 w-3 shrink-0" />
                     ) : (
-                      <Monitor className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                      <Monitor className="h-3 w-3 shrink-0" />
                     )}
-                    <span className="truncate max-w-[300px]" title={log.device}>{client.label}</span>
+                    <span className="truncate max-w-[250px]">{client.label}</span>
                   </div>
                 )}
               </div>
-              <span className="text-[10px] text-slate-500 whitespace-nowrap pt-0.5">
+              <span className="text-[9px] text-[#6b7280] whitespace-nowrap tabular-nums">
                 {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
               </span>
             </div>
@@ -1235,4 +1091,3 @@ function UserActivityLogSection({ username }: { username: string }) {
     </div>
   )
 }
-

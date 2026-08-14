@@ -27,14 +27,14 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
   }, [])
 
   const statusThemeColors: Record<string, string> = {
-    AVAILABLE: 'var(--color-available)',
-    RUNNING: 'var(--color-running)',
-    CLEANING: 'var(--color-cleaning)',
-    POLISHING: 'var(--color-polishing)',
-    DAMAGED: 'var(--color-damaged)',
-    SCRAPPED: 'var(--color-scrapped)',
-    MISSING: 'var(--color-missing)',
-    MAINTENANCE: 'var(--color-maintenance)',
+    AVAILABLE: '#10b981',
+    RUNNING: '#3b82f6',
+    CLEANING: '#f59e0b',
+    POLISHING: '#8b5cf6',
+    DAMAGED: '#f97316',
+    SCRAPPED: '#ef4444',
+    MISSING: '#6b7280',
+    MAINTENANCE: '#f59e0b',
   }
 
   const radius = 50
@@ -55,28 +55,28 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
         pct: (pct * 100).toFixed(1),
         strokeDasharray,
         strokeDashoffset,
-        color: statusThemeColors[statusKey] || '#64748b'
+        color: statusThemeColors[statusKey] || '#6b7280'
       }
     })
 
   return (
-    <div className="glass-panel rounded-2xl p-6 shadow-xl flex flex-col justify-between h-full min-h-[260px] border border-slate-800/80">
+    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] flex flex-col justify-between h-full min-h-[260px] font-mono">
       <div>
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Status Distribution</h3>
-        <p className="text-slate-500 text-xs mb-4">Visual breakdown of registry assets.</p>
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">02 STATUS DISTRIBUTION</h3>
+        <p className="text-[#6b7280] text-[11px] mb-3">Visual breakdown of registry assets.</p>
       </div>
 
       {total === 0 ? (
         <div className="flex-grow flex flex-col items-center justify-center py-6">
-          <div className="w-16 h-16 rounded-full border-4 border-slate-800 border-t-blue-500 animate-spin mb-4" />
-          <span className="text-slate-500 text-sm">No dies loaded</span>
+          <div className="w-12 h-12 border border-[#2a2a2a] border-t-blue-500 animate-spin mb-3" />
+          <span className="text-[#6b7280] text-xs font-mono uppercase">No dies loaded</span>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 flex-grow">
+        <div className="flex flex-col sm:flex-row items-center justify-around gap-4 flex-grow">
           {/* Donut Chart SVG */}
-          <div className="relative w-32 h-32 shrink-0">
+          <div className="relative w-28 h-28 shrink-0">
             <svg className="w-full h-full" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#111827" strokeWidth="10" />
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#141414" strokeWidth="10" />
               {segments.map((seg) => {
                 const active = hoveredSegment?.statusKey === seg.statusKey
                 return (
@@ -87,14 +87,14 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     r="50"
                     fill="none"
                     stroke={seg.color}
-                    strokeWidth={active ? "13" : "10"}
+                    strokeWidth={active ? "12" : "10"}
                     strokeDasharray={isAnimated ? seg.strokeDasharray : `0 ${circumference}`}
                     strokeDashoffset={seg.strokeDashoffset}
                     transform="rotate(-90 70 70)"
-                    strokeLinecap="round"
+                    strokeLinecap="butt"
                     onMouseEnter={() => setHoveredSegment(seg)}
                     onMouseLeave={() => setHoveredSegment(null)}
-                    className="transition-all duration-500 ease-out cursor-pointer"
+                    className="transition-all duration-300 ease-out cursor-pointer"
                   />
                 )
               })}
@@ -105,7 +105,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     x="70" 
                     y="63" 
                     textAnchor="middle" 
-                    className="font-heading text-[8px] font-black uppercase tracking-wider transition-all duration-300"
+                    className="text-[8px] font-mono font-medium uppercase tracking-wider"
                     style={{ fill: hoveredSegment.color }}
                   >
                     {hoveredSegment.statusKey}
@@ -114,7 +114,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     x="70" 
                     y="82" 
                     textAnchor="middle" 
-                    className="fill-white font-heading text-base font-extrabold transition-all duration-300"
+                    className="fill-[#e4e4e4] font-mono text-sm font-bold tabular-nums"
                   >
                     {hoveredSegment.count}
                   </text>
@@ -122,17 +122,17 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     x="70" 
                     y="95" 
                     textAnchor="middle" 
-                    className="fill-slate-400 font-heading text-[9px] font-semibold transition-all duration-300"
+                    className="fill-[#6b7280] font-mono text-[9px] tabular-nums"
                   >
                     {hoveredSegment.pct}%
                   </text>
                 </>
               ) : (
                 <>
-                  <text x="70" y="65" textAnchor="middle" className="fill-slate-500 font-heading text-[9px] font-bold uppercase tracking-wider">
-                    Total
+                  <text x="70" y="65" textAnchor="middle" className="fill-[#6b7280] font-mono text-[9px] uppercase tracking-wider">
+                    TOTAL
                   </text>
-                  <text x="70" y="86" textAnchor="middle" className="fill-white font-heading text-2xl font-black">
+                  <text x="70" y="86" textAnchor="middle" className="fill-[#e4e4e4] font-mono text-xl font-bold tabular-nums">
                     {total}
                   </text>
                 </>
@@ -141,7 +141,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
           </div>
 
           {/* Legend Grid */}
-          <div className="flex-grow space-y-1.5 w-full sm:w-auto">
+          <div className="flex-grow space-y-1 w-full sm:w-auto font-mono">
             {segments.map((seg) => {
               const active = hoveredSegment?.statusKey === seg.statusKey
               return (
@@ -149,17 +149,17 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                   key={seg.statusKey} 
                   onMouseEnter={() => setHoveredSegment(seg)}
                   onMouseLeave={() => setHoveredSegment(null)}
-                  className={`flex items-center justify-between text-xs py-1 px-2 rounded-lg border-b border-slate-800/40 transition-colors  cursor-pointer ${
-                    active ? ' border-slate-800/80 text-white' : 'hover:bg-slate-800/20'
+                  className={`flex items-center justify-between text-xs py-0.5 px-1.5 rounded-sm border-b border-[#1a1a1a] transition-colors cursor-pointer ${
+                    active ? 'bg-[#141414] text-[#e4e4e4]' : 'hover:bg-[#141414] text-[#6b7280]'
                   }`}
                 >
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 rounded-full dot-glow" style={{ backgroundColor: seg.color }} />
-                    <span className={`font-semibold transition-colors duration-200 ${active ? 'text-white' : 'text-slate-300'}`}>{seg.statusKey}</span>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                    <span className={`text-[11px] uppercase tracking-wider ${active ? 'text-[#e4e4e4]' : 'text-[#6b7280]'}`}>{seg.statusKey}</span>
                   </div>
-                  <div className="text-slate-400 font-mono">
-                    <span className="text-slate-200 font-bold">{seg.count}</span>
-                    <span className="text-[9px] text-slate-500 ml-1">({seg.pct}%)</span>
+                  <div className="font-mono text-xs tabular-nums">
+                    <span className="text-[#e4e4e4] font-medium">{seg.count}</span>
+                    <span className="text-[10px] text-[#6b7280] ml-1">({seg.pct}%)</span>
                   </div>
                 </div>
               )
@@ -201,9 +201,6 @@ export function DashboardPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-
-
 
   const [trendBaseline, setTrendBaseline] = useState<any>(null)
 
@@ -288,36 +285,36 @@ export function DashboardPage() {
     MISSING: 0
   }
 
-  const statusColors: Record<string, string> = {
-    AVAILABLE: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5',
-    RUNNING: 'border-blue-500/30 text-blue-400 bg-blue-500/5',
-    CLEANING: 'border-amber-500/30 text-amber-400 bg-amber-500/5',
-    POLISHING: 'border-purple-500/30 text-purple-400 bg-purple-500/5',
-    DAMAGED: 'border-rose-500/30 text-rose-400 bg-rose-500/5',
-    SCRAPPED: 'border-slate-500/30 text-slate-400 bg-slate-500/5',
-    MISSING: 'border-red-500/30 text-red-400 bg-red-500/5',
+  const statusBorderMap: Record<string, string> = {
+    AVAILABLE: 'border-l-[#10b981]',
+    RUNNING: 'border-l-[#3b82f6]',
+    CLEANING: 'border-l-[#f59e0b]',
+    POLISHING: 'border-l-[#8b5cf6]',
+    DAMAGED: 'border-l-[#f97316]',
+    SCRAPPED: 'border-l-[#ef4444]',
+    MISSING: 'border-l-[#6b7280]',
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 text-center sm:text-left">
-        <h1 className="text-4xl font-extrabold text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-          Die Tracking Dashboard
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 font-mono">
+      <div className="mb-5 pb-3 border-b border-[#2a2a2a] text-left">
+        <h1 className="text-base md:text-lg font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">
+          01 DIE TRACKING DASHBOARD
         </h1>
-        <p className="text-slate-400 mt-2">Overview of facility inventory and search portal.</p>
+        <p className="text-xs text-[#6b7280] mt-0.5">Overview of facility inventory and search portal.</p>
       </div>
 
       {isStatsLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-5">
           {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-20" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
-          <div className="bg-[#0b0f19]/90 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between min-h-[96px]">
-            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono">Total Dies</span>
-            <span className="text-2xl font-bold font-mono text-white block mt-1 tracking-tight">{totalCount}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-5">
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] border-l-2 border-l-blue-500 rounded-sm p-3 text-left flex flex-col justify-between min-h-[80px]">
+            <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-mono">TOTAL DIES</span>
+            <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1">{totalCount}</span>
           </div>
           {Object.entries(stats).map(([statusKey, count]) => {
             const countVal = count as number
@@ -331,21 +328,21 @@ export function DashboardPage() {
                 tabIndex={0}
                 onClick={() => navigate(`/inventory?status=${statusKey}`)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/inventory?status=${statusKey}`) } }}
-                className={`border border-slate-800/80 hover:border-slate-700/80 rounded-xl p-4 shadow-sm hover:shadow-md text-left flex flex-col justify-between min-h-[96px] cursor-pointer transition-all duration-200 focus-ring bg-[#0b0f19]/90 ${statusColors[statusKey] || 'text-slate-300'}`}
+                className={`border border-[#1a1a1a] hover:border-[#2a2a2a] border-l-2 ${statusBorderMap[statusKey] || 'border-l-[#6b7280]'} rounded-sm p-3 text-left flex flex-col justify-between min-h-[80px] cursor-pointer transition-colors bg-[#0f0f0f] hover:bg-[#141414] focus-ring`}
               >
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider font-mono opacity-90">{statusKey}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-mono text-[#6b7280]">{statusKey}</span>
                   {diff > 0 ? (
-                    <span className="text-emerald-400 font-bold flex items-center text-[10px] bg-emerald-500/10 px-1 py-0.5 rounded font-mono" title="Up from 24h baseline">
-                      + {diff}
+                    <span className="text-emerald-400 font-bold flex items-center text-[9px] bg-[#141414] px-1 py-0.2 rounded-sm font-mono tabular-nums" title="Up from 24h baseline">
+                      ▲ {diff}
                     </span>
                   ) : diff < 0 ? (
-                    <span className="text-rose-400 font-bold flex items-center text-[10px] bg-rose-500/10 px-1 py-0.5 rounded font-mono" title="Down from 24h baseline">
-                      - {Math.abs(diff)}
+                    <span className="text-red-400 font-bold flex items-center text-[9px] bg-[#141414] px-1 py-0.2 rounded-sm font-mono tabular-nums" title="Down from 24h baseline">
+                      ▼ {Math.abs(diff)}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-2xl font-bold font-mono block mt-1 tracking-tight">{String(count)}</span>
+                <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1">{String(count)}</span>
               </div>
             )
           })}
@@ -353,22 +350,22 @@ export function DashboardPage() {
       )}
 
       {/* Dashboard Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5 items-stretch">
         
         {/* Search Panel */}
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-center">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-white">Find a Die</h2>
-              <p className="text-slate-400 text-sm mt-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1 (use quotes for exact match, e.g. "2.500")</p>
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-5 h-full flex flex-col justify-center font-mono">
+            <div className="text-left mb-4">
+              <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">FIND A DIE</h2>
+              <p className="text-[#6b7280] text-[11px] mt-0.5">Search by ID, casing, location, or status (e.g. R-101, 25x10, "2.500")</p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-grow flex items-center" ref={searchRef}>
-                <Search className="absolute left-4 h-6 w-6 text-slate-500" />
+                <Search className="absolute left-3 h-4 w-4 text-[#6b7280]" />
                 <input 
                   type="text" 
-                  placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
+                  placeholder="SEARCH DIE ID, SIZE, CASING, MACHINE..."
                   value={q}
                   onChange={(e) => { setQ(e.target.value); setShowDropdown(true); setActiveIndex(-1); }}
                   onFocus={() => { setShowDropdown(true); setActiveIndex(-1); }}
@@ -395,24 +392,24 @@ export function DashboardPage() {
                       setActiveIndex(-1);
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3.5 pl-14 pr-28 text-white placeholder-slate-500 focus:outline-none transition-all duration-300 text-lg shadow-inner"
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-2 pl-9 pr-24 text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors text-xs font-mono uppercase"
                 />
                 {searchEnabled && (
-                  <span className="absolute right-4 bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-lg select-none">
-                    {isSearchLoading ? '...' : `${searchDiesData?.total || 0} ${searchDiesData?.total === 1 ? 'result' : 'results'}`}
+                  <span className="absolute right-2 bg-[#141414] border border-[#2a2a2a] text-blue-400 text-[10px] px-2 py-0.5 rounded-sm select-none font-mono">
+                    {isSearchLoading ? '...' : `${searchDiesData?.total || 0} RESULTS`}
                   </span>
                 )}
 
                 {/* Search Dropdown Suggestions */}
                 {showDropdown && q.trim() && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto divide-y divide-slate-800/60">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm z-50 max-h-72 overflow-y-auto divide-y divide-[#1a1a1a] font-mono">
                     {isSearchLoading ? (
-                      <div className="p-4 text-center text-slate-500 text-sm flex items-center justify-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="p-3 text-center text-[#6b7280] text-xs flex items-center justify-center space-x-2">
+                        <div className="animate-spin h-3.5 w-3.5 border border-[#2a2a2a] border-t-blue-500"></div>
                         <span>Searching...</span>
                       </div>
                     ) : !searchDies || searchDies.length === 0 ? (
-                      <div className="p-4 text-center text-slate-500 text-sm">
+                      <div className="p-3 text-center text-[#6b7280] text-xs">
                         No matching dies found.
                       </div>
                     ) : (
@@ -424,37 +421,31 @@ export function DashboardPage() {
                           const isHighlighted = index === activeIndex
                           return (
                             <div 
-                              key={die.die_id}
+                              key={die.die_id} 
                               onClick={() => {
                                 navigate(`/dies/${die.die_id}`)
                                 setQ('')
                                 setShowDropdown(false)
                                 setActiveIndex(-1)
                               }}
-                              className={`p-4 cursor-pointer flex justify-between items-center transition duration-150 ${
-                                isHighlighted ? 'bg-slate-800/80 border-l-2 border-blue-500' : 'hover:bg-slate-800'
+                              className={`p-2.5 cursor-pointer flex justify-between items-center transition-colors ${
+                                isHighlighted ? 'bg-[#141414] border-l-2 border-blue-500' : 'hover:bg-[#141414]'
                               }`}
                             >
                               <div className="flex flex-col text-left">
-                                <span className="font-bold text-white text-sm">{sizeStr}</span>
-                                <span className="text-xs text-slate-400 mt-0.5">
-                                  {die.die_type} • {die.die_id} • {die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : 'No Location'}
+                                <span className="font-bold text-[#e4e4e4] text-xs">{sizeStr}</span>
+                                <span className="text-[10px] text-[#6b7280] mt-0.5">
+                                  {die.die_type} • {die.die_id} • {die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : 'NO LOCATION'}
                                 </span>
                               </div>
-                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
-                                die.status === 'AVAILABLE' 
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                  : die.status === 'RUNNING'
-                                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                  : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                              }`}>
+                              <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider rounded-sm border border-[#2a2a2a] bg-[#141414] text-[#e4e4e4]">
                                 {die.status}
                               </span>
                             </div>
                           )
                         })}
-                        <div className="p-2 bg-slate-950/60 text-center text-slate-500 text-[10px] font-mono border-t border-slate-800/40">
-                          Use <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">↓/↑</kbd> or <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Tab</kbd> to navigate, <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-300 text-[9px]">Enter</kbd> to open
+                        <div className="p-1.5 bg-[#0a0a0a] text-center text-[#6b7280] text-[9px] font-mono border-t border-[#1a1a1a]">
+                          Use <kbd className="border border-[#2a2a2a] px-1 py-0.2 rounded-sm bg-[#141414] text-[#e4e4e4]">↓/↑</kbd> to navigate, <kbd className="border border-[#2a2a2a] px-1 py-0.2 rounded-sm bg-[#141414] text-[#e4e4e4]">ENTER</kbd> to open
                         </div>
                         {searchDiesData && searchDiesData.total > 6 && (
                           <div
@@ -462,7 +453,7 @@ export function DashboardPage() {
                               setShowDropdown(false)
                               document.getElementById('search-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                             }}
-                            className="p-3 bg-slate-950/40 text-center text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                            className="p-2 bg-[#0a0a0a] text-center text-xs text-blue-400 hover:text-blue-300 font-mono uppercase cursor-pointer"
                           >
                             View all {searchDiesData.total} results below ↓
                           </div>
@@ -475,81 +466,81 @@ export function DashboardPage() {
 
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl border font-semibold transition-all duration-300 ${
+                className={`flex items-center justify-center space-x-1.5 px-3 py-2 rounded-sm border text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer ${
                   showFilters 
-                    ? 'bg-blue-600/10 text-blue-400 border-blue-500/30' 
-                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                    ? 'bg-[#141414] text-blue-400 border-blue-500/50' 
+                    : 'bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4] border-[#2a2a2a]'
                 }`}
               >
-                <SlidersHorizontal className="h-5 w-5" />
+                <SlidersHorizontal className="h-3.5 w-3.5" />
                 <span>Filters</span>
               </button>
             </div>
 
             {showFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-800/80">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t border-[#1a1a1a] font-mono text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+                  <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Type</label>
                   <select 
                     value={dieType}
                     onChange={(e) => { setDieType(e.target.value); setSizeMin(''); setSizeMax(''); setWidthMin(''); setWidthMax(''); setThickMin(''); setThickMax(''); }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:border-blue-500 focus:outline-none font-mono"
                   >
-                    <option value="">All Types</option>
-                    <option value="ROUND">Round</option>
-                    <option value="FLAT">Flat</option>
+                    <option value="">ALL TYPES</option>
+                    <option value="ROUND">ROUND</option>
+                    <option value="FLAT">FLAT</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                  <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Status</label>
                   <select 
                     value={statusVal}
                     onChange={(e) => setStatusVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:border-blue-500 focus:outline-none font-mono"
                   >
-                    <option value="">All Statuses</option>
-                    <option value="AVAILABLE">Available</option>
-                    <option value="RUNNING">Running</option>
-                    <option value="CLEANING">Cleaning</option>
-                    <option value="POLISHING">Polishing</option>
-                    <option value="DAMAGED">Damaged</option>
-                    <option value="SCRAPPED">Scrapped</option>
-                    <option value="MISSING">Missing</option>
-                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="">ALL STATUSES</option>
+                    <option value="AVAILABLE">AVAILABLE</option>
+                    <option value="RUNNING">RUNNING</option>
+                    <option value="CLEANING">CLEANING</option>
+                    <option value="POLISHING">POLISHING</option>
+                    <option value="DAMAGED">DAMAGED</option>
+                    <option value="SCRAPPED">SCRAPPED</option>
+                    <option value="MISSING">MISSING</option>
+                    <option value="MAINTENANCE">MAINTENANCE</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Casing</label>
+                  <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Casing</label>
                   <input 
                     type="text" 
                     placeholder="e.g. 25x10"
                     value={casing}
                     onChange={(e) => setCasing(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:border-blue-500 focus:outline-none font-mono"
                   />
                 </div>
 
                 {dieType === 'ROUND' && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Size Range (mm)</label>
-                    <div className="flex gap-2">
+                    <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Size Range (mm)</label>
+                    <div className="flex gap-1.5">
                       <input 
                         type="number" 
                         step="0.001"
-                        placeholder="Min"
+                        placeholder="MIN"
                         value={sizeMin}
                         onChange={(e) => setSizeMin(e.target.value)}
-                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                       />
                       <input 
                         type="number" 
                         step="0.001"
-                        placeholder="Max"
+                        placeholder="MAX"
                         value={sizeMax}
                         onChange={(e) => setSizeMax(e.target.value)}
-                        className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                        className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                       />
                     </div>
                   </div>
@@ -558,45 +549,45 @@ export function DashboardPage() {
                 {dieType === 'FLAT' && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Width (mm)</label>
-                      <div className="flex gap-2">
+                      <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Width (mm)</label>
+                      <div className="flex gap-1.5">
                         <input 
                           type="number" 
                           step="0.001"
-                          placeholder="Min"
+                          placeholder="MIN"
                           value={widthMin}
                           onChange={(e) => setWidthMin(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                         />
                         <input 
                           type="number" 
                           step="0.001"
-                          placeholder="Max"
+                          placeholder="MAX"
                           value={widthMax}
                           onChange={(e) => setWidthMax(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Thickness (mm)</label>
-                      <div className="flex gap-2">
+                      <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">Thickness (mm)</label>
+                      <div className="flex gap-1.5">
                         <input 
                           type="number" 
                           step="0.001"
-                          placeholder="Min"
+                          placeholder="MIN"
                           value={thickMin}
                           onChange={(e) => setThickMin(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                         />
                         <input 
                           type="number" 
                           step="0.001"
-                          placeholder="Max"
+                          placeholder="MAX"
                           value={thickMax}
                           onChange={(e) => setThickMax(e.target.value)}
-                          className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-300 focus:outline-none"
+                          className="w-1/2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2 text-[#e4e4e4] focus:outline-none font-mono"
                         />
                       </div>
                     </div>
@@ -614,7 +605,7 @@ export function DashboardPage() {
       </div>
 
       {/* Maintenance Queue & Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5 items-stretch">
         <div className="lg:col-span-2">
           <MaintenanceQueue />
         </div>
@@ -624,26 +615,26 @@ export function DashboardPage() {
       </div>
 
       {hasActiveFilter && (
-        <div id="search-results" className="mt-8 border-t border-slate-800/80 pt-8 border-dashed">
-          <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
-            <h3 className="text-lg font-semibold text-slate-300">
+        <div id="search-results" className="mt-6 border-t border-[#2a2a2a] pt-5">
+          <div className="mb-4 flex justify-between items-center flex-wrap gap-3 font-mono">
+            <h3 className="text-xs font-medium uppercase tracking-[0.05em] text-[#e4e4e4]">
               {q ? (
-                <>Search Results for <span className="text-blue-400">"{q}"</span> <span className="text-xs font-normal text-slate-400 ml-2">({searchDiesData?.total || 0} matching {searchDiesData?.total === 1 ? 'die' : 'dies'} found)</span></>
+                <>SEARCH RESULTS FOR <span className="text-blue-400">"{q}"</span> <span className="text-[10px] text-[#6b7280] ml-2">({searchDiesData?.total || 0} MATCHING DIES)</span></>
               ) : (
-                <>Filtered Search Results <span className="text-xs font-normal text-slate-400 ml-2">({searchDiesData?.total || 0} matching {searchDiesData?.total === 1 ? 'die' : 'dies'} found)</span></>
+                <>FILTERED RESULTS <span className="text-[10px] text-[#6b7280] ml-2">({searchDiesData?.total || 0} MATCHING DIES)</span></>
               )}
             </h3>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl shadow-inner text-xs font-semibold text-slate-400">
-                <span>Sort:</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-[#0f0f0f] border border-[#2a2a2a] px-2.5 py-1 rounded-sm text-xs text-[#6b7280]">
+                <span className="uppercase text-[10px]">SORT:</span>
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as any)}
-                  className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-[#e4e4e4] font-mono focus:outline-none cursor-pointer uppercase text-xs"
                 >
-                  <option value="default" className="bg-slate-950 text-slate-300">Relevance</option>
-                  <option value="size_asc" className="bg-slate-950 text-slate-300">Size: Small to Large</option>
-                  <option value="size_desc" className="bg-slate-950 text-slate-300">Size: Large to Small</option>
+                  <option value="default" className="bg-[#0f0f0f] text-[#e4e4e4]">RELEVANCE</option>
+                  <option value="size_asc" className="bg-[#0f0f0f] text-[#e4e4e4]">SIZE: ASC</option>
+                  <option value="size_desc" className="bg-[#0f0f0f] text-[#e4e4e4]">SIZE: DESC</option>
                 </select>
               </div>
 
@@ -660,27 +651,27 @@ export function DashboardPage() {
                   ...(thickMin && { thick_min: thickMin }),
                   ...(thickMax && { thick_max: thickMax }),
                 }).toString()}`} 
-                className="text-sm text-blue-400 hover:underline"
+                className="text-xs text-blue-400 hover:opacity-80 uppercase font-mono"
               >
-                View in Inventory
+                View in Inventory →
               </Link>
             </div>
           </div>
 
           {isSearchLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(3)].map((_, i) => (
                 <CardSkeleton key={i} />
               ))}
             </div>
           ) : searchDiesData?.results?.length === 0 ? (
             <EmptyState
-              title="No Dies Found"
+              title="NO DIES FOUND"
               description="No dies in inventory match your active search term or filter criteria. Try clearing search filters."
             />
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchDies?.map((die: any) => 
                   die.die_type === 'ROUND' ? (
                     <RoundDieCard 
@@ -700,13 +691,13 @@ export function DashboardPage() {
 
               {/* Pagination Controls */}
               {searchDiesData && searchDiesData.total > pageSize && (
-                <div className="mt-8 flex justify-between items-center bg-slate-900/50 border border-slate-800/80 px-4 py-3 rounded-xl flex-wrap gap-4">
-                  <div className="text-xs text-slate-400 font-medium">
-                    Showing <span className="font-bold text-slate-200">{((page - 1) * pageSize) + 1}</span> to{' '}
-                    <span className="font-bold text-slate-200">
+                <div className="mt-5 flex justify-between items-center bg-[#0f0f0f] border border-[#1a1a1a] px-3 py-2 rounded-sm flex-wrap gap-3 font-mono">
+                  <div className="text-xs text-[#6b7280]">
+                    SHOWING <span className="font-bold text-[#e4e4e4] tabular-nums">{((page - 1) * pageSize) + 1}</span> TO{' '}
+                    <span className="font-bold text-[#e4e4e4] tabular-nums">
                       {Math.min(page * pageSize, searchDiesData.total)}
                     </span>{' '}
-                    of <span className="font-bold text-slate-200">{searchDiesData.total}</span> dies
+                    OF <span className="font-bold text-[#e4e4e4] tabular-nums">{searchDiesData.total}</span> DIES
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -715,7 +706,7 @@ export function DashboardPage() {
                         setPage(prev => Math.max(1, prev - 1))
                         window.scrollTo({ top: 350, behavior: 'smooth' })
                       }}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-bold text-slate-200 rounded-lg transition-colors border border-slate-700/50 cursor-pointer"
+                      className="px-3 py-1 bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-xs font-mono uppercase text-[#e4e4e4] rounded-sm transition-colors border border-[#2a2a2a] cursor-pointer"
                     >
                       Previous
                     </button>
@@ -725,7 +716,7 @@ export function DashboardPage() {
                         setPage(prev => prev + 1)
                         window.scrollTo({ top: 350, behavior: 'smooth' })
                       }}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-bold text-slate-200 rounded-lg transition-colors border border-slate-700/50 cursor-pointer"
+                      className="px-3 py-1 bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-xs font-mono uppercase text-[#e4e4e4] rounded-sm transition-colors border border-[#2a2a2a] cursor-pointer"
                     >
                       Next
                     </button>
@@ -798,41 +789,41 @@ function MaintenanceQueue() {
         durationMs,
         durationStr,
       }
-    }).sort((a: any, b: any) => b.durationMs - a.durationMs) // Longest duration in state first
+    }).sort((a: any, b: any) => b.durationMs - a.durationMs)
   }, [diesList, historyData])
 
   if (isDiesLoading || isHistoryLoading) {
     return (
-      <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px]">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-4">Maintenance Due Queue</h3>
+      <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] font-mono">
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">03 MAINTENANCE DUE QUEUE</h3>
         <CardSkeleton />
       </div>
     )
   }
 
   return (
-    <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px] flex flex-col justify-between">
+    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col justify-between font-mono">
       <div>
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Maintenance Due Queue</h3>
-        <p className="text-slate-500 text-xs mb-4">Dies currently undergoing maintenance, sorted by duration in state.</p>
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">03 MAINTENANCE DUE QUEUE</h3>
+        <p className="text-[#6b7280] text-[11px] mb-3">Dies currently undergoing maintenance, sorted by duration.</p>
         
         {maintenanceList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <span className="text-slate-500 text-sm">No dies currently in maintenance.</span>
+          <div className="flex flex-col items-center justify-center py-8">
+            <span className="text-[#6b7280] text-xs uppercase">No dies currently in maintenance.</span>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
-            <table className="w-full text-left text-xs font-sans text-slate-300">
+          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+            <table className="w-full text-left text-xs font-mono text-[#e4e4e4]">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Die ID</th>
-                  <th className="py-2.5 px-3">Type</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Duration</th>
-                  <th className="py-2.5 px-3">Location</th>
+                <tr className="border-b border-[#2a2a2a] text-[#6b7280] uppercase tracking-wider text-[11px]">
+                  <th className="py-2 px-2.5">DIE ID</th>
+                  <th className="py-2 px-2.5">TYPE</th>
+                  <th className="py-2 px-2.5">STATUS</th>
+                  <th className="py-2 px-2.5">DURATION</th>
+                  <th className="py-2 px-2.5">LOCATION</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-[#1a1a1a]">
                 {maintenanceList.map((die: any) => (
                   <tr
                     key={die.die_id}
@@ -840,23 +831,17 @@ function MaintenanceQueue() {
                     tabIndex={0}
                     onClick={() => navigate(`/dies/${die.die_id}`)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${die.die_id}`) } }}
-                    className="hover:bg-slate-800/35 transition duration-150 cursor-pointer group"
+                    className="hover:bg-[#1a1a1a] transition-colors cursor-pointer group"
                   >
-                    <td className="py-3 px-3 font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
-                    <td className="py-3 px-3">{die.die_type}</td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${
-                        die.status === 'CLEANING'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          : die.status === 'POLISHING'
-                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                      }`}>
+                    <td className="py-2 px-2.5 font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
+                    <td className="py-2 px-2.5 text-[#6b7280]">{die.die_type}</td>
+                    <td className="py-2 px-2.5">
+                      <span className="px-1.5 py-0.5 rounded-sm border text-[10px] font-mono uppercase bg-[#141414] border-[#2a2a2a] text-[#e4e4e4]">
                         {die.status}
                       </span>
                     </td>
-                    <td className="py-3 px-3 font-mono text-slate-400">{die.durationStr}</td>
-                    <td className="py-3 px-3 text-slate-400">{die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}</td>
+                    <td className="py-2 px-2.5 font-mono text-[#6b7280] tabular-nums">{die.durationStr}</td>
+                    <td className="py-2 px-2.5 text-[#6b7280]">{die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -893,23 +878,23 @@ function RecentActivityFeed() {
 
   if (isLoading) {
     return (
-      <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px]">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-4">Recent Activity</h3>
+      <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] font-mono">
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">04 RECENT ACTIVITY</h3>
         <CardSkeleton />
       </div>
     )
   }
 
   return (
-    <div className="glass-panel rounded-2xl p-6 shadow-xl border border-slate-800/80 h-full min-h-[300px] flex flex-col">
+    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col font-mono">
       <div>
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-heading mb-1">Recent Activity</h3>
-        <p className="text-slate-500 text-xs mb-4">Last 10 updates performed across extrusion dies.</p>
+        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">04 RECENT ACTIVITY</h3>
+        <p className="text-[#6b7280] text-[11px] mb-3">Last 10 updates across registry.</p>
       </div>
 
-      <div className="flex-grow space-y-3.5 overflow-y-auto max-h-[330px] pr-2 scrollbar-thin">
+      <div className="flex-grow space-y-2 overflow-y-auto max-h-[300px] pr-1">
         {historyItems.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
+          <div className="text-center py-8 text-[#6b7280] text-xs">
             No recent activity logged.
           </div>
         ) : (
@@ -920,19 +905,19 @@ function RecentActivityFeed() {
               tabIndex={0}
               onClick={() => navigate(`/dies/${item.die_id}`)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${item.die_id}`) } }}
-              className="flex items-start gap-2.5 p-2 rounded-xl transition duration-150 cursor-pointer group"
+              className="flex items-start gap-2 p-1.5 rounded-sm hover:bg-[#141414] transition-colors cursor-pointer group border-b border-[#1a1a1a]"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-              <div className="min-w-0 flex-grow text-xs leading-normal">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
+              <div className="min-w-0 flex-grow text-xs leading-normal font-mono">
                 <div className="flex justify-between items-baseline gap-2">
-                  <span className="font-bold text-white group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
-                  <span className="text-[9px] font-mono text-slate-500 shrink-0">{getRelativeTime(item.timestamp)}</span>
+                  <span className="font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
+                  <span className="text-[9px] font-mono text-[#6b7280] shrink-0">{getRelativeTime(item.timestamp)}</span>
                 </div>
-                <p className="text-slate-300 mt-1">
-                  Updated <span className="font-semibold text-slate-200">{item.field_name}</span> from <span className="font-mono text-slate-400">"{item.old_value || '—'}"</span> to <span className="font-mono text-slate-300 font-bold">"{item.new_value || '—'}"</span>
+                <p className="text-[#6b7280] mt-0.5 text-[11px]">
+                  {item.field_name}: <span className="text-[#404040]">"{item.old_value || '—'}"</span> → <span className="text-[#e4e4e4] font-medium">"{item.new_value || '—'}"</span>
                 </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Changed by <span className="font-semibold text-slate-400">{item.changed_by_username || 'System'}</span>
+                <p className="text-[9px] text-[#404040] mt-0.5">
+                  BY <span className="text-[#6b7280]">{item.changed_by_username || 'System'}</span>
                 </p>
               </div>
             </div>
@@ -942,4 +927,3 @@ function RecentActivityFeed() {
     </div>
   )
 }
-

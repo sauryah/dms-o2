@@ -17,36 +17,36 @@ export function DieStats({
   const inactiveDies = totalDies - activeDies
 
   return (
-    <div>
-      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <Info className="h-4 w-4 text-blue-500" />
-        <span>Summary Statistics</span>
+    <div className="font-mono">
+      <h3 className="text-xs font-medium text-[#6b7280] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5 text-blue-500" />
+        <span>01 SUMMARY STATISTICS</span>
       </h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Sets Card */}
-        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Sets</span>
-          <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{totalSets}</span>
+        <div className="bg-[#0f0f0f] rounded-sm p-3.5 flex flex-col justify-between border border-[#1a1a1a]">
+          <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">TOTAL SETS</span>
+          <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums mt-1">{totalSets}</span>
         </div>
 
         {/* Total Dies Card */}
-        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10">Total Dies</span>
-          <span className="text-2xl md:text-3xl font-black text-white mt-2 relative z-10 font-heading">{totalDies}</span>
+        <div className="bg-[#0f0f0f] rounded-sm p-3.5 flex flex-col justify-between border border-[#1a1a1a]">
+          <span className="text-[#6b7280] text-[10px] uppercase tracking-wider">TOTAL DIES</span>
+          <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums mt-1">{totalDies}</span>
         </div>
 
         {/* Active Dies Card */}
-        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-emerald hover:border-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Active Dies</span>
-          <span className="text-2xl md:text-3xl font-black text-emerald-400 mt-2 relative z-10 font-heading">
+        <div className="bg-[#0f0f0f] rounded-sm p-3.5 flex flex-col justify-between border border-[#1a1a1a] border-l-2 border-l-[#10b981]">
+          <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-medium">ACTIVE DIES</span>
+          <span className="text-xl font-bold font-mono text-emerald-400 tabular-nums mt-1">
             {activeDies}
           </span>
         </div>
 
         {/* Inactive Dies Card */}
-        <div className="glass-panel rounded-2xl p-5 shadow-lg flex flex-col justify-between border border-slate-800/40 relative overflow-hidden blueprint-grid glow-rose hover:border-rose-500/20 hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider relative z-10 font-bold">Inactive Dies</span>
-          <span className="text-2xl md:text-3xl font-black text-rose-400 mt-2 relative z-10 font-heading">
+        <div className="bg-[#0f0f0f] rounded-sm p-3.5 flex flex-col justify-between border border-[#1a1a1a] border-l-2 border-l-[#ef4444]">
+          <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-medium">INACTIVE DIES</span>
+          <span className="text-xl font-bold font-mono text-red-400 tabular-nums mt-1">
             {inactiveDies}
           </span>
         </div>

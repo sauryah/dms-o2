@@ -48,26 +48,26 @@ export function DataTable({
   const renderSortIcon = (col: Column) => {
     if (!col.sortable) return null
     if (sortField !== col.key) {
-      return <ArrowUpDown className="ml-1.5 h-3.5 w-3.5 opacity-40 shrink-0" />
+      return <ArrowUpDown className="ml-1.5 h-3 w-3 opacity-40 shrink-0" />
     }
     return sortOrder === 'asc' 
-      ? <ArrowUp className="ml-1.5 h-3.5 w-3.5 text-blue-400 shrink-0" />
-      : <ArrowDown className="ml-1.5 h-3.5 w-3.5 text-blue-400 shrink-0" />
+      ? <ArrowUp className="ml-1.5 h-3 w-3 text-blue-500 shrink-0" />
+      : <ArrowDown className="ml-1.5 h-3 w-3 text-blue-500 shrink-0" />
   }
 
   return (
-    <div className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-xl">
+    <div className="w-full bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden">
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="sticky top-0 z-10 bg-slate-950 border-b border-[var(--color-border)] select-none">
+            <tr className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-[#2a2a2a] select-none">
               {selectedIds && onSelectAll && (
-                <th className="py-4 px-5 w-12 text-center align-middle">
+                <th className="py-2.5 px-3 w-10 text-center align-middle">
                   <input
                     type="checkbox"
                     checked={rows.length > 0 && rows.every(row => selectedIds.has(String(row.die_id || row.id)))}
                     onChange={(e) => onSelectAll(e.target.checked)}
-                    className="h-4 w-4 rounded border-[var(--color-border)] bg-slate-950 text-blue-500 focus:ring-blue-900 cursor-pointer"
+                    className="h-3.5 w-3.5 rounded-none border-[#2a2a2a] bg-[#0f0f0f] text-blue-500 focus:ring-0 cursor-pointer"
                   />
                 </th>
               )}
@@ -75,8 +75,8 @@ export function DataTable({
                 <th
                   key={col.key}
                   onClick={() => handleHeaderClick(col)}
-                  className={`py-4 px-5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] font-mono ${
-                    col.sortable ? 'cursor-pointer hover:text-[var(--color-text)] transition-colors' : ''
+                  className={`py-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-[#6b7280] font-mono ${
+                    col.sortable ? 'cursor-pointer hover:text-[#e4e4e4] transition-colors' : ''
                   }`}
                 >
                   <div className="flex items-center">
@@ -87,19 +87,19 @@ export function DataTable({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--color-border)]/50">
+          <tbody className="divide-y divide-[#1a1a1a]">
             {loading ? (
               // Loading state: render 5 rows of Skeleton block cells
               Array.from({ length: 5 }).map((_, rIdx) => (
                 <tr key={rIdx} className="bg-transparent">
                   {selectedIds && onSelectAll && (
-                    <td className="py-4 px-5 w-12 text-center align-middle">
-                      <Skeleton width="w-4" height="h-4" />
+                    <td className="py-2 px-3 w-10 text-center align-middle">
+                      <Skeleton width="w-3.5" height="h-3.5" />
                     </td>
                   )}
                   {columns.map((col) => (
-                    <td key={col.key} className="py-4 px-5">
-                      <Skeleton width="w-2/3" height="h-4" />
+                    <td key={col.key} className="py-2 px-3">
+                      <Skeleton width="w-2/3" height="h-3.5" />
                     </td>
                   ))}
                 </tr>
@@ -108,7 +108,7 @@ export function DataTable({
               // Empty state
               <tr>
                 <td colSpan={columns.length + (selectedIds ? 1 : 0)} className="p-0">
-                  <div className="py-16">
+                  <div className="py-12">
                     <EmptyState message={emptyMessage} />
                   </div>
                 </td>
@@ -122,20 +122,20 @@ export function DataTable({
                   <tr
                     key={row.id || row.die_id || rIdx}
                     onClick={() => onRowClick && onRowClick(row)}
-                    className={`group transition-colors duration-150 ${
-                      onRowClick ? 'cursor-pointer hover:bg-[var(--color-surface-2)]/30' : ''
-                    } ${isSelected ? 'bg-blue-950/20' : rIdx % 2 === 0 ? 'bg-transparent' : 'bg-[var(--color-surface-2)]/10'}`}
+                    className={`group transition-colors duration-100 ${
+                      onRowClick ? 'cursor-pointer hover:bg-[#1a1a1a]' : ''
+                    } ${isSelected ? 'bg-[#141414] border-l-2 border-l-blue-500' : 'bg-transparent hover:bg-[#1a1a1a]'}`}
                   >
                     {selectedIds && onSelectId && (
                       <td 
-                        className="py-3.5 px-5 w-12 text-center align-middle"
+                        className="py-2 px-3 w-10 text-center align-middle"
                         onClick={(e) => e.stopPropagation()} // Prevent triggering onRowClick
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => onSelectId(rowId, e.target.checked)}
-                          className="h-4 w-4 rounded border-[var(--color-border)] bg-slate-950 text-blue-500 focus:ring-blue-900 cursor-pointer"
+                          className="h-3.5 w-3.5 rounded-none border-[#2a2a2a] bg-[#0f0f0f] text-blue-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
                     )}
@@ -145,8 +145,8 @@ export function DataTable({
                       return (
                         <td 
                           key={col.key} 
-                          className={`py-3.5 px-5 text-sm text-[var(--color-text)] font-semibold align-middle ${
-                            isNumericVal ? 'font-mono tracking-tight text-xs' : 'font-sans'
+                          className={`py-2 px-3 text-[13px] text-[#e4e4e4] align-middle ${
+                            isNumericVal ? 'font-mono tracking-tight' : 'font-mono'
                           }`}
                         >
                           {col.render ? col.render(row) : (val ?? '—')}

@@ -121,23 +121,25 @@ export function DieSeriesGeneratorPage() {
   }, [undo, redo]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#0B1220] py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono">
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 border-b border-[#2a2a2a] pb-4">
           <button
             onClick={() => navigate('/tools')}
-            className="p-2 rounded-lg bg-[#1E293B] border border-white/[0.06] text-[#94A3B8] hover:text-white hover:border-blue-500/30 transition-all"
+            className="p-1.5 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] hover:border-blue-500/50 transition cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-violet-400" />
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-sm bg-[#141414] border border-purple-500/30 text-purple-400">
+              <Zap className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white m-0">Die Series Generator</h1>
-              <p className="text-xs text-slate-400 m-0">Generate optimized die schedules from elongation targets</p>
+              <div className="flex items-center gap-1.5 text-[10px] text-[#6b7280] uppercase tracking-wider">
+                <span>01 SERIES GENERATION ENGINE</span>
+              </div>
+              <h1 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Die Series Generator</h1>
             </div>
           </div>
         </div>
@@ -162,12 +164,12 @@ export function DieSeriesGeneratorPage() {
 
             <DieProgression dies={dies} onDiesChange={setDies} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <ElongationChart passes={passes} />
               <AreaReductionChart passes={passes} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {stats && <StatisticsPanel stats={stats} />}
               {consistency && <PassConsistency consistency={consistency} />}
             </div>

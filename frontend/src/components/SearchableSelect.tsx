@@ -155,15 +155,15 @@ export function SearchableSelect({
   }
 
   return (
-    <div ref={containerRef} className="relative w-full" onKeyDown={handleKeyDown}>
+    <div ref={containerRef} className="relative w-full font-mono" onKeyDown={handleKeyDown}>
       {/* Trigger Button */}
       <button
         id={id}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(prev => !prev)}
-        className={`flex items-center justify-between w-full text-left transition-all duration-300 outline-none ${className} ${
-          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        className={`flex items-center justify-between w-full text-left transition-colors outline-none bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm py-1.5 px-2.5 text-xs text-[#e4e4e4] ${className} ${
+          disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-[#3b82f6]'
         }`}
         role="combobox"
         aria-expanded={isOpen}
@@ -174,15 +174,15 @@ export function SearchableSelect({
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-slate-400 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 ml-1.5 transition-transform duration-150 text-[#6b7280] shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-1.5 z-50 rounded-xl border border-slate-800 bg-slate-950/95 backdrop-blur-md shadow-2xl overflow-hidden animate-fadeIn max-h-[300px] flex flex-col">
+        <div className="absolute left-0 right-0 mt-1 z-50 rounded-sm border border-[#2a2a2a] bg-[#0f0f0f] overflow-hidden animate-fadeIn max-h-[280px] flex flex-col font-mono">
           {/* Search Input Box */}
-          <div className="p-2 border-b border-slate-900/60 flex items-center gap-2 bg-slate-900/20">
-            <Search className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1.5" />
+          <div className="p-1.5 border-b border-[#2a2a2a] flex items-center gap-1.5 bg-[#0a0a0a]">
+            <Search className="w-3 h-3 text-[#6b7280] shrink-0 ml-1" />
             <input
               ref={searchInputRef}
               type="text"
@@ -192,7 +192,7 @@ export function SearchableSelect({
                 setSearchQuery(e.target.value)
                 setHighlightedIndex(-1)
               }}
-              className="w-full bg-transparent border-0 outline-none text-xs text-white placeholder-slate-500 py-1"
+              className="w-full bg-transparent border-0 outline-none text-xs text-[#e4e4e4] placeholder-[#404040] py-0.5"
               onClick={e => e.stopPropagation()}
               aria-label="Search options"
             />
@@ -200,16 +200,16 @@ export function SearchableSelect({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="p-1 hover:bg-slate-800 rounded-md transition text-slate-400 hover:text-white"
+                className="p-0.5 hover:bg-[#141414] rounded-sm transition text-[#6b7280] hover:text-[#e4e4e4]"
                 aria-label="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
 
           {/* Options List */}
-          <div ref={listRef} className="overflow-y-auto py-1 flex-1 max-h-[220px]" role="listbox" aria-label={placeholder}>
+          <div ref={listRef} className="overflow-y-auto py-0.5 flex-1 max-h-[200px]" role="listbox" aria-label={placeholder}>
             {/* Show "Unassigned" default option only if search query is empty */}
             {!searchQuery && (
               <button
@@ -218,12 +218,12 @@ export function SearchableSelect({
                 onClick={() => handleSelect('')}
                 role="option"
                 aria-selected={value === ''}
-                className={`w-full text-left px-3.5 py-2 text-xs transition duration-150 ${
+                className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                   value === '' 
-                    ? 'bg-blue-600/20 text-blue-400 font-semibold' 
+                    ? 'bg-[#141414] text-blue-400 font-medium' 
                     : highlightedIndex === 0
-                      ? 'bg-slate-800/60 text-slate-200'
-                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-300'
+                      ? 'bg-[#1a1a1a] text-[#e4e4e4]'
+                      : 'text-[#6b7280] hover:bg-[#1a1a1a] hover:text-[#e4e4e4]'
                 }`}
               >
                 {emptyLabel}
@@ -244,12 +244,12 @@ export function SearchableSelect({
                     onClick={() => handleSelect(opt.value)}
                     role="option"
                     aria-selected={isSelected}
-                    className={`w-full text-left px-3.5 py-2 text-xs transition duration-150 ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                       isSelected
-                        ? 'bg-blue-600/20 text-blue-400 font-semibold border-l-2 border-blue-500'
+                        ? 'bg-[#141414] text-blue-400 font-medium border-l-2 border-blue-500'
                         : isHighlighted
-                          ? 'bg-slate-800/60 text-slate-200'
-                          : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                          ? 'bg-[#1a1a1a] text-[#e4e4e4]'
+                          : 'text-[#e4e4e4] hover:bg-[#1a1a1a]'
                     }`}
                   >
                     {opt.label}
@@ -257,7 +257,7 @@ export function SearchableSelect({
                 )
               })
             ) : (
-              <div className="px-3.5 py-3 text-[10px] text-center text-slate-500">
+              <div className="px-3 py-2 text-[10px] text-center text-[#6b7280]">
                 {emptyMessage}
               </div>
             )}
