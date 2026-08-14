@@ -1,5 +1,28 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-14 Dark Terminal Design System & ROOT-Only Dual-Theme Switcher
+*   **Feature**: Completed full platform visual transformation to the "Dark Terminal / Bloomberg-Tape" design system and built a persistent Dual-Theme Engine supporting seamless switching between Dark Terminal (`data-theme="terminal"`) and Classic Slate (`data-theme="classic"`).
+    *   **Dark Terminal Architecture**: Applied `#0a0a0a` canvas, `#0f0f0f` containers, `#141414` elevated surfaces, 1px flat dividers (`#1a1a1a` / `#2a2a2a`), monospace font stack (`ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`), numbered section headers (`01`, `02`, `03...`), and tabular numbers across all 21 shared UI components and 15 views.
+    *   **Dual-Theme Provider & CSS Tokens**: Created `ThemeContext.tsx` with multi-tab storage sync (`localStorage('dms_app_theme')`) and CSS custom property root mappings for both terminal and classic themes.
+    *   **Access Control**: Enforced strict authorization allowing only `role === 'ROOT'` operators to switch or configure the application theme. Non-root users (`ADMIN`, `OPERATOR`, `AUDITOR`, `VIEWER`) have theme toggles hidden and receive disabled read-only indicators in Settings.
+    *   **Controls & Integrations**: Added 1-click theme switch toggle in Navbar desktop and mobile drawer for ROOT, a dedicated System Appearance configuration tab in `SettingsPage.tsx` with live preview cards, and theme switching commands in `CommandPalette.tsx` (`Ctrl+K`).
+    *   **Bug & Type Fixes**: Fixed `ConfirmDialogProps` interface compatibility, removed forced auto-casing on username/search inputs, and ensured 100% test compliance for `RoundDieCard`, `FlatDieCard`, and `StatusBadge`.
+*   **Affected Modules**: `frontend`, `docs`
+*   **Files Modified**:
+    *   [frontend/src/contexts/ThemeContext.tsx](file:///frontend/src/contexts/ThemeContext.tsx) - Dual-theme state, persistence, and ROOT access check.
+    *   [frontend/src/contexts/index.ts](file:///frontend/src/contexts/index.ts) - Theme context exports.
+    *   [frontend/src/index.css](file:///frontend/src/index.css) - Design tokens, CSS variables, and `.theme-classic` overrides.
+    *   [frontend/src/components/Navbar.tsx](file:///frontend/src/components/Navbar.tsx) - ROOT theme quick toggle (desktop & mobile).
+    *   [frontend/src/pages/SettingsPage.tsx](file:///frontend/src/pages/SettingsPage.tsx) - System Appearance tab and preview cards.
+    *   [frontend/src/components/CommandPalette.tsx](file:///frontend/src/components/CommandPalette.tsx) - Quick theme commands for ROOT.
+    *   [frontend/src/components/ConfirmDialog.tsx](file:///frontend/src/components/ConfirmDialog.tsx) - Unified prop signatures.
+    *   [frontend/src/components/ui/StatusBadge.tsx](file:///frontend/src/components/ui/StatusBadge.tsx) - CSS variable status colors.
+    *   [.dev/modules/frontend.md](file:///.dev/modules/frontend.md) - Frontend theme documentation.
+    *   [.dev/architecture/coding-standards.md](file:///.dev/architecture/coding-standards.md) - UI design system and input casing standards.
+    *   [.dev/architecture/decisions.md](file:///.dev/architecture/decisions.md) - ADR 6 on Dual-Theme Architecture with ROOT control.
+    *   [.dev/processes/engineering-workflow.md](file:///.dev/processes/engineering-workflow.md) - Theme verification checklist.
+*   **Testing Performed**: `npx tsc --noEmit` clean (0 errors); Vitest suite 69/69 passed (21/21 test files); Vite production build compiled cleanly in 25.66s.
+
 ### 2026-08-10 Enamel Die Inventory, Machine Stock & Monthly Audits (Stocktake)
 *   **Feature**: Created a comprehensive machine-specific die stock inventory and monthly recount system. Added Django backend models: `EnamelMachine` (dedicated for enameling lines), `MachineDieStock` (live stock tracker referencing EnamelMachine), `DieInventoryRecount` (audit sheet header), and `DieInventoryRecountItem` (audit quantities by size). Implemented DRF serializers, registered viewsets, and created a transaction-wrapped `/submit/` action that updates live enamel machine stock from audited tallies. Refactored the React frontend (`DieSetPlannerPage.tsx`) to support a tabbed interface (Calculator, Live Machine Stock, Stocktake & Recounts), inline CRUD management modal for Enamel Machines (adding, viewing, and deleting custom lines), dropdown options to quick-load machine/recount stocks, and spreadsheet-like modals for creating and committing audits.
 *   **Affected Modules**: `backend`, `frontend`

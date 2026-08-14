@@ -24,3 +24,9 @@
 *   **Date**: 2026-07-22
 *   **Problem**: Redis uses default RDB persistence only, risking data loss on crash. Docker services lack resource limits, risking OOM kills and resource starvation.
 *   **Decision**: Enable Redis AOF persistence with `appendfsync everysec` for durability. Add Docker resource limits (memory and CPU) to all services to prevent resource exhaustion. Add Redis maxmemory limit (256MB) with LRU eviction policy.
+
+## ADR 6: Dual-Theme Architecture (Dark Terminal & Classic Slate) with ROOT-Only Access Control
+*   **Date**: 2026-08-14
+*   **Problem**: The platform requires a high-density "Dark Terminal / Bloomberg-Tape" visual design for manufacturing telemetry, while also allowing operators to switch back to the "Classic Slate" modern industrial theme if desired, without fragmenting component implementations or allowing unauthorized users to modify system-wide appearance.
+*   **Decision**: Implement a unified theme provider (`ThemeContext.tsx`) and CSS custom property architecture (`[data-theme="terminal"]` vs `[data-theme="classic"]`). All UI primitives map to standard tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-running)`). Enforce strict authorization allowing only users with `role === 'ROOT'` to switch or configure the application theme. Synchronize active theme system-wide across tabs via `localStorage`.
+

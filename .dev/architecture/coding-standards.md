@@ -206,6 +206,23 @@ const DieCard: React.FC<DieCardProps> = React.memo(({ die, onRecut }) => {
 });
 ```
 
+### Frontend UI & Styling Standards (Dark Terminal & Dual-Theme Architecture)
+1. **Dual-Theme Support**:
+   - Every new component, page, or feature MUST be fully compatible with both **Dark Terminal (`data-theme="terminal"`)** and **Classic Slate (`data-theme="classic"`)**.
+   - Use standard design tokens: `#0a0a0a` / `var(--color-bg)`, `#0f0f0f` / `var(--color-surface)`, `#141414` / `var(--color-surface-elevated)`, `#1a1a1a` / `var(--color-border)`, `#2a2a2a` / `var(--color-border-visible)`, `#e4e4e4` / `var(--color-text)`, `#6b7280` / `var(--color-text-secondary)`.
+2. **Typography & Casing Rules**:
+   - **Labels, Badges, Section Headers, Metric Titles**: UPPERCASE with tracking (`uppercase tracking-wider font-mono`). Use numbered prefix conventions (`01`, `02`, `03...`) on major section headers.
+   - **Form Inputs & Textareas**: NEVER apply `uppercase` to `<input>` or `<textarea>` unless explicitly intended for all-caps IDs or serial numbers (e.g. Die ID). Usernames, passwords, first/last names, emails, search boxes, notes, and remarks MUST NOT have `uppercase` in their class names to prevent unintended forced auto-caps.
+3. **Status Badges & Colors**:
+   - Status indicators MUST use theme CSS variables (`var(--color-available)`, `var(--color-running)`, `var(--color-cleaning)`, `var(--color-polishing)`, `var(--color-damaged)`, `var(--color-scrapped)`, `var(--color-missing)`, `var(--color-maintenance)`) rather than hardcoded hex colors.
+4. **Theme Switching Authorization (ROOT-Only Rule)**:
+   - Only users with `role === 'ROOT'` are permitted to switch or configure the application theme.
+   - Any new theme controls or appearance settings MUST verify `canChangeTheme` (`role === 'ROOT'`).
+   - Non-root users (`ADMIN`, `OPERATOR`, `AUDITOR`, `VIEWER`) MUST NOT be presented with active theme mutation controls.
+5. **Zero-Error Compilation Policy**:
+   - Never introduce `@ts-ignore` or `any` workarounds to bypass compiler errors.
+   - Always run `npx tsc --noEmit` and `npm test` before committing any frontend code.
+
 ## Conventions
 
 ### Commit Messages

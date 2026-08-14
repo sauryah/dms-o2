@@ -35,16 +35,18 @@ Define the standard workflow for all engineering tasks on DMS-O2.
 - Keep changes focused and minimal
 
 ### 5. Verify
-- Run compilation checks (`python manage.py check`, `go build ./...`)
-- Execute test suite (`pytest`, `go test ./...`)
-- Verify no regressions
-- Check for security vulnerabilities
+- Run backend compilation checks (`python manage.py check`, `go build ./...`)
+- Run frontend type-check and tests (`npx tsc --noEmit`, `npm test`, `npm run build`)
+- Verify dual-theme rendering in both **Dark Terminal** and **Classic Slate** modes
+- Verify text input casing (no forced uppercase on user text inputs)
+- Verify that theme-switching operations require ROOT privileges
+- Verify no regressions or compiler warnings
 
 ### 6. Document
 - Update affected module docs in `modules/`
 - Update architecture docs if structural changes
 - Add ADR if significant decision made
-- Update `changelog-ai.md` with implementation summary
+- Update `changelog-dev.md` with implementation summary
 
 ### 7. Complete
 - Mark task as done in `state/active-task.md`
@@ -73,14 +75,16 @@ Ensure:
 3. Write table-driven unit tests verifying the change.
 ```
 
-### Frontend Component Modification
+### Frontend Component & Feature Implementation
 ```
 Modify [ComponentName] to implement [UI logic].
 Ensure:
-1. Use existing component library and design system.
-2. Handle loading and error states.
-3. Write unit tests for new functionality.
-4. Update Storybook stories if applicable.
+1. Use standard design system tokens (var(--color-bg), var(--color-surface), var(--color-running), etc.).
+2. Fully support both Dark Terminal (monospace) and Classic Slate (sans-serif) themes.
+3. Never apply uppercase to form inputs/textareas for user-entered text (usernames, names, notes, queries).
+4. Restrict any appearance or theme configuration controls to role === 'ROOT'.
+5. Handle loading, empty, and error states cleanly.
+6. Write unit tests in Vitest and ensure npx tsc --noEmit passes with zero errors.
 ```
 
 ## Escalation Triggers

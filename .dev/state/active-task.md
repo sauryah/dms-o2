@@ -7,15 +7,14 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Die Set Planner Tool — Inventory Capacity Calculator
+**Task:** Dark Terminal Design System & ROOT-Only Dual-Theme Switcher
 **Status:** Complete
-**Started:** 2026-08-08
-**Confidence:** 95%
+**Started:** 2026-08-14
+**Completed:** 2026-08-14
+**Confidence:** 100%
 
 ## Task Description
-Build a tool that calculates how many complete die sets can be produced from current
-inventory: paste inventory + paste one die series → parse & validate → compute maximum
-complete sets, bottleneck dies, missing dies, remaining stock, and unused inventory.
+Overhaul the entire DMS-O2 frontend application to the "Dark Terminal / Bloomberg-Tape" visual design system across all 21 shared UI components and 15 page modules. Build a persistent Dual-Theme Switcher allowing instantaneous swapping between Dark Terminal and Classic Slate themes, strictly restricted to ROOT administrators. Maintain zero-error TypeScript type checks, zero lint errors, and 100% passing test suites.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
