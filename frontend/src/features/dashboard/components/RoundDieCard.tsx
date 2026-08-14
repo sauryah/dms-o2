@@ -56,8 +56,8 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
         </div>
         <div>
           <span className="text-[#6b7280] block text-[9px] uppercase tracking-wider mb-0.5">LOCATION</span>
-          <span className="text-[#e4e4e4] font-mono truncate block" title={die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : undefined}>
-            {die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : '—'}
+          <span className="text-[#e4e4e4] font-mono truncate block" title={die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : undefined}>
+            {die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : '—'}
           </span>
         </div>
         <div>
