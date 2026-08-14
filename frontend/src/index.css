@@ -66,6 +66,117 @@
   --wdc-steel-light: #1f1f1f;
 }
 
+/* ==========================================================================
+   CLASSIC SLATE THEME (Industrial Modern)
+   ========================================================================== */
+html[data-theme="classic"],
+.theme-classic {
+  --color-bg:          #0B1220;
+  --color-surface:     #0F172A;
+  --color-surface-2:   #1E293B;
+  --color-surface-elevated: #1E293B;
+  --color-border:      #1E293B;
+  --color-border-visible: #334155;
+  --color-text:        #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-muted:       #64748B;
+  --color-muted-dark:  #334155;
+  --color-accent:      #38BDF8;
+  --color-accent-up:   #34D399;
+  --color-accent-down: #F87171;
+  --color-accent-neutral: #FBBF24;
+
+  --color-available:   #34D399;
+  --color-running:     #38BDF8;
+  --color-cleaning:    #FBBF24;
+  --color-polishing:   #A78BFA;
+  --color-damaged:     #FB923C;
+  --color-scrapped:    #F87171;
+  --color-missing:     #94A3B8;
+  --color-maintenance: #FBBF24;
+
+  --color-available-bg:   rgba(52, 211, 153, 0.12);
+  --color-available-bdr:  rgba(52, 211, 153, 0.35);
+  --color-running-bg:     rgba(56, 189, 248, 0.12);
+  --color-running-bdr:    rgba(56, 189, 248, 0.35);
+  --color-cleaning-bg:    rgba(251, 191, 36, 0.12);
+  --color-cleaning-bdr:   rgba(251, 191, 36, 0.35);
+  --color-polishing-bg:   rgba(167, 139, 250, 0.12);
+  --color-polishing-bdr:  rgba(167, 139, 250, 0.35);
+  --color-damaged-bg:     rgba(251, 146, 60, 0.12);
+  --color-damaged-bdr:    rgba(251, 146, 60, 0.35);
+  --color-scrapped-bg:    rgba(248, 113, 113, 0.12);
+  --color-scrapped-bdr:   rgba(248, 113, 113, 0.35);
+  --color-missing-bg:     rgba(100, 116, 139, 0.12);
+  --color-missing-bdr:    rgba(100, 116, 139, 0.35);
+  --color-maintenance-bg: rgba(251, 191, 36, 0.12);
+  --color-maintenance-bdr:rgba(251, 191, 36, 0.35);
+  --color-default-bg:     rgba(100, 116, 139, 0.12);
+  --color-default-bdr:    rgba(100, 116, 139, 0.35);
+
+  --wdc-primary: #38BDF8;
+  --wdc-primary-light: #7DD3FC;
+  --wdc-primary-dark: #0284C7;
+  --wdc-card: #0F172A;
+  --wdc-card-hover: #1E293B;
+  --wdc-input: #0F172A;
+  --wdc-success: #34D399;
+  --wdc-warning: #FBBF24;
+  --wdc-danger: #F87171;
+  --wdc-text-secondary: #94A3B8;
+  --wdc-border-focus: #38BDF8;
+  --wdc-glass: #0F172A;
+  --wdc-steel: #1E293B;
+  --wdc-steel-light: #334155;
+}
+
+html[data-theme="classic"] body,
+.theme-classic body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
+  background-color: #0B1220 !important;
+  color: #F8FAFC !important;
+}
+
+html[data-theme="classic"] h1,
+html[data-theme="classic"] h2,
+html[data-theme="classic"] h3,
+html[data-theme="classic"] h4,
+html[data-theme="classic"] h5,
+html[data-theme="classic"] h6,
+html[data-theme="classic"] .font-heading {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
+  letter-spacing: normal;
+}
+
+html[data-theme="classic"] button,
+html[data-theme="classic"] .btn,
+html[data-theme="classic"] input,
+html[data-theme="classic"] select,
+html[data-theme="classic"] textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Palette utility mapping for classic mode */
+html[data-theme="classic"] .bg-\[\#0a0a0a\] { background-color: #0B1220 !important; }
+html[data-theme="classic"] .bg-\[\#0f0f0f\] { background-color: #0F172A !important; }
+html[data-theme="classic"] .bg-\[\#141414\] { background-color: #1E293B !important; }
+html[data-theme="classic"] .bg-\[\#1f1f1f\] { background-color: #334155 !important; }
+html[data-theme="classic"] .border-\[\#1a1a1a\] { border-color: #1E293B !important; }
+html[data-theme="classic"] .border-\[\#2a2a2a\] { border-color: #334155 !important; }
+html[data-theme="classic"] .text-\[\#e4e4e4\] { color: #F8FAFC !important; }
+html[data-theme="classic"] .text-\[\#6b7280\] { color: #94A3B8 !important; }
+html[data-theme="classic"] .text-\[\#404040\] { color: #64748B !important; }
+html[data-theme="classic"] .hover\:bg-\[\#141414\]:hover { background-color: #1E293B !important; }
+html[data-theme="classic"] .hover\:bg-\[\#1f1f1f\]:hover { background-color: #334155 !important; }
+html[data-theme="classic"] .hover\:border-\[\#2a2a2a\]:hover { border-color: #475569 !important; }
+html[data-theme="classic"] .glass-panel,
+html[data-theme="classic"] .glass-card { background: #0F172A; border-color: #1E293B; }
+html[data-theme="classic"] .glass-input { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] ::-webkit-scrollbar-track { background: #0B1220; }
+html[data-theme="classic"] ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+html[data-theme="classic"] ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+
 /* Global Selection */
 ::selection {
   background-color: #1f1f1f !important;

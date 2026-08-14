@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { CommandPalette } from './components/CommandPalette'
 import { SessionTimeoutManager } from './components/SessionTimeoutManager'
 import { Footer } from './components/Footer'
-import { AuthProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
+import { AuthProvider, ThemeProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
 import { lazyWithRetry } from './utils/lazyWithRetry'
 
@@ -303,15 +303,17 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ToastProvider>
-            <NotificationProvider>
-              <AnnouncementProvider>
-                <Router>
-                  <AppContent />
-                </Router>
-              </AnnouncementProvider>
-            </NotificationProvider>
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <NotificationProvider>
+                <AnnouncementProvider>
+                  <Router>
+                    <AppContent />
+                  </Router>
+                </AnnouncementProvider>
+              </NotificationProvider>
+            </ToastProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

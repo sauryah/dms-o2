@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock } from 'lucide-react'
+import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { BackupManager } from './users/BackupManager'
 
 export function SettingsPage() {
   const { request } = useApi()
   const { username, role, login, isAuthorizedForTools } = useAuth()
+  const { theme, setTheme, canChangeTheme } = useTheme()
+  const { showToast } = useToast()
   const navigate = useNavigate()
 
-  const [activeTab, setActiveTab] = useState<'account' | 'tolerances' | 'backups'>('account')
+  const [activeTab, setActiveTab] = useState<'account' | 'appearance' | 'tolerances' | 'backups'>('account')
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -223,6 +225,24 @@ export function SettingsPage() {
             </div>
           </button>
 
+          <button
+            onClick={() => setActiveTab('appearance')}
+            role="tab"
+            aria-selected={activeTab === 'appearance'}
+            aria-controls="panel-appearance"
+            className={`w-full text-left p-3 rounded-sm border flex items-center gap-3 transition cursor-pointer ${
+              activeTab === 'appearance'
+                ? 'bg-[#0f0f0f] border-blue-500/50 text-blue-400 font-bold'
+                : 'bg-[#0f0f0f] border-[#1a1a1a] text-[#6b7280] hover:text-[#e4e4e4]'
+            }`}
+          >
+            <Palette className="h-4 w-4 shrink-0" />
+            <div>
+              <span className="text-xs block font-bold uppercase">System Appearance</span>
+              <span className="text-[10px] text-[#6b7280] block font-normal mt-0.5">Terminal & Classic themes</span>
+            </div>
+          </button>
+
           {(role === 'ADMIN' || role === 'ROOT') && (
             <button
               onClick={() => setActiveTab('tolerances')}
@@ -386,6 +406,166 @@ export function SettingsPage() {
                   {isSubmitting ? 'Updating Password...' : 'Update Password'}
                 </button>
               </form>
+            </div>
+          )}
+
+          {activeTab === 'appearance' && (
+            <div id="panel-appearance" role="tabpanel" className="space-y-5 animate-fadeIn font-mono">
+              <div className="pb-3 border-b border-[#1a1a1a] flex justify-between items-center flex-wrap gap-2">
+                <div>
+                  <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">01 SYSTEM THEME CONFIGURATION</h2>
+                  <span className="text-[#6b7280] text-xs block mt-0.5">Choose the system-wide visual theme and typographic density for the manufacturing interface.</span>
+                </div>
+                {!canChangeTheme && (
+                  <div className="flex items-center gap-1.5 bg-[#141414] border border-amber-500/30 text-amber-400 text-[10px] px-2.5 py-1 rounded-sm">
+                    <Lock className="h-3 w-3" />
+                    <span>ROOT PRIVILEGE REQUIRED</span>
+                  </div>
+                )}
+              </div>
+
+              {!canChangeTheme && (
+                <div className="bg-[#141414] border border-[#2a2a2a] p-3 rounded-sm text-xs text-[#6b7280] flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>Theme configuration is system-wide and restricted to Root administrators. Contact your supervisor to adjust the active theme.</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                {/* Theme Card 1: Terminal */}
+                <div
+                  onClick={() => {
+                    if (canChangeTheme) {
+                      setTheme('terminal')
+                      showToast('System theme set to Dark Terminal (Bloomberg)', 'success')
+                    }
+                  }}
+                  className={`border p-4 rounded-sm transition-all duration-150 relative ${
+                    theme === 'terminal'
+                      ? 'bg-[#141414] border-emerald-500/60 ring-1 ring-emerald-500/30'
+                      : 'bg-[#0a0a0a] border-[#2a2a2a] hover:border-[#404040]'
+                  } ${canChangeTheme ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-emerald-400">
+                        <Terminal className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase">Dark Terminal</h3>
+                        <span className="text-[10px] text-[#6b7280]">Bloomberg Tape • Monospace</span>
+                      </div>
+                    </div>
+                    {theme === 'terminal' && (
+                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live Preview Miniature */}
+                  <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm p-2.5 mb-3 font-mono text-[10px] space-y-1.5">
+                    <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-1 text-[#6b7280]">
+                      <span className="text-emerald-400 font-bold">01 TELEMETRY</span>
+                      <span className="text-[#e4e4e4] tabular-nums">2.500 mm</span>
+                    </div>
+                    <div className="flex justify-between text-[#6b7280]">
+                      <span>STATUS:</span>
+                      <span className="text-emerald-400">AVAILABLE ▲</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed mb-3">
+                    High-contrast #0a0a0a matte canvas, pure 1px flat dividers, uppercase telemetry, and monospace tabular numerical layout.
+                  </p>
+
+                  {canChangeTheme && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTheme('terminal')
+                        showToast('System theme set to Dark Terminal (Bloomberg)', 'success')
+                      }}
+                      disabled={theme === 'terminal'}
+                      className={`w-full py-1.5 px-3 rounded-sm text-xs font-mono uppercase font-bold transition border cursor-pointer ${
+                        theme === 'terminal'
+                          ? 'bg-[#141414] border-emerald-500/40 text-emerald-400 cursor-default'
+                          : 'bg-[#141414] hover:bg-[#1f1f1f] border-[#2a2a2a] text-[#e4e4e4]'
+                      }`}
+                    >
+                      {theme === 'terminal' ? 'Applied (Current)' : 'Apply Terminal Theme'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Theme Card 2: Classic Slate */}
+                <div
+                  onClick={() => {
+                    if (canChangeTheme) {
+                      setTheme('classic')
+                      showToast('System theme set to Classic Slate (Industrial)', 'success')
+                    }
+                  }}
+                  className={`border p-4 rounded-sm transition-all duration-150 relative ${
+                    theme === 'classic'
+                      ? 'bg-[#141414] border-blue-500/60 ring-1 ring-blue-500/30'
+                      : 'bg-[#0a0a0a] border-[#2a2a2a] hover:border-[#404040]'
+                  } ${canChangeTheme ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-blue-400">
+                        <Palette className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase">Classic Slate</h3>
+                        <span className="text-[10px] text-[#6b7280]">Industrial Modern • Sans-Serif</span>
+                      </div>
+                    </div>
+                    {theme === 'classic' && (
+                      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live Preview Miniature */}
+                  <div className="bg-[#0B1220] border border-[#1E293B] rounded-md p-2.5 mb-3 font-sans text-[10px] space-y-1.5">
+                    <div className="flex justify-between items-center border-b border-[#1E293B] pb-1 text-[#94A3B8]">
+                      <span className="text-[#38BDF8] font-bold">Die Telemetry</span>
+                      <span className="text-[#F8FAFC]">2.500 mm</span>
+                    </div>
+                    <div className="flex justify-between text-[#94A3B8]">
+                      <span>Status:</span>
+                      <span className="text-[#34D399]">Available</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed mb-3">
+                    Deep navy #0B1220 slate canvas with #0F172A cards, rounded corners, clean sans-serif typography, and softer blue accents.
+                  </p>
+
+                  {canChangeTheme && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTheme('classic')
+                        showToast('System theme set to Classic Slate (Industrial)', 'success')
+                      }}
+                      disabled={theme === 'classic'}
+                      className={`w-full py-1.5 px-3 rounded-sm text-xs font-mono uppercase font-bold transition border cursor-pointer ${
+                        theme === 'classic'
+                          ? 'bg-[#141414] border-blue-500/40 text-blue-400 cursor-default'
+                          : 'bg-[#141414] hover:bg-[#1f1f1f] border-[#2a2a2a] text-[#e4e4e4]'
+                      }`}
+                    >
+                      {theme === 'classic' ? 'Applied (Current)' : 'Apply Classic Theme'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

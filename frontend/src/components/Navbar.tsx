@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap } from 'lucide-react'
+import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap, Terminal, Palette } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '../contexts/AuthContext'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useAuth, useTheme, useToast, useNotifications } from '../contexts'
 import { useApi } from '../hooks/useApi'
 
 export function Navbar() {
   const { username, role, logout, isAuthorizedForTools, authorizedTools } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+  const { showToast } = useToast()
   const { notifications, unreadCount, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
   const location = useLocation()
@@ -314,6 +315,31 @@ export function Navbar() {
                   <span className="block text-xs font-medium text-[#e4e4e4]">{username}</span>
                   <span className="block text-[10px] text-[#6b7280] uppercase tracking-wider">{role}</span>
                 </div>
+                {role === 'ROOT' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleTheme()
+                      const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : 'Dark Terminal (Bloomberg)'
+                      showToast(`System theme switched to: ${nextTheme}`, 'info')
+                    }}
+                    title={`System Theme: ${theme === 'terminal' ? 'Dark Terminal' : 'Classic Slate'} (Root Privilege: Click to Switch)`}
+                    className="flex items-center gap-1.5 bg-[#141414] border border-[#2a2a2a] hover:border-blue-500/50 text-[#e4e4e4] px-2 py-1 rounded-sm text-xs font-mono transition-colors cursor-pointer"
+                    aria-label="Switch System Theme"
+                  >
+                    {theme === 'terminal' ? (
+                      <>
+                        <Terminal className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="hidden lg:inline text-[10px] text-emerald-400 uppercase font-bold tracking-wider">TERMINAL</span>
+                      </>
+                    ) : (
+                      <>
+                        <Palette className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="hidden lg:inline text-[10px] text-blue-400 uppercase font-bold tracking-wider">CLASSIC</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 <Link
                   to="/settings"
                   className="flex items-center bg-[#141414] border border-[#2a2a2a] hover:border-[#3b82f6] text-[#e4e4e4] p-1.5 rounded-sm text-xs transition-colors"
@@ -545,6 +571,29 @@ export function Navbar() {
                 <span className="text-xs font-medium text-[#e4e4e4]">{username}</span>
                 <span className="text-[10px] text-[#6b7280] font-mono uppercase">{role}</span>
               </div>
+              {role === 'ROOT' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleTheme()
+                    const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : 'Dark Terminal (Bloomberg)'
+                    showToast(`System theme switched to: ${nextTheme}`, 'info')
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition cursor-pointer"
+                >
+                  {theme === 'terminal' ? (
+                    <>
+                      <Terminal className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Theme: Terminal</span>
+                    </>
+                  ) : (
+                    <>
+                      <Palette className="h-3.5 w-3.5 text-blue-400" />
+                      <span>Theme: Classic Slate</span>
+                    </>
+                  )}
+                </button>
+              )}
               <Link
                 to="/settings"
                 className="flex items-center justify-center space-x-2 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition"

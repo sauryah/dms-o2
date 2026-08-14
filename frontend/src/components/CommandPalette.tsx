@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { useToast } from '../contexts/ToastContext'
+import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { DIE_STATUSES } from '../contracts/dieContracts'
-import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle } from 'lucide-react'
+import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle, Terminal, Palette } from 'lucide-react'
 
 interface CommandPaletteProps {
   isOpen: boolean
@@ -15,13 +14,14 @@ interface PaletteAction {
   id: string
   title: string
   subtitle?: string
-  category: 'Navigation' | 'Status Updates' | 'Search Results'
+  category: 'Navigation' | 'Status Updates' | 'Search Results' | 'System & Theme'
   icon: React.ReactNode
   perform: () => void | Promise<void>
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const { role, token } = useAuth()
+  const { theme, setTheme, canChangeTheme } = useTheme()
   const { request } = useApi()
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -213,8 +213,45 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     )
     list.push(...filteredNav)
 
+    // 4. Add System & Theme Commands for ROOT
+    if (canChangeTheme) {
+      const themeCommands: PaletteAction[] = [
+        {
+          id: 'theme-terminal',
+          title: 'SWITCH THEME: DARK TERMINAL (BLOOMBERG)',
+          subtitle: 'High-density monospace terminal layout with matte #0a0a0a backdrop',
+          category: 'System & Theme',
+          icon: <Terminal className="h-3.5 w-3.5 text-emerald-400" />,
+          perform: () => {
+            setTheme('terminal')
+            showToast('System theme switched to Dark Terminal (Bloomberg)', 'success')
+            onClose()
+          }
+        },
+        {
+          id: 'theme-classic',
+          title: 'SWITCH THEME: CLASSIC SLATE (INDUSTRIAL)',
+          subtitle: 'Modern deep navy #0B1220 palette with sans-serif typography',
+          category: 'System & Theme',
+          icon: <Palette className="h-3.5 w-3.5 text-blue-400" />,
+          perform: () => {
+            setTheme('classic')
+            showToast('System theme switched to Classic Slate (Industrial)', 'success')
+            onClose()
+          }
+        }
+      ]
+
+      const filteredThemes = themeCommands.filter(cmd =>
+        cmd.title.toLowerCase().includes(qLower) ||
+        cmd.subtitle?.toLowerCase().includes(qLower) ||
+        'theme'.includes(qLower)
+      )
+      list.push(...filteredThemes)
+    }
+
     return list
-  }, [query, searchResults, navigationCommands, canChangeStatus, navigate, onClose, request, showToast])
+  }, [query, searchResults, navigationCommands, canChangeStatus, canChangeTheme, setTheme, navigate, onClose, request, showToast])
 
   // Reset active selection when query changes
   useEffect(() => {
