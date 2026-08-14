@@ -683,6 +683,29 @@ class UserActivityLogTests(APITestCase):
         self.assertFalse(UserSession.objects.filter(id=session.id).exists())
         self.assertIsNone(cache.get(cache_key))
 
+    def test_get_client_ip_headers(self):
+        from users.views.auth import get_client_ip
+        from django.test import RequestFactory
+
+        factory = RequestFactory()
+
+        # 1. CF-Connecting-IP
+        req = factory.get('/', HTTP_CF_CONNECTING_IP='203.0.113.195', HTTP_X_REAL_IP='192.168.1.1', REMOTE_ADDR='172.18.0.1')
+        self.assertEqual(get_client_ip(req), '203.0.113.195')
+
+        # 2. X-Real-IP
+        req = factory.get('/', HTTP_X_REAL_IP='192.168.1.50', REMOTE_ADDR='172.18.0.1')
+        self.assertEqual(get_client_ip(req), '192.168.1.50')
+
+        # 3. X-Forwarded-For chain
+        req = factory.get('/', HTTP_X_FORWARDED_FOR='198.51.100.4, 172.18.0.1', REMOTE_ADDR='172.18.0.1')
+        self.assertEqual(get_client_ip(req), '198.51.100.4')
+
+        # 4. REMOTE_ADDR fallback
+        req = factory.get('/', REMOTE_ADDR='10.0.0.15')
+        self.assertEqual(get_client_ip(req), '10.0.0.15')
+
+
 
 
 

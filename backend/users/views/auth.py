@@ -23,12 +23,41 @@ from users.models import User, UserSession, UserActivityLog
 from users.serializers import LoginSerializer, ChangePasswordSerializer
 
 def get_client_ip(request):
+    """
+    Extracts the real client IP address from incoming request headers.
+    Prioritizes headers in standard reverse-proxy order:
+    1. HTTP_CF_CONNECTING_IP (Cloudflare)
+    2. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
+    3. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
+       - Returns the leftmost originating client IP address
+    4. REMOTE_ADDR (Direct connection fallback)
+    """
+    if not request:
+        return '127.0.0.1'
+
+    # 1. Cloudflare header
+    cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
+    if cf_ip and cf_ip.strip():
+        return cf_ip.strip()
+
+    # 2. Direct real IP header from Nginx/reverse proxy
+    x_real_ip = request.META.get('HTTP_X_REAL_IP')
+    if x_real_ip and x_real_ip.strip():
+        return x_real_ip.strip()
+
+    # 3. X-Forwarded-For chain
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0].strip()
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+    if x_forwarded_for and x_forwarded_for.strip():
+        ips = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
+        if ips:
+            return ips[0]
+
+    # 4. Fallback to REMOTE_ADDR
+    remote_addr = request.META.get('REMOTE_ADDR')
+    if remote_addr and remote_addr.strip():
+        return remote_addr.strip()
+
+    return '127.0.0.1'
 
 from rest_framework.throttling import AnonRateThrottle
 
