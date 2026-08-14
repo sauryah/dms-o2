@@ -28,9 +28,11 @@ def get_client_ip(request):
     Prioritizes headers in standard reverse-proxy order:
     1. HTTP_CF_CONNECTING_IP (Cloudflare)
     2. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
-    3. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
-       - Returns the leftmost originating client IP address
-    4. REMOTE_ADDR (Direct connection fallback)
+    3. HTTP_X_CLIENT_DEVICE_IP (Direct browser-detected client IP)
+    4. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
+       - Returns the leftmost originating client IP address (skipping Docker bridge gateway 172.18.0.1)
+    5. Request body client_ip (if sent during login)
+    6. REMOTE_ADDR (Direct connection fallback)
     """
     if not request:
         return '127.0.0.1'
@@ -42,17 +44,31 @@ def get_client_ip(request):
 
     # 2. Direct real IP header from Nginx/reverse proxy
     x_real_ip = request.META.get('HTTP_X_REAL_IP')
-    if x_real_ip and x_real_ip.strip():
+    if x_real_ip and x_real_ip.strip() and x_real_ip.strip() != '172.18.0.1':
         return x_real_ip.strip()
 
-    # 3. X-Forwarded-For chain
+    # 3. Direct browser client device header
+    client_dev_ip = request.META.get('HTTP_X_CLIENT_DEVICE_IP')
+    if client_dev_ip and client_dev_ip.strip():
+        return client_dev_ip.strip()
+
+    # 4. X-Forwarded-For chain
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for and x_forwarded_for.strip():
         ips = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
+        for ip in ips:
+            if ip != '172.18.0.1' and not ip.startswith('172.18.') and not ip.startswith('172.17.'):
+                return ip
         if ips:
             return ips[0]
 
-    # 4. Fallback to REMOTE_ADDR
+    # 5. Check if login body sent client_ip
+    if hasattr(request, 'data') and isinstance(request.data, dict):
+        body_ip = request.data.get('client_ip')
+        if body_ip and isinstance(body_ip, str) and body_ip.strip():
+            return body_ip.strip()
+
+    # 6. Fallback to REMOTE_ADDR
     remote_addr = request.META.get('REMOTE_ADDR')
     if remote_addr and remote_addr.strip():
         return remote_addr.strip()

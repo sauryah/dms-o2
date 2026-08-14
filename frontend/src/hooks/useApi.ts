@@ -87,6 +87,10 @@ export const useApi = () => {
       headers['Content-Type'] = 'application/json'
     }
     headers['X-Requested-With'] = 'XMLHttpRequest'
+    const cachedClientIp = sessionStorage.getItem('dms_client_ip')
+    if (cachedClientIp) {
+      headers['X-Client-Device-IP'] = cachedClientIp
+    }
     if (tokenRef.current) {
       headers['Authorization'] = `Bearer ${tokenRef.current}`
     }
