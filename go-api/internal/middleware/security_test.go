@@ -30,6 +30,8 @@ func TestSecurityHeaders(t *testing.T) {
 		"Referrer-Policy":              "strict-origin-when-cross-origin",
 		"Cross-Origin-Opener-Policy":   "same-origin",
 		"Cross-Origin-Resource-Policy": "same-origin",
+		"Content-Security-Policy":      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+		"Permissions-Policy":           "camera=(), microphone=(), geolocation=(), payment=()",
 	}
 
 	for header, expectedVal := range headers {

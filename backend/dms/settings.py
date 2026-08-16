@@ -309,6 +309,10 @@ if not DEBUG:
     db_pass = DATABASES['default']['PASSWORD']
     if not db_pass or len(db_pass) < 16 or db_pass in ('db_secret_password', 'password', 'postgres', 'dms_pass_password'):
         raise ImproperlyConfigured("Insecure POSTGRES_PASSWORD detected in production!")
+    if not ROOT_PASSWORD or len(ROOT_PASSWORD) < 12 or ROOT_PASSWORD in ('root123', 'password', 'admin', 'root', 'auto:run_setup_to_generate'):
+        raise ImproperlyConfigured("Insecure ROOT_PASSWORD detected in production! Must be at least 12 characters.")
+    if not ROOT_USERNAME or ROOT_USERNAME in ('auto:run_setup_to_generate',):
+        raise ImproperlyConfigured("ROOT_USERNAME must be configured in production!")
 
 # Sentry Integration
 SENTRY_DSN = config('SENTRY_DSN', default=None)

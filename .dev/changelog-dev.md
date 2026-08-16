@@ -1,5 +1,16 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-16 Platform Security Hardening, CSP Headers & CI Scanning
+*   **Feature**: Implemented production startup credential validation in Django settings to prevent insecure default superuser credentials (`ROOT_PASSWORD` / `ROOT_USERNAME`). Added `Content-Security-Policy` and `Permissions-Policy` headers to Go API security middleware. Documented SSE ticket-based Redis authentication pattern on the Go server mux. Added comprehensive automated security scanning stage to the GitHub Actions deployment workflow covering Python (`pip-audit`), Node (`npm audit`), and Go (`govulncheck`).
+*   **Affected Modules**: `backend`, `go-api`, `ci`
+*   **Files Modified**:
+    *   [backend/dms/settings.py](file:///home/sahil/Desktop/Projects/dms-o2/backend/dms/settings.py) - Added ROOT_PASSWORD length & default-value checks and ROOT_USERNAME validation in production mode.
+    *   [go-api/internal/middleware/security.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/middleware/security.go) - Added CSP and Permissions-Policy response headers.
+    *   [go-api/internal/middleware/security_test.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/middleware/security_test.go) - Added assertions for new security headers.
+    *   [go-api/cmd/server/main.go](file:///home/sahil/Desktop/Projects/dms-o2/go-api/cmd/server/main.go) - Added documentation on single-use ticket authentication for SSE endpoint.
+    *   [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) - Added multi-ecosystem `security` job required before deploy.
+*   **Testing Performed**: Verified Go test suite (`go test ./...` 100% passed), Django settings validation, TypeScript typechecks (`tsc --noEmit` 0 errors), and full frontend Vitest suite (69/69 passed).
+
 ### 2026-08-14 Dark Terminal Design System & ROOT-Only Dual-Theme Switcher
 *   **Feature**: Completed full platform visual transformation to the "Dark Terminal / Bloomberg-Tape" design system and built a persistent Dual-Theme Engine supporting seamless switching between Dark Terminal (`data-theme="terminal"`) and Classic Slate (`data-theme="classic"`).
     *   **Dark Terminal Architecture**: Applied `#0a0a0a` canvas, `#0f0f0f` containers, `#141414` elevated surfaces, 1px flat dividers (`#1a1a1a` / `#2a2a2a`), monospace font stack (`ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`), numbered section headers (`01`, `02`, `03...`), and tabular numbers across all 21 shared UI components and 15 views.
