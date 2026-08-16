@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import redis
 import logging
 
@@ -22,17 +23,34 @@ from rest_framework import serializers
 from users.models import User, UserSession, UserActivityLog
 from users.serializers import LoginSerializer, ChangePasswordSerializer
 
+DOCKER_INTERNAL_SUBNETS = [
+    ipaddress.ip_network('172.16.0.0/12'),  # 172.16.0.0 - 172.31.255.255 (Docker standard bridges)
+]
+
+def is_docker_internal_ip(ip_str: str) -> bool:
+    """Checks if an IP address string belongs to an internal Docker bridge subnet."""
+    if not ip_str:
+        return False
+    try:
+        ip_obj = ipaddress.ip_address(ip_str.strip())
+        return any(ip_obj in subnet for subnet in DOCKER_INTERNAL_SUBNETS)
+    except ValueError:
+        return False
+
 def get_client_ip(request):
     """
     Extracts the real client IP address from incoming request headers.
     Prioritizes headers in standard reverse-proxy order:
     1. HTTP_CF_CONNECTING_IP (Cloudflare)
-    2. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
-    3. HTTP_X_CLIENT_DEVICE_IP (Direct browser-detected client IP)
-    4. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
-       - Returns the leftmost originating client IP address (skipping Docker bridge gateway 172.18.0.1)
+    2. HTTP_X_CLIENT_DEVICE_IP (Direct browser-detected client IP)
+    3. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
+       - Returns the leftmost originating client IP address (skipping Docker bridge internal hops)
+    4. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
     5. Request body client_ip (if sent during login)
     6. REMOTE_ADDR (Direct connection fallback)
+
+    If the only available IP is a Docker internal gateway/bridge (e.g. 172.18.0.1, 172.19.0.1),
+    the request originated from the Docker host machine itself, so it resolves to '127.0.0.1'.
     """
     if not request:
         return '127.0.0.1'
@@ -42,37 +60,37 @@ def get_client_ip(request):
     if cf_ip and cf_ip.strip():
         return cf_ip.strip()
 
-    # 2. Direct real IP header from Nginx/reverse proxy
-    x_real_ip = request.META.get('HTTP_X_REAL_IP')
-    if x_real_ip and x_real_ip.strip() and x_real_ip.strip() != '172.18.0.1':
-        return x_real_ip.strip()
-
-    # 3. Direct browser client device header
+    # 2. Direct browser client device header
     client_dev_ip = request.META.get('HTTP_X_CLIENT_DEVICE_IP')
     if client_dev_ip and client_dev_ip.strip():
         return client_dev_ip.strip()
 
-    # 4. X-Forwarded-For chain
+    # 3. X-Forwarded-For chain (inspect from leftmost client to right)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for and x_forwarded_for.strip():
         ips = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
         for ip in ips:
-            if ip != '172.18.0.1' and not ip.startswith('172.18.') and not ip.startswith('172.17.'):
+            if not is_docker_internal_ip(ip):
                 return ip
-        if ips:
-            return ips[0]
+
+    # 4. Direct real IP header from Nginx/reverse proxy
+    x_real_ip = request.META.get('HTTP_X_REAL_IP')
+    if x_real_ip and x_real_ip.strip() and not is_docker_internal_ip(x_real_ip):
+        return x_real_ip.strip()
 
     # 5. Check if login body sent client_ip
     if hasattr(request, 'data') and isinstance(request.data, dict):
         body_ip = request.data.get('client_ip')
-        if body_ip and isinstance(body_ip, str) and body_ip.strip():
+        if body_ip and isinstance(body_ip, str) and body_ip.strip() and not is_docker_internal_ip(body_ip):
             return body_ip.strip()
 
     # 6. Fallback to REMOTE_ADDR
     remote_addr = request.META.get('REMOTE_ADDR')
-    if remote_addr and remote_addr.strip():
+    if remote_addr and remote_addr.strip() and not is_docker_internal_ip(remote_addr):
         return remote_addr.strip()
 
+    # If all available addresses are Docker internal bridge IPs (e.g. 172.18.0.1),
+    # the request originated from the host machine (localhost).
     return '127.0.0.1'
 
 from rest_framework.throttling import AnonRateThrottle

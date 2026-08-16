@@ -697,13 +697,24 @@ class UserActivityLogTests(APITestCase):
         req = factory.get('/', HTTP_X_REAL_IP='192.168.1.50', REMOTE_ADDR='172.18.0.1')
         self.assertEqual(get_client_ip(req), '192.168.1.50')
 
-        # 3. X-Forwarded-For chain
+        # 3. X-Forwarded-For chain with Docker internal hop
         req = factory.get('/', HTTP_X_FORWARDED_FOR='198.51.100.4, 172.18.0.1', REMOTE_ADDR='172.18.0.1')
         self.assertEqual(get_client_ip(req), '198.51.100.4')
 
         # 4. REMOTE_ADDR fallback
         req = factory.get('/', REMOTE_ADDR='10.0.0.15')
         self.assertEqual(get_client_ip(req), '10.0.0.15')
+
+        # 5. Docker bridge gateway (172.18.0.1 or 172.19.0.1) maps to 127.0.0.1 (Localhost / Host)
+        req_docker_18 = factory.get('/', HTTP_X_FORWARDED_FOR='172.18.0.1', REMOTE_ADDR='172.18.0.1')
+        self.assertEqual(get_client_ip(req_docker_18), '127.0.0.1')
+
+        req_docker_19 = factory.get('/', HTTP_X_FORWARDED_FOR='172.19.0.1', REMOTE_ADDR='172.19.0.1')
+        self.assertEqual(get_client_ip(req_docker_19), '127.0.0.1')
+
+        # 6. Direct client device IP header
+        req_dev = factory.get('/', HTTP_X_CLIENT_DEVICE_IP='192.168.1.105', REMOTE_ADDR='172.18.0.1')
+        self.assertEqual(get_client_ip(req_dev), '192.168.1.105')
 
 
 

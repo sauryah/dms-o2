@@ -1,5 +1,13 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-16 Docker Internal Bridge IP Filtering & Localhost Resolution
+*   **Fix**: Resolved client IP capture issue where logins from the Docker host or via Docker bridges were recorded as internal gateway addresses (`172.18.0.1`, `172.19.0.1`). Upgraded `get_client_ip()` in `backend/users/views/auth.py` to use `ipaddress` checking against all Docker standard bridge subnets (`172.16.0.0/12`), properly skipping internal proxy hops in `X-Forwarded-For` and `X-Real-IP`, and resolving connections originating from Docker host gateways directly to `127.0.0.1` (Localhost / Host Machine).
+*   **Affected Modules**: `backend`
+*   **Files Modified**:
+    *   [backend/users/views/auth.py](file:///backend/users/views/auth.py) - Added `is_docker_internal_ip()` subnet helper and enhanced `get_client_ip()` logic.
+    *   [backend/users/tests/test_auth.py](file:///backend/users/tests/test_auth.py) - Added unit tests for Docker bridge gateways (`172.18.0.1`, `172.19.0.1`) and multi-hop `X-Forwarded-For` resolution.
+*   **Testing Performed**: Verified unit test suite covering CF headers, real IP headers, multi-hop proxy chains, direct device IP headers, and Docker gateway mappings.
+
 ### 2026-08-16 Precision Industrial Light Theme Engine
 *   **Feature**: Built and integrated the **Precision Industrial Light Theme** (`data-theme="light"`, `.theme-light`). Created light CSS variable tokens for canvas (`#F8FAFC`), surfaces (`#FFFFFF`), secondary panels (`#F1F5F9`), subtle structural borders (`#E2E8F0`), high-contrast typography (`#0F172A`), calibrated status badges, and light-theme scrollbars/selections. Extended `ThemeContext.tsx` with 3-theme cycling (`terminal` ➔ `classic` ➔ `light`), updated `Navbar.tsx` desktop and mobile drawers with dynamic `Sun` icon indicators, added a dedicated live preview card in `SettingsPage.tsx`, and added command palette actions in `CommandPalette.tsx`.
 *   **Affected Modules**: `frontend`, `docs`
