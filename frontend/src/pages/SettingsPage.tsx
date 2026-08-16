@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun } from 'lucide-react'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { BackupManager } from './users/BackupManager'
@@ -239,7 +239,7 @@ export function SettingsPage() {
             <Palette className="h-4 w-4 shrink-0" />
             <div>
               <span className="text-xs block font-bold uppercase">System Appearance</span>
-              <span className="text-[10px] text-[#6b7280] block font-normal mt-0.5">Terminal & Classic themes</span>
+              <span className="text-[10px] text-[#6b7280] block font-normal mt-0.5">Terminal, Classic & Light themes</span>
             </div>
           </button>
 
@@ -431,7 +431,7 @@ export function SettingsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div className="grid grid-cols-1 xl:grid-cols-3 md:grid-cols-2 gap-4 pt-1">
                 {/* Theme Card 1: Terminal */}
                 <div
                   onClick={() => {
@@ -562,6 +562,73 @@ export function SettingsPage() {
                       }`}
                     >
                       {theme === 'classic' ? 'Applied (Current)' : 'Apply Classic Theme'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Theme Card 3: Precision Light */}
+                <div
+                  onClick={() => {
+                    if (canChangeTheme) {
+                      setTheme('light')
+                      showToast('System theme set to Precision Light (Clean Slate)', 'success')
+                    }
+                  }}
+                  className={`border p-4 rounded-sm transition-all duration-150 relative ${
+                    theme === 'light'
+                      ? 'bg-[#141414] border-amber-500/60 ring-1 ring-amber-500/30'
+                      : 'bg-[#0a0a0a] border-[#2a2a2a] hover:border-[#404040]'
+                  } ${canChangeTheme ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-amber-500">
+                        <Sun className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase">Precision Light</h3>
+                        <span className="text-[10px] text-[#6b7280]">Clean Slate • High Contrast</span>
+                      </div>
+                    </div>
+                    {theme === 'light' && (
+                      <span className="bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live Preview Miniature */}
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-md p-2.5 mb-3 font-sans text-[10px] space-y-1.5 shadow-sm">
+                    <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-1 text-[#475569]">
+                      <span className="text-[#2563EB] font-bold">Die Telemetry</span>
+                      <span className="text-[#0F172A] font-semibold">2.500 mm</span>
+                    </div>
+                    <div className="flex justify-between text-[#475569]">
+                      <span>Status:</span>
+                      <span className="text-[#059669] font-medium">Available</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed mb-3">
+                    Ultra-clean #F8FAFC canvas with #FFFFFF surfaces, deep #0F172A typography, clean contrast, and crisp borders.
+                  </p>
+
+                  {canChangeTheme && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTheme('light')
+                        showToast('System theme set to Precision Light (Clean Slate)', 'success')
+                      }}
+                      disabled={theme === 'light'}
+                      className={`w-full py-1.5 px-3 rounded-sm text-xs font-mono uppercase font-bold transition border cursor-pointer ${
+                        theme === 'light'
+                          ? 'bg-[#141414] border-amber-500/40 text-amber-500 cursor-default'
+                          : 'bg-[#141414] hover:bg-[#1f1f1f] border-[#2a2a2a] text-[#e4e4e4]'
+                      }`}
+                    >
+                      {theme === 'light' ? 'Applied (Current)' : 'Apply Light Theme'}
                     </button>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap, Terminal, Palette } from 'lucide-react'
+import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap, Terminal, Palette, Sun } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth, useTheme, useToast, useNotifications } from '../contexts'
 import { useApi } from '../hooks/useApi'
@@ -320,10 +320,10 @@ export function Navbar() {
                     type="button"
                     onClick={() => {
                       toggleTheme()
-                      const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : 'Dark Terminal (Bloomberg)'
+                      const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : theme === 'classic' ? 'Precision Light (Clean Slate)' : 'Dark Terminal (Bloomberg)'
                       showToast(`System theme switched to: ${nextTheme}`, 'info')
                     }}
-                    title={`System Theme: ${theme === 'terminal' ? 'Dark Terminal' : 'Classic Slate'} (Root Privilege: Click to Switch)`}
+                    title={`System Theme: ${theme === 'terminal' ? 'Dark Terminal' : theme === 'classic' ? 'Classic Slate' : 'Precision Light'} (Root Privilege: Click to Switch)`}
                     className="flex items-center gap-1.5 bg-[#141414] border border-[#2a2a2a] hover:border-blue-500/50 text-[#e4e4e4] px-2 py-1 rounded-sm text-xs font-mono transition-colors cursor-pointer"
                     aria-label="Switch System Theme"
                   >
@@ -332,10 +332,15 @@ export function Navbar() {
                         <Terminal className="h-3.5 w-3.5 text-emerald-400" />
                         <span className="hidden lg:inline text-[10px] text-emerald-400 uppercase font-bold tracking-wider">TERMINAL</span>
                       </>
-                    ) : (
+                    ) : theme === 'classic' ? (
                       <>
                         <Palette className="h-3.5 w-3.5 text-blue-400" />
                         <span className="hidden lg:inline text-[10px] text-blue-400 uppercase font-bold tracking-wider">CLASSIC</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sun className="h-3.5 w-3.5 text-amber-500" />
+                        <span className="hidden lg:inline text-[10px] text-amber-500 uppercase font-bold tracking-wider">LIGHT</span>
                       </>
                     )}
                   </button>
@@ -576,7 +581,7 @@ export function Navbar() {
                   type="button"
                   onClick={() => {
                     toggleTheme()
-                    const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : 'Dark Terminal (Bloomberg)'
+                    const nextTheme = theme === 'terminal' ? 'Classic Slate (Industrial)' : theme === 'classic' ? 'Precision Light (Clean Slate)' : 'Dark Terminal (Bloomberg)'
                     showToast(`System theme switched to: ${nextTheme}`, 'info')
                   }}
                   className="flex items-center justify-center space-x-2 bg-[#141414] hover:bg-[#1f1f1f] text-[#e4e4e4] border border-[#2a2a2a] py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition cursor-pointer"
@@ -586,10 +591,15 @@ export function Navbar() {
                       <Terminal className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Theme: Terminal</span>
                     </>
-                  ) : (
+                  ) : theme === 'classic' ? (
                     <>
                       <Palette className="h-3.5 w-3.5 text-blue-400" />
                       <span>Theme: Classic Slate</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Theme: Precision Light</span>
                     </>
                   )}
                 </button>

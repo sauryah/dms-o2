@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { DIE_STATUSES } from '../contracts/dieContracts'
-import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle, Terminal, Palette } from 'lucide-react'
+import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle, Terminal, Palette, Sun } from 'lucide-react'
 
 interface CommandPaletteProps {
   isOpen: boolean
@@ -239,6 +239,18 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             showToast('System theme switched to Classic Slate (Industrial)', 'success')
             onClose()
           }
+        },
+        {
+          id: 'theme-light',
+          title: 'SWITCH THEME: PRECISION LIGHT (CLEAN SLATE)',
+          subtitle: 'Clean #F8FAFC canvas with #FFFFFF surfaces and high-contrast typography',
+          category: 'System & Theme',
+          icon: <Sun className="h-3.5 w-3.5 text-amber-500" />,
+          perform: () => {
+            setTheme('light')
+            showToast('System theme switched to Precision Light (Clean Slate)', 'success')
+            onClose()
+          }
         }
       ]
 
@@ -304,11 +316,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [activeIndex])
 
   // Group actions by category
-  const categories = ['Navigation', 'Search Results', 'Status Updates'] as const
+  const categories = ['Navigation', 'Search Results', 'Status Updates', 'System & Theme'] as const
   const categoryLabels = {
     'Navigation': '01 NAVIGATION',
     'Search Results': '02 SEARCH RESULTS',
-    'Status Updates': '03 STATUS UPDATES'
+    'Status Updates': '03 STATUS UPDATES',
+    'System & Theme': '04 SYSTEM & THEME'
   }
   const groupedActions = categories.reduce((acc, cat) => {
     acc[cat] = actions.filter(a => a.category === cat)

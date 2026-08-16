@@ -176,6 +176,168 @@ html[data-theme="classic"] ::-webkit-scrollbar-track { background: #0B1220; }
 html[data-theme="classic"] ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
 html[data-theme="classic"] ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
+/* ==========================================================================
+   PRECISION INDUSTRIAL LIGHT THEME (Clean Slate)
+   ========================================================================== */
+html[data-theme="light"],
+.theme-light {
+  --color-bg:          #F8FAFC;
+  --color-surface:     #FFFFFF;
+  --color-surface-2:   #F1F5F9;
+  --color-surface-elevated: #FFFFFF;
+  --color-border:      #E2E8F0;
+  --color-border-visible: #CBD5E1;
+  --color-text:        #0F172A;
+  --color-text-secondary: #475569;
+  --color-muted:       #64748B;
+  --color-muted-dark:  #CBD5E1;
+  --color-accent:      #2563EB;
+  --color-accent-up:   #059669;
+  --color-accent-down: #DC2626;
+  --color-accent-neutral: #D97706;
+
+  --color-available:   #059669;
+  --color-running:     #2563EB;
+  --color-cleaning:    #D97706;
+  --color-polishing:   #7C3AED;
+  --color-damaged:     #EA580C;
+  --color-scrapped:    #DC2626;
+  --color-missing:     #475569;
+  --color-maintenance: #D97706;
+
+  --color-available-bg:   rgba(5, 150, 105, 0.08);
+  --color-available-bdr:  rgba(5, 150, 105, 0.25);
+  --color-running-bg:     rgba(37, 99, 235, 0.08);
+  --color-running-bdr:    rgba(37, 99, 235, 0.25);
+  --color-cleaning-bg:    rgba(217, 119, 6, 0.08);
+  --color-cleaning-bdr:   rgba(217, 119, 6, 0.25);
+  --color-polishing-bg:   rgba(124, 58, 237, 0.08);
+  --color-polishing-bdr:  rgba(124, 58, 237, 0.25);
+  --color-damaged-bg:     rgba(234, 88, 12, 0.08);
+  --color-damaged-bdr:    rgba(234, 88, 12, 0.25);
+  --color-scrapped-bg:    rgba(220, 38, 38, 0.08);
+  --color-scrapped-bdr:   rgba(220, 38, 38, 0.25);
+  --color-missing-bg:     rgba(71, 85, 105, 0.08);
+  --color-missing-bdr:    rgba(71, 85, 105, 0.25);
+  --color-maintenance-bg: rgba(217, 119, 6, 0.08);
+  --color-maintenance-bdr:rgba(217, 119, 6, 0.25);
+  --color-default-bg:     rgba(71, 85, 105, 0.08);
+  --color-default-bdr:    rgba(71, 85, 105, 0.25);
+
+  --wdc-primary: #2563EB;
+  --wdc-primary-light: #3B82F6;
+  --wdc-primary-dark: #1D4ED8;
+  --wdc-card: #FFFFFF;
+  --wdc-card-hover: #F8FAFC;
+  --wdc-input: #FFFFFF;
+  --wdc-success: #059669;
+  --wdc-warning: #D97706;
+  --wdc-danger: #DC2626;
+  --wdc-text-secondary: #475569;
+  --wdc-border-focus: #2563EB;
+  --wdc-glass: #FFFFFF;
+  --wdc-steel: #F1F5F9;
+  --wdc-steel-light: #E2E8F0;
+}
+
+html[data-theme="light"] body,
+.theme-light body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] h5,
+html[data-theme="light"] h6,
+html[data-theme="light"] .font-heading {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
+  letter-spacing: normal;
+  color: #0F172A;
+}
+
+html[data-theme="light"] button,
+html[data-theme="light"] .btn,
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Palette utility mapping for light mode */
+html[data-theme="light"] .bg-\[\#0a0a0a\] { background-color: #F8FAFC !important; }
+html[data-theme="light"] .bg-\[\#0f0f0f\] { background-color: #FFFFFF !important; }
+html[data-theme="light"] .bg-\[\#141414\] { background-color: #F1F5F9 !important; }
+html[data-theme="light"] .bg-\[\#1f1f1f\] { background-color: #E2E8F0 !important; }
+html[data-theme="light"] .border-\[\#1a1a1a\] { border-color: #E2E8F0 !important; }
+html[data-theme="light"] .border-\[\#2a2a2a\] { border-color: #CBD5E1 !important; }
+html[data-theme="light"] .text-\[\#e4e4e4\] { color: #0F172A !important; }
+html[data-theme="light"] .text-\[\#6b7280\] { color: #475569 !important; }
+html[data-theme="light"] .text-\[\#404040\] { color: #94A3B8 !important; }
+html[data-theme="light"] .placeholder-\[\#404040\]::placeholder { color: #94A3B8 !important; }
+html[data-theme="light"] .hover\:bg-\[\#141414\]:hover { background-color: #F1F5F9 !important; }
+html[data-theme="light"] .hover\:bg-\[\#1f1f1f\]:hover { background-color: #E2E8F0 !important; }
+html[data-theme="light"] .hover\:border-\[\#2a2a2a\]:hover { border-color: #94A3B8 !important; }
+html[data-theme="light"] .hover\:border-\[\#404040\]:hover { border-color: #94A3B8 !important; }
+html[data-theme="light"] .glass-panel,
+html[data-theme="light"] .glass-card { background: #FFFFFF; border-color: #E2E8F0; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+html[data-theme="light"] .glass-input { background: #FFFFFF !important; border-color: #CBD5E1 !important; color: #0F172A !important; }
+
+/* Light mode table & input overrides */
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="search"],
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="datetime-local"],
+html[data-theme="light"] input:not([type]),
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0F172A !important;
+  color-scheme: light !important;
+}
+
+html[data-theme="light"] input[type="text"]:focus,
+html[data-theme="light"] input[type="password"]:focus,
+html[data-theme="light"] input[type="number"]:focus,
+html[data-theme="light"] input[type="email"]:focus,
+html[data-theme="light"] input[type="search"]:focus,
+html[data-theme="light"] input[type="date"]:focus,
+html[data-theme="light"] input[type="datetime-local"]:focus,
+html[data-theme="light"] input:not([type]):focus,
+html[data-theme="light"] select:focus,
+html[data-theme="light"] textarea:focus {
+  border-color: #2563EB !important;
+  background: #FFFFFF !important;
+}
+
+html[data-theme="light"] tr {
+  border-bottom: 1px solid #E2E8F0;
+}
+html[data-theme="light"] tbody tr:hover {
+  background-color: #F1F5F9 !important;
+}
+html[data-theme="light"] th {
+  color: #475569;
+  border-bottom: 1px solid #CBD5E1;
+}
+
+html[data-theme="light"] .tree-branch-line,
+html[data-theme="light"] .tree-leaf-line {
+  border-color: #CBD5E1;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #F8FAFC; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+html[data-theme="light"] ::selection { background-color: #DBEAFE !important; color: #1E40AF !important; }
+
 
 /* Global Selection */
 ::selection {

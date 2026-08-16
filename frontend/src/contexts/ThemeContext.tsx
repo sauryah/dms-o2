@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 
-export type AppTheme = 'terminal' | 'classic'
+export type AppTheme = 'terminal' | 'classic' | 'light'
 
 interface ThemeContextValue {
   theme: AppTheme
@@ -23,26 +23,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [theme, setInternalTheme] = useState<AppTheme>(() => {
     const saved = localStorage.getItem('dms_app_theme')
-    return (saved === 'classic' || saved === 'terminal') ? (saved as AppTheme) : 'terminal'
+    return (saved === 'classic' || saved === 'terminal' || saved === 'light') ? (saved as AppTheme) : 'terminal'
   })
 
   // Apply theme to document element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    if (theme === 'classic') {
-      document.documentElement.classList.add('theme-classic')
-      document.documentElement.classList.remove('theme-terminal')
-    } else {
-      document.documentElement.classList.add('theme-terminal')
-      document.documentElement.classList.remove('theme-classic')
-    }
+    document.documentElement.classList.remove('theme-terminal', 'theme-classic', 'theme-light')
+    document.documentElement.classList.add(`theme-${theme}`)
     localStorage.setItem('dms_app_theme', theme)
   }, [theme])
 
   // Synchronize across browser tabs
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'dms_app_theme' && (e.newValue === 'classic' || e.newValue === 'terminal')) {
+      if (e.key === 'dms_app_theme' && (e.newValue === 'classic' || e.newValue === 'terminal' || e.newValue === 'light')) {
         setInternalTheme(e.newValue as AppTheme)
       }
     }
@@ -62,7 +57,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!canChangeTheme) {
       return false
     }
-    setInternalTheme(prev => prev === 'terminal' ? 'classic' : 'terminal')
+    setInternalTheme(prev => {
+      if (prev === 'terminal') return 'classic'
+      if (prev === 'classic') return 'light'
+      return 'terminal'
+    })
     return true
   }
 
