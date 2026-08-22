@@ -199,3 +199,41 @@ class MeilisearchTests(TransactionTestCase):
         self.assertIsNotNone(invalid_task.processed_at)
         self.assertIsNotNone(valid_task.processed_at)
 
+    def test_prune_processed_outbox_tasks(self):
+        from dies.models import OutboxTask
+        from search.tasks import prune_processed_outbox_tasks
+        from django.utils import timezone
+        from datetime import timedelta
+
+        now = timezone.now()
+
+        # 1. Old processed task (10 days ago) - should be deleted
+        old_processed = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload={'die_id': 101},
+            is_processed=True,
+            processed_at=now - timedelta(days=10)
+        )
+
+        # 2. Recent processed task (2 days ago) - should be kept
+        recent_processed = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload={'die_id': 102},
+            is_processed=True,
+            processed_at=now - timedelta(days=2)
+        )
+
+        # 3. Unprocessed task (10 days ago) - should NOT be deleted because is_processed=False
+        unprocessed = OutboxTask.objects.create(
+            task_type='SYNC_DIE',
+            payload={'die_id': 103},
+            is_processed=False
+        )
+
+        deleted_count = prune_processed_outbox_tasks(retention_days=7)
+        self.assertEqual(deleted_count, 1)
+
+        self.assertFalse(OutboxTask.objects.filter(pk=old_processed.pk).exists())
+        self.assertTrue(OutboxTask.objects.filter(pk=recent_processed.pk).exists())
+        self.assertTrue(OutboxTask.objects.filter(pk=unprocessed.pk).exists())
+
