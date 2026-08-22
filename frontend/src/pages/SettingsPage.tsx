@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun, QrCode, RefreshCw } from 'lucide-react'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { BackupManager } from './users/BackupManager'
@@ -22,6 +22,94 @@ export function SettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Two-Factor Authentication state
+  const [isMfaEnabled, setIsMfaEnabled] = useState(false)
+  const [isLoadingMfa, setIsLoadingMfa] = useState(false)
+  const [mfaSetupData, setMfaSetupData] = useState<{ secret: string; otpauth_uri: string; qr_code: string } | null>(null)
+  const [mfaEnableCode, setMfaEnableCode] = useState('')
+  const [mfaDisablePassword, setMfaDisablePassword] = useState('')
+  const [mfaDisableCode, setMfaDisableCode] = useState('')
+  const [mfaMode, setMfaMode] = useState<'idle' | 'setup' | 'disable'>('idle')
+  const [mfaError, setMfaError] = useState('')
+  const [mfaSuccess, setMfaSuccess] = useState('')
+
+  const fetchUserProfile = async () => {
+    try {
+      const data = await request('/api/v1/auth/me/')
+      if (data && typeof data.is_mfa_enabled === 'boolean') {
+        setIsMfaEnabled(data.is_mfa_enabled)
+      }
+    } catch {
+      // silent
+    }
+  }
+
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
+  const handleStartMfaSetup = async () => {
+    setIsLoadingMfa(true)
+    setMfaError('')
+    setMfaSuccess('')
+    try {
+      const data = await request('/api/v1/auth/mfa/setup/', { method: 'POST' })
+      setMfaSetupData(data)
+      setMfaMode('setup')
+      setMfaEnableCode('')
+    } catch (err: any) {
+      setMfaError(err.message || 'Failed to initialize MFA setup.')
+    } finally {
+      setIsLoadingMfa(false)
+    }
+  }
+
+  const handleConfirmMfaEnable = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoadingMfa(true)
+    setMfaError('')
+    try {
+      await request('/api/v1/auth/mfa/enable/', {
+        method: 'POST',
+        body: JSON.stringify({ code: mfaEnableCode.trim() })
+      })
+      setIsMfaEnabled(true)
+      setMfaMode('idle')
+      setMfaSetupData(null)
+      setMfaSuccess('Two-factor authentication has been enabled successfully.')
+      showToast('2FA Activated', 'success')
+    } catch (err: any) {
+      setMfaError(err.message || 'Invalid verification code.')
+    } finally {
+      setIsLoadingMfa(false)
+    }
+  }
+
+  const handleConfirmMfaDisable = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoadingMfa(true)
+    setMfaError('')
+    try {
+      await request('/api/v1/auth/mfa/disable/', {
+        method: 'POST',
+        body: JSON.stringify({
+          password: mfaDisablePassword,
+          code: mfaDisableCode.trim()
+        })
+      })
+      setIsMfaEnabled(false)
+      setMfaMode('idle')
+      setMfaDisablePassword('')
+      setMfaDisableCode('')
+      setMfaSuccess('Two-factor authentication has been disabled.')
+      showToast('2FA Disabled', 'info')
+    } catch (err: any) {
+      setMfaError(err.message || 'Failed to disable 2FA.')
+    } finally {
+      setIsLoadingMfa(false)
+    }
+  }
 
   // Die Tolerances config state
   const [tolerances, setTolerances] = useState<any[]>([])
@@ -59,7 +147,7 @@ export function SettingsPage() {
   }, [tolSuccess, tolError])
 
   const getToleranceField = (type: 'ROUND' | 'FLAT', field: 'max_wear_mm' | 'warning_percentage' | 'critical_percentage') => {
-    const existing = tolerances.find(t => t.die_type === type)
+    const existing = tolerances.find((t: any) => t.die_type === type)
     if (existing) {
       return existing[field]
     }
@@ -71,8 +159,8 @@ export function SettingsPage() {
   }
 
   const handleToleranceChange = (type: 'ROUND' | 'FLAT', field: string, value: any) => {
-    setTolerances(prev => {
-      const existingIdx = prev.findIndex(t => t.die_type === type)
+    setTolerances((prev: any[]) => {
+      const existingIdx = prev.findIndex((t: any) => t.die_type === type)
       if (existingIdx !== -1) {
         const updated = [...prev]
         updated[existingIdx] = { ...updated[existingIdx], [field]: value }
@@ -97,13 +185,13 @@ export function SettingsPage() {
     setIsSubmittingTolerances(true)
 
     try {
-      const roundTol = tolerances.find(t => t.die_type === 'ROUND') || {
+      const roundTol = tolerances.find((t: any) => t.die_type === 'ROUND') || {
         die_type: 'ROUND',
         max_wear_mm: '0.050',
         warning_percentage: 70,
         critical_percentage: 90
       }
-      const flatTol = tolerances.find(t => t.die_type === 'FLAT') || {
+      const flatTol = tolerances.find((t: any) => t.die_type === 'FLAT') || {
         die_type: 'FLAT',
         max_wear_mm: '0.100',
         warning_percentage: 70,
@@ -406,6 +494,168 @@ export function SettingsPage() {
                   {isSubmitting ? 'Updating Password...' : 'Update Password'}
                 </button>
               </form>
+
+              {/* 02 Two-Factor Authentication Section */}
+              <div className="pt-6 mt-6 border-t border-[#1a1a1a] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">02 TWO-FACTOR AUTHENTICATION (TOTP)</h2>
+                    <span className="text-[#6b7280] text-xs block mt-0.5">
+                      Protect your account with standard RFC 6238 time-based one-time passcodes (Google Authenticator, Authy, 1Password).
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {isMfaEnabled ? (
+                      <span className="flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-[10px] px-2.5 py-1 rounded-sm uppercase font-bold">
+                        <Check className="h-3 w-3 text-emerald-400" />
+                        2FA Active
+                      </span>
+                    ) : (
+                      <span className="bg-[#141414] border border-[#2a2a2a] text-[#6b7280] text-[10px] px-2.5 py-1 rounded-sm uppercase font-bold">
+                        Disabled
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {mfaError && (
+                  <div className="bg-[#141414] border border-red-500/30 rounded-sm px-3 py-2 text-xs text-red-400 font-mono">
+                    {mfaError}
+                  </div>
+                )}
+
+                {mfaSuccess && (
+                  <div className="bg-[#141414] border border-emerald-500/30 rounded-sm px-3 py-2 text-xs text-emerald-400 flex items-center gap-1.5 font-mono">
+                    <Check className="h-3.5 w-3.5" />
+                    {mfaSuccess}
+                  </div>
+                )}
+
+                {mfaMode === 'idle' && (
+                  <div>
+                    {!isMfaEnabled ? (
+                      <button
+                        type="button"
+                        onClick={handleStartMfaSetup}
+                        disabled={isLoadingMfa}
+                        className="bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-bold py-2 px-4 rounded-sm transition disabled:opacity-40 cursor-pointer uppercase tracking-wider text-xs font-mono flex items-center gap-2"
+                      >
+                        {isLoadingMfa ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
+                        <span>Set Up Two-Factor Authentication</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setMfaMode('disable'); setMfaError(''); }}
+                        className="bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/40 text-red-400 hover:text-red-300 font-bold py-2 px-4 rounded-sm transition cursor-pointer uppercase tracking-wider text-xs font-mono"
+                      >
+                        Disable Two-Factor Authentication
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {mfaMode === 'setup' && mfaSetupData && (
+                  <form onSubmit={handleConfirmMfaEnable} className="space-y-4 bg-[#0a0a0a] border border-[#2a2a2a] p-4 rounded-sm">
+                    <p className="text-xs text-[#9ca3af]">
+                      Scan this QR code with your mobile authenticator app (Google Authenticator, Microsoft Authenticator, Authy):
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#141414] p-3 rounded-sm border border-[#1a1a1a]">
+                      <img src={mfaSetupData.qr_code} alt="2FA QR Code" className="w-36 h-36 bg-white p-1 rounded-sm" />
+                      <div className="text-xs space-y-1 font-mono">
+                        <span className="text-[10px] text-[#6b7280] uppercase block">Manual Secret Key:</span>
+                        <code className="bg-[#0a0a0a] px-2 py-1 border border-[#2a2a2a] text-emerald-400 select-all block text-[11px]">
+                          {mfaSetupData.secret}
+                        </code>
+                        <span className="text-[10px] text-[#6b7280] block mt-2">Account: {username} (DMS-O2)</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
+                        Enter 6-Digit Code from App
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        required
+                        value={mfaEnableCode}
+                        onChange={(e) => setMfaEnableCode(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-[#0a0a0a] border border-emerald-500/50 focus:border-emerald-400 rounded-sm px-3 py-2 text-center text-base tracking-[0.2em] text-emerald-300 focus:outline-none font-mono"
+                        placeholder="000000"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={isLoadingMfa || mfaEnableCode.length < 6}
+                        className="flex-1 bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/60 text-emerald-400 py-2 rounded-sm text-xs font-bold font-mono uppercase transition disabled:opacity-40 cursor-pointer"
+                      >
+                        {isLoadingMfa ? 'Verifying Code...' : 'Confirm & Enable 2FA'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setMfaMode('idle'); setMfaSetupData(null); }}
+                        className="px-4 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#9ca3af] py-2 rounded-sm text-xs font-mono transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {mfaMode === 'disable' && (
+                  <form onSubmit={handleConfirmMfaDisable} className="space-y-4 bg-[#0a0a0a] border border-red-500/30 p-4 rounded-sm">
+                    <p className="text-xs text-red-400">
+                      Confirm your current password and 6-digit authenticator code to disable Two-Factor Authentication:
+                    </p>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
+                        Current Account Password
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={mfaDisablePassword}
+                        onChange={(e) => setMfaDisablePassword(e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm px-3 py-2 text-xs text-[#e4e4e4] focus:outline-none font-mono"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
+                        6-Digit Authenticator Code
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        required
+                        value={mfaDisableCode}
+                        onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm px-3 py-2 text-xs text-[#e4e4e4] focus:outline-none font-mono text-center tracking-[0.2em]"
+                        placeholder="000000"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={isLoadingMfa || !mfaDisablePassword || mfaDisableCode.length < 6}
+                        className="flex-1 bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/60 text-red-400 py-2 rounded-sm text-xs font-bold font-mono uppercase transition disabled:opacity-40 cursor-pointer"
+                      >
+                        {isLoadingMfa ? 'Disabling 2FA...' : 'Disable 2FA'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setMfaMode('idle'); setMfaDisablePassword(''); setMfaDisableCode(''); }}
+                        className="px-4 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#9ca3af] py-2 rounded-sm text-xs font-mono transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             </div>
           )}
 

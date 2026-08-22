@@ -509,11 +509,18 @@ export function UserManager() {
                         
                         {/* Status */}
                         <td className="py-2 px-4">
-                          <div className="flex items-center space-x-1.5">
-                            <span className={`h-1.5 w-1.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                            <span className={`text-[11px] uppercase ${user.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {user.is_active ? 'ACTIVE' : 'SUSPENDED'}
-                            </span>
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1.5">
+                              <span className={`h-1.5 w-1.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              <span className={`text-[11px] uppercase ${user.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {user.is_active ? 'ACTIVE' : 'SUSPENDED'}
+                              </span>
+                            </div>
+                            {user.is_mfa_enabled && (
+                              <span className="px-1 py-0.2 text-[8px] font-bold rounded-sm border bg-emerald-950/30 text-emerald-400 border-emerald-500/30 uppercase" title="2-Factor Authentication Enabled">
+                                2FA
+                              </span>
+                            )}
                           </div>
                         </td>
                         
