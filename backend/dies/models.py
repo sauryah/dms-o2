@@ -11,9 +11,8 @@ class Die(models.Model):
     rack         = models.ForeignKey('machines.Rack', null=True, blank=True, on_delete=models.SET_NULL)
     shelf_number = models.PositiveSmallIntegerField(null=True, blank=True)
     current_set  = models.ForeignKey('machines.Set', null=True, blank=True, on_delete=models.SET_NULL)
-    remarks                  = models.TextField(blank=True)
-    predicted_remaining_days = models.IntegerField(null=True, blank=True)
-    created_at               = models.DateTimeField(auto_now_add=True)
+    remarks      = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
     updated_at               = models.DateTimeField(auto_now=True)
     version                  = models.IntegerField(default=1)
 
