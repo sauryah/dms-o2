@@ -74,7 +74,6 @@ CREATE TABLE dies_die (
     shelf_number SMALLINT CHECK (shelf_number >= 1),
     current_set_id INTEGER REFERENCES machines_set(id) ON DELETE SET NULL,
     remarks TEXT NOT NULL DEFAULT '',
-    predicted_remaining_days INTEGER,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version INTEGER NOT NULL DEFAULT 1
@@ -180,9 +179,6 @@ The `payload_hash` field stores a SHA-256 HMAC signature of the payload signed u
 
 ### Decimal Constraints
 `MinValueValidator(0.001)` applied to all sizing DecimalFields on `RoundDie` and `FlatDie` models to block negative values.
-
-### Predicted Remaining Days
-`Die.predicted_remaining_days` is pre-calculated remaining lifetime forecast stored on the model to optimize dashboard rendering and Meilisearch query performance.
 
 ## Indexing Policies
 

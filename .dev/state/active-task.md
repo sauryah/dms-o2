@@ -7,14 +7,14 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Dark Terminal Design System & ROOT-Only Dual-Theme Switcher
+**Task:** Decommission Preventive Wear Prediction Feature & Database Field
 **Status:** Complete
-**Started:** 2026-08-14
-**Completed:** 2026-08-14
+**Started:** 2026-08-22
+**Completed:** 2026-08-22
 **Confidence:** 100%
 
 ## Task Description
-Overhaul the entire DMS-O2 frontend application to the "Dark Terminal / Bloomberg-Tape" visual design system across all 21 shared UI components and 15 page modules. Build a persistent Dual-Theme Switcher allowing instantaneous swapping between Dark Terminal and Classic Slate themes, strictly restricted to ROOT administrators. Maintain zero-error TypeScript type checks, zero lint errors, and 100% passing test suites.
+Safely decommission and remove the Preventive Wear Prediction linear regression engine, drop `Die.predicted_remaining_days` from the PostgreSQL schema via migration `0014_remove_die_predicted_remaining_days`, remove the REST endpoint `/api/v1/dies/{id}/wear-prediction/`, remove `PredictedRemainingDays` from the Go SQL scanning layer, remove `WearPredictionSection` from `DieDetailPage.tsx`, and clean up all related frontend cards, CAD renderer props, test suites, and system documentation while keeping threshold-based wear alerts (`DieTolerance` & `WearAlert`) fully functional.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:

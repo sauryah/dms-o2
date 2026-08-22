@@ -30,3 +30,8 @@
 *   **Problem**: The platform requires a high-density "Dark Terminal / Bloomberg-Tape" visual design for manufacturing telemetry, while also allowing operators to switch back to the "Classic Slate" modern industrial theme if desired, without fragmenting component implementations or allowing unauthorized users to modify system-wide appearance.
 *   **Decision**: Implement a unified theme provider (`ThemeContext.tsx`) and CSS custom property architecture (`[data-theme="terminal"]` vs `[data-theme="classic"]`). All UI primitives map to standard tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-running)`). Enforce strict authorization allowing only users with `role === 'ROOT'` to switch or configure the application theme. Synchronize active theme system-wide across tabs via `localStorage`.
 
+## ADR 7: Redis Pub/Sub Distributed SSE Multiplexing & RFC 6238 TOTP 2FA
+*   **Date**: 2026-08-22
+*   **Problem**: Single-node in-memory event channels prevent horizontal scaling of Go API SSE listeners across multiple replicas. In addition, administrative and root accounts required standardized Two-Factor Authentication to protect high-impact shop-floor database operations.
+*   **Decision**: Multiplex PostgreSQL `LISTEN dms_events` through a distributed Redis Pub/Sub channel (`dms:events:broadcast`) so all Go API instances receive and broadcast events to their local clients. Implement RFC 6238 TOTP Two-Factor Authentication via `pyotp` with 2-step login verification and self-service QR enrollment.
+

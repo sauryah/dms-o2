@@ -12,13 +12,17 @@ Complete catalog of all API endpoints across Django and Go services.
 
 | Method | Route | Access | Purpose / Details |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/login/` | Public | Validates credentials, sets HTTPOnly cookies, logs session |
+| `POST` | `/api/v1/auth/login/` | Public | Validates credentials, checks MFA requirement, sets HTTPOnly cookies, logs session |
 | `POST` | `/api/v1/auth/logout/` | Authenticated | Evicts session record, invalidates Redis cache, clears cookies |
-| `GET` | `/api/v1/auth/me/` | Authenticated | Retrieves current user profile, role, and authorized tool permissions |
+| `GET` | `/api/v1/auth/me/` | Authenticated | Retrieves current user profile, role, MFA status, and authorized tool permissions |
 | `POST` | `/api/v1/auth/change-password/` | Authenticated | Updates password with standard validation rules |
 | `POST` | `/api/v1/auth/keep-alive/` | Authenticated | Touches and extends current session activity timestamp |
 | `POST` | `/api/v1/auth/refresh/` | Authenticated | Issues updated access token using HTTPOnly refresh cookie |
 | `POST` | `/api/v1/auth/sse-ticket/` | Authenticated | Exchanges active JWT for single-use ticket to establish SSE stream |
+| `POST` | `/api/v1/auth/mfa/setup/` | Authenticated | Generates fresh TOTP secret, provisioning URI, and base64 QR code image |
+| `POST` | `/api/v1/auth/mfa/enable/` | Authenticated | Confirms 6-digit TOTP code and activates two-factor authentication |
+| `POST` | `/api/v1/auth/mfa/disable/` | Authenticated | Disables 2FA with current password and valid 6-digit TOTP code |
+| `POST` | `/api/v1/auth/mfa/verify/` | Public (Rate Limited) | Verifies 6-digit TOTP challenge during login to issue full JWT session tokens |
 
 ### User Administration & Permissions (Django Gunicorn)
 
@@ -39,7 +43,6 @@ Complete catalog of all API endpoints across Django and Go services.
 | `POST` | `/api/v1/dies/` | Admin / Root | Register a new Round or Flat die |
 | `GET/PATCH/DELETE` | `/api/v1/dies/{id}/` | Authenticated/Admin | Details, partial update (Operator: rack/shelf; Admin: full), delete |
 | `POST` | `/api/v1/dies/{id}/recut/` | Admin / Root | Recut die (updates current size/width/thickness and logs measurement) |
-| `GET` | `/api/v1/dies/{id}/wear_prediction/` | Tool Authorized | Calculate linear wear prediction forecast for die |
 | `GET/POST` | `/api/v1/dies/{id}/maintenance_logs/` | Authenticated | List or append maintenance service records |
 | `GET` | `/api/v1/dies/{id}/history/` | Authenticated | View audit history logs for a single die |
 
@@ -88,6 +91,7 @@ Complete catalog of all API endpoints across Django and Go services.
 | `GET` | `/api/go/health` | Public | Go microservice health check endpoint |
 | `GET` | `/api/go/search` | Authenticated | Sub-millisecond fuzzy search with Redis cache and Meilisearch query proxy |
 | `GET` | `/api/go/stats` | Authenticated | Real-time aggregate count metrics (total dies, available, running, scrapped) |
+| `GET` | `/api/go/db-stats` | Authenticated | Exposes active PostgreSQL database connection pool telemetry (open, in-use, idle, wait stats) |
 | `GET` | `/api/events/` | Ticket Authorized | Server-Sent Events (SSE) stream for real-time inventory updates |
 | `GET` | `/api/go/index-status` | Authenticated | Meilisearch indexing status and document count |
 | `GET` | `/api/go/import-status` | Authenticated | Real-time status of ongoing bulk import tasks |

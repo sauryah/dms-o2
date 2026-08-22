@@ -59,6 +59,21 @@ Track implementation status across all phases.
 
 ## Roadmap Progress
 
+### Architecture Scaling & Security Hardening (v1.9.8) ✅
+**Status:** Complete
+**Date:** 2026-08-22
+
+**Completed:**
+- Multi-instance Go SSE listener multiplexing via Redis Pub/Sub (`dms:events:broadcast`)
+- Automated Celery Beat OutboxTask retention pruning (7-day window)
+- Go API database connection pool telemetry (`/api/go/db-stats`)
+- RFC 6238 TOTP Two-Factor Authentication backend endpoints & migration
+- 2-step signed login challenge and frontend TOTP modal verification in `LoginPage.tsx`
+- Self-service MFA enrollment with QR code generation in `SettingsPage.tsx`
+- User list 2FA status indicator in `UserManager.tsx`
+- Non-destructive automated backup restoration smoke test script (`scripts/verify-backup-integrity.sh`)
+- Comprehensive Go and Django test coverage
+
 ### Phase 1: Security & Service Boundaries ✅
 **Status:** Complete
 **Commit:** `d827396`
@@ -186,6 +201,7 @@ Track implementation status across all phases.
 - Built a spreadsheet-like recount editor modal enabling users to record tallies, initialize drafts, prefill baselines from stock levels, and commit sheet audits.
 - Added comprehensive Python unit tests for the recount and stock ViewSets, and verified frontend compilation and test suites pass completely.
 - Verified: all tests green across Go API (`dieset`, `handlers`, `database`) and TypeScript Vitest suite (69/69 green), typescript compiles without errors (`tsc --noEmit`), and Vite production build succeeds.
+- Decommissioned and safely removed the Preventive Wear Prediction feature across the system: dropped `Die.predicted_remaining_days` (migration `0014_remove_die_predicted_remaining_days`), deleted `WearPredictionService`, removed `wear-prediction` endpoint action, updated Go SQL scan layer to omit `PredictedRemainingDays`, removed `WearPredictionSection` from `DieDetailPage.tsx`, and removed prediction badges on die cards.
 
 ## Overall Progress
 - **AI-EOS:** 100% complete

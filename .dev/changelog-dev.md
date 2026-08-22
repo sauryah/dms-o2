@@ -1,5 +1,35 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-22 Decommissioning of Preventive Wear Prediction
+*   **Refactor**: Safely removed the **Preventive Wear Prediction** linear regression engine, database column, and related UI components across the stack:
+    *   **Database & Models**: Removed `Die.predicted_remaining_days` and created Django migration [`0014_remove_die_predicted_remaining_days.py`](file:///backend/dies/migrations/0014_remove_die_predicted_remaining_days.py).
+    *   **Backend Services & Views**: Deleted `WearPredictionService`, removed `@action wear_prediction` endpoint in `backend/dies/views.py`, cleaned up `WearAlertService` to decouple threshold alerts from predictions, removed `predicted_remaining_days` from `DieListSerializer` and `DieDetailSerializer`, and removed cache invalidation in `backend/dies/signals.py`.
+    *   **Go Microservice**: Removed `PredictedRemainingDays` from `DieRepresentation` struct, SQL SELECT queries, and scan targets in `go-api/internal/database/database.go`.
+    *   **Frontend UI & Types**: Removed `WearPredictionSection` and `DimensionWearChart` from `frontend/src/features/inventory/components/DieDetailPage.tsx`, removed `prediction` prop from `CadRenderer.tsx`, removed `predicted_remaining_days` badge from `RoundDieCard.tsx` and `FlatDieCard.tsx`, and removed `predicted_remaining_days` from `frontend/src/types.ts`.
+    *   **Tests & Documentation**: Deleted obsolete `test_wear_prediction.py`, updated `test_api.py` and `scripts/load_test.py`, and updated all architecture and module docs.
+*   **Affected Modules**: `backend`, `go-api`, `frontend`, `scripts`, `docs`
+*   **Testing Performed**: All frontend TypeScript checks (`tsc --noEmit`), Vitest suite (21/21 files, 69/69 tests), and production Vite builds passed with 0 errors.
+
+### 2026-08-22 Migration Container Fix & Module Load Resolution
+*   **Fix**: Resolved container `dms-o2-migrate-1` startup exit 1 failure caused by an out-of-order class reference (`NameError: name 'LoginRateThrottle' is not defined`) in `backend/users/views/auth.py`.
+    *   Reordered network helper functions (`is_docker_internal_ip`, `get_client_ip`) and rate-limiting throttle (`LoginRateThrottle`) before the `LoginView` declaration.
+    *   Removed outdated duplicate legacy `LoginView` class definition in `backend/users/views/auth.py`.
+    *   Fixed PyPNG image stream `save()` call in `MFASetupView` to prevent kwargs incompatibility in headless container environments.
+    *   Added `django_tmp` and `./backups` volume mounts to `migrate` service in `docker-compose.yml` to ensure permission parity with other backend services.
+    *   Fixed missing icon imports in `DieDetailPage.tsx`.
+*   **Affected Modules**: `backend`, `frontend`, `docker`
+*   **Testing Performed**: All 206 Django unit tests passed, all Go API tests passed, 69 Vitest tests passed, `tsc --noEmit` passed with 0 errors, Vite production build succeeded, and `migrate` container finished with exit 0.
+
+### 2026-08-22 Architecture Scaling (Area 1) & Security/Governance Hardening (Area 5)
+*   **Feature**: Implemented multi-instance SSE distribution via Redis Pub/Sub, OutboxTask retention pruning, database connection pool telemetry, and Two-Factor Authentication (RFC 6238 TOTP).
+    *   **Area 1.A (Redis Pub/Sub SSE Multiplexing)**: Updated `go-api/internal/cache/cache.go` and `go-api/internal/events/events.go` to multiplex PostgreSQL `LISTEN dms_events` through Redis Pub/Sub channel `dms:events:broadcast`. Every running Go API instance subscribes to this channel to broadcast inventory events to its connected SSE clients, with automated local fallback if Redis is unavailable.
+    *   **Area 1.B (OutboxTask Retention Pruning)**: Implemented Celery Beat scheduled task `search.tasks.prune_processed_outbox_tasks` running daily at 04:00 to prune processed outbox tasks older than 7 days, maintaining zero table bloat while preserving transient debugging windows. Added unit test in `dies/tests/test_search.py`.
+    *   **Area 1.C (Go DB Pool Telemetry)**: Added `GetPoolStats() DBStats` on `database.PostgresDB` and registered authenticated endpoint `GET /api/go/db-stats` returning active `sql.DBStats` connection metrics (`OpenConnections`, `InUse`, `Idle`, `WaitCount`, `WaitDuration`). Added comprehensive unit test in `go-api/internal/handlers/handlers_test.go`.
+    *   **Area 5.A (Two-Factor Authentication / TOTP)**: Added `is_mfa_enabled` and `totp_secret` to `User` model with Django migration `0005_user_totp_secret_and_is_mfa_enabled`. Added `pyotp` and `qrcode` backend integrations for `MFASetupView`, `MFAEnableView`, `MFADisableView`, and `MFAVerifyLoginView`. Updated `LoginView` with 2-step signed MFA challenge token response and updated frontend `LoginPage.tsx` and `SettingsPage.tsx` with dedicated 2FA setup QR scanner and challenge verification workflows. Added indicator badges in `UserManager.tsx` and unit tests in `users/tests/test_mfa.py`.
+    *   **Area 5.B (Automated Backup Integrity Verification)**: Created `scripts/verify-backup-integrity.sh` non-destructive ephemeral database restoration test script to assert structure, tables, and record counts on database backup dumps.
+*   **Affected Modules**: `backend`, `go-api`, `frontend`, `scripts`, `docs`
+*   **Testing Performed**: Go test suite (`go test ./...` 100% passed), Django unit tests (`test_search.py`, `test_mfa.py`), frontend TypeScript verification (`tsc --noEmit`).
+
 ### 2026-08-16 Docker Internal Bridge IP Filtering & Localhost Resolution
 *   **Fix**: Resolved client IP capture issue where logins from the Docker host or via Docker bridges were recorded as internal gateway addresses (`172.18.0.1`, `172.19.0.1`). Upgraded `get_client_ip()` in `backend/users/views/auth.py` to use `ipaddress` checking against all Docker standard bridge subnets (`172.16.0.0/12`), properly skipping internal proxy hops in `X-Forwarded-For` and `X-Real-IP`, and resolving connections originating from Docker host gateways directly to `127.0.0.1` (Localhost / Host Machine).
 *   **Affected Modules**: `backend`

@@ -94,7 +94,6 @@ backend/
 ### Dies
 - `GET /api/v1/dies/`: List dies (with type/status/size filters)
 - `POST /api/v1/dies/{die_id}/recut/`: Recut die
-- `GET /api/v1/dies/{die_id}/wear_prediction/`: Wear prediction
 - `GET/POST /api/v1/dies/{die_id}/maintenance_logs/`: Maintenance log
 
 ### Backups
@@ -107,7 +106,7 @@ backend/
 2. Lock die record (select_for_update)
 3. Update current dimensions
 4. Create DieHistory record
-5. Recalculate predicted_remaining_days
+5. Broadcast sync and SSE updates
 6. Return updated die
 
 ### Wear Alert Detection
