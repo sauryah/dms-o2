@@ -242,6 +242,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'dies.tasks.check_all_wear_alerts_task',
         'schedule': crontab(hour=1, minute=0),  # Daily at 1 AM
     },
+    'auto-prune-outbox-daily': {
+        'task': 'search.tasks.prune_processed_outbox_tasks',
+        'schedule': crontab(hour=4, minute=0),  # Daily at 4 AM
+    },
     'process-outbox-periodic': {
         'task': 'search.tasks.process_outbox_task',
         'schedule': 5.0,  # Every 5 seconds

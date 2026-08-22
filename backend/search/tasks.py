@@ -459,3 +459,22 @@ def process_outbox_task(self):
                         t.save()
                     except Exception as sub_exc:
                         logger.error(f"Failed individual fallback sync task {t.id}: {sub_exc}")
+
+
+@shared_task(name='search.tasks.prune_processed_outbox_tasks')
+def prune_processed_outbox_tasks(retention_days=7):
+    """
+    Periodic maintenance task to delete processed OutboxTask entries older than retention_days.
+    Prevents unbounded growth of the dies_outboxtask table.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from dies.models import OutboxTask
+
+    cutoff = timezone.now() - timedelta(days=retention_days)
+    deleted_count, _ = OutboxTask.objects.filter(
+        is_processed=True,
+        processed_at__lt=cutoff
+    ).delete()
+    logger.info(f"Pruned {deleted_count} processed OutboxTasks older than {retention_days} days (cutoff: {cutoff})")
+    return deleted_count
