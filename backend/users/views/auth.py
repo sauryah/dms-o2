@@ -20,8 +20,21 @@ from django.http import StreamingHttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
 from rest_framework import serializers
 
+from django.core import signing
+import pyotp
+import qrcode
+import base64
+import io
+
 from users.models import User, UserSession, UserActivityLog
-from users.serializers import LoginSerializer, ChangePasswordSerializer
+from users.serializers import (
+    LoginSerializer,
+    ChangePasswordSerializer,
+    MFAEnableSerializer,
+    MFADisableSerializer,
+    MFAVerifyLoginSerializer,
+)
+from rest_framework.throttling import AnonRateThrottle
 
 DOCKER_INTERNAL_SUBNETS = [
     ipaddress.ip_network('172.16.0.0/12'),  # 172.16.0.0 - 172.31.255.255 (Docker standard bridges)
@@ -93,7 +106,6 @@ def get_client_ip(request):
     # the request originated from the host machine (localhost).
     return '127.0.0.1'
 
-from rest_framework.throttling import AnonRateThrottle
 
 class LoginRateThrottle(AnonRateThrottle):
     rate = '5/minute'
@@ -102,6 +114,88 @@ class LoginRateThrottle(AnonRateThrottle):
         if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
             return True
         return super().allow_request(request, view)
+
+
+def issue_user_login_tokens(user, request):
+    """
+    Helper function to prune concurrent sessions, issue JWT access + refresh tokens,
+    create a new UserSession record, log LOGIN activity, and set secure HTTP-only cookies.
+    """
+    # Generate tokens
+    refresh = RefreshToken.for_user(user)
+    token_str = str(refresh.access_token)
+    refresh_token_str = str(refresh)
+    token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+
+    # Prune older sessions if count >= SESSION_MAX_CONCURRENT
+    session_max = settings.SESSION_MAX_CONCURRENT
+    existing_sessions = UserSession.objects.filter(user=user).order_by('last_seen')
+    existing_count = existing_sessions.count()
+    if existing_count >= session_max:
+        to_delete_count = existing_count - session_max + 1
+        oldest_sessions = list(existing_sessions[:to_delete_count])
+        from django.core.cache import cache as django_cache
+        from django.utils import timezone
+        for old_sess in oldest_sessions:
+            eviction_key = f"evicted_session:{user.id}:{old_sess.token_hash}"
+            try:
+                django_cache.set(
+                    eviction_key,
+                    {
+                        "evicted_by_ip": get_client_ip(request),
+                        "evicted_by_device": request.META.get('HTTP_USER_AGENT', '')[:255],
+                        "evicted_at": timezone.now().isoformat()
+                    },
+                    timeout=3600
+                )
+                cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
+                django_cache.delete(cache_key)
+            except Exception:
+                pass
+            old_sess.delete()
+
+    # Create new user session
+    UserSession.objects.create(
+        user=user,
+        token_hash=token_hash,
+        ip_address=get_client_ip(request),
+        device=request.META.get('HTTP_USER_AGENT', '')[:255]
+    )
+
+    # Log successful login
+    UserActivityLog.objects.create(
+        user=user,
+        username=user.username,
+        action='LOGIN',
+        ip_address=get_client_ip(request),
+        device=request.META.get('HTTP_USER_AGENT', '')[:255]
+    )
+
+    response = Response({
+        'token': token_str,
+        'role': user.role,
+        'is_authorized_for_tools': user.is_authorized_for_tools,
+        'authorized_tools': user.authorized_tools
+    }, status=status.HTTP_200_OK)
+    
+    response.set_cookie(
+        key='dms_access_token',
+        value=token_str,
+        httponly=True,
+        samesite='Lax',
+        secure=not settings.DEBUG,
+        max_age=15 * 60
+    )
+    response.set_cookie(
+        key='dms_refresh_token',
+        value=refresh_token_str,
+        httponly=True,
+        samesite='Lax',
+        secure=not settings.DEBUG,
+        max_age=24 * 3600
+    )
+    return response
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -114,8 +208,10 @@ class LoginView(APIView):
             200: inline_serializer(
                 name='LoginResponse',
                 fields={
-                    'token': serializers.CharField(),
-                    'role': serializers.CharField(),
+                    'token': serializers.CharField(required=False),
+                    'role': serializers.CharField(required=False),
+                    'mfa_required': serializers.BooleanField(required=False),
+                    'mfa_token': serializers.CharField(required=False),
                 },
             ),
             401: OpenApiResponse(description='Invalid credentials or inactive account'),
@@ -181,81 +277,214 @@ class LoginView(APIView):
             except Exception:
                 pass
 
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        token_str = str(refresh.access_token)
-        refresh_token_str = str(refresh)
-        token_hash = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+        # If user has MFA enabled, return MFA required response with a temporary signed token
+        if user.is_mfa_enabled and user.totp_secret:
+            mfa_payload = {
+                "user_id": user.id,
+                "username": user.username,
+                "stage": "mfa_pending"
+            }
+            mfa_token = signing.dumps(mfa_payload, salt="dms-mfa-login")
+            return Response({
+                "mfa_required": True,
+                "mfa_token": mfa_token,
+                "username": user.username,
+            }, status=status.HTTP_200_OK)
 
-        # Prune older sessions if count >= SESSION_MAX_CONCURRENT
-        session_max = settings.SESSION_MAX_CONCURRENT
-        existing_sessions = UserSession.objects.filter(user=user).order_by('last_seen')
-        existing_count = existing_sessions.count()
-        if existing_count >= session_max:
-            to_delete_count = existing_count - session_max + 1
-            oldest_sessions = list(existing_sessions[:to_delete_count])
-            from django.core.cache import cache as django_cache
-            from django.utils import timezone
-            for old_sess in oldest_sessions:
-                # Store eviction details in cache so the evicted session can display a precise message
-                eviction_key = f"evicted_session:{user.id}:{old_sess.token_hash}"
-                try:
-                    django_cache.set(
-                        eviction_key,
-                        {
-                            "evicted_by_ip": get_client_ip(request),
-                            "evicted_by_device": request.META.get('HTTP_USER_AGENT', '')[:255],
-                            "evicted_at": timezone.now().isoformat()
-                        },
-                        timeout=3600 # Keep for 1 hour
-                    )
-                    cache_key = f"user_session:{user.id}:{old_sess.token_hash}"
-                    django_cache.delete(cache_key)
-                except Exception:
-                    pass
-                old_sess.delete()
+        return issue_user_login_tokens(user, request)
 
-        # Create new user session
-        UserSession.objects.create(
-            user=user,
-            token_hash=token_hash,
-            ip_address=get_client_ip(request),
-            device=request.META.get('HTTP_USER_AGENT', '')[:255]
-        )
 
-        # Log successful login
+class MFAVerifyLoginView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [LoginRateThrottle]
+
+    @extend_schema(
+        request=MFAVerifyLoginSerializer,
+        responses={
+            200: inline_serializer(
+                name='MFAVerifyLoginResponse',
+                fields={
+                    'token': serializers.CharField(),
+                    'role': serializers.CharField(),
+                },
+            ),
+            400: OpenApiResponse(description='Invalid or expired MFA token / code'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = MFAVerifyLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mfa_token = serializer.validated_data['mfa_token']
+        code = serializer.validated_data['code'].strip()
+
+        try:
+            payload = signing.loads(mfa_token, salt="dms-mfa-login", max_age=300)
+        except signing.SignatureExpired:
+            return Response({"detail": "MFA verification session expired. Please log in again."}, status=status.HTTP_400_BAD_REQUEST)
+        except signing.BadSignature:
+            return Response({"detail": "Invalid MFA verification token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_id = payload.get("user_id")
+        user = User.objects.filter(id=user_id, is_active=True).first()
+        if not user or not user.is_mfa_enabled or not user.totp_secret:
+            return Response({"detail": "User not found or MFA not configured."}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code, valid_window=1):
+            UserActivityLog.objects.create(
+                user=user,
+                username=user.username,
+                action='FAILED_LOGIN',
+                ip_address=get_client_ip(request),
+                device=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
+            return Response({"detail": "Invalid 6-digit verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return issue_user_login_tokens(user, request)
+
+
+class MFASetupView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='MFASetupResponse',
+                fields={
+                    'secret': serializers.CharField(),
+                    'otpauth_uri': serializers.CharField(),
+                    'qr_code': serializers.CharField(),
+                },
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        secret = pyotp.random_base32()
+        totp = pyotp.TOTP(secret)
+        otpauth_uri = totp.provisioning_uri(name=user.username, issuer_name="DMS-O2")
+
+        # Generate QR code base64
+        qr_img = qrcode.make(otpauth_uri)
+        buffer = io.BytesIO()
+        qr_img.save(buffer)
+        qr_b64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        qr_code_data_url = f"data:image/png;base64,{qr_b64}"
+
+        # Store pending secret in Redis for 10 minutes
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            r.setex(f"mfa_setup_secret:{user.id}", 600, secret)
+        except Exception as e:
+            logger.warning(f"Redis cache write failed during MFA setup: {e}")
+
+        return Response({
+            "secret": secret,
+            "otpauth_uri": otpauth_uri,
+            "qr_code": qr_code_data_url,
+        }, status=status.HTTP_200_OK)
+
+
+class MFAEnableView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=MFAEnableSerializer,
+        responses={
+            200: inline_serializer(
+                name='MFAEnableResponse',
+                fields={'detail': serializers.CharField()},
+            ),
+            400: OpenApiResponse(description='Invalid code or setup expired'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = MFAEnableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        code = serializer.validated_data['code'].strip()
+        user = request.user
+
+        secret = None
+        try:
+            redis_url = settings.CACHES['default']['LOCATION']
+            r = redis.Redis.from_url(redis_url)
+            cached_secret = r.get(f"mfa_setup_secret:{user.id}")
+            if cached_secret:
+                secret = cached_secret.decode('utf-8')
+        except Exception as e:
+            logger.warning(f"Redis lookup failed during MFA enable: {e}")
+
+        if not secret:
+            return Response({"detail": "MFA setup session expired or not initialized. Please click Setup again."}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(secret)
+        if not totp.verify(code, valid_window=1):
+            return Response({"detail": "Invalid 6-digit verification code. Check your authenticator app."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.totp_secret = secret
+        user.is_mfa_enabled = True
+        user.save()
+
+        try:
+            r.delete(f"mfa_setup_secret:{user.id}")
+        except Exception:
+            pass
+
         UserActivityLog.objects.create(
             user=user,
             username=user.username,
-            action='LOGIN',
+            action='PERMISSIONS_CHANGED',
             ip_address=get_client_ip(request),
             device=request.META.get('HTTP_USER_AGENT', '')[:255]
         )
 
-        response = Response({
-            'token': token_str,
-            'role': user.role,
-            'is_authorized_for_tools': user.is_authorized_for_tools,
-            'authorized_tools': user.authorized_tools
-        }, status=status.HTTP_200_OK)
-        
-        response.set_cookie(
-            key='dms_access_token',
-            value=token_str,
-            httponly=True,
-            samesite='Lax',
-            secure=not settings.DEBUG,
-            max_age=15 * 60
+        return Response({"detail": "Two-factor authentication has been enabled successfully."}, status=status.HTTP_200_OK)
+
+
+class MFADisableView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=MFADisableSerializer,
+        responses={
+            200: inline_serializer(
+                name='MFADisableResponse',
+                fields={'detail': serializers.CharField()},
+            ),
+            400: OpenApiResponse(description='Invalid password or code'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = MFADisableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        password = serializer.validated_data['password']
+        code = serializer.validated_data['code'].strip()
+        user = request.user
+
+        if not user.check_password(password):
+            return Response({"password": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.is_mfa_enabled and user.totp_secret:
+            totp = pyotp.TOTP(user.totp_secret)
+            if not totp.verify(code, valid_window=1):
+                return Response({"code": "Invalid 6-digit verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.totp_secret = ''
+        user.is_mfa_enabled = False
+        user.save()
+
+        UserActivityLog.objects.create(
+            user=user,
+            username=user.username,
+            action='PERMISSIONS_CHANGED',
+            ip_address=get_client_ip(request),
+            device=request.META.get('HTTP_USER_AGENT', '')[:255]
         )
-        response.set_cookie(
-            key='dms_refresh_token',
-            value=refresh_token_str,
-            httponly=True,
-            samesite='Lax',
-            secure=not settings.DEBUG,
-            max_age=24 * 3600
-        )
-        return response
+
+        return Response({"detail": "Two-factor authentication has been disabled successfully."}, status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(APIView):

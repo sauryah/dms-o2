@@ -261,6 +261,7 @@ class MeView(APIView):
             'last_name': user.last_name,
             'is_authorized_for_tools': user.is_authorized_for_tools,
             'authorized_tools': user.authorized_tools,
+            'is_mfa_enabled': user.is_mfa_enabled,
         })
 
 

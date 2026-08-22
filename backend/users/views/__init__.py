@@ -11,6 +11,10 @@ from users.views.auth import (
     LivenessCheckView,
     ReadinessCheckView,
     ServerInfoView,
+    MFASetupView,
+    MFAEnableView,
+    MFADisableView,
+    MFAVerifyLoginView,
 )
 from users.views.profile import (
     UserViewSet,
@@ -33,6 +37,10 @@ __all__ = [
     'LivenessCheckView',
     'ReadinessCheckView',
     'ServerInfoView',
+    'MFASetupView',
+    'MFAEnableView',
+    'MFADisableView',
+    'MFAVerifyLoginView',
     'UserViewSet',
     'MeView',
     'UserActivityLogViewSet',

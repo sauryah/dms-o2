@@ -18,3 +18,18 @@ class ChangePasswordSerializer(serializers.Serializer):
         except ValidationError as e:
             raise serializers.ValidationError(list(e.messages))
         return value
+
+
+class MFAEnableSerializer(serializers.Serializer):
+    code = serializers.CharField(required=True, min_length=6, max_length=6)
+
+
+class MFADisableSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True)
+    code = serializers.CharField(required=True, min_length=6, max_length=6)
+
+
+class MFAVerifyLoginSerializer(serializers.Serializer):
+    mfa_token = serializers.CharField(required=True)
+    code = serializers.CharField(required=True, min_length=6, max_length=6)
+    client_ip = serializers.CharField(required=False, allow_blank=True, default='')

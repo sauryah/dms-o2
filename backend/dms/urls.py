@@ -5,7 +5,13 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsRootOnly, IsAdminOrRoot
 from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView, DieToleranceViewSet, WearAlertViewSet, MachineDieStockViewSet, DieInventoryRecountViewSet, EnamelMachineViewSet
-from users.views import LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet, MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet, EventStreamView, HealthCheckView, LivenessCheckView, ReadinessCheckView, ServerInfoView, VerifyTokenView, TokenRefreshView
+from users.views import (
+    LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet,
+    MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet,
+    EventStreamView, HealthCheckView, LivenessCheckView, ReadinessCheckView,
+    ServerInfoView, VerifyTokenView, TokenRefreshView,
+    MFASetupView, MFAEnableView, MFADisableView, MFAVerifyLoginView,
+)
 from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
@@ -46,6 +52,10 @@ urlpatterns = [
     path('api/v1/auth/keep-alive/', KeepAliveView.as_view(), name='keep-alive'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('api/v1/auth/sse-ticket/', SSETicketView.as_view(), name='sse-ticket'),
+    path('api/v1/auth/mfa/setup/', MFASetupView.as_view(), name='mfa-setup'),
+    path('api/v1/auth/mfa/enable/', MFAEnableView.as_view(), name='mfa-enable'),
+    path('api/v1/auth/mfa/disable/', MFADisableView.as_view(), name='mfa-disable'),
+    path('api/v1/auth/mfa/verify/', MFAVerifyLoginView.as_view(), name='mfa-verify'),
     path('api/v1/import/', ImportDiesView.as_view(), name='import-dies'),
     path('api/v1/import/template/', ImportTemplateView.as_view(), name='import-template'),
     path('api/v1/import/logs/', ImportLogsView.as_view(), name='import-logs'),
@@ -67,6 +77,10 @@ urlpatterns = [
     path('api/auth/keep-alive/', KeepAliveView.as_view()),
     path('api/auth/refresh/', TokenRefreshView.as_view()),
     path('api/auth/sse-ticket/', SSETicketView.as_view()),
+    path('api/auth/mfa/setup/', MFASetupView.as_view()),
+    path('api/auth/mfa/enable/', MFAEnableView.as_view()),
+    path('api/auth/mfa/disable/', MFADisableView.as_view()),
+    path('api/auth/mfa/verify/', MFAVerifyLoginView.as_view()),
     path('api/import/', ImportDiesView.as_view()),
     path('api/import/template/', ImportTemplateView.as_view()),
     path('api/import/logs/', ImportLogsView.as_view()),
