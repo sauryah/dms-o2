@@ -51,6 +51,8 @@ services:
     command: python manage.py migrate --noinput
     volumes:
       - ./backend:/app
+      - ./backups:/backups
+      - django_tmp:/app/tmp
     environment:
       <<: *common-env
     depends_on:
