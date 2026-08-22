@@ -116,3 +116,17 @@ func (c *Cache) Ping(ctx context.Context) error {
 	}
 	return c.client.Ping(ctx).Err()
 }
+
+func (c *Cache) Publish(ctx context.Context, channel string, message string) error {
+	if c.client == nil {
+		return fmt.Errorf("redis cache is disabled")
+	}
+	return c.client.Publish(ctx, channel, message).Err()
+}
+
+func (c *Cache) Subscribe(ctx context.Context, channel string) *redis.PubSub {
+	if c.client == nil {
+		return nil
+	}
+	return c.client.Subscribe(ctx, channel)
+}

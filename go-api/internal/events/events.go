@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -8,9 +9,12 @@ import (
 	"sync"
 	"time"
 
+	"dms-go-api/internal/cache"
 	"dms-go-api/internal/config"
 	"github.com/lib/pq"
 )
+
+const RedisEventChannel = "dms:events:broadcast"
 
 type Event struct {
 	ID      int64  `json:"id"`
@@ -116,7 +120,7 @@ func (m *EventManager) Backfill(w io.Writer, flusher http.Flusher, lastID int64)
 	flusher.Flush()
 }
 
-func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func()) {
+func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *EventManager, onNotify func()) {
 	connStr := cfg.PostgresConnStr()
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
@@ -132,6 +136,28 @@ func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func
 		return
 	}
 
+	// If Redis is enabled, subscribe to the distributed Pub/Sub channel
+	if redisCache != nil && redisCache.Enabled() {
+		go func() {
+			ctx := context.Background()
+			pubsub := redisCache.Subscribe(ctx, RedisEventChannel)
+			if pubsub == nil {
+				return
+			}
+			defer pubsub.Close()
+			slog.Info("Subscribed to Redis Pub/Sub channel for multi-instance event sync", "channel", RedisEventChannel)
+			ch := pubsub.Channel()
+			for msg := range ch {
+				if msg == nil {
+					continue
+				}
+				slog.Info("Received distributed event from Redis Pub/Sub", "channel", msg.Channel, "payload", msg.Payload)
+				onNotify()
+				manager.Broadcast(msg.Payload)
+			}
+		}()
+	}
+
 	go func() {
 		defer listener.Close()
 		slog.Info("Listening for database notifications on channel dms_events")
@@ -143,9 +169,20 @@ func StartEventListener(cfg *config.Config, manager *EventManager, onNotify func
 				if n == nil {
 					continue
 				}
-				slog.Info("Received DB event, invalidating caches and broadcasting", "event", n.Extra)
-				onNotify()
-				manager.Broadcast(n.Extra)
+				slog.Info("Received DB event from PostgreSQL", "event", n.Extra)
+				if redisCache != nil && redisCache.Enabled() {
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					pubErr := redisCache.Publish(ctx, RedisEventChannel, n.Extra)
+					cancel()
+					if pubErr != nil {
+						slog.Warn("Failed to publish event to Redis Pub/Sub, broadcasting locally", "error", pubErr)
+						onNotify()
+						manager.Broadcast(n.Extra)
+					}
+				} else {
+					onNotify()
+					manager.Broadcast(n.Extra)
+				}
 			case <-ticker.C:
 				go func() {
 					err := listener.Ping()
