@@ -34,7 +34,7 @@ class DieListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'predicted_remaining_days', 'version']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'set_name', 'machine_name', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
@@ -74,7 +74,7 @@ class DieDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Die
-        fields = ['die_id', 'die_type', 'casing', 'status', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'predicted_remaining_days', 'version']
+        fields = ['die_id', 'die_type', 'casing', 'status', 'set_name', 'machine_name', 'remarks', 'created_at', 'updated_at', 'history', 'current_set', 'rack', 'shelf', 'shelf_number', 'active_alerts', 'version']
         
     @extend_schema_field(serializers.CharField)
     def get_set_name(self, obj):
