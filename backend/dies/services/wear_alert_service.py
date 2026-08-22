@@ -26,6 +26,7 @@ class WearAlertService:
     def check_wear_alerts(die):
         """
         Calculates current wear and creates, updates, or resolves alerts accordingly.
+        Returns True if an alert was created, modified, or resolved; False otherwise.
         """
         try:
             tolerance = WearAlertService.get_or_create_default_tolerance(die.die_type)
@@ -37,14 +38,14 @@ class WearAlertService:
             
             if die.die_type == 'ROUND':
                 if not hasattr(die, 'rounddie') or not die.rounddie:
-                    return
+                    return False
                 punched = float(die.rounddie.punched_size)
                 current = float(die.rounddie.current_size)
                 wear = abs(current - punched)
                 
             elif die.die_type == 'FLAT':
                 if not hasattr(die, 'flatdie') or not die.flatdie:
-                    return
+                    return False
                 p_width = float(die.flatdie.punched_width)
                 c_width = float(die.flatdie.current_width)
                 p_thick = float(die.flatdie.punched_thickness)
@@ -54,7 +55,7 @@ class WearAlertService:
             
             if max_wear_mm <= 0:
                 logger.warning(f"Invalid max wear mm value for {die.die_type} tolerance configuration")
-                return
+                return False
 
             wear_pct = (wear / max_wear_mm) * 100.0
             
@@ -86,6 +87,8 @@ class WearAlertService:
                             message=message
                         )
                         logger.info(f"Wear alert level changed to {target_level} for die {die.die_id}")
+                        return True
+                    return False
                 else:
                     # No active alert, create a new one
                     WearAlert.objects.create(
@@ -94,6 +97,7 @@ class WearAlertService:
                         message=message
                     )
                     logger.info(f"New wear alert {target_level} created for die {die.die_id}")
+                    return True
             else:
                 # No alert should be active, resolve any existing active alert
                 if active_alert:
@@ -101,6 +105,9 @@ class WearAlertService:
                     active_alert.resolved_at = timezone.now()
                     active_alert.save()
                     logger.info(f"Active wear alert resolved for die {die.die_id}")
+                    return True
+                return False
 
         except Exception as e:
             logger.error(f"Error checking wear alerts for die {die.die_id}: {e}", exc_info=True)
+            return False

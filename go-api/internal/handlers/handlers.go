@@ -109,6 +109,9 @@ func ParseSearchParams(r *http.Request) (*SearchParams, error) {
 	limit := 150
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			if parsedLimit > 10000 {
+				parsedLimit = 10000
+			}
 			limit = parsedLimit
 		}
 	}

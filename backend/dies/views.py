@@ -1,11 +1,16 @@
 import io
+import os
+import tempfile
 import openpyxl
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, serializers
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from dies.models import Die, ImportLog, MaintenanceLog, DieTolerance, WearAlert, MachineDieStock, DieInventoryRecount, DieInventoryRecountItem, EnamelMachine
 from dies.serializers import (
     DieListSerializer, DieDetailSerializer, DieCreateSerializer, 
@@ -13,6 +18,8 @@ from dies.serializers import (
     DieToleranceSerializer, WearAlertSerializer, MachineDieStockSerializer,
     DieInventoryRecountSerializer, EnamelMachineSerializer
 )
+from dies.services.import_service import ImportService
+from dies.services.recut_service import RecutService
 from users.permissions import IsAdminOrRoot, IsAdminOrRootOrOperatorRelocate, IsAdminOrRootOnly
 from search.meili import client as meili_client, INDEX_NAME
 
@@ -83,10 +90,10 @@ class DieViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(locked_instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         
+        self.perform_update(serializer)
         locked_instance.version += 1
         locked_instance.save(update_fields=['version'])
-        
-        self.perform_update(serializer)
+        serializer.instance.version = locked_instance.version
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
@@ -161,7 +168,6 @@ class DieViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def recut(self, request, die_id=None):
         die = self.get_object()
-        from dies.services.recut_service import RecutService
         try:
             RecutService.recut_die(die, request.user, request.data)
         except PermissionError as e:
@@ -170,14 +176,6 @@ class DieViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"detail": "Die recut successfully."}, status=status.HTTP_200_OK)
 
-
-import tempfile
-import os
-from rest_framework.parsers import MultiPartParser
-from rest_framework.views import APIView
-from rest_framework import serializers
-from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
-from dies.services.import_service import ImportService
 
 class ImportDiesView(APIView):
     """

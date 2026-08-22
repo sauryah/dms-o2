@@ -60,7 +60,10 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Copy configurations
 COPY nginx-monolith.conf /etc/nginx/sites-available/default
 COPY supervisord.conf /etc/supervisor/supervisord.conf
-COPY entrypoint.sh /entrypoint.sh
+# Create non-root user and prepare runtime directories
+RUN groupadd -r dmsuser && useradd -r -g dmsuser -d /app -s /bin/bash dmsuser \
+    && mkdir -p /var/log/supervisor /var/run /app/staticfiles /backups /var/lib/nginx /var/log/nginx \
+    && chown -R dmsuser:dmsuser /app /backups /var/log/supervisor /var/run /usr/share/nginx/html /var/lib/nginx /var/log/nginx
 
 # Normalize script endings and make executable
 RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh

@@ -80,14 +80,17 @@ def check_all_wear_alerts_task():
     logger.info("Starting automated daily wear alert checking engine...")
     active_dies = Die.objects.exclude(status='SCRAPPED').select_related('rounddie', 'flatdie')
     count = 0
+    updated_count = 0
     for die in active_dies:
         try:
-            WearAlertService.check_wear_alerts(die)
-            # Sync search index and broadcast SSE events to push live warnings to the UI
-            SearchService.queue_die_sync(die.id)
+            changed = WearAlertService.check_wear_alerts(die)
+            if changed:
+                # Sync search index and broadcast SSE events to push live warnings to the UI
+                SearchService.queue_die_sync(die.id)
+                updated_count += 1
             count += 1
         except Exception as e:
             logger.error(f"Failed to check wear alerts for die {die.die_id}: {e}")
 
-    logger.info(f"Finished check. Evaluated wear alerts for {count} active dies.")
-    return {'status': 'success', 'checked_count': count}
+    logger.info(f"Finished check. Evaluated {count} active dies; updated {updated_count} wear alert states.")
+    return {'status': 'success', 'checked_count': count, 'updated_count': updated_count}

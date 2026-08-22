@@ -289,7 +289,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping 2>/dev/null | grep -q PONG || redis-cli ping | grep -q PONG"]
       interval: 3s
       timeout: 3s
       retries: 10

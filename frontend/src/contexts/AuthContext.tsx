@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
-let consecutiveRefreshFailures = 0
-
 function isTokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
@@ -42,6 +40,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>(null as any)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const refreshFailuresRef = React.useRef(0)
   const [token, setToken] = useState<string | null>(() => {
     const stored = localStorage.getItem('dms_token')
     if (stored && isTokenExpired(stored)) {
@@ -99,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     refetchPermissions()
 
-    const interval = setInterval(refetchPermissions, 10000)
+    const interval = setInterval(refetchPermissions, 30000)
     const onFocus = () => refetchPermissions()
 
     window.addEventListener('focus', onFocus)
@@ -155,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [authorizedTools])
 
   const login = (newToken: string, refresh: string, userRole: string, userN: string, id?: number, authorizedForTools?: boolean, authTools?: string[]) => {
-    consecutiveRefreshFailures = 0
+    refreshFailuresRef.current = 0
     setToken(newToken)
     setRefreshToken(refresh)
     setRole(userRole)
@@ -174,12 +173,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
-    consecutiveRefreshFailures = 0
+    refreshFailuresRef.current = 0
     if (token) {
       fetch('/api/v1/auth/logout/', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Requested-With': 'XMLHttpRequest',
         }
       }).catch(err => console.error('Failed to notify backend logout:', err))
     }
@@ -195,20 +195,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const handleRefreshFailure = () => {
-    consecutiveRefreshFailures++
-    if (consecutiveRefreshFailures >= 2) {
+    refreshFailuresRef.current += 1
+    if (refreshFailuresRef.current >= 2) {
       logout()
       window.location.hash = '/login'
     }
-    return consecutiveRefreshFailures
+    return refreshFailuresRef.current
   }
 
   const shouldBlockRefresh = () => {
-    return consecutiveRefreshFailures >= 2
+    return refreshFailuresRef.current >= 2
   }
 
   const resetRefreshFailures = () => {
-    consecutiveRefreshFailures = 0
+    refreshFailuresRef.current = 0
   }
 
   return (

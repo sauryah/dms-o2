@@ -7,14 +7,23 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Decommission Preventive Wear Prediction Feature & Database Field
+**Task:** Full-Stack Security Hardening & Correctness Fixes (Post-Audit)
 **Status:** Complete
 **Started:** 2026-08-22
 **Completed:** 2026-08-22
 **Confidence:** 100%
 
 ## Task Description
-Safely decommission and remove the Preventive Wear Prediction linear regression engine, drop `Die.predicted_remaining_days` from the PostgreSQL schema via migration `0014_remove_die_predicted_remaining_days`, remove the REST endpoint `/api/v1/dies/{id}/wear-prediction/`, remove `PredictedRemainingDays` from the Go SQL scanning layer, remove `WearPredictionSection` from `DieDetailPage.tsx`, and clean up all related frontend cards, CAD renderer props, test suites, and system documentation while keeping threshold-based wear alerts (`DieTolerance` & `WearAlert`) fully functional.
+Implemented high-priority security, correctness, and performance hardening items identified during the comprehensive application audit:
+1. **Frontend Logout CSRF Fix**: Added `X-Requested-With: XMLHttpRequest` header to [`AuthContext.tsx`](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/contexts/AuthContext.tsx) logout requests, ensuring server-side session eviction succeeds when cookie authentication is active.
+2. **React Auth State Encapsulation**: Refactored `consecutiveRefreshFailures` counter from a global module-level variable into a React `useRef(0)` within [`AuthProvider`](file:///home/sahil/Desktop/Projects/dms-o2/frontend/src/contexts/AuthContext.tsx). Increased polling interval to 30s to reduce server churn.
+3. **Anti-Spoofing Client IP Hardening**: Removed request body `client_ip` extraction in [`users/views/auth.py`](file:///home/sahil/Desktop/Projects/dms-o2/backend/users/views/auth.py), preventing audit log tampering and rate limit spoofing.
+4. **Go API Search Limit Upper Bound**: Enforced a strict upper limit ceiling of `10,000` on the `limit` query parameter in [`ParseSearchParams`](file:///home/sahil/Desktop/Projects/dms-o2/go-api/internal/handlers/handlers.go) to protect against memory exhaustion.
+5. **Docker Compose Redis Healthcheck Auth**: Added `REDIS_PASSWORD` auth flag support to the Redis healthcheck command across compose configurations.
+6. **Die Concurrency Version Timing**: Fixed `DieViewSet.update` in [`dies/views.py`](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/views.py) so `version` is incremented after serializer validation and persistence, preventing orphaned version bumps on validation errors.
+7. **Cleaned ViewSet Imports**: Consolidated mid-file imports in [`dies/views.py`](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/views.py) to top-level adhering to PEP 8.
+8. **Celery Outbox Async Fallbacks**: Converted synchronous fallback calls in [`search/tasks.py`](file:///home/sahil/Desktop/Projects/dms-o2/backend/search/tasks.py) to asynchronous `.delay()` invocations.
+9. **Wear Alert Outbox Optimization**: Updated [`WearAlertService.check_wear_alerts`](file:///home/sahil/Desktop/Projects/dms-o2/backend/dies/services/wear_alert_service.py) to return a state change boolean, avoiding unnecessary nightly search sync queues when no alerts changed.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:

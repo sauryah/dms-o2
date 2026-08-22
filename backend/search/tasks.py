@@ -401,12 +401,12 @@ def process_outbox_task(self):
                         logger.error(f"Failed to broadcast delete event in batch: {ev_err}")
             except Exception as exc:
                 logger.error(f"Failed to process batch delete tasks: {exc}")
-                # Fall back to individual deletes if batch fails
+                # Fall back to individual async deletes if batch fails
                 for t in delete_tasks:
                     try:
                         die_id = t.payload.get('die_id')
                         die_str_id = t.payload.get('die_str_id')
-                        delete_die_document_task(die_id, die_str_id)
+                        delete_die_document_task.delay(die_id, die_str_id)
                         t.is_processed = True
                         t.processed_at = timezone.now()
                         t.save()
@@ -449,11 +449,11 @@ def process_outbox_task(self):
                         logger.error(f"Failed to broadcast update event for die {die.die_id}: {ev_err}")
             except Exception as exc:
                 logger.error(f"Failed to process batch sync tasks: {exc}")
-                # Fall back to individual syncs if batch fails
+                # Fall back to individual async syncs if batch fails
                 for t in chunk_tasks:
                     try:
                         die_id = t.payload.get('die_id')
-                        sync_die_task(die_id)
+                        sync_die_task.delay(die_id)
                         t.is_processed = True
                         t.processed_at = timezone.now()
                         t.save()

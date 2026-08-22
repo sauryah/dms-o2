@@ -91,13 +91,7 @@ def get_client_ip(request):
     if x_real_ip and x_real_ip.strip() and not is_docker_internal_ip(x_real_ip):
         return x_real_ip.strip()
 
-    # 5. Check if login body sent client_ip
-    if hasattr(request, 'data') and isinstance(request.data, dict):
-        body_ip = request.data.get('client_ip')
-        if body_ip and isinstance(body_ip, str) and body_ip.strip() and not is_docker_internal_ip(body_ip):
-            return body_ip.strip()
-
-    # 6. Fallback to REMOTE_ADDR
+    # 5. Fallback to REMOTE_ADDR
     remote_addr = request.META.get('REMOTE_ADDR')
     if remote_addr and remote_addr.strip() and not is_docker_internal_ip(remote_addr):
         return remote_addr.strip()
