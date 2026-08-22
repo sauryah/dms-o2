@@ -67,21 +67,6 @@ export function RoundDieCard({ die, onClick }: RoundDieCardProps) {
           </span>
         </div>
       </div>
-
-      {die.predicted_remaining_days !== undefined && die.predicted_remaining_days !== null && (
-        <div className="flex justify-between items-center bg-[#141414] border border-[#2a2a2a] rounded-sm px-2.5 py-1.5 mt-3 font-mono">
-          <span className="text-[#6b7280] text-[9px] uppercase tracking-wider">EST. LIFETIME</span>
-          <span className={`font-mono text-xs tabular-nums ${
-            die.predicted_remaining_days < 7 
-              ? 'text-red-400' 
-              : die.predicted_remaining_days < 30 
-              ? 'text-amber-400' 
-              : 'text-emerald-400'
-          }`}>
-            {die.predicted_remaining_days} DAYS
-          </span>
-        </div>
-      )}
     </div>
   )
 }

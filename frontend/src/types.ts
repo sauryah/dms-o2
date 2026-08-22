@@ -26,8 +26,6 @@ export interface Die {
   punched_thickness?: string | number;
   current_thickness?: string | number;
   radius?: string | number;
-
-  predicted_remaining_days?: number | null;
 }
 
 export interface Set {
