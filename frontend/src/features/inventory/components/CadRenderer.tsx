@@ -21,10 +21,9 @@ interface DieBlueprintProps {
   die: DieData | null
   activeHighlight?: string | null
   onHoverDim?: (dim: string | null) => void
-  prediction?: any | null
 }
 
-export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: DieBlueprintProps) {
+export function DieBlueprint({ die, activeHighlight, onHoverDim }: DieBlueprintProps) {
   const { role } = useAuth()
   const isRoot = role === 'ROOT'
 
@@ -92,13 +91,8 @@ export function DieBlueprint({ die, activeHighlight, onHoverDim, prediction }: D
     setIsPanning(false)
   }
 
-  // Tolerance warning checks from predictive model
-  const sizeData = prediction?.dimensions?.size || prediction?.dimensions?.width || prediction?.dimensions?.thickness
-  const isWarning = sizeData && sizeData.wear_percentage >= 70 && sizeData.wear_percentage < 100
-  const isCritical = sizeData && sizeData.wear_percentage >= 100
-  
-  const dimColor = isCritical ? '#ef4444' : isWarning ? '#f59e0b' : '#10b981'
-  const dimColorHover = isCritical ? '#ef4444' : isWarning ? '#f59e0b' : '#34d399'
+  const dimColor = '#10b981'
+  const dimColorHover = '#34d399'
 
   // Optical centers
   const cx = 92

@@ -30,8 +30,7 @@ results = {
     'search': [],
     'dashboard': [],
     'import': [],
-    'sse': [],
-    'wear_prediction': []
+    'sse': []
 }
 errors = {k: 0 for k in results}
 
@@ -88,15 +87,6 @@ def dashboard_worker(token):
         results['dashboard'].append(elapsed)
     else:
         errors['dashboard'] += 1
-
-def wear_prediction_worker(token):
-    url = f"{BASE_URL}/api/v1/dies/2545984/wear-prediction/"
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    ok, elapsed, code, body = make_request(url, method='GET', headers=headers)
-    if ok:
-        results['wear_prediction'].append(elapsed)
-    else:
-        errors['wear_prediction'] += 1
 
 def import_worker(token):
     url = f"{BASE_URL}/api/v1/import/"
@@ -171,7 +161,6 @@ def run_load_test(concurrency=20, iterations=100):
         for _ in range(iterations):
             futures.append(executor.submit(search_worker, token))
             futures.append(executor.submit(dashboard_worker, token))
-            futures.append(executor.submit(wear_prediction_worker, token))
             futures.append(executor.submit(import_worker, token))
             futures.append(executor.submit(sse_worker, token))
             
