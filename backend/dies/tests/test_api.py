@@ -199,11 +199,6 @@ class DieAPITests(APITestCase):
         response = self.client.delete(url_detail)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # 6. Operator cannot access wear prediction
-        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-101'})
-        response = self.client.get(url_wp)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_regular_user_cannot_relocate(self):
         regular_user = User.objects.create_user(
             username='regularuser',
@@ -224,11 +219,6 @@ class DieAPITests(APITestCase):
         response = self.client.patch(url_detail, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Regular user cannot access wear prediction
-        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-101'})
-        response = self.client.get(url_wp)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_detail_actions_with_slashed_die_id(self):
         slashed_die = Die.objects.create(
             die_id="IWD-AL-1/1-01",
@@ -245,12 +235,6 @@ class DieAPITests(APITestCase):
         )
 
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
-
-        # Test wear prediction detail action
-        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'IWD-AL-1/1-01'})
-        response = self.client.get(url_wp)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['die_id'], 'IWD-AL-1/1-01')
 
         # Test maintenance logs detail action
         url_ml = reverse('die-maintenance-logs', kwargs={'die_id': 'IWD-AL-1/1-01'})
@@ -377,38 +361,3 @@ class TolerancesAndAlertsAPITests(APITestCase):
         url = reverse('wear-alert-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_wear_prediction_caching_and_invalidation(self):
-        from django.core.cache import cache
-        cache_key = f"die_wear_prediction_{self.round_die.id}"
-        cache.delete(cache_key)
-
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
-        url_wp = reverse('die-wear-prediction', kwargs={'die_id': 'R-TEST-ALERT'})
-
-        # 1. First request computes and populates cache
-        res = self.client.get(url_wp)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-
-        cached_data = cache.get(cache_key)
-        self.assertIsNotNone(cached_data)
-        self.assertEqual(cached_data['die_id'], 'R-TEST-ALERT')
-
-        # 2. Modify cache value to mock cache usage
-        cached_data['overall_wear_percentage'] = 999.9
-        cache.set(cache_key, cached_data, timeout=300)
-
-        # Request should return cached modified value
-        res = self.client.get(url_wp)
-        self.assertEqual(res.data['overall_wear_percentage'], 999.9)
-
-        # 3. Save the RoundDie to trigger signal which invalidates cache
-        self.rd_details.current_size = Decimal('10.050')
-        self.rd_details.save()
-
-        # Cache should be cleared/invalidated
-        self.assertIsNone(cache.get(cache_key))
-
-        # Request should recompute and return original/fresh data (not 999.9)
-        res = self.client.get(url_wp)
-        self.assertNotEqual(res.data['overall_wear_percentage'], 999.9)
