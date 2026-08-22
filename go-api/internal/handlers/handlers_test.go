@@ -19,6 +19,7 @@ import (
 // Mock definitions
 type MockDatabase struct {
 	GetStatsFn                   func(ctx context.Context) (map[string]int, int, error)
+	GetPoolStatsFn               func() database.DBStats
 	QueryPostgresDirectlyFn      func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error)
 	QueryPostgresDirectlyCountFn func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error)
 	QueryPostgresByIDsFn         func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
@@ -31,6 +32,18 @@ func (m *MockDatabase) GetStats(ctx context.Context) (map[string]int, int, error
 		return m.GetStatsFn(ctx)
 	}
 	return nil, 0, nil
+}
+
+func (m *MockDatabase) GetPoolStats() database.DBStats {
+	if m.GetPoolStatsFn != nil {
+		return m.GetPoolStatsFn()
+	}
+	return database.DBStats{
+		MaxOpenConnections: 50,
+		OpenConnections:    5,
+		InUse:              2,
+		Idle:               3,
+	}
 }
 
 func (m *MockDatabase) QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error) {
@@ -1101,4 +1114,44 @@ func TestHandleCalculateDieSet(t *testing.T) {
 			t.Errorf("expected Status 405, got %d", w.Code)
 		}
 	})
+}
+
+func TestHandleDBStats(t *testing.T) {
+	mockDb := &MockDatabase{
+		GetPoolStatsFn: func() database.DBStats {
+			return database.DBStats{
+				MaxOpenConnections: 50,
+				OpenConnections:    12,
+				InUse:              4,
+				Idle:               8,
+				WaitCount:          1,
+				WaitDurationMs:     15,
+			}
+		},
+	}
+
+	h := NewHandler(&config.Config{}, mockDb, &MockCache{}, &MockSearch{}, nil)
+	req := httptest.NewRequest("GET", "/api/go/db-stats", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDBStats(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Status   string           `json:"status"`
+		Database database.DBStats `json:"database"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response JSON: %v", err)
+	}
+
+	if resp.Status != "ok" {
+		t.Errorf("expected status 'ok', got %q", resp.Status)
+	}
+	if resp.Database.OpenConnections != 12 || resp.Database.InUse != 4 || resp.Database.Idle != 8 {
+		t.Errorf("unexpected DB stats: %+v", resp.Database)
+	}
 }

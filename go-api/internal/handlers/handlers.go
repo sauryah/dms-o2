@@ -23,6 +23,7 @@ import (
 
 type Database interface {
 	GetStats(ctx context.Context) (map[string]int, int, error)
+	GetPoolStats() database.DBStats
 	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string, limit, offset int) ([]database.DieRepresentation, error)
 	QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned string) (int, error)
 	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
@@ -324,6 +325,15 @@ func (h *Handler) HandleImportStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"idle"}`))
+}
+
+func (h *Handler) HandleDBStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	poolStats := h.db.GetPoolStats()
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "ok",
+		"database": poolStats,
+	})
 }
 
 func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {

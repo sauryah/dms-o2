@@ -26,7 +26,6 @@ type DieRepresentation struct {
 	RackID                 *int    `json:"rack_id"`
 	RackName               string  `json:"rack_name"`
 	Shelf                  *int    `json:"shelf"`
-	PredictedRemainingDays *int    `json:"predicted_remaining_days"`
 	CurrentSize            *string `json:"current_size,omitempty"`
 	CurrentWidth           *string `json:"current_width,omitempty"`
 	CurrentThickness       *string `json:"current_thickness,omitempty"`
@@ -41,8 +40,36 @@ func (d *DieRepresentation) ComputeLocation() {
 	}
 }
 
+type DBStats struct {
+	MaxOpenConnections int   `json:"max_open_connections"`
+	OpenConnections    int   `json:"open_connections"`
+	InUse              int   `json:"in_use"`
+	Idle               int   `json:"idle"`
+	WaitCount          int64 `json:"wait_count"`
+	WaitDurationMs     int64 `json:"wait_duration_ms"`
+	MaxIdleClosed      int64 `json:"max_idle_closed"`
+	MaxLifetimeClosed  int64 `json:"max_lifetime_closed"`
+}
+
 type PostgresDB struct {
 	*sql.DB
+}
+
+func (db *PostgresDB) GetPoolStats() DBStats {
+	if db == nil || db.DB == nil {
+		return DBStats{}
+	}
+	s := db.DB.Stats()
+	return DBStats{
+		MaxOpenConnections: s.MaxOpenConnections,
+		OpenConnections:    s.OpenConnections,
+		InUse:              s.InUse,
+		Idle:               s.Idle,
+		WaitCount:          s.WaitCount,
+		WaitDurationMs:     s.WaitDuration.Milliseconds(),
+		MaxIdleClosed:      s.MaxIdleClosed,
+		MaxLifetimeClosed:  s.MaxLifetimeClosed,
+	}
 }
 
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
@@ -203,7 +230,6 @@ func BuildQueryPostgresDirectly(q, dieType, statusVal, casing, sizeMin, sizeMax,
 			s.name as set_name,
 			m.name as machine_name,
 			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
-			d.predicted_remaining_days,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
@@ -278,7 +304,6 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 			s.name as set_name,
 			m.name as machine_name,
 			d.rack_id, rk.name as rack_name, d.shelf_number AS shelf,
-			d.predicted_remaining_days,
 			r.current_size,
 			f.current_width, f.current_thickness, f.radius
 		FROM dies_die d
@@ -351,13 +376,13 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 	var dies []DieRepresentation
 	for rows.Next() {
 		var d DieRepresentation
-		var setID, rackID, shelf, predictedRemainingDays sql.NullInt64
+		var setID, rackID, shelf sql.NullInt64
 		var setName, machineName, rackName sql.NullString
 		var size, width, thickness, radius sql.NullString
 
 		err := rows.Scan(
 			&d.ID, &d.DieID, &d.DieType, &d.Casing, &d.Status, &setID,
-			&setName, &machineName, &rackID, &rackName, &shelf, &predictedRemainingDays, &size, &width, &thickness, &radius,
+			&setName, &machineName, &rackID, &rackName, &shelf, &size, &width, &thickness, &radius,
 		)
 		if err != nil {
 			return nil, err
@@ -383,10 +408,6 @@ func scanDies(rows *sql.Rows) ([]DieRepresentation, error) {
 		if shelf.Valid {
 			val := int(shelf.Int64)
 			d.Shelf = &val
-		}
-		if predictedRemainingDays.Valid {
-			val := int(predictedRemainingDays.Int64)
-			d.PredictedRemainingDays = &val
 		}
 
 		if d.DieType == "ROUND" && size.Valid {
