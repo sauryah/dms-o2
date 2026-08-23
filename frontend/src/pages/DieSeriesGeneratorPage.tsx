@@ -121,25 +121,28 @@ export function DieSeriesGeneratorPage() {
   }, [undo, redo]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono">
+    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)] text-[var(--color-text)] py-6 px-4 sm:px-6 lg:px-8 font-mono">
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-[#2a2a2a] pb-4">
+        <div className="flex items-center gap-3 border-b border-[var(--color-border)] pb-4">
           <button
             onClick={() => navigate('/tools')}
-            className="p-1.5 rounded-sm bg-[#141414] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] hover:border-blue-500/50 transition cursor-pointer"
+            className="p-2 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition cursor-pointer"
+            aria-label="Back to tools"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-sm bg-[#141414] border border-purple-500/30 text-purple-400">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
               <Zap className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 text-[10px] text-[#6b7280] uppercase tracking-wider">
-                <span>01 SERIES GENERATION ENGINE</span>
+              <div className="text-[10px] text-[var(--color-muted)] font-bold uppercase tracking-wider">
+                Die Series Generator
               </div>
-              <h1 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Die Series Generator</h1>
+              <h1 className="text-sm md:text-base font-bold text-[var(--color-text)] uppercase tracking-wide font-heading">
+                Draft Series Configuration
+              </h1>
             </div>
           </div>
         </div>

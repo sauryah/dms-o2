@@ -40,24 +40,24 @@ function groupHistoryItems(items: HistoryItem[]): GroupedTransaction[] {
 
   items.forEach((item) => {
     const timestampMs = new Date(item.timestamp).getTime()
-    
+
     // Find if there is an existing group for this entity + user + IP within a 5-second window
     const matchingGroup = groups.find((g) => {
       if (g.changed_by_username !== item.changed_by_username) return false
       if (g.entity_name !== item.entity_name) return false
       if (g.entity_type !== item.entity_type) return false
       if (g.ip_address !== item.ip_address) return false
-      
+
       const groupTimeMs = new Date(g.timestamp).getTime()
-      return Math.abs(groupTimeMs - timestampMs) <= 5000 // 5 seconds threshold
+      return Math.abs(groupTimeMs - timestampMs) <= 5000
     })
 
     if (matchingGroup) {
-      if (item.field_name && !matchingGroup.changes.some(c => c.field_name === item.field_name)) {
+      if (item.field_name && !matchingGroup.changes.some((c) => c.field_name === item.field_name)) {
         matchingGroup.changes.push({
           field_name: item.field_name,
           old_value: item.old_value,
-          new_value: item.new_value
+          new_value: item.new_value,
         })
       }
       if (item.note && !matchingGroup.note) {
@@ -73,11 +73,15 @@ function groupHistoryItems(items: HistoryItem[]): GroupedTransaction[] {
         entity_name: item.entity_name,
         action: item.action,
         note: item.note,
-        changes: item.field_name ? [{
-          field_name: item.field_name,
-          old_value: item.old_value,
-          new_value: item.new_value
-        }] : []
+        changes: item.field_name
+          ? [
+              {
+                field_name: item.field_name,
+                old_value: item.old_value,
+                new_value: item.new_value,
+              },
+            ]
+          : [],
       })
     }
   })
@@ -87,16 +91,28 @@ function groupHistoryItems(items: HistoryItem[]): GroupedTransaction[] {
 
 function renderDiffValue(oldVal: string, newVal: string) {
   if (!oldVal && newVal) {
-    return <span className="bg-[#141414] text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded-sm text-[11px] font-mono uppercase">Added: {newVal}</span>
+    return (
+      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-mono">
+        Added: {newVal}
+      </span>
+    )
   }
   if (oldVal && !newVal) {
-    return <span className="bg-[#141414] text-red-400 border border-red-500/30 px-1.5 py-0.2 rounded-sm text-[11px] font-mono uppercase">Cleared ({oldVal})</span>
+    return (
+      <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[11px] font-mono">
+        Cleared ({oldVal})
+      </span>
+    )
   }
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
-      <span className="bg-[#0a0a0a] px-1.5 py-0.2 rounded-sm text-red-400 line-through border border-[#2a2a2a]">{oldVal || 'empty'}</span>
-      <span className="text-[#6b7280]">➔</span>
-      <span className="bg-[#141414] text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded-sm">{newVal || 'empty'}</span>
+      <span className="bg-[var(--color-bg)] px-2 py-0.5 rounded text-red-400 line-through border border-[var(--color-border)]">
+        {oldVal || 'empty'}
+      </span>
+      <span className="text-[var(--color-muted)]">➔</span>
+      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+        {newVal || 'empty'}
+      </span>
     </div>
   )
 }
@@ -104,7 +120,7 @@ function renderDiffValue(oldVal: string, newVal: string) {
 export function HistoryPage() {
   const { request } = useApi()
   const [activeTab, setActiveTab] = useState<'timeline' | 'dies' | 'machines'>('timeline')
-  
+
   // Shared Filter States
   const [userInput, setUserInput] = useState('')
   const [fieldInput, setFieldInput] = useState('')
@@ -131,8 +147,21 @@ export function HistoryPage() {
   const debouncedEntityName = useDebounce(entityNameInput, 300)
 
   // Fetch Unified History
-  const { data: unifiedHistoryData, isLoading: isLoadingUnified, error: errorUnified } = useQuery({
-    queryKey: ['unifiedHistory', debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
+  const {
+    data: unifiedHistoryData,
+    isLoading: isLoadingUnified,
+    error: errorUnified,
+  } = useQuery({
+    queryKey: [
+      'unifiedHistory',
+      debouncedUser,
+      debouncedField,
+      debouncedIp,
+      debouncedSearchText,
+      fromDate,
+      toDate,
+      page,
+    ],
     enabled: activeTab === 'timeline',
     queryFn: ({ signal }) => {
       const params = new URLSearchParams()
@@ -146,12 +175,26 @@ export function HistoryPage() {
       params.append('page_size', '40')
 
       return request(`/api/history/unified/?${params.toString()}`, { signal, keepMetadata: true })
-    }
+    },
   })
 
   // Fetch Die History
-  const { data: dieHistoryData, isLoading: isLoadingDies, error: errorDies } = useQuery({
-    queryKey: ['dieHistory', debouncedDieId, debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
+  const {
+    data: dieHistoryData,
+    isLoading: isLoadingDies,
+    error: errorDies,
+  } = useQuery({
+    queryKey: [
+      'dieHistory',
+      debouncedDieId,
+      debouncedUser,
+      debouncedField,
+      debouncedIp,
+      debouncedSearchText,
+      fromDate,
+      toDate,
+      page,
+    ],
     enabled: activeTab === 'dies',
     queryFn: ({ signal }) => {
       const params = new URLSearchParams()
@@ -166,12 +209,28 @@ export function HistoryPage() {
       params.append('page_size', '25')
 
       return request(`/api/history/?${params.toString()}`, { signal, keepMetadata: true })
-    }
+    },
   })
 
   // Fetch Machine History
-  const { data: machineHistoryData, isLoading: isLoadingMachines, error: errorMachines } = useQuery({
-    queryKey: ['machineHistory', debouncedEntityName, entityTypeInput, actionInput, debouncedUser, debouncedField, debouncedIp, debouncedSearchText, fromDate, toDate, page],
+  const {
+    data: machineHistoryData,
+    isLoading: isLoadingMachines,
+    error: errorMachines,
+  } = useQuery({
+    queryKey: [
+      'machineHistory',
+      debouncedEntityName,
+      entityTypeInput,
+      actionInput,
+      debouncedUser,
+      debouncedField,
+      debouncedIp,
+      debouncedSearchText,
+      fromDate,
+      toDate,
+      page,
+    ],
     enabled: activeTab === 'machines',
     queryFn: ({ signal }) => {
       const params = new URLSearchParams()
@@ -188,7 +247,7 @@ export function HistoryPage() {
       params.append('page_size', '25')
 
       return request(`/api/history/machines/?${params.toString()}`, { signal, keepMetadata: true })
-    }
+    },
   })
 
   const handleTabChange = (tab: 'timeline' | 'dies' | 'machines') => {
@@ -206,10 +265,22 @@ export function HistoryPage() {
     setActionInput('')
   }
 
-  const isCurrentLoading = activeTab === 'timeline' ? isLoadingUnified : (activeTab === 'dies' ? isLoadingDies : isLoadingMachines)
-  const currentError = activeTab === 'timeline' ? errorUnified : (activeTab === 'dies' ? errorDies : errorMachines)
-  const currentList = activeTab === 'timeline' ? (unifiedHistoryData?.results || []) : (activeTab === 'dies' ? (dieHistoryData?.results || []) : (machineHistoryData?.results || []))
-  const count = activeTab === 'timeline' ? (unifiedHistoryData?.count || 0) : (activeTab === 'dies' ? (dieHistoryData?.count || 0) : (machineHistoryData?.count || 0))
+  const isCurrentLoading =
+    activeTab === 'timeline' ? isLoadingUnified : activeTab === 'dies' ? isLoadingDies : isLoadingMachines
+  const currentError =
+    activeTab === 'timeline' ? errorUnified : activeTab === 'dies' ? errorDies : errorMachines
+  const currentList =
+    activeTab === 'timeline'
+      ? unifiedHistoryData?.results || []
+      : activeTab === 'dies'
+      ? dieHistoryData?.results || []
+      : machineHistoryData?.results || []
+  const count =
+    activeTab === 'timeline'
+      ? unifiedHistoryData?.count || 0
+      : activeTab === 'dies'
+      ? dieHistoryData?.count || 0
+      : machineHistoryData?.count || 0
   const totalPages = Math.ceil(count / (activeTab === 'timeline' ? 40 : 25))
 
   // CSV Export
@@ -228,7 +299,8 @@ export function HistoryPage() {
         const res = await request(`/api/history/unified/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
-        let csvContent = "Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n"
+        let csvContent =
+          'Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n'
         allResults.forEach((h: any) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const entityType = h.entity_type ?? ''
@@ -236,11 +308,11 @@ export function HistoryPage() {
           const entityName = h.entity_name ?? ''
           const action = h.action ?? ''
           const fieldName = h.field_name ?? ''
-          const oldValue = `"${(h.old_value ?? "").replace(/"/g, '""')}"`
-          const newValue = `"${(h.new_value ?? "").replace(/"/g, '""')}"`
+          const oldValue = `"${(h.old_value ?? '').replace(/"/g, '""')}"`
+          const newValue = `"${(h.new_value ?? '').replace(/"/g, '""')}"`
           const changedBy = h.changed_by_username ?? 'System'
           const ipAddress = h.ip_address ?? ''
-          const note = `"${(h.note ?? "").replace(/"/g, '""')}"`
+          const note = `"${(h.note ?? '').replace(/"/g, '""')}"`
           csvContent += `${timestamp},${entityType},${entityId},${entityName},${action},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress},${note}\n`
         })
 
@@ -250,16 +322,16 @@ export function HistoryPage() {
         const res = await request(`/api/history/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
-        let csvContent = "Timestamp,Die ID,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n"
+        let csvContent = 'Timestamp,Die ID,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n'
         allResults.forEach((h: any) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const dieId = h.die_id ?? ''
           const fieldName = h.field_name ?? ''
-          const oldValue = `"${(h.old_value ?? "").replace(/"/g, '""')}"`
-          const newValue = `"${(h.new_value ?? "").replace(/"/g, '""')}"`
+          const oldValue = `"${(h.old_value ?? '').replace(/"/g, '""')}"`
+          const newValue = `"${(h.new_value ?? '').replace(/"/g, '""')}"`
           const changedBy = h.changed_by_username ?? 'System'
           const ipAddress = h.ip_address ?? ''
-          const note = `"${(h.note ?? "").replace(/"/g, '""')}"`
+          const note = `"${(h.note ?? '').replace(/"/g, '""')}"`
           csvContent += `${timestamp},${dieId},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress},${note}\n`
         })
 
@@ -268,11 +340,12 @@ export function HistoryPage() {
         if (debouncedEntityName) params.append('entity_name', debouncedEntityName)
         if (entityTypeInput) params.append('entity_type', entityTypeInput)
         if (actionInput) params.append('action', actionInput)
-        
+
         const res = await request(`/api/history/machines/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
-        let csvContent = "Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address\n"
+        let csvContent =
+          'Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address\n'
         allResults.forEach((h: any) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const entityType = h.entity_type ?? ''
@@ -280,8 +353,8 @@ export function HistoryPage() {
           const entityName = h.entity_name ?? ''
           const action = h.action ?? ''
           const fieldName = h.field_name ?? ''
-          const oldValue = `"${(h.old_value ?? "").replace(/"/g, '""')}"`
-          const newValue = `"${(h.new_value ?? "").replace(/"/g, '""')}"`
+          const oldValue = `"${(h.old_value ?? '').replace(/"/g, '""')}"`
+          const newValue = `"${(h.new_value ?? '').replace(/"/g, '""')}"`
           const changedBy = h.changed_by_username ?? 'System'
           const ipAddress = h.ip_address ?? ''
           csvContent += `${timestamp},${entityType},${entityId},${entityName},${action},${fieldName},${oldValue},${newValue},${changedBy},${ipAddress}\n`
@@ -297,9 +370,9 @@ export function HistoryPage() {
   const triggerCSVDownload = (content: string, filename: string) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.setAttribute("href", url)
-    link.setAttribute("download", filename)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -309,43 +382,51 @@ export function HistoryPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-mono">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#2a2a2a] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--color-border)] pb-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs text-[#6b7280] uppercase tracking-wider mb-0.5">
-            <Layers className="h-3.5 w-3.5 text-blue-500" />
-            <span>01 AUDIT & LOGGING JOURNAL</span>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-0.5">
+            <Layers className="h-3.5 w-3.5 text-blue-400" />
+            <span>Audit Journal</span>
           </div>
-          <h1 className="text-base md:text-lg font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">Facility Audit Trail</h1>
-          <p className="text-[#6b7280] text-xs mt-0.5">Comprehensive chronological log records of facility operations and tooling state mutations.</p>
+          <h1 className="text-base md:text-lg font-bold text-[var(--color-text)] uppercase tracking-wide font-heading">
+            Facility Audit Trail
+          </h1>
+          <p className="text-[var(--color-muted)] text-xs mt-0.5">
+            Chronological audit log of operations and tooling state changes.
+          </p>
         </div>
         <div>
           <button
             type="button"
             disabled={currentList.length === 0}
             onClick={exportToCSV}
-            className="flex items-center space-x-1.5 bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase transition cursor-pointer"
+            className="flex items-center space-x-1.5 bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] disabled:opacity-40 text-[var(--color-text)] border border-[var(--color-border)] px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer"
           >
-            <Download className="h-3.5 w-3.5 text-blue-500" />
+            <Download className="h-3.5 w-3.5 text-blue-400" />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#1a1a1a] space-x-4">
+      <div className="flex border-b border-[var(--color-border)] space-x-4">
         <button
           onClick={() => handleTabChange('timeline')}
-          className={`pb-2.5 text-xs font-mono uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
-            activeTab === 'timeline' ? 'border-b-2 border-blue-500 text-blue-400 font-bold' : 'text-[#6b7280] hover:text-[#e4e4e4]'
+          className={`pb-2.5 text-xs font-bold uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
+            activeTab === 'timeline'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           }`}
         >
-          <Layers className="h-3.5 w-3.5 text-blue-500" />
-          <span>Unified Timeline (Grouped)</span>
+          <Layers className="h-3.5 w-3.5 text-blue-400" />
+          <span>Unified Timeline</span>
         </button>
         <button
           onClick={() => handleTabChange('dies')}
-          className={`pb-2.5 text-xs font-mono uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
-            activeTab === 'dies' ? 'border-b-2 border-blue-500 text-blue-400 font-bold' : 'text-[#6b7280] hover:text-[#e4e4e4]'
+          className={`pb-2.5 text-xs font-bold uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
+            activeTab === 'dies'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           }`}
         >
           <Layers className="h-3.5 w-3.5" />
@@ -353,8 +434,10 @@ export function HistoryPage() {
         </button>
         <button
           onClick={() => handleTabChange('machines')}
-          className={`pb-2.5 text-xs font-mono uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
-            activeTab === 'machines' ? 'border-b-2 border-blue-500 text-blue-400 font-bold' : 'text-[#6b7280] hover:text-[#e4e4e4]'
+          className={`pb-2.5 text-xs font-bold uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
+            activeTab === 'machines'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           }`}
         >
           <Activity className="h-3.5 w-3.5" />
@@ -363,20 +446,25 @@ export function HistoryPage() {
       </div>
 
       {/* Filters Grid */}
-      <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 space-y-3 font-mono">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 sm:p-5 space-y-3 font-mono shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Tab Specific Filter */}
           {activeTab === 'dies' && (
             <div>
-              <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Die ID</label>
+              <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                Die ID
+              </label>
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+                <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
                 <input
                   type="text"
                   placeholder="Search die ID..."
                   value={dieIdInput}
-                  onChange={(e) => { setDieIdInput(e.target.value); setPage(1); }}
-                  className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none uppercase font-mono"
+                  onChange={(e) => {
+                    setDieIdInput(e.target.value)
+                    setPage(1)
+                  }}
+                  className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none uppercase font-mono"
                 />
               </div>
             </div>
@@ -384,25 +472,35 @@ export function HistoryPage() {
           {activeTab === 'machines' && (
             <>
               <div>
-                <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Entity Name</label>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Entity Name
+                </label>
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
                   <input
                     type="text"
                     placeholder="Search name..."
                     value={entityNameInput}
-                    onChange={(e) => { setEntityNameInput(e.target.value); setPage(1); }}
-                    className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono"
+                    onChange={(e) => {
+                      setEntityNameInput(e.target.value)
+                      setPage(1)
+                    }}
+                    className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Entity Type</label>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Entity Type
+                </label>
                 <select
                   value={entityTypeInput}
-                  onChange={(e) => { setEntityTypeInput(e.target.value); setPage(1); }}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] focus:outline-none focus:border-blue-500 uppercase font-mono cursor-pointer"
+                  onChange={(e) => {
+                    setEntityTypeInput(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 text-xs text-[var(--color-text)] focus:outline-none focus:border-blue-500 uppercase font-mono cursor-pointer"
                 >
                   <option value="">All Entities</option>
                   <option value="MACHINE">Machine</option>
@@ -412,11 +510,16 @@ export function HistoryPage() {
               </div>
 
               <div>
-                <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Action</label>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Action
+                </label>
                 <select
                   value={actionInput}
-                  onChange={(e) => { setActionInput(e.target.value); setPage(1); }}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] focus:outline-none focus:border-blue-500 uppercase font-mono cursor-pointer"
+                  onChange={(e) => {
+                    setActionInput(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 text-xs text-[var(--color-text)] focus:outline-none focus:border-blue-500 uppercase font-mono cursor-pointer"
                 >
                   <option value="">All Actions</option>
                   <option value="CREATED">Created</option>
@@ -429,150 +532,194 @@ export function HistoryPage() {
 
           {/* Shared Filters */}
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Changed By</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              Changed By
+            </label>
             <div className="relative">
-              <User className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+              <User className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
               <input
                 type="text"
                 placeholder="Username..."
                 value={userInput}
-                onChange={(e) => { setUserInput(e.target.value); setPage(1); }}
-                className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono"
+                onChange={(e) => {
+                  setUserInput(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Field Name</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              Field Name
+            </label>
             <div className="relative">
-              <Filter className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+              <Filter className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
               <input
                 type="text"
                 placeholder="e.g. status..."
                 value={fieldInput}
-                onChange={(e) => { setFieldInput(e.target.value); setPage(1); }}
-                className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono uppercase"
+                onChange={(e) => {
+                  setFieldInput(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono uppercase"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">IP Address</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              IP Address
+            </label>
             <div className="relative">
-              <Filter className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+              <Filter className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
               <input
                 type="text"
                 placeholder="e.g. 192.168..."
                 value={ipInput}
-                onChange={(e) => { setIpInput(e.target.value); setPage(1); }}
-                className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono"
+                onChange={(e) => {
+                  setIpInput(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">Notes / Values</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              Notes / Values
+            </label>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[#6b7280]" />
+              <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
               <input
                 type="text"
                 placeholder="Search notes or values..."
                 value={searchTextInput}
-                onChange={(e) => { setSearchTextInput(e.target.value); setPage(1); }}
-                className="pl-7 pr-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm text-xs w-full text-[#e4e4e4] placeholder-[#404040] focus:border-blue-500 focus:outline-none font-mono"
+                onChange={(e) => {
+                  setSearchTextInput(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono"
               />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[#1a1a1a] pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[var(--color-border)] pt-3">
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">From Date</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              From Date
+            </label>
             <input
               type="date"
               value={fromDate}
-              onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-              className="px-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm text-xs w-full text-[#e4e4e4] [color-scheme:dark] font-mono"
+              onChange={(e) => {
+                setFromDate(e.target.value)
+                setPage(1)
+              }}
+              className="px-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-blue-500 rounded-xl text-xs w-full text-[var(--color-text)] font-mono"
             />
           </div>
 
           <div>
-            <label className="text-[#6b7280] text-[10px] uppercase tracking-wider block mb-1">To Date</label>
+            <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+              To Date
+            </label>
             <input
               type="date"
               value={toDate}
-              onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-              className="px-3 py-1.5 bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm text-xs w-full text-[#e4e4e4] [color-scheme:dark] font-mono"
+              onChange={(e) => {
+                setToDate(e.target.value)
+                setPage(1)
+              }}
+              className="px-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-blue-500 rounded-xl text-xs w-full text-[var(--color-text)] font-mono"
             />
           </div>
         </div>
       </div>
 
       {/* Table Container */}
-      <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden font-mono">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden font-mono shadow-sm">
         {isCurrentLoading ? (
-          <div className="p-12 text-center text-[#6b7280] text-xs">
-            <div className="animate-spin h-6 w-6 border border-[#2a2a2a] border-t-blue-500 mx-auto mb-2" />
-            <p className="uppercase">Loading audit logs...</p>
+          <div className="p-12 text-center text-[var(--color-muted)] text-xs">
+            <div className="animate-spin h-6 w-6 border-2 border-[var(--color-border)] border-t-blue-500 rounded-full mx-auto mb-2" />
+            <p className="uppercase font-bold">Loading audit logs...</p>
           </div>
         ) : currentError ? (
           <div className="p-12 text-center text-red-400 text-xs">
             <p className="uppercase font-bold">Failed to load audit logs.</p>
-            <p className="text-[#6b7280] mt-1">{(currentError as Error).message}</p>
+            <p className="text-[var(--color-muted)] mt-1">{(currentError as Error).message}</p>
           </div>
         ) : currentList.length === 0 ? (
-          <div className="p-12 text-center text-[#6b7280] text-xs">
-            <p className="uppercase font-bold text-[#e4e4e4]">NO AUDIT LOG RECORDS FOUND</p>
+          <div className="p-12 text-center text-[var(--color-muted)] text-xs">
+            <p className="uppercase font-bold text-[var(--color-text)]">No Audit Log Records Found</p>
             <p className="mt-1">Try adjusting the filter criteria or check back later.</p>
           </div>
         ) : (
           <>
             {activeTab === 'timeline' ? (
-              <div className="p-4 space-y-3 bg-[#0a0a0a]">
+              <div className="p-4 space-y-3 bg-[var(--color-bg)]">
                 {groupHistoryItems(currentList).map((group) => (
-                  <div key={group.key} className="bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#2a2a2a] rounded-sm p-3 font-mono transition-colors">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2 border-b border-[#1a1a1a] pb-2">
+                  <div
+                    key={group.key}
+                    className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 font-mono transition hover:border-blue-500/30"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2 border-b border-[var(--color-border)] pb-2">
                       <div>
                         <div className="flex items-center flex-wrap gap-1.5 text-xs">
-                          <span className="font-bold text-[#e4e4e4]">{group.changed_by_username}</span>
-                          <span className="text-[#6b7280]">MODIFIED</span>
-                          <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded-sm border uppercase ${
-                            group.entity_type === 'DIE'
-                              ? 'bg-[#141414] text-blue-400 border-blue-500/30'
-                              : group.entity_type === 'MACHINE'
-                              ? 'bg-[#141414] text-purple-400 border-purple-500/30'
-                              : 'bg-[#141414] text-emerald-400 border-emerald-500/30'
-                          }`}>
+                          <span className="font-bold text-[var(--color-text)]">
+                            {group.changed_by_username}
+                          </span>
+                          <span className="text-[var(--color-muted)]">MODIFIED</span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-bold rounded border uppercase ${
+                              group.entity_type === 'DIE'
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                : group.entity_type === 'MACHINE'
+                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}
+                          >
                             {group.entity_type}
                           </span>
-                          <span className="font-semibold text-[#e4e4e4]">{group.entity_name}</span>
+                          <span className="font-semibold text-[var(--color-text)]">
+                            {group.entity_name}
+                          </span>
                         </div>
-                        
+
                         {group.note && (
-                          <div className="mt-1 text-[11px] text-[#6b7280] italic bg-[#0a0a0a] px-2 py-1 rounded-sm border border-[#1a1a1a]">
+                          <div className="mt-1 text-[11px] text-[var(--color-muted)] italic bg-[var(--color-bg)] px-2 py-1 rounded border border-[var(--color-border)]">
                             &ldquo;{group.note}&rdquo;
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="text-right shrink-0">
-                        <div className="text-[10px] text-[#6b7280] font-mono tabular-nums">
+                        <div className="text-[10px] text-[var(--color-muted)] font-mono tabular-nums">
                           {new Date(group.timestamp).toLocaleString()}
                         </div>
                         {group.ip_address && (
-                          <div className="text-[9px] text-[#404040] font-mono">
+                          <div className="text-[9px] text-[var(--color-muted)] font-mono">
                             IP: {group.ip_address}
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Changes list */}
                     {group.changes.length > 0 ? (
                       <div className="space-y-1 mt-1">
                         {group.changes.map((change, idx) => (
-                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs py-0.5">
-                            <span className="font-mono text-[#6b7280] w-32 shrink-0 uppercase text-[10px]">{change.field_name}</span>
+                          <div
+                            key={idx}
+                            className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs py-0.5"
+                          >
+                            <span className="font-mono text-[var(--color-muted)] w-32 shrink-0 uppercase text-[10px]">
+                              {change.field_name}
+                            </span>
                             <div className="flex-1">
                               {renderDiffValue(change.old_value, change.new_value)}
                             </div>
@@ -580,8 +727,11 @@ export function HistoryPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-[11px] text-[#6b7280] font-mono">
-                        ACTION: <span className="font-bold text-[#e4e4e4] uppercase">{group.action}</span>
+                      <div className="text-[11px] text-[var(--color-muted)] font-mono">
+                        ACTION:{' '}
+                        <span className="font-bold text-[var(--color-text)] uppercase">
+                          {group.action}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -589,112 +739,133 @@ export function HistoryPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-[#1a1a1a] text-left text-xs font-mono">
-                  <thead className="bg-[#0a0a0a] text-[#6b7280] uppercase tracking-wider">
+                <table className="min-w-full divide-y divide-[var(--color-border)] text-left text-xs font-mono">
+                  <thead className="bg-[var(--color-bg)] text-[var(--color-muted)] uppercase tracking-wider">
                     {activeTab === 'dies' ? (
                       <tr>
-                        <th className="px-4 py-2">Timestamp</th>
-                        <th className="px-4 py-2">Die ID</th>
-                        <th className="px-4 py-2">Field Changed</th>
-                        <th className="px-4 py-2">Old Value</th>
-                        <th className="px-4 py-2">New Value</th>
-                        <th className="px-4 py-2">Changed By</th>
-                        <th className="px-4 py-2">IP Address</th>
-                        <th className="px-4 py-2">Reason / Note</th>
+                        <th className="px-4 py-2.5 font-semibold">Timestamp</th>
+                        <th className="px-4 py-2.5 font-semibold">Die ID</th>
+                        <th className="px-4 py-2.5 font-semibold">Field Changed</th>
+                        <th className="px-4 py-2.5 font-semibold">Old Value</th>
+                        <th className="px-4 py-2.5 font-semibold">New Value</th>
+                        <th className="px-4 py-2.5 font-semibold">Changed By</th>
+                        <th className="px-4 py-2.5 font-semibold">IP Address</th>
+                        <th className="px-4 py-2.5 font-semibold">Reason / Note</th>
                       </tr>
                     ) : (
                       <tr>
-                        <th className="px-4 py-2">Timestamp</th>
-                        <th className="px-4 py-2">Entity</th>
-                        <th className="px-4 py-2">Name</th>
-                        <th className="px-4 py-2">Action</th>
-                        <th className="px-4 py-2">Field Changed</th>
-                        <th className="px-4 py-2">Old Value</th>
-                        <th className="px-4 py-2">New Value</th>
-                        <th className="px-4 py-2">Changed By</th>
-                        <th className="px-4 py-2">IP Address</th>
+                        <th className="px-4 py-2.5 font-semibold">Timestamp</th>
+                        <th className="px-4 py-2.5 font-semibold">Entity</th>
+                        <th className="px-4 py-2.5 font-semibold">Name</th>
+                        <th className="px-4 py-2.5 font-semibold">Action</th>
+                        <th className="px-4 py-2.5 font-semibold">Field Changed</th>
+                        <th className="px-4 py-2.5 font-semibold">Old Value</th>
+                        <th className="px-4 py-2.5 font-semibold">New Value</th>
+                        <th className="px-4 py-2.5 font-semibold">Changed By</th>
+                        <th className="px-4 py-2.5 font-semibold">IP Address</th>
                       </tr>
                     )}
                   </thead>
-                  <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
-                    {activeTab === 'dies' ? (
-                      currentList.map((log: any) => (
-                        <tr key={log.id} className="hover:bg-[#141414] transition-colors">
-                          <td className="px-4 py-2.5 whitespace-nowrap text-[#6b7280] tabular-nums">
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap text-blue-400 font-bold font-mono">
-                            {log.die_id}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[#6b7280] uppercase">
-                            {log.field_name}
-                          </td>
-                          <td className="px-4 py-2.5 max-w-xs truncate text-red-400" title={log.old_value}>
-                            {log.old_value || <span className="text-[#404040] italic">empty</span>}
-                          </td>
-                          <td className="px-4 py-2.5 max-w-xs truncate text-emerald-400" title={log.new_value}>
-                            {log.new_value || <span className="text-[#404040] italic">empty</span>}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap text-[#e4e4e4] font-bold">
-                            {log.changed_by_username || 'System'}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[#6b7280]">
-                            {log.ip_address || '—'}
-                          </td>
-                          <td className="px-4 py-2.5 text-[#6b7280] max-w-xs truncate" title={log.note}>
-                            {log.note || '—'}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      currentList.map((log: any) => (
-                        <tr key={log.id} className="hover:bg-[#141414] transition-colors">
-                          <td className="px-4 py-2.5 whitespace-nowrap text-[#6b7280] tabular-nums">
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap">
-                            <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded-sm border uppercase ${
-                              log.entity_type === 'MACHINE'
-                                ? 'bg-[#141414] text-purple-400 border-purple-500/30'
-                                : log.entity_type === 'SET'
-                                ? 'bg-[#141414] text-blue-400 border-blue-500/30'
-                                : 'bg-[#141414] text-emerald-400 border-emerald-500/30'
-                            }`}>
-                              {log.entity_type}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap text-[#e4e4e4] font-bold uppercase">
-                            {log.entity_name}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap">
-                            <span className={`px-1.5 py-0.2 text-[9px] font-mono uppercase rounded-sm ${
-                              log.action === 'CREATED'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : log.action === 'DELETED'
-                                ? 'bg-red-500/20 text-red-400'
-                                : 'bg-amber-500/20 text-amber-400'
-                            }`}>
-                              {log.action}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[#6b7280] uppercase">
-                            {log.field_name || '—'}
-                          </td>
-                          <td className="px-4 py-2.5 max-w-xs truncate text-red-400" title={log.old_value}>
-                            {log.old_value || '—'}
-                          </td>
-                          <td className="px-4 py-2.5 max-w-xs truncate text-emerald-400" title={log.new_value}>
-                            {log.new_value || '—'}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap text-[#e4e4e4] font-bold">
-                            {log.changed_by_username || 'System'}
-                          </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[#6b7280]">
-                            {log.ip_address || '—'}
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                  <tbody className="divide-y divide-[var(--color-border)] text-[var(--color-text)]">
+                    {activeTab === 'dies'
+                      ? currentList.map((log: any) => (
+                          <tr key={log.id} className="hover:bg-[var(--color-surface-2)] transition">
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)] tabular-nums">
+                              {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-blue-400 font-bold font-mono">
+                              {log.die_id}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-muted)] uppercase">
+                              {log.field_name}
+                            </td>
+                            <td
+                              className="px-4 py-2.5 max-w-xs truncate text-red-400"
+                              title={log.old_value}
+                            >
+                              {log.old_value || (
+                                <span className="text-[var(--color-muted)] italic">empty</span>
+                              )}
+                            </td>
+                            <td
+                              className="px-4 py-2.5 max-w-xs truncate text-emerald-400"
+                              title={log.new_value}
+                            >
+                              {log.new_value || (
+                                <span className="text-[var(--color-muted)] italic">empty</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-text)] font-bold">
+                              {log.changed_by_username || 'System'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-muted)]">
+                              {log.ip_address || '—'}
+                            </td>
+                            <td
+                              className="px-4 py-2.5 text-[var(--color-muted)] max-w-xs truncate"
+                              title={log.note}
+                            >
+                              {log.note || '—'}
+                            </td>
+                          </tr>
+                        ))
+                      : currentList.map((log: any) => (
+                          <tr key={log.id} className="hover:bg-[var(--color-surface-2)] transition">
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)] tabular-nums">
+                              {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <span
+                                className={`px-1.5 py-0.5 text-[9px] font-bold rounded border uppercase ${
+                                  log.entity_type === 'MACHINE'
+                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                    : log.entity_type === 'SET'
+                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                }`}
+                              >
+                                {log.entity_type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-text)] font-bold uppercase">
+                              {log.entity_name}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <span
+                                className={`px-1.5 py-0.5 text-[9px] font-mono uppercase rounded ${
+                                  log.action === 'CREATED'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : log.action === 'DELETED'
+                                    ? 'bg-red-500/20 text-red-400'
+                                    : 'bg-amber-500/20 text-amber-400'
+                                }`}
+                              >
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-muted)] uppercase">
+                              {log.field_name || '—'}
+                            </td>
+                            <td
+                              className="px-4 py-2.5 max-w-xs truncate text-red-400"
+                              title={log.old_value}
+                            >
+                              {log.old_value || '—'}
+                            </td>
+                            <td
+                              className="px-4 py-2.5 max-w-xs truncate text-emerald-400"
+                              title={log.new_value}
+                            >
+                              {log.new_value || '—'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-text)] font-bold">
+                              {log.changed_by_username || 'System'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-muted)]">
+                              {log.ip_address || '—'}
+                            </td>
+                          </tr>
+                        ))}
                   </tbody>
                 </table>
               </div>
@@ -702,23 +873,24 @@ export function HistoryPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-[#1a1a1a] bg-[#0a0a0a]">
-                <span className="text-xs text-[#6b7280] font-mono tabular-nums">
-                  SHOWING PAGE <span className="font-bold text-[#e4e4e4]">{page}</span> OF{' '}
-                  <span className="font-bold text-[#e4e4e4]">{totalPages}</span> ({count} RECORDS)
+              <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)] bg-[var(--color-bg)]">
+                <span className="text-xs text-[var(--color-muted)] font-mono tabular-nums">
+                  Page <span className="font-bold text-[var(--color-text)]">{page}</span> of{' '}
+                  <span className="font-bold text-[var(--color-text)]">{totalPages}</span> ({count}{' '}
+                  records)
                 </span>
                 <div className="flex items-center space-x-1.5">
                   <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="p-1.5 bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] rounded-sm transition cursor-pointer"
+                    className="p-1.5 bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] disabled:opacity-40 text-[var(--color-text)] border border-[var(--color-border)] rounded-lg transition cursor-pointer"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="p-1.5 bg-[#141414] hover:bg-[#1f1f1f] disabled:opacity-40 text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] rounded-sm transition cursor-pointer"
+                    className="p-1.5 bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] disabled:opacity-40 text-[var(--color-text)] border border-[var(--color-border)] rounded-lg transition cursor-pointer"
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
