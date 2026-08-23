@@ -209,9 +209,7 @@ graph TD
 - Completely hid unauthorized 3D Heatmap and Theory modules from DOM in `WireDrawingCalculatorPage.tsx`.
 - Implemented background permission polling (every 10s), window focus sync, and page-mount permission refetching via `/api/v1/auth/me/` in `AuthContext.tsx` so newly assigned permissions update live without requiring logout.
 
-### 2026-07-08 · feat: implement real-time search indexing progress bar for bulk spreadsheet imports (Phase 20)
-- Modified `sync_dies_batch_task` in `backend/search/tasks.py` to upload document batches in chunks of 100, track the sync percentage, and write intermediate progress status to Redis.
-- Updated `frontend/src/App.tsx` to automatically trigger `checkIndexStatus()` whenever a real-time SSE ticket event is received, starting/stopping index progress bar rendering and polling seamlessly.
+- Updated `frontend/src/App.tsx` to trigger `checkIndexStatus()` whenever a real-time SSE ticket event is received, starting/stopping index progress bar rendering and polling.
 
 ### 2026-07-08 · fix: resolve location synchronization bugs and implement brute-force IP rate limiting (Phase 19)
 - Overhauled location synchronization signal logic in `backend/dies/signals.py` to prioritize direct coordinate (rack and shelf) edits and prevent accidental coordinate deletion.
@@ -268,7 +266,7 @@ graph TD
 
 ### 2026-07-12 · docs: replace placeholder emails and clean formatting (Release v1.6.0)
 - Replaced developer support placeholder emails with the official project support addresses in `CONTRIBUTING.md` and `SUPPORT.md`.
-- Removed decorative emojis from `README.md` headers to ensure robust relative anchor link navigation.
+- Removed decorative emojis from `README.md` headers for reliable relative anchor link navigation.
 - Fixed list item indentation issues under caution blocks in `DOCKER.md`.
 
 ### 2026-06-28 · feat: update documentation, RBAC matrix, and onboarding deployment instructions (Phase 11)

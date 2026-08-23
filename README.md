@@ -1,11 +1,11 @@
 # DMS-O2
 
 <p align="center">
-  <strong>Industrial-Grade Die Management System</strong>
+  <strong>Die Management System</strong>
 </p>
 
 <p align="center">
-  <em>High-performance LAN platform for die tracking, inventory management, and auditing.</em>
+  <em>Local Area Network (LAN) platform for die tracking, inventory management, and audit histories.</em>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 ---
 
 <p align="center">
-  <strong>DMS-O2</strong> is an industrial-grade, high-performance Local Area Network (LAN) platform for die tracking, inventory management, and auditing. Built for low-latency shop floor operations with offline resilience, it replaces unstructured spreadsheets with a reliable source of truth.
+  <strong>DMS-O2</strong> tracks precision drawing dies, machine allocations, and monthly inventory counts across manufacturing shop floors.
 </p>
 
 ## Table of Contents
@@ -98,7 +98,7 @@ graph TD
     classDef celery fill:#fdf2f8,stroke:#db2777,stroke-width:2px,color:#be185d;
 ```
 
-*For deep architectural specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
+*See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architectural specifications.*
 
 ---
 
