@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import * as XLSX from 'xlsx'
 import { useApi } from '../../hooks/useApi'
 import { useToast } from '../../contexts'
 
-interface SequenceResultStep {
+export interface SequenceResultStep {
   draft: number
   inlet: number
   outlet: number
@@ -15,7 +16,7 @@ interface SequenceResultStep {
   power: number
 }
 
-interface SequenceResults {
+export interface SequenceResults {
   steps: SequenceResultStep[]
   totalReduction: number
   totalElongation: number
@@ -436,7 +437,7 @@ export function useCalculatorState() {
     let csvContent = 'data:text/csv;charset=utf-8,'
     csvContent += 'Pass,Inlet Diameter (mm),Outlet Diameter (mm),Drawing Ratio,Draft Reduction (%),Elongation (%),Drawing Force (N),Drawing Stress (MPa),Power (kW)\n'
     sequenceResults.steps.forEach(step => {
-      csvContent += `${step.draft},${step.inlet.toFixed(3)},${step.outlet.toFixed(3)},${step.drawingRatio.toFixed(3)},${step.reduction.toFixed(1)},${step.elongation.toFixed(1)},${(step.drawingForce || 0).toFixed(1)},${(step.drawingStress || 0).toFixed(1)},${(step.power || 0).toFixed(2)}\n`
+      csvContent += `${step.draft},${step.inlet.toFixed(3)},${step.outlet.toFixed(3)},${step.drawingRatio.toFixed(3)},${step.reduction.toFixed(2)},${step.elongation.toFixed(2)},${(step.drawingForce || 0).toFixed(1)},${(step.drawingStress || 0).toFixed(1)},${(step.power || 0).toFixed(2)}\n`
     })
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement('a')
@@ -445,6 +446,89 @@ export function useCalculatorState() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    showToast('Sequence exported to CSV', 'success')
+  }
+
+  const exportSequenceExcel = () => {
+    if (!sequenceResults) return
+    const data = sequenceResults.steps.map(step => ({
+      'Pass #': step.draft,
+      'Inlet Diameter (mm)': Number(step.inlet.toFixed(3)),
+      'Outlet Diameter (mm)': Number(step.outlet.toFixed(3)),
+      'Drawing Ratio (λ)': Number(step.drawingRatio.toFixed(3)),
+      'Draft Reduction (%)': Number(step.reduction.toFixed(2)),
+      'Elongation (%)': Number(step.elongation.toFixed(2)),
+      'Drawing Force (N)': Number((step.drawingForce || 0).toFixed(1)),
+      'Drawing Stress (MPa)': Number((step.drawingStress || 0).toFixed(1)),
+      'Motor Power (kW)': Number((step.power || 0).toFixed(2)),
+    }))
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Sizing Sequence')
+    XLSX.writeFile(wb, `sizing_sequence_${materialType}.xlsx`)
+    showToast('Sequence exported to Excel (.xlsx)', 'success')
+  }
+
+  const copySequenceClipboard = async () => {
+    if (!sequenceResults) return
+    let text = 'Pass\tInlet (mm)\tOutlet (mm)\tReduction (%)\tElongation (%)\tRatio (λ)\tForce (N)\tStress (MPa)\tPower (kW)\n'
+    sequenceResults.steps.forEach(step => {
+      text += `${step.draft}\t${step.inlet.toFixed(3)}\t${step.outlet.toFixed(3)}\t${step.reduction.toFixed(2)}%\t${step.elongation.toFixed(2)}%\t${step.drawingRatio.toFixed(3)}\t${(step.drawingForce || 0).toFixed(1)}\t${(step.drawingStress || 0).toFixed(1)}\t${(step.power || 0).toFixed(2)}\n`
+    })
+    try {
+      await navigator.clipboard.writeText(text)
+      showToast('Sequence table copied to clipboard', 'success')
+    } catch {
+      showToast('Could not copy to clipboard', 'error')
+    }
+  }
+
+  const loadPreset = (presetKey: 'copper_std' | 'copper_fine' | 'aluminum_rod' | 'steel_breakdown' | 'flat_busbar') => {
+    switch (presetKey) {
+      case 'copper_std':
+        setMaterialType('copper_soft')
+        setActiveTab('round')
+        setRoundCalcMode('forward')
+        setRoundInlet('8.00')
+        setRoundOutlet('6.50')
+        showToast('Loaded Standard Copper Rod Draft (8.00 → 6.50 mm)', 'info')
+        break
+      case 'copper_fine':
+        setMaterialType('copper_soft')
+        setActiveTab('sequence')
+        setSeqStart('2.50')
+        setSeqEnd('0.50')
+        setSeqReduction('18.0')
+        setSeqOptMode('graduated')
+        showToast('Loaded Multi-Draft Fine Wire Sequence (2.50 → 0.50 mm)', 'info')
+        break
+      case 'aluminum_rod':
+        setMaterialType('aluminum')
+        setActiveTab('sequence')
+        setSeqStart('9.50')
+        setSeqEnd('3.00')
+        setSeqReduction('22.0')
+        setSeqOptMode('constant')
+        showToast('Loaded Aluminum EC Rod Breakdown (9.50 → 3.00 mm)', 'info')
+        break
+      case 'steel_breakdown':
+        setMaterialType('steel_low')
+        setActiveTab('round')
+        setRoundCalcMode('backward_red')
+        setRoundInlet('10.00')
+        setRoundTargetRed('20.0')
+        showToast('Loaded Low-Carbon Steel 20% Reduction Draft', 'info')
+        break
+      case 'flat_busbar':
+        setMaterialType('copper_soft')
+        setActiveTab('flat')
+        setFlatInWidth('20.00')
+        setFlatInThick('5.00')
+        setFlatOutWidth('18.00')
+        setFlatOutThick('4.50')
+        showToast('Loaded Copper Flat Strip Profile (20×5 → 18×4.5 mm)', 'info')
+        break
+    }
   }
 
   return {
@@ -519,6 +603,9 @@ export function useCalculatorState() {
     findMatchingDies,
     findMatchingFlatDies,
     exportSequenceCSV,
+    exportSequenceExcel,
+    copySequenceClipboard,
+    loadPreset,
 
     // Derived values
     mu,
