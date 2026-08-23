@@ -20,16 +20,15 @@ interface ViewProps {
   onSelectAll?: (checked: boolean) => void
 }
 
-// Helper to define table columns for reusability
 const getInventoryColumns = (navigate: any): Column[] => [
   {
     key: 'die_type',
     label: 'Type',
     render: (row: any) => (
-      <span className="px-1.5 py-0.2 text-[9px] uppercase font-mono rounded-sm bg-[#141414] text-[#e4e4e4] border border-[#2a2a2a] tracking-wider">
+      <span className="px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded bg-[var(--color-surface-2)] text-[var(--color-text)] border border-[var(--color-border)] tracking-wider">
         {row.die_type}
       </span>
-    )
+    ),
   },
   {
     key: 'current_size',
@@ -38,50 +37,57 @@ const getInventoryColumns = (navigate: any): Column[] => [
     render: (row: any) => {
       const isRound = row.die_type === 'ROUND'
       return (
-        <span className="font-mono text-xs font-bold text-[#e4e4e4] tabular-nums">
-          {isRound ? (
-            `Ø ${parseFloat(row.current_size || 0).toFixed(3)} mm`
-          ) : (
-            `${parseFloat(row.current_width || 0).toFixed(3)} × ${parseFloat(row.current_thickness || 0).toFixed(3)} mm`
-          )}
+        <span className="font-mono text-xs font-bold text-[var(--color-text)] tabular-nums">
+          {isRound
+            ? `Ø ${parseFloat(row.current_size || 0).toFixed(3)} mm`
+            : `${parseFloat(row.current_width || 0).toFixed(3)} × ${parseFloat(row.current_thickness || 0).toFixed(3)} mm`}
         </span>
       )
-    }
+    },
   },
   {
     key: 'die_id',
     label: 'ID',
     sortable: true,
-    render: (row: any) => <span className="font-mono text-[#e4e4e4] font-bold">{row.die_id}</span>
+    render: (row: any) => (
+      <span className="font-mono text-[var(--color-text)] font-bold">{row.die_id}</span>
+    ),
   },
   {
     key: 'casing',
     label: 'Casing',
-    render: (row: any) => <span className="font-mono text-[#6b7280]">{row.casing || '—'}</span>
+    render: (row: any) => (
+      <span className="font-mono text-[var(--color-muted)]">{row.casing || '—'}</span>
+    ),
   },
   {
     key: 'location',
     label: 'Location',
     render: (row: any) => {
-      const loc = row.rack_name && row.shelf ? `${row.rack_name} - S${row.shelf}` : row.location || '—'
-      return <span className="text-[#e4e4e4] font-mono">{loc}</span>
-    }
+      const loc =
+        row.rack_name && row.shelf ? `${row.rack_name} - S${row.shelf}` : row.location || '—'
+      return <span className="text-[var(--color-text)] font-mono">{loc}</span>
+    },
   },
   {
     key: 'set_name',
     label: 'Set',
-    render: (row: any) => <span className="text-[#6b7280] font-mono">{row.set_name || '—'}</span>
+    render: (row: any) => (
+      <span className="text-[var(--color-muted)] font-mono">{row.set_name || '—'}</span>
+    ),
   },
   {
     key: 'machine_name',
     label: 'Machine',
-    render: (row: any) => <span className="text-[#6b7280] font-mono">{row.machine_name || '—'}</span>
+    render: (row: any) => (
+      <span className="text-[var(--color-muted)] font-mono">{row.machine_name || '—'}</span>
+    ),
   },
   {
     key: 'status',
     label: 'Status',
     sortable: true,
-    render: (row: any) => <StatusBadge status={row.status} />
+    render: (row: any) => <StatusBadge status={row.status} />,
   },
   {
     key: 'actions',
@@ -92,12 +98,12 @@ const getInventoryColumns = (navigate: any): Column[] => [
           e.stopPropagation()
           navigate(`/dies/${row.die_id}`)
         }}
-        className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] px-2.5 py-0.5 rounded-sm text-[10px] uppercase font-mono transition cursor-pointer"
+        className="bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] px-2.5 py-1 rounded text-[10px] uppercase font-mono font-bold transition cursor-pointer"
       >
         Details
       </button>
-    )
-  }
+    ),
+  },
 ]
 
 // 1. SEARCH RESULTS VIEW

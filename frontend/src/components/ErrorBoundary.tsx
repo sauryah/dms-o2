@@ -45,45 +45,45 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
       return (
         this.props.fallback || (
-          <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 font-mono">
-            <div className="bg-[#0f0f0f] border border-red-500/40 rounded-sm p-6 max-w-md w-full text-center">
+          <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-4 font-mono">
+            <div className="bg-[var(--color-surface)] border border-red-500/30 rounded-2xl p-6 max-w-md w-full text-center shadow-xl">
               <div className="flex justify-center mb-4">
-                <div className="bg-[#141414] border border-red-500/30 p-2.5 rounded-sm">
-                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
                 </div>
               </div>
-              
-              <h1 className="text-sm font-medium uppercase tracking-[0.05em] text-[#e4e4e4] mb-2 font-mono">
-                {isChunkError ? 'New Update Available' : 'SYSTEM EXCEPTION OCCURRED'}
+
+              <h1 className="text-sm font-bold uppercase tracking-wide text-[var(--color-text)] mb-2 font-heading">
+                {isChunkError ? 'New Update Available' : 'Application Exception'}
               </h1>
-              <p className="text-[#6b7280] text-xs mb-4 font-mono">
+              <p className="text-[var(--color-muted)] text-xs mb-4 font-mono leading-relaxed">
                 {isChunkError
                   ? 'A new version of the application was deployed. Please reload the page to load the latest components.'
-                  : (this.state.error?.message || 'An unexpected error occurred')}
+                  : this.state.error?.message || 'An unexpected error occurred.'}
               </p>
-              
+
               <details className="mb-4 text-left">
-                <summary className="cursor-pointer text-[10px] font-medium text-[#6b7280] uppercase tracking-wider hover:text-[#e4e4e4] transition-colors font-mono">
-                  Error Details
+                <summary className="cursor-pointer text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider hover:text-[var(--color-text)] transition font-mono">
+                  Stack Trace Details
                 </summary>
-                <pre className="mt-2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm p-2 text-[10px] text-[#6b7280] overflow-auto max-h-36 text-left font-mono">
+                <pre className="mt-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-[10px] text-[var(--color-muted)] overflow-auto max-h-36 text-left font-mono">
                   {this.state.error?.stack}
                 </pre>
               </details>
-              
+
               <button
                 onClick={() => (isChunkError ? window.location.reload() : this.resetError())}
-                className="w-full bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/60 text-red-400 font-mono text-xs uppercase tracking-wider py-2 px-3 rounded-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-mono text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                {isChunkError ? 'Reload Page' : 'Try Again'}
+                <span>{isChunkError ? 'Reload Page' : 'Try Again'}</span>
               </button>
-              
+
               <button
                 onClick={() => (window.location.href = '/')}
-                className="w-full mt-2 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] font-mono text-xs uppercase tracking-wider py-2 px-3 rounded-sm transition-colors cursor-pointer"
+                className="w-full mt-2 bg-[var(--color-surface-2)] hover:bg-[var(--color-border)] border border-[var(--color-border)] text-[var(--color-text)] font-mono text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition cursor-pointer"
               >
-                Return Home
+                Return to Dashboard
               </button>
             </div>
           </div>
