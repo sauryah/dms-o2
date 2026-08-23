@@ -1,4 +1,22 @@
-import { Calculator, Sliders, TrendingDown, Maximize2, Table, Info, AlertTriangle, Zap } from 'lucide-react'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import {
+  Sliders,
+  TrendingDown,
+  Maximize2,
+  Table,
+  Info,
+  AlertTriangle,
+  Zap,
+  CheckCircle2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Sparkles,
+  ExternalLink,
+  ShieldCheck,
+  ShieldAlert
+} from 'lucide-react'
 
 interface RoundCalculatorProps {
   // Round state
@@ -54,493 +72,652 @@ export function RoundCalculator({
   findMatchingDies,
   getMaterialLimit,
 }: RoundCalculatorProps) {
+  const [viewAngle, setViewAngle] = useState<'die_section' | 'wire_cross'>('wire_cross')
+
+  // Step adjustment helpers
+  const adjustInlet = (delta: number) => {
+    const current = parseFloat(roundInlet) || 8.0
+    const updated = Math.max(0.1, current + delta)
+    setRoundInlet(updated.toFixed(2))
+  }
+
+  const adjustOutlet = (delta: number) => {
+    const current = parseFloat(roundOutlet) || 6.5
+    const updated = Math.max(0.05, current + delta)
+    setRoundOutlet(updated.toFixed(2))
+  }
+
+  const adjustReduction = (delta: number) => {
+    const current = parseFloat(roundTargetRed) || 20.0
+    const updated = Math.max(1, Math.min(99, current + delta))
+    setRoundTargetRed(updated.toFixed(1))
+  }
+
+  const adjustElongation = (delta: number) => {
+    const current = parseFloat(roundTargetElong) || 25.0
+    const updated = Math.max(1, current + delta)
+    setRoundTargetElong(updated.toFixed(1))
+  }
+
   return (
     <>
-      {/* Inputs Panel */}
+      {/* Left Column: Interactive Input Deck */}
       <form 
         onSubmit={(e) => {
           e.preventDefault();
           document.getElementById('calculation-results')?.scrollIntoView({ behavior: 'smooth' });
         }}
-        className="lg:col-span-5 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 space-y-4 font-mono"
+        className="lg:col-span-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 space-y-5 font-mono shadow-sm"
       >
-        <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">
-              01 PROCESS VARIABLES
-            </h3>
-            <span className="px-1.5 py-0.2 rounded-sm bg-[#141414] text-blue-400 border border-blue-500/30 text-[9px] font-mono uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              LIVE
-            </span>
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+              <Sliders className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider">
+                01 PROCESS VARIABLES
+              </h3>
+              <p className="text-[10px] text-[var(--color-muted)] m-0">
+                Configure input parameters & deformation mode
+              </p>
+            </div>
           </div>
-          <span className="text-[10px] font-mono text-[#6b7280]">ROUND_DIE</span>
+          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/25 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            LIVE CALC
+          </span>
         </div>
         
-        {/* Custom Sizing Mode selector */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block">
-            Sizing Mode
+        {/* Sizing Mode Selection Segmented Buttons */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-wider block">
+            Calculation Mode
           </label>
-          <div className="flex flex-col rounded-sm overflow-hidden border border-[#2a2a2a] divide-y divide-[#1a1a1a]">
+          <div className="grid grid-cols-3 gap-1.5 bg-[var(--color-surface-2)] p-1 rounded-lg border border-[var(--color-border)]">
             <button
               type="button"
               onClick={() => setRoundCalcMode('forward')}
-              className={`w-full text-left p-2.5 flex items-start gap-2.5 transition cursor-pointer font-mono ${
+              className={`py-2 px-2 rounded-md text-center transition cursor-pointer text-[10px] font-bold uppercase flex flex-col items-center gap-1 ${
                 roundCalcMode === 'forward' 
-                  ? 'bg-[#141414] border-l-2 border-l-blue-500 text-blue-400' 
-                  : 'bg-[#0a0a0a] border-l-2 border-l-transparent text-[#6b7280] hover:bg-[#141414]'
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]'
               }`}
             >
-              <div className={`p-1 rounded-sm bg-[#141414] mt-0.5 ${roundCalcMode === 'forward' ? 'text-blue-400' : 'text-[#6b7280]'}`}>
-                <Sliders className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <span className="text-xs font-bold block text-[#e4e4e4] uppercase">Forward Sizing Analysis</span>
-                <span className="text-[10px] text-[#6b7280] mt-0.5 block leading-tight">Given d₁ and d₂, calculate draft & elongation.</span>
-              </div>
+              <Sliders className="h-3.5 w-3.5" />
+              <span>Forward (d₁→d₂)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setRoundCalcMode('backward_red')}
-              className={`w-full text-left p-2.5 flex items-start gap-2.5 transition cursor-pointer font-mono ${
+              className={`py-2 px-2 rounded-md text-center transition cursor-pointer text-[10px] font-bold uppercase flex flex-col items-center gap-1 ${
                 roundCalcMode === 'backward_red' 
-                  ? 'bg-[#141414] border-l-2 border-l-blue-500 text-blue-400' 
-                  : 'bg-[#0a0a0a] border-l-2 border-l-transparent text-[#6b7280] hover:bg-[#141414]'
+                  ? 'bg-cyan-600 text-white shadow-sm' 
+                  : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]'
               }`}
             >
-              <div className={`p-1 rounded-sm bg-[#141414] mt-0.5 ${roundCalcMode === 'backward_red' ? 'text-cyan-400' : 'text-[#6b7280]'}`}>
-                <TrendingDown className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <span className="text-xs font-bold block text-[#e4e4e4] uppercase">Target Reduction Limit</span>
-                <span className="text-[10px] text-[#6b7280] mt-0.5 block leading-tight">Given d₁ & reduction %, calculate die sizing.</span>
-              </div>
+              <TrendingDown className="h-3.5 w-3.5" />
+              <span>Target Red %</span>
             </button>
 
             <button
               type="button"
               onClick={() => setRoundCalcMode('backward_elong')}
-              className={`w-full text-left p-2.5 flex items-start gap-2.5 transition cursor-pointer font-mono ${
+              className={`py-2 px-2 rounded-md text-center transition cursor-pointer text-[10px] font-bold uppercase flex flex-col items-center gap-1 ${
                 roundCalcMode === 'backward_elong' 
-                  ? 'bg-[#141414] border-l-2 border-l-blue-500 text-blue-400' 
-                  : 'bg-[#0a0a0a] border-l-2 border-l-transparent text-[#6b7280] hover:bg-[#141414]'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]'
               }`}
             >
-              <div className={`p-1 rounded-sm bg-[#141414] mt-0.5 ${roundCalcMode === 'backward_elong' ? 'text-purple-400' : 'text-[#6b7280]'}`}>
-                <Maximize2 className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <span className="text-xs font-bold block text-[#e4e4e4] uppercase">Target Elongation Ratio</span>
-                <span className="text-[10px] text-[#6b7280] mt-0.5 block leading-tight">Given d₁ & elongation %, compute thickness.</span>
-              </div>
+              <Maximize2 className="h-3.5 w-3.5" />
+              <span>Target Elong %</span>
             </button>
           </div>
         </div>
 
-        {/* Input Fields */}
-        <div className="space-y-3 pt-3 border-t border-[#1a1a1a]">
+        {/* Input Parameters Deck */}
+        <div className="space-y-4 pt-1">
           {/* Inlet Diameter Input */}
-          <div>
-            <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
-              Inlet Diameter (d₁)
-            </label>
-            <div className="relative rounded-sm">
-              <input 
-                type="number" 
-                step="0.01" 
-                value={roundInlet}
-                onChange={(e) => setRoundInlet(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-12 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
-              />
-              <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
-                mm
-              </div>
-            </div>
-          </div>
-
-          {/* Mode-specific Input */}
-          {roundCalcMode === 'forward' && (
-            <div>
-              <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
-                Outlet Diameter (d₂)
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3.5 space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[11px] font-bold text-[var(--color-text)] uppercase tracking-wider">
+                Inlet Diameter (d₁)
               </label>
-              <div className="relative rounded-sm">
+              <span className="text-[10px] text-[var(--color-muted)]">Raw Stock Entry</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => adjustInlet(-0.1)}
+                className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                title="Decrease 0.1 mm"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <div className="relative flex-1">
                 <input 
                   type="number" 
                   step="0.01" 
-                  value={roundOutlet}
-                  onChange={(e) => setRoundOutlet(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-12 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
+                  value={roundInlet}
+                  onChange={(e) => setRoundInlet(e.target.value)}
+                  className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-center text-sm font-bold text-[var(--color-text)] focus:border-blue-500 focus:outline-none"
                 />
-                <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
+                <span className="absolute right-3 top-2.5 text-[10px] text-[var(--color-muted)] font-bold">
                   mm
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustInlet(0.1)}
+                className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                title="Increase 0.1 mm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mode-specific Input Card */}
+          {roundCalcMode === 'forward' && (
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3.5 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">
+                  Outlet Diameter (d₂)
+                </label>
+                <span className="text-[10px] text-[var(--color-muted)]">Finished Die Size</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => adjustOutlet(-0.05)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                  title="Decrease 0.05 mm"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <div className="relative flex-1">
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={roundOutlet}
+                    onChange={(e) => setRoundOutlet(e.target.value)}
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-center text-sm font-bold text-blue-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <span className="absolute right-3 top-2.5 text-[10px] text-[var(--color-muted)] font-bold">
+                    mm
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => adjustOutlet(0.05)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                  title="Increase 0.05 mm"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           )}
 
           {roundCalcMode === 'backward_red' && (
-            <div>
-              <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
-                Target Area Reduction (R)
-              </label>
-              <div className="relative rounded-sm">
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  value={roundTargetRed}
-                  onChange={(e) => setRoundTargetRed(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-10 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
-                />
-                <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
-                  %
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3.5 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
+                  Target Area Reduction (R)
+                </label>
+                <span className="text-[10px] text-[var(--color-muted)]">Max Safe Limit: {getMaterialLimit()}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => adjustReduction(-0.5)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <div className="relative flex-1">
+                  <input 
+                    type="number" 
+                    step="0.1" 
+                    value={roundTargetRed}
+                    onChange={(e) => setRoundTargetRed(e.target.value)}
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-center text-sm font-bold text-cyan-400 focus:border-cyan-500 focus:outline-none"
+                  />
+                  <span className="absolute right-3 top-2.5 text-[10px] text-[var(--color-muted)] font-bold">
+                    %
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => adjustReduction(0.5)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           )}
 
           {roundCalcMode === 'backward_elong' && (
-            <div>
-              <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-widest block mb-1">
-                Target Elongation (E)
-              </label>
-              <div className="relative rounded-sm">
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  value={roundTargetElong}
-                  onChange={(e) => setRoundTargetElong(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-2 pr-10 text-[#e4e4e4] font-mono text-xs focus:border-blue-500 focus:outline-none"
-                />
-                <div className="absolute right-2 top-1.5 text-[#6b7280] text-[10px] font-mono font-bold uppercase">
-                  %
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3.5 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">
+                  Target Elongation Strain (E)
+                </label>
+                <span className="text-[10px] text-[var(--color-muted)]">Length Gain Multiplier</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => adjustElongation(-1.0)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <div className="relative flex-1">
+                  <input 
+                    type="number" 
+                    step="0.5" 
+                    value={roundTargetElong}
+                    onChange={(e) => setRoundTargetElong(e.target.value)}
+                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-center text-sm font-bold text-purple-400 focus:border-purple-500 focus:outline-none"
+                  />
+                  <span className="absolute right-3 top-2.5 text-[10px] text-[var(--color-muted)] font-bold">
+                    %
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => adjustElongation(1.0)}
+                  className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] flex items-center justify-center transition cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           )}
-          
-          <button
-            type="submit"
-            className="w-full py-2.5 bg-[#141414] hover:bg-[#1f1f1f] border border-blue-500/50 text-blue-400 hover:text-blue-300 font-bold text-xs uppercase tracking-wider rounded-sm transition flex items-center justify-center gap-1.5 mt-3 cursor-pointer"
-          >
-            <Calculator className="h-3.5 w-3.5" />
-            Calculate & View Results
-          </button>
+
+          {/* Quick Slider for Active Parameter */}
+          {roundCalcMode === 'forward' && (
+            <div className="space-y-1.5 px-1">
+              <div className="flex justify-between text-[10px] text-[var(--color-muted)] font-bold">
+                <span>Fine-tune Outlet (d₂)</span>
+                <span className="text-blue-400">{parseFloat(roundOutlet) || 0} mm</span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max={parseFloat(roundInlet) || 10}
+                step="0.05"
+                value={parseFloat(roundOutlet) || 0}
+                onChange={(e) => setRoundOutlet(parseFloat(e.target.value).toFixed(2))}
+                className="w-full h-1.5 bg-[var(--color-surface-2)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+            </div>
+          )}
         </div>
       </form>
 
-      {/* Outputs Column */}
-      <div id="calculation-results" className="lg:col-span-7 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 flex flex-col justify-between shadow-2xl min-h-[500px] font-mono">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
-            <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">
-              02 DEFORMATION GRAPHIC & KPI SUMMARY
-            </h3>
-            <span className="text-[10px] font-mono text-[#6b7280]">OUTPUT_PREVIEW</span>
+      {/* Right Column: Live Telemetry & CAD Blueprint */}
+      <div id="calculation-results" className="lg:col-span-7 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col justify-between shadow-sm min-h-[500px] font-mono space-y-5">
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider">
+                02 GEOMETRY & TELEMETRY SUMMARY
+              </h3>
+            </div>
+            
+            {/* Blueprint view switcher */}
+            <div className="flex items-center gap-1 bg-[var(--color-surface-2)] p-1 rounded-lg border border-[var(--color-border)] text-[10px] font-bold">
+              <button
+                type="button"
+                onClick={() => setViewAngle('wire_cross')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  viewAngle === 'wire_cross'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                }`}
+              >
+                Concentric Cross-Section
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewAngle('die_section')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  viewAngle === 'die_section'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                }`}
+              >
+                2D Die Profile
+              </button>
+            </div>
           </div>
 
           {roundResults ? (
             <>
-              {/* Live SVG CAD Draw Schematic */}
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm p-3 flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="absolute top-2 left-3 text-[9px] font-mono text-[#6b7280] tracking-wider flex items-center gap-1 uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  2D WIRE DIE SCHEMATIC
+              {/* CAD Geometry Visualizer */}
+              <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute top-3 left-4 text-[10px] font-bold text-[var(--color-muted)] tracking-wider flex items-center gap-1.5 uppercase">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  {viewAngle === 'wire_cross' ? 'Concentric Circular Cross-Section' : 'Longitudinal Reduction Profile'}
                 </div>
 
-                {/* Rendering dynamic SVG */}
-                {(() => {
-                  const inletVal = parseFloat(roundInlet) || 8.00
-                  const outletVal = roundResults.outlet
-                  const maxVal = Math.max(inletVal, outletVal, 1)
-                  const scale = 70 / maxVal
+                {viewAngle === 'wire_cross' ? (
+                  /* Concentric Circular Cross-Section Blueprint */
+                  (() => {
+                    const d1 = parseFloat(roundInlet) || 8.00
+                    const d2 = roundResults.outlet || 6.50
+                    const maxD = Math.max(d1, d2, 1)
+                    const r1 = Math.min(65, (d1 / maxD) * 65)
+                    const r2 = Math.min(65, (d2 / maxD) * 65)
 
-                  const inletHeight = inletVal * scale
-                  const outletHeight = outletVal * scale
-                  const inletY = 100 - (inletHeight / 2)
-                  const outletY = 100 - (outletHeight / 2)
+                    return (
+                      <svg className="w-full h-[180px]" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <pattern id="reducedAreaHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="6" stroke="#3b82f6" strokeWidth="1" strokeOpacity="0.4" />
+                          </pattern>
+                          <radialGradient id="finishedCoreGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#2563eb" stopOpacity="0.6" />
+                          </radialGradient>
+                        </defs>
 
-                  const drawingRatio = roundResults.elongationRatio
-                  const animDur = Math.max(0.1, Math.min(3, 2.5 / drawingRatio))
+                        {/* Center Grid Crosshair */}
+                        <line x1="200" y1="20" x2="200" y2="180" stroke="var(--color-border)" strokeWidth="1" strokeDasharray="3 3" />
+                        <line x1="100" y1="100" x2="300" y2="100" stroke="var(--color-border)" strokeWidth="1" strokeDasharray="3 3" />
 
-                  return (
-                    <svg className="w-full h-[160px]" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <pattern id="dieHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                          <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(59, 130, 246, 0.16)" strokeWidth="1.2" />
-                        </pattern>
-                        <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#141414" />
-                          <stop offset="50%" stopColor="#2a2a2a" />
-                          <stop offset="100%" stopColor="#141414" />
-                        </linearGradient>
-                      </defs>
+                        {/* Outer Circle (Inlet Area A1) */}
+                        <circle cx="200" cy="100" r={r1} fill="url(#reducedAreaHatch)" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4 2" />
 
-                      {/* Center line */}
-                      <line x1="15" y1="100" x2="485" y2="100" stroke="#2a2a2a" strokeWidth="1" strokeDasharray="5 3" />
+                        {/* Inner Circle (Outlet Area A2) */}
+                        <circle cx="200" cy="100" r={r2} fill="url(#finishedCoreGrad)" stroke="#a855f7" strokeWidth="2" />
 
-                      {/* Wire Body */}
-                      <path 
-                        d={`M 20,${inletY} 
-                           L 220,${inletY} 
-                           L 280,${outletY} 
-                           L 480,${outletY} 
-                           L 480,${outletY + outletHeight} 
-                           L 280,${outletY + outletHeight} 
-                           L 220,${inletY + inletHeight} 
-                           L 20,${inletY + inletHeight} Z`}
-                        fill="url(#metalGrad)"
-                        stroke="#3b82f6"
-                        strokeWidth="1"
-                      />
+                        {/* Dimension Caliper Annotations */}
+                        <text x="70" y="50" fill="#3b82f6" fontSize="11" fontFamily="monospace" fontWeight="bold">
+                          d₁: {d1.toFixed(2)} mm ({roundResults.inArea.toFixed(2)} mm²)
+                        </text>
+                        <text x="330" y="160" fill="#a855f7" fontSize="11" fontFamily="monospace" fontWeight="bold" textAnchor="end">
+                          d₂: {d2.toFixed(3)} mm ({roundResults.outArea.toFixed(2)} mm²)
+                        </text>
 
-                      {/* Top Die Piece */}
-                      <path 
-                        d={`M 210,15 
-                           L 290,15 
-                           L 290,${outletY - 2} 
-                           L 280,${outletY - 2} 
-                           L 220,${inletY - 2} 
-                           L 210,${inletY - 2} Z`}
-                        fill="#141414"
-                        stroke="#2a2a2a"
-                        strokeWidth="1.5"
-                      />
+                        {/* Center Dimension Arrow Callout */}
+                        <text x="200" y="104" fill="#ffffff" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+                          Core d₂
+                        </text>
+                      </svg>
+                    )
+                  })()
+                ) : (
+                  /* 2D Die Longitudinal Schematic */
+                  (() => {
+                    const inletVal = parseFloat(roundInlet) || 8.00
+                    const outletVal = roundResults.outlet
+                    const maxVal = Math.max(inletVal, outletVal, 1)
+                    const scale = 60 / maxVal
 
-                      {/* Bottom Die Piece */}
-                      <path 
-                        d={`M 210,185 
-                           L 290,185 
-                           L 290,${outletY + outletHeight + 2} 
-                           L 280,${outletY + outletHeight + 2} 
-                           L 220,${inletY + inletHeight + 2} 
-                           L 210,${inletY + inletHeight + 2} Z`}
-                        fill="#141414"
-                        stroke="#2a2a2a"
-                        strokeWidth="1.5"
-                      />
+                    const inletHeight = inletVal * scale
+                    const outletHeight = outletVal * scale
+                    const inletY = 100 - (inletHeight / 2)
+                    const outletY = 100 - (outletHeight / 2)
+                    const drawingRatio = roundResults.elongationRatio
 
-                      {/* Dimension Lines (Inlet) */}
-                      <line x1="32" y1={inletY} x2="32" y2={inletY + inletHeight} stroke="#3b82f6" strokeWidth="1.2" />
-                      <line x1="468" y1={outletY} x2="468" y2={outletY + outletHeight} stroke="#a855f7" strokeWidth="1.2" />
+                    return (
+                      <svg className="w-full h-[180px]" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <linearGradient id="metalFlowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.5" />
+                          </linearGradient>
+                        </defs>
 
-                      {/* Labels */}
-                      <text x="42" y="104" fill="#3b82f6" fontSize="10" fontFamily="monospace" fontWeight="600">
-                        d₁:{inletVal.toFixed(2)}mm
-                      </text>
-                      <text x="408" y="104" fill="#a855f7" fontSize="10" fontFamily="monospace" fontWeight="600" textAnchor="end">
-                        d₂:{outletVal.toFixed(3)}mm
-                      </text>
+                        {/* Center line */}
+                        <line x1="20" y1="100" x2="480" y2="100" stroke="var(--color-border)" strokeWidth="1" strokeDasharray="4 3" />
 
-                      {/* Speed multiplier node */}
-                      <text x="250" y="125" fill="#06b6d4" fontSize="9" fontFamily="monospace" fontWeight="600" textAnchor="middle">
-                        v₂/v₁ = {drawingRatio.toFixed(3)}
-                      </text>
-                    </svg>
-                  )
-                })()}
+                        {/* Wire Profile */}
+                        <path 
+                          d={`M 20,${inletY} L 220,${inletY} L 280,${outletY} L 480,${outletY} L 480,${outletY + outletHeight} L 280,${outletY + outletHeight} L 220,${inletY + inletHeight} L 20,${inletY + inletHeight} Z`}
+                          fill="url(#metalFlowGrad)"
+                          stroke="#3b82f6"
+                          strokeWidth="1.5"
+                        />
+
+                        {/* Top Die Block */}
+                        <path 
+                          d={`M 210,25 L 290,25 L 290,${outletY - 3} L 280,${outletY - 3} L 220,${inletY - 3} L 210,${inletY - 3} Z`}
+                          fill="var(--color-surface-2)"
+                          stroke="var(--color-border)"
+                          strokeWidth="1.5"
+                        />
+
+                        {/* Bottom Die Block */}
+                        <path 
+                          d={`M 210,175 L 290,175 L 290,${outletY + outletHeight + 3} L 280,${outletY + outletHeight + 3} L 220,${inletY + inletHeight + 3} L 210,${inletY + inletHeight + 3} Z`}
+                          fill="var(--color-surface-2)"
+                          stroke="var(--color-border)"
+                          strokeWidth="1.5"
+                        />
+
+                        {/* Dimension Calipers */}
+                        <text x="35" y={inletY - 6} fill="#3b82f6" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                          d₁ = {inletVal.toFixed(2)}mm
+                        </text>
+                        <text x="465" y={outletY - 6} fill="#a855f7" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="end">
+                          d₂ = {outletVal.toFixed(3)}mm
+                        </text>
+
+                        {/* Velocity Multiplier */}
+                        <text x="250" y="104" fill="#06b6d4" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+                          λ = {drawingRatio.toFixed(3)}x
+                        </text>
+                      </svg>
+                    )
+                  })()
+                )}
               </div>
 
-              {/* Material Yield Verification Message */}
+              {/* Yield Safety & Material Limit Banner */}
               {(() => {
                 const limit = getMaterialLimit()
-                const isUnsafe = roundResults.reduction > limit
+                const reduction = roundResults.reduction
+                const pctOfLimit = Math.min(150, (reduction / limit) * 100)
+                const isUnsafe = reduction > limit
+                const isWarning = reduction > limit * 0.85
+
                 return (
-                  <div className="animate-fadeIn">
-                    {isUnsafe ? (
-                      <div className="bg-[#141414] border border-red-500/30 rounded-sm p-3 flex items-start gap-2 text-red-400">
-                        <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs font-bold block uppercase">WARNING: YIELD LIMIT EXCEEDED</span>
-                          <p className="text-[11px] text-red-300 leading-tight mt-0.5">
-                            Area reduction ({roundResults.reduction.toFixed(2)}%) exceeds safe threshold ({limit}%).
-                          </p>
-                        </div>
+                  <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {isUnsafe ? (
+                          <ShieldAlert className="h-4 w-4 text-rose-500" />
+                        ) : (
+                          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                        )}
+                        <span className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wide">
+                          Draft Safety Margin: {reduction.toFixed(1)}% / {limit}% Max
+                        </span>
                       </div>
-                    ) : (
-                      <div className="bg-[#141414] border border-emerald-500/30 rounded-sm p-3 flex items-start gap-2 text-emerald-400">
-                        <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs font-bold block uppercase">DRAFT SIZING VERIFIED</span>
-                          <p className="text-[11px] text-emerald-300 leading-tight mt-0.5">
-                            Reduction ({roundResults.reduction.toFixed(2)}%) within allowable range ({limit}% max limit).
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      <span className={`text-xs font-bold font-mono ${
+                        isUnsafe ? 'text-rose-500' : isWarning ? 'text-amber-500' : 'text-emerald-500'
+                      }`}>
+                        {pctOfLimit.toFixed(0)}% of Limit
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isUnsafe 
+                            ? 'bg-rose-500' 
+                            : isWarning 
+                              ? 'bg-amber-500' 
+                              : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${Math.min(100, pctOfLimit)}%` }}
+                      />
+                    </div>
+
+                    <p className="text-[11px] text-[var(--color-muted)] m-0 leading-relaxed">
+                      {isUnsafe ? (
+                        <span className="text-rose-400 font-bold">
+                          ⚠️ Warning: Area reduction exceeds safe single-pass limit for this alloy. Risk of wire tensile rupture or internal chevrons.
+                        </span>
+                      ) : (
+                        <span>
+                          ✓ Safe Single-Pass Deformation. The tensile stress during reduction remains securely within allowable strain-hardening limits.
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )
               })()}
 
-              {/* KPI Metric Readouts */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 font-mono">
-                {/* KPI 1: outlet size */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
-                    Outlet Size (d₂)
+              {/* Primary KPI Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono">
+                {/* KPI 1: Outlet Size */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
+                    Finished Die (d₂)
                   </span>
-                  <div className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums">
-                    {roundResults.outlet.toFixed(3)} <span className="text-xs text-[#6b7280]">mm</span>
+                  <div className="text-lg font-bold font-mono text-[var(--color-text)] tabular-nums">
+                    {roundResults.outlet.toFixed(3)} <span className="text-xs text-[var(--color-muted)]">mm</span>
                   </div>
                 </div>
 
-                {/* KPI 2: area reduction */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
+                {/* KPI 2: Area Reduction */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
                     Area Reduction (R)
                   </span>
-                  <div className="text-xl font-bold font-mono text-cyan-400 tabular-nums">
+                  <div className="text-lg font-bold font-mono text-cyan-400 tabular-nums">
                     {roundResults.reduction.toFixed(2)}%
                   </div>
                 </div>
 
-                {/* KPI 3: elongation */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
-                    Elongation (E)
+                {/* KPI 3: Elongation */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
+                    Elongation Strain (E)
                   </span>
-                  <div className="text-xl font-bold font-mono text-purple-400 tabular-nums">
-                    {roundResults.elongation.toFixed(2)}%
+                  <div className="text-lg font-bold font-mono text-purple-400 tabular-nums">
+                    +{roundResults.elongation.toFixed(2)}%
                   </div>
                 </div>
 
-                {/* KPI 4: drawing ratio */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
-                    Drawing Ratio (λ)
+                {/* KPI 4: Drawing Ratio */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
+                    Velocity Ratio (λ)
                   </span>
-                  <div className="text-xl font-bold font-mono text-emerald-400 tabular-nums">
+                  <div className="text-lg font-bold font-mono text-emerald-400 tabular-nums">
                     {roundResults.elongationRatio.toFixed(3)}x
                   </div>
                 </div>
 
-                {/* KPI 5: initial area */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
-                    Inlet Area (A₁)
+                {/* KPI 5: Drawing Force */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
+                    Drawing Pull Force
                   </span>
-                  <div className="text-xs font-bold font-mono text-[#e4e4e4] tabular-nums">
-                    {roundResults.inArea.toFixed(3)} <span className="text-[#6b7280]">mm²</span>
+                  <div className="text-lg font-bold font-mono text-amber-400 tabular-nums">
+                    {((roundResults.drawingForce || 0) / 1000).toFixed(2)} <span className="text-xs text-[var(--color-muted)]">kN</span>
                   </div>
                 </div>
 
-                {/* KPI 6: final area */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm">
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider block mb-1">
-                    Outlet Area (A₂)
+                {/* KPI 6: Motor Power */}
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3.5 rounded-xl">
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider block mb-1">
+                    Active Power Demand
                   </span>
-                  <div className="text-xs font-bold font-mono text-[#e4e4e4] tabular-nums">
-                    {roundResults.outArea.toFixed(3)} <span className="text-[#6b7280]">mm²</span>
+                  <div className="text-lg font-bold font-mono text-blue-400 tabular-nums">
+                    {(roundResults.powerKw || 0).toFixed(2)} <span className="text-xs text-[var(--color-muted)]">kW</span>
                   </div>
                 </div>
               </div>
 
-              {/* Round Drawing Physics & Die Match Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm space-y-2">
-                  <h4 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider flex items-center gap-1.5 border-b border-[#1a1a1a] pb-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    Mechanical Tension & Power
-                  </h4>
-                   {(() => {
-                    const sigmaD = roundResults.drawingStress || 0
-                    const forceN = roundResults.drawingForce || 0
-                    const powerKw = roundResults.powerKw || 0
-                    const isStressUnsafe = sigmaD >= 0.6 * parseFloat(uts)
-                    
-                    const epsilon = Math.log(roundResults.inArea / roundResults.outArea)
-                    const optAlphaRad = Math.sqrt(1.5 * mu * epsilon)
-                    const optAlphaDeg = optAlphaRad * (180 / Math.PI)
-
-                    return (
-                      <div className="space-y-1.5 font-mono text-xs text-[#e4e4e4]">
-                        <div className="flex justify-between">
-                          <span className="text-[#6b7280] uppercase text-[10px]">Drawing Force:</span>
-                          <span className="font-bold tabular-nums">{forceN.toFixed(0)} N</span>
-                        </div>
-                        <div className="flex justify-between border-t border-[#1a1a1a] pt-1">
-                          <span className="text-[#6b7280] uppercase text-[10px]">Drawing Stress:</span>
-                          <span className={`font-bold tabular-nums ${isStressUnsafe ? 'text-red-400' : 'text-blue-400'}`}>
-                            {sigmaD.toFixed(1)} MPa {isStressUnsafe && '(LIMIT)'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between border-t border-[#1a1a1a] pt-1">
-                          <span className="text-[#6b7280] uppercase text-[10px]">Power Required:</span>
-                          <span className="font-bold text-emerald-400 tabular-nums">{powerKw.toFixed(2)} kW</span>
-                        </div>
-                        <div className="flex justify-between border-t border-[#1a1a1a] pt-1">
-                          <span className="text-[#6b7280] uppercase text-[10px]">Optimum Half-Angle:</span>
-                          <span className="font-bold text-cyan-400 tabular-nums">{optAlphaDeg.toFixed(1)}°</span>
-                        </div>
-                      </div>
-                    )
-                  })()}
+              {/* Matched Dies in Inventory Widget */}
+              <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Table className="h-4 w-4 text-blue-400" />
+                    <h4 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider">
+                      Stock Inventory Matches (Target: {roundResults.outlet.toFixed(3)} mm)
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => findMatchingDies(888, roundResults.outlet)}
+                    disabled={loadingDies[888]}
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-blue-600 hover:bg-blue-500 text-white transition cursor-pointer disabled:opacity-50 uppercase"
+                  >
+                    {loadingDies[888] ? 'Searching...' : 'Scan Stock'}
+                  </button>
                 </div>
 
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-3 rounded-sm space-y-2">
-                  <h4 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider flex items-center gap-1.5 border-b border-[#1a1a1a] pb-1.5">
-                    <Table className="h-3.5 w-3.5 text-blue-500" />
-                    Matched Dies in Inventory
-                  </h4>
-                  
-                  {matchingDies[888] ? (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {matchingDies[888].length > 0 ? (
-                        matchingDies[888].map(die => (
-                          <a
+                {matchingDies[888] ? (
+                  <div className="space-y-2">
+                    {matchingDies[888].length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {matchingDies[888].map((die) => (
+                          <div
                             key={die.die_id}
-                            href={`#/dies/${die.die_id}`}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold border transition ${
-                              die.status === 'AVAILABLE'
-                                ? 'bg-[#141414] border-emerald-500/30 text-emerald-400'
-                                : 'bg-[#141414] border-amber-500/30 text-amber-400'
-                            }`}
+                            className="p-2.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] space-y-1"
                           >
-                            {die.die_id} ({parseFloat(die.current_size).toFixed(3)}mm)
-                          </a>
-                        ))
-                      ) : (
-                        <span className="text-xs text-[#6b7280] font-mono">No matching dies in inventory</span>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => findMatchingDies(888, roundResults.outlet)}
-                      disabled={loadingDies[888]}
-                      className="w-full py-1.5 bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 text-xs font-bold rounded-sm border border-[#2a2a2a] transition disabled:opacity-40 cursor-pointer uppercase"
-                    >
-                      {loadingDies[888] ? 'Searching...' : 'Scan Inventory'}
-                    </button>
-                  )}
-                </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-xs text-[var(--color-text)]">
+                                {die.die_id}
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                die.status === 'AVAILABLE'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              }`}>
+                                {die.status}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-[var(--color-muted)]">
+                              <span>Size: {parseFloat(die.current_size).toFixed(3)} mm</span>
+                              <span>{die.location_name || 'Storage'}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[var(--color-muted)] m-0 text-center py-2">
+                        No active stock dies found within ±0.05 mm of target.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--color-muted)] m-0">
+                    Click <strong>Scan Stock</strong> to query live warehouse inventory for available dies matching {roundResults.outlet.toFixed(3)} mm.
+                  </p>
+                )}
               </div>
             </>
           ) : (
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm py-12 px-4 flex flex-col items-center justify-center text-center space-y-2">
-              <div className={`p-2 rounded-sm border ${roundValidationError ? 'bg-[#141414] border-amber-500/30 text-amber-400' : 'bg-[#141414] border-[#2a2a2a] text-[#6b7280]'}`}>
-                {roundValidationError ? <AlertTriangle className="h-5 w-5" /> : <Info className="h-5 w-5" />}
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl py-14 px-4 flex flex-col items-center justify-center text-center space-y-3">
+              <div className={`p-3 rounded-xl border ${roundValidationError ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-[var(--color-surface-2)] border-[var(--color-border)] text-[var(--color-muted)]'}`}>
+                {roundValidationError ? <AlertTriangle className="h-6 w-6" /> : <Info className="h-6 w-6" />}
               </div>
-              <div className="space-y-0.5 max-w-md">
-                <h4 className={`text-xs font-bold uppercase ${roundValidationError ? 'text-amber-400' : 'text-[#e4e4e4]'}`}>
-                  {roundValidationError ? 'Invalid Sizing Parameters' : 'Waiting for Parameters'}
+              <div className="space-y-1 max-w-md">
+                <h4 className={`text-sm font-bold uppercase ${roundValidationError ? 'text-amber-400' : 'text-[var(--color-text)]'}`}>
+                  {roundValidationError ? 'Invalid Sizing Parameters' : 'Awaiting Sizing Input'}
                 </h4>
-                <p className="text-xs text-[#6b7280]">
-                  {roundValidationError || 'Enter diameters in the configurator panel to compute deformation stats.'}
+                <p className="text-xs text-[var(--color-muted)]">
+                  {roundValidationError || 'Enter diameters in the left panel to calculate area reduction, strain, and mechanical drawing force.'}
                 </p>
               </div>
             </div>
           )}
         </div>
-
-        {roundResults && (
-          <div className="mt-6 border-t border-[#1a1a1a] pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] text-[#6b7280] font-mono uppercase">
-            <span>A₁L₁ = A₂L₂ MASS CONSERVED</span>
-            <span>ROUNDED TO 3 DECIMAL PLACES</span>
-          </div>
-        )}
       </div>
     </>
   )
 }
+
