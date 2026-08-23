@@ -1,5 +1,12 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-23 Docker Compose Redis Container Healthcheck Authentication
+*   **Fix**: Resolved Redis container (`dms-o2-redis-1`) unhealthy status during `docker compose up`.
+    *   Injected `REDIS_PASSWORD` and `REDISCLI_AUTH` into the `redis` service environment across all Docker Compose configurations (`docker-compose.yml`, `docker-compose.prod.yml`, `docker-compose.ghcr.yml`).
+    *   Updated the container healthcheck command to utilize standard authentication and fallback gracefully.
+*   **Affected Modules**: `docker`, `infra`
+*   **Testing Performed**: Verified container health on all 10 services (status `healthy`), ran Django full test suite (200/200 passed), and Vitest suite (69/69 passed).
+
 ### 2026-08-22 Decommissioning of Preventive Wear Prediction
 *   **Refactor**: Safely removed the **Preventive Wear Prediction** linear regression engine, database column, and related UI components across the stack:
     *   **Database & Models**: Removed `Die.predicted_remaining_days` and created Django migration [`0014_remove_die_predicted_remaining_days.py`](file:///backend/dies/migrations/0014_remove_die_predicted_remaining_days.py).
