@@ -2,7 +2,7 @@
 
 ## Purpose
 Track current work item for AI sessions.
-**Why:** Enable seamless session continuity and task resumption.
+**Why:** Enable session continuity and task resumption.
 **Read by:** AI agents.
 **Updated:** Every session.
 
