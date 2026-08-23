@@ -7,17 +7,21 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Docker Compose Redis Container Healthcheck Authentication
+**Task:** Deformation Sizing Calculator Redesign & Theme Architecture Unification
 **Status:** Complete
 **Started:** 2026-08-23
 **Completed:** 2026-08-23
 **Confidence:** 100%
 
 ## Task Description
-Fixed Redis container (`dms-o2-redis-1`) unhealthy state during `docker compose up`:
-1. **Redis Environment Auth Injection**: Added `REDIS_PASSWORD` and `REDISCLI_AUTH` environment variables to `redis` service across `docker-compose.yml`, `docker-compose.prod.yml`, and `docker-compose.ghcr.yml`.
-2. **Healthcheck Resilience**: Updated healthcheck commands to authenticate seamlessly via container environment without failing when passwords are configured.
-3. **Full Stack Verification**: Verified all 10 containers report healthy status and all test suites pass green.
+Redesigned the Deformation Sizing Calculator into an ergonomic modern engineering workspace:
+1. **Theme System Unification**: Standardized all tools and calculator pages to use design tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-border)`, `var(--color-text)`, etc.), eliminating dual light/dark styling inconsistencies.
+2. **Formula Reference Manual**: Replaced static cards with an interactive tabbed reference manual / modal (Deformation Laws, Stress & Drawing Force, Power & Velocity, Nomenclature Glossary).
+3. **Round Wire Calculator**: Implemented interactive dual-column workspace with concentric circular CAD cross-section SVG, 2D longitudinal die profile, color-coded Yield Safety Margin gauge, and live stock die inventory scanner.
+4. **Multi-Draft Sequence Calculator**: Built multi-draft progression schedule with draft distribution switcher (Constant vs Graduated), pass-by-pass reduction sparkline/bar charts, concentric wire ring visualizer, Excel (.xlsx) / CSV export, and clipboard copy.
+5. **Flat Strip Profiling Calculator**: Built dual-column rectangular strip profiling workspace with overlay CAD blueprints, width/thickness draft ratios, and aspect ratio ($W/T$) telemetry.
+6. **Workspace Shell**: Upgraded `CalculatorPage.tsx` with top hero header, alloy preset pills, compact global configuration bar with collapsible advanced physics drawer, and Framer Motion tab switcher.
+7. **Verification**: 69/69 Vitest tests passing, clean Vite production build, container rebuilt and healthy.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
