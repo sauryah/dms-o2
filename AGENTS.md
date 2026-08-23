@@ -8,7 +8,7 @@ maintaining quality, security, and documentation at every step.
 1. Read this file
 2. Read `.dev/state/active-task.md` and `.dev/state/current-goal.md`
 3. Read `.dev/state/progress.md`
-4. Read `.dev/processes/engineering-workflow.md`
+4. Read `.dev/processes/engineering-workflow.md` and `.dev/processes/ai-writing-rules.md`
 5. Read affected module docs from `.dev/modules/`
 6. Read architecture context from `.dev/architecture/`
 7. Execute the task
