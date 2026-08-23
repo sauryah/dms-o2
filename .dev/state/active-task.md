@@ -7,21 +7,20 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Deformation Sizing Calculator Redesign & Theme Architecture Unification
+**Task:** Die Set Planner Modernization & Architecture Redesign
 **Status:** Complete
 **Started:** 2026-08-23
 **Completed:** 2026-08-23
 **Confidence:** 100%
 
 ## Task Description
-Redesigned the Deformation Sizing Calculator into an ergonomic modern engineering workspace:
-1. **Theme System Unification**: Standardized all tools and calculator pages to use design tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-border)`, `var(--color-text)`, etc.), eliminating dual light/dark styling inconsistencies.
-2. **Formula Reference Manual**: Replaced static cards with an interactive tabbed reference manual / modal (Deformation Laws, Stress & Drawing Force, Power & Velocity, Nomenclature Glossary).
-3. **Round Wire Calculator**: Implemented interactive dual-column workspace with concentric circular CAD cross-section SVG, 2D longitudinal die profile, color-coded Yield Safety Margin gauge, and live stock die inventory scanner.
-4. **Multi-Draft Sequence Calculator**: Built multi-draft progression schedule with draft distribution switcher (Constant vs Graduated), pass-by-pass reduction sparkline/bar charts, concentric wire ring visualizer, Excel (.xlsx) / CSV export, and clipboard copy.
-5. **Flat Strip Profiling Calculator**: Built dual-column rectangular strip profiling workspace with overlay CAD blueprints, width/thickness draft ratios, and aspect ratio ($W/T$) telemetry.
-6. **Workspace Shell**: Upgraded `CalculatorPage.tsx` with top hero header, alloy preset pills, compact global configuration bar with collapsible advanced physics drawer, and Framer Motion tab switcher.
-7. **Verification**: 69/69 Vitest tests passing, clean Vite production build, container rebuilt and healthy.
+Redesigned the Die Set Planner from a 2,453-line monolith into a modular, high-performance engineering suite:
+1. **Component Decomposition**: Split into clean single-responsibility components (`CapacityPlannerTab`, `LiveMachineStockTab`, `RecountSheetsTab`, `EditRecountModal`, `ViewRecountModal`, `ManageMachinesModal`, `BottleneckChart`, `InputCard`, `HeroCapacityCard`), reducing `DieSetPlannerPage.tsx` from 2,453 to ~220 lines.
+2. **Capacity Planner Workspace**: Multi-source stock ingestion (DMS database, live enamel machine allocations, submitted audit sheets), preset series buttons (Standard Enamel, Fine Wire, Medium Wire, Heavy Gauge), interactive bottleneck deficit bar chart, per-die breakdown tables with status filtering (**All**, **Bottleneck**, **Missing**, **OK**), size search, CSV export, and clipboard copy.
+3. **Live Machine Allocation Stock**: Real-time physical die tracking per enamel machine line with instant one-click capacity simulation in the planner.
+4. **Monthly Stocktake & Recount Sheets**: Spreadsheet-grade audit sheet creation with drag-and-drop Excel/CSV import, template generator, local draft persistence in `localStorage`, baseline prefill, and discrepancy reporting.
+5. **Theme & Architecture Unification**: Full alignment with DMS-O2 design tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-border)`, `var(--color-text)`, `var(--color-muted)`), animated Framer Motion transitions.
+6. **Verification**: 69/69 Vitest unit tests passing, clean Vite production build, container rebuilt and healthy.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
