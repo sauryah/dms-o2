@@ -349,7 +349,7 @@ export default function TheoryPanel() {
                 <div className="bg-slate-950/90 border border-slate-900 rounded-xl p-5 space-y-5">
                   <div className="flex justify-between items-center pb-3 border-b border-slate-900">
                     <div>
-                      <h4 className="text-sm font-bold text-white m-0 font-heading">
+                      <h4 className="text-sm font-bold text-[var(--color-text)] m-0 font-heading">
                         Interactive Draft Parameter Simulator
                       </h4>
                       <p className="text-xs text-slate-400 m-0">
@@ -448,7 +448,7 @@ export default function TheoryPanel() {
                   <div className="p-3.5 bg-blue-500/5 border border-blue-500/15 rounded-xl text-xs text-slate-300 flex items-start gap-3">
                     <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <strong className="text-white block font-heading text-[11px] uppercase tracking-wide">
+                      <strong className="text-[var(--color-text)] block font-heading text-[11px] uppercase tracking-wide">
                         Key Insight: Why Elongation % is always larger than Area Reduction %
                       </strong>
                       <p className="m-0 text-[11px] leading-relaxed text-slate-400">

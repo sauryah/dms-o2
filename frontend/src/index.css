@@ -161,6 +161,14 @@ html[data-theme="classic"] .bg-\[\#0a0a0a\] { background-color: #0B1220 !importa
 html[data-theme="classic"] .bg-\[\#0f0f0f\] { background-color: #0F172A !important; }
 html[data-theme="classic"] .bg-\[\#141414\] { background-color: #1E293B !important; }
 html[data-theme="classic"] .bg-\[\#1f1f1f\] { background-color: #334155 !important; }
+html[data-theme="classic"] .bg-\[\#050913\],
+html[data-theme="classic"] .bg-\[\#050913\]\/90,
+html[data-theme="classic"] .bg-\[\#0B1220\],
+html[data-theme="classic"] .bg-\[\#0B1220\]\/80 { background-color: #0F172A !important; }
+html[data-theme="classic"] .bg-slate-950,
+html[data-theme="classic"] .bg-slate-950\/90,
+html[data-theme="classic"] .bg-slate-950\/80,
+html[data-theme="classic"] .bg-slate-950\/60 { background-color: #0B1220 !important; }
 html[data-theme="classic"] .border-\[\#1a1a1a\] { border-color: #1E293B !important; }
 html[data-theme="classic"] .border-\[\#2a2a2a\] { border-color: #334155 !important; }
 html[data-theme="classic"] .text-\[\#e4e4e4\] { color: #F8FAFC !important; }
@@ -172,6 +180,20 @@ html[data-theme="classic"] .hover\:border-\[\#2a2a2a\]:hover { border-color: #47
 html[data-theme="classic"] .glass-panel,
 html[data-theme="classic"] .glass-card { background: #0F172A; border-color: #1E293B; }
 html[data-theme="classic"] .glass-input { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+
+/* Tool / WDC panel and card styling for Classic mode */
+html[data-theme="classic"] .wdc-panel { background: #0F172A !important; border-color: #1E293B !important; }
+html[data-theme="classic"] .wdc-input,
+html[data-theme="classic"] .wdc-textarea { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] .wdc-btn { background: #1E293B !important; border-color: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] .wdc-btn:hover { background: #334155 !important; }
+html[data-theme="classic"] .wdc-btn-secondary { background: #1E293B !important; color: #94A3B8 !important; border-color: #334155 !important; }
+html[data-theme="classic"] .wdc-btn-secondary:hover { background: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] .wdc-btn-ghost { background: transparent !important; color: #94A3B8 !important; border-color: transparent !important; }
+html[data-theme="classic"] .wdc-btn-ghost:hover { background: #1E293B !important; color: #F8FAFC !important; border-color: #334155 !important; }
+html[data-theme="classic"] .wdc-label,
+html[data-theme="classic"] .wdc-body-text { color: #94A3B8 !important; }
+html[data-theme="classic"] .wdc-section-title { color: #F8FAFC !important; }
 html[data-theme="classic"] ::-webkit-scrollbar-track { background: #0B1220; }
 html[data-theme="classic"] ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
 html[data-theme="classic"] ::-webkit-scrollbar-thumb:hover { background: #334155; }
@@ -361,6 +383,143 @@ html[data-theme="light"] .wdc-btn-primary:hover {
   background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
   color: #FFFFFF !important;
   box-shadow: 0 2px 6px 0 rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Tool & Slate Color Overrides for Light Mode */
+html[data-theme="light"] .text-\[\#F8FAFC\] { color: #0F172A !important; }
+html[data-theme="light"] .text-\[\#94A3B8\] { color: #475569 !important; }
+html[data-theme="light"] .text-\[\#64748B\] { color: #475569 !important; }
+html[data-theme="light"] .text-\[\#475569\] { color: #64748B !important; }
+html[data-theme="light"] .text-slate-200,
+html[data-theme="light"] .text-slate-300 { color: #0F172A !important; }
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 { color: #475569 !important; }
+html[data-theme="light"] .text-slate-600 { color: #94A3B8 !important; }
+
+html[data-theme="light"] .bg-\[\#050913\],
+html[data-theme="light"] .bg-\[\#050913\]\/90,
+html[data-theme="light"] .bg-\[\#0B1220\],
+html[data-theme="light"] .bg-\[\#0B1220\]\/80,
+html[data-theme="light"] .bg-\[\#0F172A\] { background-color: #FFFFFF !important; }
+
+html[data-theme="light"] .bg-slate-950,
+html[data-theme="light"] .bg-slate-950\/90,
+html[data-theme="light"] .bg-slate-950\/80,
+html[data-theme="light"] .bg-slate-950\/60 { background-color: #F8FAFC !important; }
+
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-slate-900\/95,
+html[data-theme="light"] .bg-slate-900\/90,
+html[data-theme="light"] .bg-slate-900\/85,
+html[data-theme="light"] .bg-slate-900\/80,
+html[data-theme="light"] .bg-slate-900\/60,
+html[data-theme="light"] .bg-slate-900\/50,
+html[data-theme="light"] .bg-slate-900\/40,
+html[data-theme="light"] .bg-slate-900\/10 { background-color: #F1F5F9 !important; }
+
+html[data-theme="light"] .bg-slate-800,
+html[data-theme="light"] .bg-slate-800\/80,
+html[data-theme="light"] .bg-slate-800\/60,
+html[data-theme="light"] .bg-slate-800\/40 { background-color: #E2E8F0 !important; }
+
+html[data-theme="light"] .border-slate-900,
+html[data-theme="light"] .border-slate-900\/60,
+html[data-theme="light"] .border-slate-900\/40,
+html[data-theme="light"] .border-slate-800,
+html[data-theme="light"] .border-slate-800\/80,
+html[data-theme="light"] .border-slate-800\/60,
+html[data-theme="light"] .border-slate-700,
+html[data-theme="light"] .border-slate-700\/50 { border-color: #E2E8F0 !important; }
+
+html[data-theme="light"] .border-white\/\[0\.04\],
+html[data-theme="light"] .border-white\/\[0\.06\],
+html[data-theme="light"] .border-white\/\[0\.08\] { border-color: #E2E8F0 !important; }
+
+html[data-theme="light"] .bg-white\/\[0\.02\],
+html[data-theme="light"] .bg-white\/\[0\.03\],
+html[data-theme="light"] .bg-white\/\[0\.04\],
+html[data-theme="light"] .bg-white\/\[0\.05\],
+html[data-theme="light"] .bg-white\/\[0\.06\] { background-color: #F1F5F9 !important; }
+
+html[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover,
+html[data-theme="light"] .hover\:bg-white\/\[0\.05\]:hover,
+html[data-theme="light"] .hover\:bg-slate-900\/10:hover,
+html[data-theme="light"] .hover\:bg-slate-900\/60:hover,
+html[data-theme="light"] .hover\:bg-slate-800:hover,
+html[data-theme="light"] .hover\:bg-slate-700:hover { background-color: #E2E8F0 !important; }
+
+html[data-theme="light"] .hover\:border-white\/\[0\.08\]:hover,
+html[data-theme="light"] .hover\:border-slate-800:hover,
+html[data-theme="light"] .hover\:border-slate-700:hover { border-color: #CBD5E1 !important; }
+
+html[data-theme="light"] .bg-blue-950\/20 { background-color: rgba(37, 99, 235, 0.1) !important; }
+html[data-theme="light"] .border-blue-900\/30 { border-color: rgba(37, 99, 235, 0.3) !important; }
+html[data-theme="light"] .bg-purple-950\/40 { background-color: rgba(109, 40, 217, 0.1) !important; }
+html[data-theme="light"] .border-purple-800\/40 { border-color: rgba(109, 40, 217, 0.3) !important; }
+html[data-theme="light"] .bg-emerald-950\/40,
+html[data-theme="light"] .bg-emerald-950\/80 { background-color: rgba(5, 150, 105, 0.1) !important; }
+html[data-theme="light"] .border-emerald-800\/40,
+html[data-theme="light"] .border-emerald-900\/40 { border-color: rgba(5, 150, 105, 0.3) !important; }
+html[data-theme="light"] .bg-rose-950\/80 { background-color: rgba(220, 38, 38, 0.1) !important; }
+html[data-theme="light"] .border-rose-900\/40 { border-color: rgba(220, 38, 38, 0.3) !important; }
+
+/* Wire Drawing Calculator Component Overrides for Light Mode */
+html[data-theme="light"] .wdc-panel {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme="light"] .wdc-input,
+html[data-theme="light"] .wdc-textarea {
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+html[data-theme="light"] .wdc-btn {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+html[data-theme="light"] .wdc-btn:hover {
+  background: #E2E8F0 !important;
+}
+html[data-theme="light"] .wdc-btn-secondary {
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+  border-color: #CBD5E1 !important;
+}
+html[data-theme="light"] .wdc-btn-secondary:hover {
+  background: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+html[data-theme="light"] .wdc-btn-ghost {
+  background: transparent !important;
+  color: #475569 !important;
+  border-color: transparent !important;
+}
+html[data-theme="light"] .wdc-btn-ghost:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+html[data-theme="light"] .wdc-btn-danger {
+  background: rgba(220, 38, 38, 0.08) !important;
+  color: #DC2626 !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+html[data-theme="light"] .wdc-btn-danger:hover {
+  background: rgba(220, 38, 38, 0.16) !important;
+}
+html[data-theme="light"] .wdc-label,
+html[data-theme="light"] .wdc-body-text {
+  color: #475569 !important;
+}
+html[data-theme="light"] .wdc-section-title {
+  color: #0F172A !important;
+}
+html[data-theme="light"] .wdc-glass {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
 }
 
 /* Light mode table & input overrides */
@@ -685,8 +844,8 @@ textarea:focus {
 
 /* Wire Drawing Calculator Styles */
 .wdc-panel {
-  background: #0f0f0f;
-  border: 1px solid #1a1a1a;
+  background: var(--wdc-card, #0f0f0f);
+  border: 1px solid var(--color-border, #1a1a1a);
   border-radius: 2px;
   padding: 12px 16px;
   position: relative;
@@ -700,11 +859,11 @@ textarea:focus {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   cursor: pointer;
-  border: 1px solid #2a2a2a;
-  background: #141414;
-  color: #e4e4e4;
+  border: 1px solid var(--color-border-visible, #2a2a2a);
+  background: var(--wdc-steel, #141414);
+  color: var(--color-text, #e4e4e4);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -712,11 +871,11 @@ textarea:focus {
 }
 
 .wdc-btn:hover {
-  background: #1f1f1f;
+  background: var(--wdc-steel-light, #1f1f1f);
 }
 
 .wdc-btn:active {
-  background: #262626;
+  opacity: 0.9;
 }
 
 .wdc-btn:disabled {
@@ -725,39 +884,39 @@ textarea:focus {
 }
 
 .wdc-btn-primary {
-  background: #141414;
-  border-color: #3b82f6;
-  color: #3b82f6;
+  background: var(--wdc-steel, #141414);
+  border-color: var(--wdc-primary, #3b82f6);
+  color: var(--wdc-primary, #3b82f6);
 }
 .wdc-btn-primary:hover {
-  background: #1f1f1f;
-  color: #60a5fa;
+  background: var(--wdc-steel-light, #1f1f1f);
+  color: var(--wdc-primary-light, #60a5fa);
 }
 
 .wdc-btn-secondary {
-  background: #141414;
-  color: #6b7280;
-  border: 1px solid #2a2a2a;
+  background: var(--wdc-steel, #141414);
+  color: var(--color-text-secondary, #6b7280);
+  border: 1px solid var(--color-border-visible, #2a2a2a);
 }
 .wdc-btn-secondary:hover {
-  background: #1f1f1f;
-  color: #e4e4e4;
+  background: var(--wdc-steel-light, #1f1f1f);
+  color: var(--color-text, #e4e4e4);
 }
 
 .wdc-btn-ghost {
   background: transparent;
-  color: #6b7280;
+  color: var(--color-text-secondary, #6b7280);
   border: 1px solid transparent;
 }
 .wdc-btn-ghost:hover {
-  background: #141414;
-  color: #e4e4e4;
-  border-color: #2a2a2a;
+  background: var(--wdc-steel, #141414);
+  color: var(--color-text, #e4e4e4);
+  border-color: var(--color-border-visible, #2a2a2a);
 }
 
 .wdc-btn-danger {
-  background: #141414;
-  color: #ef4444;
+  background: var(--wdc-steel, #141414);
+  color: var(--wdc-danger, #ef4444);
   border: 1px solid rgba(239, 68, 68, 0.4);
 }
 .wdc-btn-danger:hover {
@@ -768,25 +927,25 @@ textarea:focus {
   width: 100%;
   padding: 6px 10px;
   border-radius: 2px;
-  border: 1px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #e4e4e4;
+  border: 1px solid var(--color-border-visible, #2a2a2a);
+  background: var(--wdc-input, #0f0f0f);
+  color: var(--color-text, #e4e4e4);
   font-size: 13px;
   outline: none;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   transition: border-color 0.15s;
 }
 .wdc-input:focus {
-  border-color: #3b82f6;
+  border-color: var(--wdc-border-focus, #3b82f6);
 }
 
 .wdc-textarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: 2px;
-  border: 1px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #e4e4e4;
+  border: 1px solid var(--color-border-visible, #2a2a2a);
+  background: var(--wdc-input, #0f0f0f);
+  color: var(--color-text, #e4e4e4);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   line-height: 1.5;
@@ -795,7 +954,7 @@ textarea:focus {
   letter-spacing: 0.02em;
 }
 .wdc-textarea:focus {
-  border-color: #3b82f6;
+  border-color: var(--wdc-border-focus, #3b82f6);
 }
 
 .wdc-section-title {
@@ -803,18 +962,18 @@ textarea:focus {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #e4e4e4;
+  color: var(--color-text, #e4e4e4);
 }
 
 .wdc-body-text {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-secondary, #6b7280);
   line-height: 1.4;
 }
 
 .wdc-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary, #6b7280);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -825,8 +984,8 @@ textarea:focus {
 }
 
 .wdc-glass {
-  background: #0f0f0f;
-  border: 1px solid #1a1a1a;
+  background: var(--wdc-glass, #0f0f0f);
+  border: 1px solid var(--color-border, #1a1a1a);
 }
 
 /* Blueprint SVG Styles */

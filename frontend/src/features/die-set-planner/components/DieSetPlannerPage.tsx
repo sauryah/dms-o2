@@ -1048,7 +1048,7 @@ export function DieSetPlannerPage() {
                 <button
                   onClick={handleCalculate}
                   disabled={!canCalculate}
-                  className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white text-sm font-bold shadow-lg shadow-blue-500/10 transition-colors"
+                  className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-[var(--color-surface-2)] disabled:text-[var(--color-muted)] text-white text-sm font-bold shadow-lg shadow-blue-500/10 transition-colors"
                 >
                   {loading ? (
                     <>
@@ -1340,7 +1340,7 @@ export function DieSetPlannerPage() {
                             : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
 
                           return (
-                            <tr key={r.die_size} className="hover:bg-slate-900/10 transition-colors">
+                            <tr key={r.die_size} className="hover:bg-[var(--color-surface-2)] transition-colors">
                               <td className="py-3.5 px-4 font-bold text-[var(--color-text)]">
                                 {r.die_size}
                               </td>
@@ -1408,7 +1408,7 @@ export function DieSetPlannerPage() {
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]/60 font-mono">
                           {result.procurement.map((p) => (
-                            <tr key={p.die_size} className="hover:bg-slate-900/10 transition-colors">
+                            <tr key={p.die_size} className="hover:bg-[var(--color-surface-2)] transition-colors">
                               <td className="py-3.5 px-4 font-bold text-[var(--color-text)]">{p.die_size}</td>
                               <td className="py-3.5 px-4 text-center text-[var(--color-muted)]">{p.required_per_set}</td>
                               <td className="py-3.5 px-4 text-center text-[var(--color-text)] font-semibold">{p.target_need}</td>
@@ -1543,7 +1543,7 @@ export function DieSetPlannerPage() {
                       {liveStocks
                         .filter((s) => !stockSearch.trim() || s.die_size.includes(stockSearch.trim()))
                         .map((s) => (
-                          <tr key={s.id} className="hover:bg-slate-900/10 transition-colors">
+                          <tr key={s.id} className="hover:bg-[var(--color-surface-2)] transition-colors">
                             <td className="py-3.5 px-4 font-bold text-[var(--color-text)]">{s.die_size}</td>
                             <td className="py-3.5 px-4 text-center font-black text-blue-400">{s.quantity}</td>
                             <td className="py-3.5 px-4 text-right text-[var(--color-muted)]">
@@ -1612,7 +1612,7 @@ export function DieSetPlannerPage() {
                     </thead>
                     <tbody className="divide-y divide-[var(--color-border)]/60 font-sans">
                       {recounts.map((r) => (
-                        <tr key={r.id} className="hover:bg-slate-900/10 transition-colors">
+                        <tr key={r.id} className="hover:bg-[var(--color-surface-2)] transition-colors">
                           <td className="py-3.5 px-4 font-bold text-[var(--color-text)]">{r.name}</td>
                           <td className="py-3.5 px-4 text-[var(--color-text)]">{r.enamel_machine_name}</td>
                           <td className="py-3.5 px-4 text-center text-xs font-mono text-[var(--color-muted)]">{r.recount_date}</td>
@@ -1637,7 +1637,7 @@ export function DieSetPlannerPage() {
                                 <>
                                   <button
                                     onClick={() => handleOpenEditRecount(r)}
-                                    className="px-2 py-1 text-[10px] font-bold rounded bg-slate-800 hover:bg-slate-700 text-[var(--color-text)] transition-colors"
+                                    className="px-2 py-1 text-[10px] font-bold rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-[var(--color-text)] transition-colors"
                                   >
                                     Edit
                                   </button>
@@ -1655,7 +1655,7 @@ export function DieSetPlannerPage() {
                                     setSelectedRecountId(r.id)
                                     setIsViewModalOpen(true)
                                   }}
-                                  className="px-2 py-1 text-[10px] font-bold rounded bg-slate-800 hover:bg-slate-700 text-[var(--color-text)] transition-colors flex items-center gap-1"
+                                  className="px-2 py-1 text-[10px] font-bold rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-[var(--color-text)] transition-colors flex items-center gap-1"
                                 >
                                   <Eye className="h-3 w-3" />
                                   View Items
@@ -2048,7 +2048,7 @@ export function DieSetPlannerPage() {
                     </thead>
                     <tbody className="divide-y divide-[var(--color-border)]/60 font-mono">
                       {recountItems.map((item, idx) => (
-                        <tr key={item.die_size} className="hover:bg-slate-900/10">
+                        <tr key={item.die_size} className="hover:bg-[var(--color-surface-2)]">
                           <td className="py-2 px-3 font-bold text-[var(--color-text)]">{item.die_size}</td>
                           <td className="py-2 px-3 text-center font-bold text-[var(--color-text)]">{item.quantity}</td>
                           <td className="py-2 px-3 text-right">
@@ -2257,7 +2257,7 @@ function RecountViewModal({ recountId, onClose }: { recountId: number; onClose: 
                         : 0
                       const diff = item.quantity - prev
                       return (
-                        <tr key={item.id} className="hover:bg-slate-900/10">
+                        <tr key={item.id} className="hover:bg-[var(--color-surface-2)]">
                           <td className="py-2 px-3 font-bold text-[var(--color-text)]">{item.die_size}</td>
                           <td className="py-2 px-3 text-center font-black text-blue-400">{item.quantity}</td>
                           <td className={`py-2 px-3 text-right font-bold ${
@@ -2421,7 +2421,7 @@ function InputCard({
         </div>
         
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded cursor-pointer transition-colors border border-slate-700/50">
+          <label className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-[var(--color-text)] rounded cursor-pointer transition-colors border border-[var(--color-border)]">
             <Upload className="h-3 w-3" />
             <span>Upload Spreadsheet</span>
             <input 

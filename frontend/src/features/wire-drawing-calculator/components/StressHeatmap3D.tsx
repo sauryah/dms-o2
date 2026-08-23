@@ -572,7 +572,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white m-0 font-heading">
+              <h3 className="text-base font-bold text-[var(--color-text)] m-0 font-heading">
                 3D von Mises Stress Heatmap & Flow Model
               </h3>
               <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-950/40 border border-purple-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -641,7 +641,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             <select
               value={comparePassIdxA}
               onChange={(e) => setComparePassIdxA(parseInt(e.target.value))}
-              className="bg-slate-900 text-white text-xs font-mono border border-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-purple-500 cursor-pointer"
+              className="bg-slate-900 text-[var(--color-text)] text-xs font-mono border border-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-purple-500 cursor-pointer"
             >
               {passes.map((p, idx) => (
                 <option key={idx} value={idx}>Pass #{p.pass} ({p.toDie.toFixed(2)} mm)</option>
@@ -654,7 +654,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             <select
               value={comparePassIdxB}
               onChange={(e) => setComparePassIdxB(parseInt(e.target.value))}
-              className="bg-slate-900 text-white text-xs font-mono border border-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-purple-500 cursor-pointer"
+              className="bg-slate-900 text-[var(--color-text)] text-xs font-mono border border-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-purple-500 cursor-pointer"
             >
               {passes.map((p, idx) => (
                 <option key={idx} value={idx}>Pass #{p.pass} ({p.toDie.toFixed(2)} mm)</option>
@@ -921,7 +921,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         {/* Selected Pass Mechanics Sidebar / Comparison Metrics */}
         <div className="lg:col-span-4 bg-slate-950/90 border border-slate-900 rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-slate-900">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider m-0 font-heading">
+            <h4 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider m-0 font-heading">
               {!compareMode ? `Pass #${activePassSingle.pass} Physics` : 'Pass A vs Pass B Specs'}
             </h4>
             <span className="text-[10px] font-mono text-purple-400 font-bold bg-purple-950/40 px-2 py-0.5 rounded border border-purple-900/30 uppercase tracking-wide">

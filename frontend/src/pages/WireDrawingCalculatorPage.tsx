@@ -18,24 +18,24 @@ import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 // Skeleton loading fallbacks
 const ChartSkeleton = () => (
-  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[260px] flex flex-col justify-between animate-pulse font-mono">
-    <div className="h-3 w-1/3 bg-[#141414]" />
-    <div className="h-36 bg-[#0a0a0a] flex items-center justify-center">
-      <div className="w-5 h-5 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
+  <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-sm p-4 h-[260px] flex flex-col justify-between animate-pulse font-mono">
+    <div className="h-3 w-1/3 bg-[var(--color-surface-2)]" />
+    <div className="h-36 bg-[var(--color-bg)] flex items-center justify-center">
+      <div className="w-5 h-5 border border-[var(--color-border)] border-t-blue-500 animate-spin" />
     </div>
-    <div className="h-3 w-2/3 bg-[#141414]" />
+    <div className="h-3 w-2/3 bg-[var(--color-surface-2)]" />
   </div>
 );
 
 const BlueprintSkeleton = () => (
-  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[240px] flex items-center justify-center animate-pulse">
-    <div className="w-6 h-6 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
+  <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-sm p-4 h-[240px] flex items-center justify-center animate-pulse">
+    <div className="w-6 h-6 border border-[var(--color-border)] border-t-blue-500 animate-spin" />
   </div>
 );
 
 const PanelSkeleton = () => (
-  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-4 h-[300px] flex items-center justify-center animate-pulse">
-    <div className="w-6 h-6 border border-[#2a2a2a] border-t-blue-500 animate-spin" />
+  <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-sm p-4 h-[300px] flex items-center justify-center animate-pulse">
+    <div className="w-6 h-6 border border-[var(--color-border)] border-t-blue-500 animate-spin" />
   </div>
 );
 
@@ -180,7 +180,7 @@ export function WireDrawingCalculatorPage() {
       />
 
       <div className="max-w-[1400px] mx-auto space-y-6" ref={printRef}>
-        <Header dark={true} toggleDark={() => {}} />
+        <Header />
 
         <InputPanel onParse={handleParse} currentDies={dies} />
 
