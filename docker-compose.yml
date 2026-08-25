@@ -45,6 +45,7 @@ services:
           cpus: '2.0'
 
   migrate:
+    image: dms-o2-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -63,9 +64,11 @@ services:
     restart: "no"
 
   django:
+    image: dms-o2-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     command: gunicorn dms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --worker-class gthread --reload
     volumes:
@@ -118,9 +121,11 @@ services:
       - "traefik.http.middlewares.login-ratelimit.ratelimit.burst=10"
 
   worker:
+    image: dms-o2-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     command: celery -A dms worker -l warning --concurrency=4 -Q default
     volumes:
@@ -149,9 +154,11 @@ services:
           cpus: '0.5'
 
   heavy-worker:
+    image: dms-o2-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     command: celery -A dms worker -l warning --concurrency=2 -Q heavy
     volumes:
@@ -180,9 +187,11 @@ services:
           cpus: '1.0'
 
   beat:
+    image: dms-o2-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     command: celery -A dms beat -l warning --pidfile=/tmp/celerybeat.pid --schedule=/tmp/celerybeat-schedule
     volumes:
@@ -210,9 +219,11 @@ services:
 
 
   go-api:
+    image: dms-o2-go-api:latest
     build:
       context: ./go-api
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
@@ -298,6 +309,7 @@ services:
       retries: 10
 
   frontend:
+    image: dms-o2-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod

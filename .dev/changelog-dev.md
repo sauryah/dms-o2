@@ -1,5 +1,13 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-25 Docker Compose Image Tagging & Zombie Process Prevention
+*   **Fix**: Resolved BuildKit process creation failure (`pthread_create failed: Resource temporarily unavailable`) during `docker compose up --build`.
+    *   Tagged all Python services (`migrate`, `django`, `worker`, `heavy-worker`, `beat`) with `image: dms-o2-backend:latest` in `docker-compose.yml` to prevent 5 concurrent redundant builds of the backend image.
+    *   Tagged `go-api` with `image: dms-o2-go-api:latest` and `frontend` with `image: dms-o2-frontend:latest`.
+    *   Added `init: true` across `django`, `worker`, `heavy-worker`, `beat`, and `go-api` services in `docker-compose.yml` to ensure container processes run with an init process (`tini`/`docker-init`) as PID 1 to automatically reap zombie child processes and handle signal forwarding.
+*   **Affected Modules**: `docker`, `infra`
+*   **Testing Performed**: Rebuilt all container images and verified healthy startup across all 10 containers in `docker-compose.yml`; confirmed Go API, Django API, and Frontend health checks return HTTP 200/healthy status.
+
 ### 2026-08-23 Docker Compose Redis Container Healthcheck Authentication
 *   **Fix**: Resolved Redis container (`dms-o2-redis-1`) unhealthy status during `docker compose up`.
     *   Injected `REDIS_PASSWORD` and `REDISCLI_AUTH` into the `redis` service environment across all Docker Compose configurations (`docker-compose.yml`, `docker-compose.prod.yml`, `docker-compose.ghcr.yml`).
