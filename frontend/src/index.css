@@ -204,6 +204,9 @@ html[data-theme="classic"] .stat-card:hover {
 html[data-theme="classic"] .stat-card-TOTAL {
   border-color: #1E283D !important;
 }
+html[data-theme="classic"] .stat-card-TOTAL .stat-label {
+  color: #8EA0BD !important;
+}
 html[data-theme="classic"] .stat-card-TOTAL .stat-count {
   color: #F8FAFC !important;
 }
@@ -214,6 +217,9 @@ html[data-theme="classic"] .stat-card-AVAILABLE {
 html[data-theme="classic"] .stat-card-AVAILABLE:hover {
   border-color: rgba(16, 185, 129, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(16, 185, 129, 0.2);
+}
+html[data-theme="classic"] .stat-card-AVAILABLE .stat-label {
+  color: #10B981 !important;
 }
 html[data-theme="classic"] .stat-card-AVAILABLE .stat-count {
   color: #00E599 !important;
@@ -227,6 +233,9 @@ html[data-theme="classic"] .stat-card-RUNNING:hover {
   border-color: rgba(0, 144, 255, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(0, 144, 255, 0.2);
 }
+html[data-theme="classic"] .stat-card-RUNNING .stat-label {
+  color: #38BDF8 !important;
+}
 html[data-theme="classic"] .stat-card-RUNNING .stat-count {
   color: #38BDF8 !important;
   text-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
@@ -238,6 +247,9 @@ html[data-theme="classic"] .stat-card-CLEANING {
 html[data-theme="classic"] .stat-card-CLEANING:hover {
   border-color: rgba(245, 158, 11, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(245, 158, 11, 0.2);
+}
+html[data-theme="classic"] .stat-card-CLEANING .stat-label {
+  color: #FBBF24 !important;
 }
 html[data-theme="classic"] .stat-card-CLEANING .stat-count {
   color: #FBBF24 !important;
@@ -251,6 +263,9 @@ html[data-theme="classic"] .stat-card-POLISHING:hover {
   border-color: rgba(168, 85, 247, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(168, 85, 247, 0.2);
 }
+html[data-theme="classic"] .stat-card-POLISHING .stat-label {
+  color: #C084FC !important;
+}
 html[data-theme="classic"] .stat-card-POLISHING .stat-count {
   color: #C084FC !important;
   text-shadow: 0 0 12px rgba(192, 132, 252, 0.25);
@@ -262,6 +277,9 @@ html[data-theme="classic"] .stat-card-DAMAGED {
 html[data-theme="classic"] .stat-card-DAMAGED:hover {
   border-color: rgba(239, 68, 68, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(239, 68, 68, 0.2);
+}
+html[data-theme="classic"] .stat-card-DAMAGED .stat-label {
+  color: #F87171 !important;
 }
 html[data-theme="classic"] .stat-card-DAMAGED .stat-count {
   color: #F87171 !important;
@@ -275,6 +293,9 @@ html[data-theme="classic"] .stat-card-MISSING:hover {
   border-color: rgba(248, 113, 113, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(248, 113, 113, 0.2);
 }
+html[data-theme="classic"] .stat-card-MISSING .stat-label {
+  color: #F87171 !important;
+}
 html[data-theme="classic"] .stat-card-MISSING .stat-count {
   color: #F87171 !important;
   text-shadow: 0 0 12px rgba(248, 113, 113, 0.25);
@@ -287,6 +308,9 @@ html[data-theme="classic"] .stat-card-MAINTENANCE:hover {
   border-color: rgba(59, 130, 246, 0.8) !important;
   box-shadow: 0 0 16px -2px rgba(59, 130, 246, 0.2);
 }
+html[data-theme="classic"] .stat-card-MAINTENANCE .stat-label {
+  color: #60A5FA !important;
+}
 html[data-theme="classic"] .stat-card-MAINTENANCE .stat-count {
   color: #60A5FA !important;
   text-shadow: 0 0 12px rgba(96, 165, 250, 0.25);
@@ -294,6 +318,9 @@ html[data-theme="classic"] .stat-card-MAINTENANCE .stat-count {
 
 html[data-theme="classic"] .stat-card-SCRAPPED {
   border-color: rgba(100, 116, 139, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-SCRAPPED .stat-label {
+  color: #94A3B8 !important;
 }
 html[data-theme="classic"] .stat-card-SCRAPPED .stat-count {
   color: #94A3B8 !important;

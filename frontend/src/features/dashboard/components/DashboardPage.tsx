@@ -313,7 +313,7 @@ export function DashboardPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 mb-5">
           <div className="bg-[#0f0f0f] border border-[#1a1a1a] border-l-2 border-l-blue-500 rounded-sm p-3.5 text-left flex flex-col justify-between min-h-[85px] stat-card stat-card-TOTAL">
-            <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-mono font-medium">TOTAL DIES</span>
+            <span className="text-[10px] uppercase tracking-wider font-mono font-semibold stat-label">TOTAL DIES</span>
             <span className="text-2xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1 stat-count">{totalCount}</span>
           </div>
           {Object.entries(stats).map(([statusKey, count]) => {
@@ -331,7 +331,7 @@ export function DashboardPage() {
                 className={`border border-[#1a1a1a] hover:border-[#2a2a2a] border-l-2 ${statusBorderMap[statusKey] || 'border-l-[#6b7280]'} rounded-sm p-3.5 text-left flex flex-col justify-between min-h-[85px] cursor-pointer transition-colors bg-[#0f0f0f] hover:bg-[#141414] focus-ring stat-card stat-card-${statusKey}`}
               >
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[10px] uppercase tracking-wider font-mono font-medium text-[#6b7280]">{statusKey}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-mono font-semibold stat-label">{statusKey}</span>
                   {diff > 0 ? (
                     <span className="text-emerald-400 font-bold flex items-center text-[9px] bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono tabular-nums" title="Up from 24h baseline">
                       ▲ {diff}
