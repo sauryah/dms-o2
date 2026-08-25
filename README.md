@@ -13,14 +13,18 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=flat-square" alt="License: AGPL v3"></a>
   <a href="https://hub.docker.com/r/sauryah/dms-backend"><img src="https://img.shields.io/docker/pulls/sauryah/dms-backend?style=flat-square" alt="Docker Pulls"></a>
   <a href="https://github.com/sauryah/dms-o2/actions"><img src="https://img.shields.io/github/actions/workflow/status/sauryah/dms-o2/docker-publish.yml?branch=main&style=flat-square" alt="Build Status"></a>
+  <a href="https://github.com/sauryah/dms-o2/stargazers"><img src="https://img.shields.io/github/stars/sauryah/dms-o2?style=flat-square" alt="GitHub Stars"></a>
 </p>
 
 <p align="center">
-  <a href="backend"><img src="https://img.shields.io/badge/Python-3.11-blue.svg?style=flat-square&logo=python" alt="Python Version"></a>
-  <a href="go-api"><img src="https://img.shields.io/badge/Go-1.22-blue.svg?style=flat-square&logo=go" alt="Go Version"></a>
-  <a href="frontend"><img src="https://img.shields.io/badge/React-18-blue.svg?style=flat-square&logo=react" alt="React Version"></a>
-  <a href="https://github.com/sauryah/dms-o2/stargazers"><img src="https://img.shields.io/github/stars/sauryah/dms-o2?style=flat-square" alt="GitHub Stars"></a>
-  <a href="https://github.com/sauryah/dms-o2/network/members"><img src="https://img.shields.io/github/forks/sauryah/dms-o2?style=flat-square" alt="GitHub Forks"></a>
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11">
+  <img src="https://img.shields.io/badge/Django-4.2-092E20?style=flat-square&logo=django&logoColor=white" alt="Django 4.2">
+  <img src="https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.22">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18">
+  <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 18">
+  <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis 7">
+  <img src="https://img.shields.io/badge/Meilisearch-1.7-FF5CAA?style=flat-square&logo=meilisearch&logoColor=white" alt="Meilisearch 1.7">
+  <img src="https://img.shields.io/badge/Traefik-v3-24A1C1?style=flat-square&logo=traefikproxy&logoColor=white" alt="Traefik v3">
 </p>
 
 ---
@@ -36,6 +40,7 @@
 ## Table of Contents
 
 - [Overview & Architecture](#overview--architecture)
+- [Core Workspaces](#core-workspaces)
 - [Key Features](#key-features)
 - [Technology Stack](#technology-stack)
 - [Quick Start](#quick-start)
@@ -106,9 +111,28 @@ graph TD
 
 ---
 
+## Core Workspaces
+
+| Workspace | Primary Purpose | Key Capabilities |
+| :--- | :--- | :--- |
+| **Die Tracking Dashboard** | Real-time plant telemetry & status cards | KPI stats with glow borders, search bar with autocomplete, status donut breakdown, maintenance queue |
+| **Die Inventory** | Master registry for round & flat dies | Filter by status/casing/machine, CAD vector blueprint sync, 2D/3D visual inspection |
+| **Machine Sets** | Machine allocations & rack placement | Drag-and-drop storage rack map, set configuration, operational active/inactive ratio |
+| **Die Set Planner** | Engineering capacity & procurement | Preset series calculators, bottleneck deficit analysis, recount sheets, Excel/CSV audit import |
+| **Engineering Suite** | Wire drawing & sizing physics engine | Siebel's force formula, elongation analysis, 3D von Mises stress heatmap, PDF/Excel export |
+| **Audit History** | Immutable field-level change ledger | Trigger-backed change history, timestamps, operator identity, exportable audit trail |
+| **Settings & Security** | System administration & access control | System theme switcher, 2FA setup, wear tolerance alert limits, database backup/restore |
+
+---
+
 ## Key Features
 
+* **Triple System Themes**: Real-time instant switching between **Classic Slate** (vibrant industrial midnight UI with glowing KPI status cards), **Dark Terminal** (high-density Bloomberg monospace), and **Precision Light** (clean high-contrast daylight mode).
 * **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius). Supports statuses: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE`.
+* **Modular Die Set Planner & Capacity Engine**: Multi-source stock ingestion (DMS database, live enamel machines, monthly audit recount sheets), bottleneck deficit analytics, series capacity planning, and target set procurement forecasting with 5-decimal precision.
+* **Enamel Machine Tracking & Monthly Recount Audit Sheets**: Machine die allocation ledger and spreadsheet-grade monthly physical inventory audit sheets with Excel/CSV drag-and-drop import and discrepancy reports.
+* **Two-Factor Authentication (2FA / TOTP)**: RFC 6238 time-based one-time password security for operator and admin accounts with QR setup and single active session policy.
+* **Real-Time Live SSE Event Distribution**: Redis Pub/Sub multiplexing PostgreSQL `LISTEN/NOTIFY` events across multi-container instances with automatic local fallback.
 * **Interactive CAD Highlighting**: Bidirectional vector sync between table dimensions and blueprint SVG nodes.
 * **Visual Storage Rack Map**: Drag-and-drop grid interface for physical warehouse rack management.
 * **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
