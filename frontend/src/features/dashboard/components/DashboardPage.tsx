@@ -28,13 +28,13 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
 
   const statusThemeColors: Record<string, string> = {
     AVAILABLE: '#10b981',
-    RUNNING: '#3b82f6',
+    RUNNING: '#0090ff',
     CLEANING: '#f59e0b',
-    POLISHING: '#8b5cf6',
-    DAMAGED: '#f97316',
-    SCRAPPED: '#ef4444',
-    MISSING: '#6b7280',
-    MAINTENANCE: '#f59e0b',
+    POLISHING: '#a855f7',
+    DAMAGED: '#ef4444',
+    SCRAPPED: '#64748b',
+    MISSING: '#f87171',
+    MAINTENANCE: '#3b82f6',
   }
 
   const radius = 50
@@ -60,9 +60,9 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
     })
 
   return (
-    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] flex flex-col justify-between h-full min-h-[260px] font-mono">
-      <div>
-        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">02 STATUS DISTRIBUTION</h3>
+    <div className="bg-[#0f0f0f] rounded-sm p-5 border border-[#1a1a1a] flex flex-col justify-between h-full min-h-[260px] font-mono glass-card">
+      <div className="text-left">
+        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">STATUS DISTRIBUTION</h3>
         <p className="text-[#6b7280] text-[11px] mb-3">Visual breakdown of registry assets.</p>
       </div>
 
@@ -74,9 +74,9 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
       ) : (
         <div className="flex flex-col sm:flex-row items-center justify-around gap-4 flex-grow">
           {/* Donut Chart SVG */}
-          <div className="relative w-28 h-28 shrink-0">
+          <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#141414" strokeWidth="10" />
+              <circle cx="70" cy="70" r="50" fill="none" stroke="currentColor" className="text-slate-800/40" strokeWidth="12" />
               {segments.map((seg) => {
                 const active = hoveredSegment?.statusKey === seg.statusKey
                 return (
@@ -87,7 +87,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     r="50"
                     fill="none"
                     stroke={seg.color}
-                    strokeWidth={active ? "12" : "10"}
+                    strokeWidth={active ? "14" : "12"}
                     strokeDasharray={isAnimated ? seg.strokeDasharray : `0 ${circumference}`}
                     strokeDashoffset={seg.strokeDashoffset}
                     transform="rotate(-90 70 70)"
@@ -105,7 +105,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     x="70" 
                     y="63" 
                     textAnchor="middle" 
-                    className="text-[8px] font-mono font-medium uppercase tracking-wider"
+                    className="text-[9px] font-bold uppercase tracking-wider"
                     style={{ fill: hoveredSegment.color }}
                   >
                     {hoveredSegment.statusKey}
@@ -114,25 +114,25 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                     x="70" 
                     y="82" 
                     textAnchor="middle" 
-                    className="fill-[#e4e4e4] font-mono text-sm font-bold tabular-nums"
+                    className="fill-[#F8FAFC] font-bold text-base tabular-nums"
                   >
                     {hoveredSegment.count}
                   </text>
                   <text 
                     x="70" 
-                    y="95" 
+                    y="96" 
                     textAnchor="middle" 
-                    className="fill-[#6b7280] font-mono text-[9px] tabular-nums"
+                    className="fill-[#8EA0BD] text-[10px] tabular-nums"
                   >
                     {hoveredSegment.pct}%
                   </text>
                 </>
               ) : (
                 <>
-                  <text x="70" y="65" textAnchor="middle" className="fill-[#6b7280] font-mono text-[9px] uppercase tracking-wider">
+                  <text x="70" y="64" textAnchor="middle" className="fill-[#8EA0BD] text-[9px] font-bold uppercase tracking-widest">
                     TOTAL
                   </text>
-                  <text x="70" y="86" textAnchor="middle" className="fill-[#e4e4e4] font-mono text-xl font-bold tabular-nums">
+                  <text x="70" y="86" textAnchor="middle" className="fill-[#F8FAFC] text-xl font-bold tabular-nums">
                     {total}
                   </text>
                 </>
@@ -141,7 +141,7 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
           </div>
 
           {/* Legend Grid */}
-          <div className="flex-grow space-y-1 w-full sm:w-auto font-mono">
+          <div className="flex-grow space-y-1.5 w-full sm:w-auto">
             {segments.map((seg) => {
               const active = hoveredSegment?.statusKey === seg.statusKey
               return (
@@ -149,17 +149,17 @@ function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
                   key={seg.statusKey} 
                   onMouseEnter={() => setHoveredSegment(seg)}
                   onMouseLeave={() => setHoveredSegment(null)}
-                  className={`flex items-center justify-between text-xs py-0.5 px-1.5 rounded-sm border-b border-[#1a1a1a] transition-colors cursor-pointer ${
-                    active ? 'bg-[#141414] text-[#e4e4e4]' : 'hover:bg-[#141414] text-[#6b7280]'
+                  className={`flex items-center justify-between text-xs py-1 px-2 rounded-md transition-colors cursor-pointer ${
+                    active ? 'bg-white/5 text-[#F8FAFC]' : 'hover:bg-white/[0.03] text-[#8EA0BD]'
                   }`}
                 >
-                  <div className="flex items-center space-x-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
-                    <span className={`text-[11px] uppercase tracking-wider ${active ? 'text-[#e4e4e4]' : 'text-[#6b7280]'}`}>{seg.statusKey}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                    <span className={`text-[11px] font-medium uppercase tracking-wider ${active ? 'text-[#F8FAFC]' : 'text-[#8EA0BD]'}`}>{seg.statusKey}</span>
                   </div>
-                  <div className="font-mono text-xs tabular-nums">
-                    <span className="text-[#e4e4e4] font-medium">{seg.count}</span>
-                    <span className="text-[10px] text-[#6b7280] ml-1">({seg.pct}%)</span>
+                  <div className="text-xs tabular-nums">
+                    <span className="text-[#F8FAFC] font-bold">{seg.count}</span>
+                    <span className="text-[10px] text-[#64748B] ml-1.5">({seg.pct}%)</span>
                   </div>
                 </div>
               )
@@ -298,23 +298,23 @@ export function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 font-mono">
       <div className="mb-5 pb-3 border-b border-[#2a2a2a] text-left">
-        <h1 className="text-base md:text-lg font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">
-          01 DIE TRACKING DASHBOARD
+        <h1 className="text-base md:text-xl font-bold text-[#e4e4e4] tracking-tight font-heading">
+          Die Tracking Dashboard
         </h1>
         <p className="text-xs text-[#6b7280] mt-0.5">Overview of facility inventory and search portal.</p>
       </div>
 
       {isStatsLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 mb-5">
           {[...Array(8)].map((_, i) => (
             <Skeleton key={i} className="h-20" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-5">
-          <div className="bg-[#0f0f0f] border border-[#1a1a1a] border-l-2 border-l-blue-500 rounded-sm p-3 text-left flex flex-col justify-between min-h-[80px]">
-            <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-mono">TOTAL DIES</span>
-            <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1">{totalCount}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 mb-5">
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] border-l-2 border-l-blue-500 rounded-sm p-3.5 text-left flex flex-col justify-between min-h-[85px] stat-card stat-card-TOTAL">
+            <span className="text-[#6b7280] text-[10px] uppercase tracking-wider font-mono font-medium">TOTAL DIES</span>
+            <span className="text-2xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1 stat-count">{totalCount}</span>
           </div>
           {Object.entries(stats).map(([statusKey, count]) => {
             const countVal = count as number
@@ -328,21 +328,21 @@ export function DashboardPage() {
                 tabIndex={0}
                 onClick={() => navigate(`/inventory?status=${statusKey}`)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/inventory?status=${statusKey}`) } }}
-                className={`border border-[#1a1a1a] hover:border-[#2a2a2a] border-l-2 ${statusBorderMap[statusKey] || 'border-l-[#6b7280]'} rounded-sm p-3 text-left flex flex-col justify-between min-h-[80px] cursor-pointer transition-colors bg-[#0f0f0f] hover:bg-[#141414] focus-ring`}
+                className={`border border-[#1a1a1a] hover:border-[#2a2a2a] border-l-2 ${statusBorderMap[statusKey] || 'border-l-[#6b7280]'} rounded-sm p-3.5 text-left flex flex-col justify-between min-h-[85px] cursor-pointer transition-colors bg-[#0f0f0f] hover:bg-[#141414] focus-ring stat-card stat-card-${statusKey}`}
               >
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[10px] uppercase tracking-wider font-mono text-[#6b7280]">{statusKey}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-mono font-medium text-[#6b7280]">{statusKey}</span>
                   {diff > 0 ? (
-                    <span className="text-emerald-400 font-bold flex items-center text-[9px] bg-[#141414] px-1 py-0.2 rounded-sm font-mono tabular-nums" title="Up from 24h baseline">
+                    <span className="text-emerald-400 font-bold flex items-center text-[9px] bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono tabular-nums" title="Up from 24h baseline">
                       ▲ {diff}
                     </span>
                   ) : diff < 0 ? (
-                    <span className="text-red-400 font-bold flex items-center text-[9px] bg-[#141414] px-1 py-0.2 rounded-sm font-mono tabular-nums" title="Down from 24h baseline">
+                    <span className="text-rose-400 font-bold flex items-center text-[9px] bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 rounded-full font-mono tabular-nums" title="Down from 24h baseline">
                       ▼ {Math.abs(diff)}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1">{String(count)}</span>
+                <span className="text-2xl font-bold font-mono text-[#e4e4e4] tabular-nums block mt-1 stat-count">{String(count)}</span>
               </div>
             )
           })}
@@ -354,18 +354,18 @@ export function DashboardPage() {
         
         {/* Search Panel */}
         <div className="lg:col-span-2">
-          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-5 h-full flex flex-col justify-center font-mono">
-            <div className="text-left mb-4">
-              <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">FIND A DIE</h2>
-              <p className="text-[#6b7280] text-[11px] mt-0.5">Search by ID, casing, location, or status (e.g. R-101, 25x10, "2.500")</p>
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 h-full flex flex-col justify-center font-mono glass-card">
+            <div className="text-center mb-4">
+              <h2 className="text-base font-bold text-[#e4e4e4] tracking-tight font-heading">Find a Die</h2>
+              <p className="text-[#6b7280] text-xs mt-1">Search examples: 12345, ceramic, toolroom, polishing, machine-1 (use quotes for exact match, e.g. "2.500")</p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2.5 max-w-2xl mx-auto w-full">
               <div className="relative flex-grow flex items-center" ref={searchRef}>
-                <Search className="absolute left-3 h-4 w-4 text-[#6b7280]" />
+                <Search className="absolute left-3.5 h-4 w-4 text-[#6b7280]" />
                 <input 
                   type="text" 
-                  placeholder="SEARCH DIE ID, SIZE, CASING, MACHINE..."
+                  placeholder="Search Die ID, Size, Casing, Machine, Set, Location, Status..."
                   value={q}
                   onChange={(e) => { setQ(e.target.value); setShowDropdown(true); setActiveIndex(-1); }}
                   onFocus={() => { setShowDropdown(true); setActiveIndex(-1); }}
@@ -392,17 +392,17 @@ export function DashboardPage() {
                       setActiveIndex(-1);
                     }
                   }}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-2 pl-9 pr-24 text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors text-xs font-mono uppercase"
+                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-2.5 pl-10 pr-24 text-[#e4e4e4] placeholder-[#6b7280] focus:outline-none transition-colors text-xs font-mono glass-input"
                 />
                 {searchEnabled && (
-                  <span className="absolute right-2 bg-[#141414] border border-[#2a2a2a] text-blue-400 text-[10px] px-2 py-0.5 rounded-sm select-none font-mono">
+                  <span className="absolute right-2.5 bg-[#141414] border border-[#2a2a2a] text-blue-400 text-[10px] px-2 py-0.5 rounded-sm select-none font-mono">
                     {isSearchLoading ? '...' : `${searchDiesData?.total || 0} RESULTS`}
                   </span>
                 )}
 
                 {/* Search Dropdown Suggestions */}
                 {showDropdown && q.trim() && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm z-50 max-h-72 overflow-y-auto divide-y divide-[#1a1a1a] font-mono">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm z-50 max-h-72 overflow-y-auto divide-y divide-[#1a1a1a] font-mono glass-card shadow-xl">
                     {isSearchLoading ? (
                       <div className="p-3 text-center text-[#6b7280] text-xs flex items-center justify-center space-x-2">
                         <div className="animate-spin h-3.5 w-3.5 border border-[#2a2a2a] border-t-blue-500"></div>
@@ -466,14 +466,14 @@ export function DashboardPage() {
 
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-1.5 px-3 py-2 rounded-sm border text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer ${
+                className={`flex items-center justify-center space-x-2 px-4 py-2.5 rounded-sm border text-xs font-mono tracking-wider transition-colors cursor-pointer shrink-0 ${
                   showFilters 
                     ? 'bg-[#141414] text-blue-400 border-blue-500/50' 
                     : 'bg-[#141414] text-[#6b7280] hover:text-[#e4e4e4] border-[#2a2a2a]'
                 }`}
               >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span>Filters</span>
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="font-semibold">Filters</span>
               </button>
             </div>
 
@@ -794,37 +794,39 @@ function MaintenanceQueue() {
 
   if (isDiesLoading || isHistoryLoading) {
     return (
-      <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] font-mono">
-        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">03 MAINTENANCE DUE QUEUE</h3>
+      <div className="bg-[#0f0f0f] rounded-sm p-5 border border-[#1a1a1a] h-full min-h-[280px] font-mono glass-card">
+        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">MAINTENANCE DUE QUEUE</h3>
         <CardSkeleton />
       </div>
     )
   }
 
   return (
-    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col justify-between font-mono">
+    <div className="bg-[#0f0f0f] rounded-sm p-5 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col justify-between font-mono glass-card">
       <div>
-        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">03 MAINTENANCE DUE QUEUE</h3>
-        <p className="text-[#6b7280] text-[11px] mb-3">Dies currently undergoing maintenance, sorted by duration.</p>
+        <div className="flex justify-between items-center mb-0.5">
+          <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-[0.05em]">MAINTENANCE DUE QUEUE</h3>
+        </div>
+        <p className="text-[#6b7280] text-[11px] mb-3">Dies currently undergoing maintenance, sorted by duration in state.</p>
         
         {maintenanceList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8">
             <span className="text-[#6b7280] text-xs uppercase">No dies currently in maintenance.</span>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[240px] overflow-y-auto">
             <table className="w-full text-left text-xs font-mono text-[#e4e4e4]">
               <thead>
                 <tr className="border-b border-[#2a2a2a] text-[#6b7280] uppercase tracking-wider text-[11px]">
-                  <th className="py-2 px-2.5">DIE ID</th>
-                  <th className="py-2 px-2.5">TYPE</th>
-                  <th className="py-2 px-2.5">STATUS</th>
-                  <th className="py-2 px-2.5">DURATION</th>
-                  <th className="py-2 px-2.5">LOCATION</th>
+                  <th className="py-2.5 px-3">DIE ID</th>
+                  <th className="py-2.5 px-3">TYPE</th>
+                  <th className="py-2.5 px-3">STATUS</th>
+                  <th className="py-2.5 px-3">DURATION</th>
+                  <th className="py-2.5 px-3">LOCATION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a1a]">
-                {maintenanceList.map((die: any) => (
+                {maintenanceList.slice(0, 5).map((die: any) => (
                   <tr
                     key={die.die_id}
                     role="button"
@@ -833,21 +835,31 @@ function MaintenanceQueue() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${die.die_id}`) } }}
                     className="hover:bg-[#1a1a1a] transition-colors cursor-pointer group"
                   >
-                    <td className="py-2 px-2.5 font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
-                    <td className="py-2 px-2.5 text-[#6b7280]">{die.die_type}</td>
-                    <td className="py-2 px-2.5">
-                      <span className="px-1.5 py-0.5 rounded-sm border text-[10px] font-mono uppercase bg-[#141414] border-[#2a2a2a] text-[#e4e4e4]">
+                    <td className="py-2.5 px-3 font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{die.die_id}</td>
+                    <td className="py-2.5 px-3 text-[#6b7280] font-medium">{die.die_type}</td>
+                    <td className="py-2.5 px-3">
+                      <span className="px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase bg-amber-500/10 border-amber-500/30 text-amber-400">
                         {die.status}
                       </span>
                     </td>
-                    <td className="py-2 px-2.5 font-mono text-[#6b7280] tabular-nums">{die.durationStr}</td>
-                    <td className="py-2 px-2.5 text-[#6b7280]">{die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : '—'}</td>
+                    <td className="py-2.5 px-3 font-mono text-[#6b7280] tabular-nums">{die.durationStr}</td>
+                    <td className="py-2.5 px-3 text-[#6b7280]">{die.rack_name && die.shelf ? `${die.rack_name} - S${die.shelf}` : 'Tool Room'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+      </div>
+
+      <div className="pt-3 border-t border-[#1a1a1a] text-center mt-2">
+        <Link 
+          to="/inventory?status=MAINTENANCE" 
+          className="text-xs text-[#8EA0BD] hover:text-[#F8FAFC] font-medium inline-flex items-center gap-1 transition-colors"
+        >
+          <span>View all maintenance ({maintenanceList.length})</span>
+          <span className="text-sm">›</span>
+        </Link>
       </div>
     </div>
   )
@@ -876,53 +888,73 @@ function RecentActivityFeed() {
     return 'Just now'
   }
 
+  const getDotColor = (item: any) => {
+    const val = (item.new_value || item.field_name || '').toUpperCase()
+    if (val.includes('AVAIL') || val.includes('OK')) return '#10b981'
+    if (val.includes('RUN') || val.includes('PROD')) return '#0090ff'
+    if (val.includes('CLEAN') || val.includes('MAINT')) return '#3b82f6'
+    if (val.includes('POLISH')) return '#a855f7'
+    if (val.includes('DAMAG') || val.includes('MISS') || val.includes('SCRAP')) return '#ef4444'
+    return '#0090ff'
+  }
+
   if (isLoading) {
     return (
-      <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] font-mono">
-        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">04 RECENT ACTIVITY</h3>
+      <div className="bg-[#0f0f0f] rounded-sm p-5 border border-[#1a1a1a] h-full min-h-[280px] font-mono glass-card">
+        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-[0.05em] mb-3">RECENT ACTIVITY</h3>
         <CardSkeleton />
       </div>
     )
   }
 
   return (
-    <div className="bg-[#0f0f0f] rounded-sm p-4 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col font-mono">
+    <div className="bg-[#0f0f0f] rounded-sm p-5 border border-[#1a1a1a] h-full min-h-[280px] flex flex-col justify-between font-mono glass-card">
       <div>
-        <h3 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">04 RECENT ACTIVITY</h3>
+        <h3 className="text-xs font-bold text-[#e4e4e4] uppercase tracking-[0.05em] mb-0.5">RECENT ACTIVITY</h3>
         <p className="text-[#6b7280] text-[11px] mb-3">Last 10 updates across registry.</p>
+
+        <div className="space-y-2.5 overflow-y-auto max-h-[240px] pr-1">
+          {historyItems.length === 0 ? (
+            <div className="text-center py-8 text-[#6b7280] text-xs">
+              No recent activity logged.
+            </div>
+          ) : (
+            historyItems.slice(0, 5).map((item: any) => (
+              <div
+                key={item.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/dies/${item.die_id}`)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${item.die_id}`) } }}
+                className="flex items-start gap-2.5 p-2 rounded-md hover:bg-[#141414] transition-colors cursor-pointer group border-b border-[#1a1a1a]"
+              >
+                <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ backgroundColor: getDotColor(item) }} />
+                <div className="min-w-0 flex-grow text-xs leading-normal font-mono">
+                  <div className="flex justify-between items-baseline gap-2">
+                    <span className="font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
+                    <span className="text-[10px] font-mono text-[#6b7280] shrink-0">{getRelativeTime(item.timestamp)}</span>
+                  </div>
+                  <p className="text-[#8EA0BD] mt-0.5 text-[11px]">
+                    Updated status from <span className="text-[#6b7280]">"{item.old_value || '—'}"</span> to <span className="text-[#F8FAFC] font-semibold">"{item.new_value || '—'}"</span>
+                  </p>
+                  <p className="text-[10px] text-[#6b7280] mt-0.5">
+                    Changed by {item.changed_by_username || 'System'}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      <div className="flex-grow space-y-2 overflow-y-auto max-h-[300px] pr-1">
-        {historyItems.length === 0 ? (
-          <div className="text-center py-8 text-[#6b7280] text-xs">
-            No recent activity logged.
-          </div>
-        ) : (
-          historyItems.map((item: any) => (
-            <div
-              key={item.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(`/dies/${item.die_id}`)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/dies/${item.die_id}`) } }}
-              className="flex items-start gap-2 p-1.5 rounded-sm hover:bg-[#141414] transition-colors cursor-pointer group border-b border-[#1a1a1a]"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
-              <div className="min-w-0 flex-grow text-xs leading-normal font-mono">
-                <div className="flex justify-between items-baseline gap-2">
-                  <span className="font-bold text-[#e4e4e4] group-hover:text-blue-400 transition-colors font-mono">{item.die_id}</span>
-                  <span className="text-[9px] font-mono text-[#6b7280] shrink-0">{getRelativeTime(item.timestamp)}</span>
-                </div>
-                <p className="text-[#6b7280] mt-0.5 text-[11px]">
-                  {item.field_name}: <span className="text-[#404040]">"{item.old_value || '—'}"</span> → <span className="text-[#e4e4e4] font-medium">"{item.new_value || '—'}"</span>
-                </p>
-                <p className="text-[9px] text-[#404040] mt-0.5">
-                  BY <span className="text-[#6b7280]">{item.changed_by_username || 'System'}</span>
-                </p>
-              </div>
-            </div>
-          ))
-        )}
+      <div className="pt-3 border-t border-[#1a1a1a] text-center mt-2">
+        <Link 
+          to="/audit-history" 
+          className="text-xs text-[#8EA0BD] hover:text-[#F8FAFC] font-medium inline-flex items-center gap-1 transition-colors"
+        >
+          <span>View all activity</span>
+          <span className="text-sm">›</span>
+        </Link>
       </div>
     </div>
   )

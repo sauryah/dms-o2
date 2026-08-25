@@ -1,5 +1,16 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-08-25 Classic Slate Theme Modernization & Colorful UI Enhancement
+*   **Feature**: Modernized the **Classic** theme (`html[data-theme="classic"]`) to match modern industrial telemetry dashboards (`docs/assets/dms-screenshot.png`):
+    *   **Typography**: Integrated Google Fonts `Plus Jakarta Sans` and `Inter` in `frontend/index.html` with geometric heading weights and clean sans-serif text rendering.
+    *   **Color System**: Configured deep midnight canvas (`#070B14`), navy surface containers (`#0C1322` / `#111C33`), and subtle border structures (`#17233D` / `#1E283D`).
+    *   **Vibrant Status KPI Cards**: Styled status cards (`AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `MISSING`, `MAINTENANCE`, `SCRAPPED`) with status-tinted glowing borders, vibrant counts, smooth rounded-xl geometry, and trend delta pill badges (`▲ 1245`).
+    *   **Interactive Status Donut Chart**: Enhanced the SVG status distribution chart with vibrant palette mapping, centered "TOTAL" typography, and clean circular bullet legend items.
+    *   **Dashboard Enhancements**: Updated "Find a Die" search card with clean geometry, added status-colored indicator dots to the Recent Activity feed, and integrated footer quick links to maintenance and audit history.
+    *   **Dual-Theme Integrity**: Preserved default Dark Terminal (Bloomberg monospace) and Precision Light themes without regressions.
+*   **Affected Modules**: `frontend`
+*   **Testing Performed**: Frontend TypeScript typecheck (`tsc --noEmit`) passed with 0 errors; Vitest test suite (21 test files, 69/69 tests) passed; Vite production build (`vite build`) succeeded; all 10 Docker containers verified running and healthy.
+
 ### 2026-08-25 Docker Compose Image Tagging & Zombie Process Prevention
 *   **Fix**: Resolved BuildKit process creation failure (`pthread_create failed: Resource temporarily unavailable`) during `docker compose up --build`.
     *   Tagged all Python services (`migrate`, `django`, `worker`, `heavy-worker`, `beat`) with `image: dms-o2-backend:latest` in `docker-compose.yml` to prevent 5 concurrent redundant builds of the backend image.

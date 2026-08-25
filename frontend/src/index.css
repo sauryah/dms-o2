@@ -67,74 +67,75 @@
 }
 
 /* ==========================================================================
-   CLASSIC SLATE THEME (Industrial Modern)
+   CLASSIC SLATE THEME (Vibrant Modern Industrial • DMS Design System)
    ========================================================================== */
 html[data-theme="classic"],
 .theme-classic {
-  --color-bg:          #0B1220;
-  --color-surface:     #0F172A;
-  --color-surface-2:   #1E293B;
-  --color-surface-elevated: #1E293B;
-  --color-border:      #1E293B;
-  --color-border-visible: #334155;
+  --color-bg:          #070B14;
+  --color-surface:     #0C1322;
+  --color-surface-2:   #111C33;
+  --color-surface-elevated: #15223D;
+  --color-border:      #17233D;
+  --color-border-visible: #26375A;
   --color-text:        #F8FAFC;
   --color-text-secondary: #94A3B8;
   --color-muted:       #64748B;
   --color-muted-dark:  #334155;
-  --color-accent:      #38BDF8;
-  --color-accent-up:   #34D399;
-  --color-accent-down: #F87171;
-  --color-accent-neutral: #FBBF24;
+  --color-accent:      #0090FF;
+  --color-accent-up:   #10B981;
+  --color-accent-down: #EF4444;
+  --color-accent-neutral: #F59E0B;
 
-  --color-available:   #34D399;
-  --color-running:     #38BDF8;
-  --color-cleaning:    #FBBF24;
-  --color-polishing:   #A78BFA;
-  --color-damaged:     #FB923C;
-  --color-scrapped:    #F87171;
-  --color-missing:     #94A3B8;
-  --color-maintenance: #FBBF24;
+  --color-available:   #10B981;
+  --color-running:     #0090FF;
+  --color-cleaning:    #F59E0B;
+  --color-polishing:   #A855F7;
+  --color-damaged:     #EF4444;
+  --color-scrapped:    #64748B;
+  --color-missing:     #F87171;
+  --color-maintenance: #3B82F6;
 
-  --color-available-bg:   rgba(52, 211, 153, 0.12);
-  --color-available-bdr:  rgba(52, 211, 153, 0.35);
-  --color-running-bg:     rgba(56, 189, 248, 0.12);
-  --color-running-bdr:    rgba(56, 189, 248, 0.35);
-  --color-cleaning-bg:    rgba(251, 191, 36, 0.12);
-  --color-cleaning-bdr:   rgba(251, 191, 36, 0.35);
-  --color-polishing-bg:   rgba(167, 139, 250, 0.12);
-  --color-polishing-bdr:  rgba(167, 139, 250, 0.35);
-  --color-damaged-bg:     rgba(251, 146, 60, 0.12);
-  --color-damaged-bdr:    rgba(251, 146, 60, 0.35);
-  --color-scrapped-bg:    rgba(248, 113, 113, 0.12);
-  --color-scrapped-bdr:   rgba(248, 113, 113, 0.35);
-  --color-missing-bg:     rgba(100, 116, 139, 0.12);
-  --color-missing-bdr:    rgba(100, 116, 139, 0.35);
-  --color-maintenance-bg: rgba(251, 191, 36, 0.12);
-  --color-maintenance-bdr:rgba(251, 191, 36, 0.35);
+  --color-available-bg:   rgba(16, 185, 129, 0.12);
+  --color-available-bdr:  rgba(16, 185, 129, 0.35);
+  --color-running-bg:     rgba(0, 144, 255, 0.12);
+  --color-running-bdr:    rgba(0, 144, 255, 0.35);
+  --color-cleaning-bg:    rgba(245, 158, 11, 0.12);
+  --color-cleaning-bdr:   rgba(245, 158, 11, 0.35);
+  --color-polishing-bg:   rgba(168, 85, 247, 0.12);
+  --color-polishing-bdr:  rgba(168, 85, 247, 0.35);
+  --color-damaged-bg:     rgba(239, 68, 68, 0.12);
+  --color-damaged-bdr:    rgba(239, 68, 68, 0.35);
+  --color-scrapped-bg:    rgba(100, 116, 139, 0.12);
+  --color-scrapped-bdr:   rgba(100, 116, 139, 0.35);
+  --color-missing-bg:     rgba(248, 113, 113, 0.12);
+  --color-missing-bdr:    rgba(248, 113, 113, 0.35);
+  --color-maintenance-bg: rgba(59, 130, 246, 0.12);
+  --color-maintenance-bdr:rgba(59, 130, 246, 0.35);
   --color-default-bg:     rgba(100, 116, 139, 0.12);
   --color-default-bdr:    rgba(100, 116, 139, 0.35);
 
-  --wdc-primary: #38BDF8;
-  --wdc-primary-light: #7DD3FC;
+  --wdc-primary: #0090FF;
+  --wdc-primary-light: #38BDF8;
   --wdc-primary-dark: #0284C7;
-  --wdc-card: #0F172A;
-  --wdc-card-hover: #1E293B;
-  --wdc-input: #0F172A;
-  --wdc-success: #34D399;
-  --wdc-warning: #FBBF24;
-  --wdc-danger: #F87171;
+  --wdc-card: #0C1322;
+  --wdc-card-hover: #111C33;
+  --wdc-input: #070B14;
+  --wdc-success: #10B981;
+  --wdc-warning: #F59E0B;
+  --wdc-danger: #EF4444;
   --wdc-text-secondary: #94A3B8;
-  --wdc-border-focus: #38BDF8;
-  --wdc-glass: #0F172A;
-  --wdc-steel: #1E293B;
-  --wdc-steel-light: #334155;
+  --wdc-border-focus: #0090FF;
+  --wdc-glass: #0C1322;
+  --wdc-steel: #111C33;
+  --wdc-steel-light: #1E293B;
 }
 
 html[data-theme="classic"] body,
 .theme-classic body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
-  background-color: #0B1220 !important;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  background-color: #070B14 !important;
   color: #F8FAFC !important;
+  letter-spacing: -0.01em;
 }
 
 html[data-theme="classic"] h1,
@@ -144,8 +145,10 @@ html[data-theme="classic"] h4,
 html[data-theme="classic"] h5,
 html[data-theme="classic"] h6,
 html[data-theme="classic"] .font-heading {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif !important;
-  letter-spacing: normal;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  text-transform: none;
 }
 
 html[data-theme="classic"] button,
@@ -153,50 +156,208 @@ html[data-theme="classic"] .btn,
 html[data-theme="classic"] input,
 html[data-theme="classic"] select,
 html[data-theme="classic"] textarea {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  letter-spacing: normal;
+}
+
+/* Rounded Cards & Smooth Geometry in Classic Mode */
+html[data-theme="classic"] .rounded-sm {
+  border-radius: 12px !important;
+}
+html[data-theme="classic"] .rounded-md {
+  border-radius: 10px !important;
 }
 
 /* Palette utility mapping for classic mode */
-html[data-theme="classic"] .bg-\[\#0a0a0a\] { background-color: #0B1220 !important; }
-html[data-theme="classic"] .bg-\[\#0f0f0f\] { background-color: #0F172A !important; }
-html[data-theme="classic"] .bg-\[\#141414\] { background-color: #1E293B !important; }
-html[data-theme="classic"] .bg-\[\#1f1f1f\] { background-color: #334155 !important; }
+html[data-theme="classic"] .bg-\[\#0a0a0a\] { background-color: #070B14 !important; }
+html[data-theme="classic"] .bg-\[\#0f0f0f\] { background-color: #0C1322 !important; }
+html[data-theme="classic"] .bg-\[\#141414\] { background-color: #111C33 !important; }
+html[data-theme="classic"] .bg-\[\#1f1f1f\] { background-color: #17233D !important; }
 html[data-theme="classic"] .bg-\[\#050913\],
 html[data-theme="classic"] .bg-\[\#050913\]\/90,
 html[data-theme="classic"] .bg-\[\#0B1220\],
-html[data-theme="classic"] .bg-\[\#0B1220\]\/80 { background-color: #0F172A !important; }
+html[data-theme="classic"] .bg-\[\#0B1220\]\/80 { background-color: #0C1322 !important; }
 html[data-theme="classic"] .bg-slate-950,
 html[data-theme="classic"] .bg-slate-950\/90,
 html[data-theme="classic"] .bg-slate-950\/80,
-html[data-theme="classic"] .bg-slate-950\/60 { background-color: #0B1220 !important; }
-html[data-theme="classic"] .border-\[\#1a1a1a\] { border-color: #1E293B !important; }
-html[data-theme="classic"] .border-\[\#2a2a2a\] { border-color: #334155 !important; }
+html[data-theme="classic"] .bg-slate-950\/60 { background-color: #070B14 !important; }
+html[data-theme="classic"] .border-\[\#1a1a1a\] { border-color: #17233D !important; }
+html[data-theme="classic"] .border-\[\#2a2a2a\] { border-color: #1E283D !important; }
 html[data-theme="classic"] .text-\[\#e4e4e4\] { color: #F8FAFC !important; }
-html[data-theme="classic"] .text-\[\#6b7280\] { color: #94A3B8 !important; }
-html[data-theme="classic"] .text-\[\#404040\] { color: #64748B !important; }
-html[data-theme="classic"] .hover\:bg-\[\#141414\]:hover { background-color: #1E293B !important; }
-html[data-theme="classic"] .hover\:bg-\[\#1f1f1f\]:hover { background-color: #334155 !important; }
-html[data-theme="classic"] .hover\:border-\[\#2a2a2a\]:hover { border-color: #475569 !important; }
+html[data-theme="classic"] .text-\[\#6b7280\] { color: #8EA0BD !important; }
+html[data-theme="classic"] .text-\[\#404040\] { color: #4B5B75 !important; }
+html[data-theme="classic"] .hover\:bg-\[\#141414\]:hover { background-color: #111C33 !important; }
+html[data-theme="classic"] .hover\:bg-\[\#1f1f1f\]:hover { background-color: #17233D !important; }
+html[data-theme="classic"] .hover\:border-\[\#2a2a2a\]:hover { border-color: #2E3D59 !important; }
+
+/* Status Metric (KPI) Cards in Classic Mode */
+html[data-theme="classic"] .stat-card {
+  background: #0C1322 !important;
+  border-radius: 12px !important;
+  border-left-width: 1px !important;
+  transition: all 0.2s ease;
+}
+html[data-theme="classic"] .stat-card:hover {
+  transform: translateY(-1px);
+}
+
+html[data-theme="classic"] .stat-card-TOTAL {
+  border-color: #1E283D !important;
+}
+html[data-theme="classic"] .stat-card-TOTAL .stat-count {
+  color: #F8FAFC !important;
+}
+
+html[data-theme="classic"] .stat-card-AVAILABLE {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-AVAILABLE:hover {
+  border-color: rgba(16, 185, 129, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(16, 185, 129, 0.2);
+}
+html[data-theme="classic"] .stat-card-AVAILABLE .stat-count {
+  color: #00E599 !important;
+  text-shadow: 0 0 12px rgba(0, 229, 153, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-RUNNING {
+  border-color: rgba(0, 144, 255, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-RUNNING:hover {
+  border-color: rgba(0, 144, 255, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(0, 144, 255, 0.2);
+}
+html[data-theme="classic"] .stat-card-RUNNING .stat-count {
+  color: #38BDF8 !important;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-CLEANING {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-CLEANING:hover {
+  border-color: rgba(245, 158, 11, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(245, 158, 11, 0.2);
+}
+html[data-theme="classic"] .stat-card-CLEANING .stat-count {
+  color: #FBBF24 !important;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-POLISHING {
+  border-color: rgba(168, 85, 247, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-POLISHING:hover {
+  border-color: rgba(168, 85, 247, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(168, 85, 247, 0.2);
+}
+html[data-theme="classic"] .stat-card-POLISHING .stat-count {
+  color: #C084FC !important;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-DAMAGED {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-DAMAGED:hover {
+  border-color: rgba(239, 68, 68, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(239, 68, 68, 0.2);
+}
+html[data-theme="classic"] .stat-card-DAMAGED .stat-count {
+  color: #F87171 !important;
+  text-shadow: 0 0 12px rgba(248, 113, 113, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-MISSING {
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-MISSING:hover {
+  border-color: rgba(248, 113, 113, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(248, 113, 113, 0.2);
+}
+html[data-theme="classic"] .stat-card-MISSING .stat-count {
+  color: #F87171 !important;
+  text-shadow: 0 0 12px rgba(248, 113, 113, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-MAINTENANCE {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-MAINTENANCE:hover {
+  border-color: rgba(59, 130, 246, 0.8) !important;
+  box-shadow: 0 0 16px -2px rgba(59, 130, 246, 0.2);
+}
+html[data-theme="classic"] .stat-card-MAINTENANCE .stat-count {
+  color: #60A5FA !important;
+  text-shadow: 0 0 12px rgba(96, 165, 250, 0.25);
+}
+
+html[data-theme="classic"] .stat-card-SCRAPPED {
+  border-color: rgba(100, 116, 139, 0.4) !important;
+}
+html[data-theme="classic"] .stat-card-SCRAPPED .stat-count {
+  color: #94A3B8 !important;
+}
+
+/* Glass and Input Overrides in Classic */
 html[data-theme="classic"] .glass-panel,
-html[data-theme="classic"] .glass-card { background: #0F172A; border-color: #1E293B; }
-html[data-theme="classic"] .glass-input { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] .glass-card {
+  background: #0C1322;
+  border-color: #17233D;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+}
+html[data-theme="classic"] .glass-input {
+  background: #070B14 !important;
+  border-color: #1E283D !important;
+  border-radius: 8px !important;
+  color: #F8FAFC !important;
+}
+html[data-theme="classic"] .glass-input:focus {
+  border-color: #0090FF !important;
+  box-shadow: 0 0 0 3px rgba(0, 144, 255, 0.15) !important;
+}
+
+/* Header & Nav in Classic */
+html[data-theme="classic"] nav {
+  background-color: #070B14 !important;
+  border-bottom: 1px solid #17233D !important;
+}
+html[data-theme="classic"] .nav-pill-active {
+  background-color: #17233D !important;
+  color: #F8FAFC !important;
+  border-radius: 8px !important;
+}
+
+/* Tables & Activity Feed */
+html[data-theme="classic"] tr {
+  border-bottom: 1px solid #17233D;
+}
+html[data-theme="classic"] tbody tr:hover {
+  background-color: #111C33 !important;
+}
+html[data-theme="classic"] th {
+  color: #8EA0BD !important;
+  border-bottom: 1px solid #1E283D;
+  font-weight: 600;
+}
 
 /* Tool / WDC panel and card styling for Classic mode */
-html[data-theme="classic"] .wdc-panel { background: #0F172A !important; border-color: #1E293B !important; }
+html[data-theme="classic"] .wdc-panel { background: #0C1322 !important; border-color: #17233D !important; border-radius: 12px !important; }
 html[data-theme="classic"] .wdc-input,
-html[data-theme="classic"] .wdc-textarea { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
-html[data-theme="classic"] .wdc-btn { background: #1E293B !important; border-color: #334155 !important; color: #F8FAFC !important; }
-html[data-theme="classic"] .wdc-btn:hover { background: #334155 !important; }
-html[data-theme="classic"] .wdc-btn-secondary { background: #1E293B !important; color: #94A3B8 !important; border-color: #334155 !important; }
-html[data-theme="classic"] .wdc-btn-secondary:hover { background: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="classic"] .wdc-textarea { background: #070B14 !important; border-color: #1E283D !important; color: #F8FAFC !important; border-radius: 8px !important; }
+html[data-theme="classic"] .wdc-btn { background: #111C33 !important; border-color: #1E283D !important; color: #F8FAFC !important; border-radius: 8px !important; }
+html[data-theme="classic"] .wdc-btn:hover { background: #17233D !important; border-color: #2E3D59 !important; }
+html[data-theme="classic"] .wdc-btn-secondary { background: #111C33 !important; color: #94A3B8 !important; border-color: #1E283D !important; border-radius: 8px !important; }
+html[data-theme="classic"] .wdc-btn-secondary:hover { background: #17233D !important; color: #F8FAFC !important; }
 html[data-theme="classic"] .wdc-btn-ghost { background: transparent !important; color: #94A3B8 !important; border-color: transparent !important; }
-html[data-theme="classic"] .wdc-btn-ghost:hover { background: #1E293B !important; color: #F8FAFC !important; border-color: #334155 !important; }
+html[data-theme="classic"] .wdc-btn-ghost:hover { background: #111C33 !important; color: #F8FAFC !important; border-color: #1E283D !important; border-radius: 8px !important; }
 html[data-theme="classic"] .wdc-label,
-html[data-theme="classic"] .wdc-body-text { color: #94A3B8 !important; }
-html[data-theme="classic"] .wdc-section-title { color: #F8FAFC !important; }
-html[data-theme="classic"] ::-webkit-scrollbar-track { background: #0B1220; }
-html[data-theme="classic"] ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
-html[data-theme="classic"] ::-webkit-scrollbar-thumb:hover { background: #334155; }
+html[data-theme="classic"] .wdc-body-text { color: #8EA0BD !important; }
+html[data-theme="classic"] .wdc-section-title { color: #F8FAFC !important; font-weight: 700; }
+html[data-theme="classic"] ::-webkit-scrollbar-track { background: #070B14; }
+html[data-theme="classic"] ::-webkit-scrollbar-thumb { background: #17233D; border-radius: 4px; }
+html[data-theme="classic"] ::-webkit-scrollbar-thumb:hover { background: #26375A; }
 
 /* ==========================================================================
    PRECISION INDUSTRIAL LIGHT THEME (Clean Slate • Vibrant Accents)

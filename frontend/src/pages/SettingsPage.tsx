@@ -770,7 +770,7 @@ export function SettingsPage() {
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-[#e4e4e4] uppercase">Classic Slate</h3>
-                        <span className="text-[10px] text-[#6b7280]">Industrial Modern • Sans-Serif</span>
+                        <span className="text-[10px] text-[#6b7280]">Vibrant Midnight • Modern Sans-Serif</span>
                       </div>
                     </div>
                     {theme === 'classic' && (
@@ -781,19 +781,19 @@ export function SettingsPage() {
                   </div>
 
                   {/* Live Preview Miniature */}
-                  <div className="bg-[#0B1220] border border-[#1E293B] rounded-md p-2.5 mb-3 font-sans text-[10px] space-y-1.5">
-                    <div className="flex justify-between items-center border-b border-[#1E293B] pb-1 text-[#94A3B8]">
-                      <span className="text-[#38BDF8] font-bold">Die Telemetry</span>
+                  <div className="bg-[#070B14] border border-[#17233D] rounded-md p-2.5 mb-3 font-sans text-[10px] space-y-1.5">
+                    <div className="flex justify-between items-center border-b border-[#17233D] pb-1 text-[#8EA0BD]">
+                      <span className="text-[#0090FF] font-bold">Die Telemetry</span>
                       <span className="text-[#F8FAFC]">2.500 mm</span>
                     </div>
-                    <div className="flex justify-between text-[#94A3B8]">
+                    <div className="flex justify-between text-[#8EA0BD]">
                       <span>Status:</span>
-                      <span className="text-[#34D399]">Available</span>
+                      <span className="text-[#00E599] font-semibold">Available ▲</span>
                     </div>
                   </div>
 
                   <p className="text-[11px] text-[#6b7280] leading-relaxed mb-3">
-                    Deep navy #0B1220 slate canvas with #0F172A cards, rounded corners, clean sans-serif typography, and softer blue accents.
+                    Deep midnight #070B14 canvas with #0C1322 cards, rounded geometry, vibrant status cards with glowing borders, and clean geometric sans-serif typography.
                   </p>
 
                   {canChangeTheme && (

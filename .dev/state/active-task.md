@@ -7,20 +7,21 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Die Set Planner Modernization & Architecture Redesign
+**Task:** Classic Slate Theme Modernization & Colorful UI Enhancement
 **Status:** Complete
-**Started:** 2026-08-23
-**Completed:** 2026-08-23
+**Started:** 2026-08-25
+**Completed:** 2026-08-25
 **Confidence:** 100%
 
 ## Task Description
-Redesigned the Die Set Planner from a 2,453-line monolith into a modular, high-performance engineering suite:
-1. **Component Decomposition**: Split into clean single-responsibility components (`CapacityPlannerTab`, `LiveMachineStockTab`, `RecountSheetsTab`, `EditRecountModal`, `ViewRecountModal`, `ManageMachinesModal`, `BottleneckChart`, `InputCard`, `HeroCapacityCard`), reducing `DieSetPlannerPage.tsx` from 2,453 to ~220 lines.
-2. **Capacity Planner Workspace**: Multi-source stock ingestion (DMS database, live enamel machine allocations, submitted audit sheets), preset series buttons (Standard Enamel, Fine Wire, Medium Wire, Heavy Gauge), interactive bottleneck deficit bar chart, per-die breakdown tables with status filtering (**All**, **Bottleneck**, **Missing**, **OK**), size search, CSV export, and clipboard copy.
-3. **Live Machine Allocation Stock**: Real-time physical die tracking per enamel machine line with instant one-click capacity simulation in the planner.
-4. **Monthly Stocktake & Recount Sheets**: Spreadsheet-grade audit sheet creation with drag-and-drop Excel/CSV import, template generator, local draft persistence in `localStorage`, baseline prefill, and discrepancy reporting.
-5. **Theme & Architecture Unification**: Full alignment with DMS-O2 design tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-border)`, `var(--color-text)`, `var(--color-muted)`), animated Framer Motion transitions.
-6. **Verification**: 69/69 Vitest unit tests passing, clean Vite production build, container rebuilt and healthy.
+Modernized the **Classic** theme (`html[data-theme="classic"]`) to match the visual design in `docs/assets/dms-screenshot.png`:
+1. **Typography**: Added Google Fonts `Plus Jakarta Sans` and `Inter` with modern geometric weights.
+2. **Deep Midnight Canvas**: Configured deep midnight canvas (`#070B14`) and navy card surfaces (`#0C1322` / `#111C33`).
+3. **Vibrant Status KPI Cards**: Colored glowing borders for all die status types, vibrant metric counts, rounded-xl cards, and trend delta pill badges (`▲ 1245`).
+4. **Interactive Status Donut Chart**: Updated vibrant SVG segments and clean legend with circular status indicators.
+5. **Dashboard Panels**: Redesigned "Find a Die" search card, added colored status dots to the activity feed, and integrated footer quick links.
+6. **Dual-Theme Integrity**: Monospace Dark Terminal (Bloomberg) and Light themes remain completely untouched.
+7. **Verification**: 69/69 Vitest unit tests passed, TypeScript check 0 errors, Vite production build succeeded, and all 10 Docker containers running and healthy.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
