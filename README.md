@@ -26,6 +26,10 @@
 ---
 
 <p align="center">
+  <img src="docs/assets/dms-screenshot-2.png" alt="DMS-O2 Modern Dashboard" width="100%">
+</p>
+
+<p align="center">
   <strong>DMS-O2</strong> tracks precision drawing dies, machine allocations, and monthly inventory counts across manufacturing shop floors.
 </p>
 
