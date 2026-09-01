@@ -1,5 +1,12 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-01 Windows Setup Script Winget Error Handling & OpenSSL Discovery
+*   **Fix**: Resolved PowerShell terminating exception (`ApplicationFailedException` / `ResourceUnavailable`) in `setup.ps1` when Windows App Execution Alias for `winget.exe` is inaccessible or restricted:
+    *   **Winget Invocation Guard**: Wrapped the `mkcert` install command in a `try/catch` block to handle failed winget executions and proceed to the OpenSSL fallback without terminating the script.
+    *   **OpenSSL Discovery Scope**: Moved `$opensslBin` detection prior to the certificate generation conditional branch to guarantee path availability for both server and client certificate generation.
+*   **Affected Modules**: `scripts`
+*   **Testing Performed**: Verified `setup.ps1` AST parsing (0 errors), tested fallback certificate generation with Git OpenSSL (`exit 0`), and verified successful startup across all 10 Docker containers.
+
 ### 2026-09-01 Windows Setup Automation Launcher & Execution Policy Auto-Bypass
 *   **Feature / Improvement**: Streamlined the Windows setup and certificate generation workflow to eliminate execution policy blocks and manual setup friction:
     *   **Root `setup.bat` Launcher**: Created [`setup.bat`](file:///setup.bat) enabling 1-click execution from Windows Explorer or command line, automatically launching PowerShell with `-NoProfile -ExecutionPolicy Bypass`.

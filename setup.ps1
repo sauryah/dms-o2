@@ -26,11 +26,15 @@ if (-not (Get-Command mkcert -ErrorAction SilentlyContinue)) {
     if ($wingetMkcert) {
         $env:PATH += ";$wingetMkcert"
     } else {
-        Write-Host ">>> mkcert not found. Installing via winget..." -ForegroundColor Yellow
-        & winget install -e --id FiloSottile.MkCert --accept-source-agreements --accept-package-agreements 2>$null
-        $wingetMkcert = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter mkcert.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
-        if ($wingetMkcert) {
-            $env:PATH += ";$wingetMkcert"
+        try {
+            Write-Host ">>> mkcert not found. Attempting install via winget..." -ForegroundColor Yellow
+            & winget install -e --id FiloSottile.MkCert --accept-source-agreements --accept-package-agreements 2>$null
+            $wingetMkcert = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter mkcert.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
+            if ($wingetMkcert) {
+                $env:PATH += ";$wingetMkcert"
+            }
+        } catch {
+            Write-Host ">>> winget is unavailable or blocked. Setup will fallback to OpenSSL for certificates." -ForegroundColor Yellow
         }
     }
 }
@@ -84,6 +88,12 @@ if ($certsLanIp) {
     $certsDir = Join-Path $PSScriptRoot "certs"
     if (-not (Test-Path $certsDir)) { New-Item -ItemType Directory -Path $certsDir -Force | Out-Null }
     
+    $opensslBin = Get-Command openssl -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $opensslBin) {
+        if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files\Git\usr\bin\openssl.exe" }
+        elseif (Test-Path "C:\Program Files (x86)\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files (x86)\Git\usr\bin\openssl.exe" }
+    }
+
     $certPem = Join-Path $certsDir "cert.pem"
     $keyPem = Join-Path $certsDir "key.pem"
     if (Test-Path $certPem) {
@@ -113,12 +123,6 @@ if ($certsLanIp) {
     if (-not $mkcertSuccess) {
         Write-Host ">>> Application Control policy blocked mkcert or mkcert is unavailable." -ForegroundColor Yellow
         Write-Host ">>> Falling back to OpenSSL certificate generation..." -ForegroundColor Cyan
-        
-        $opensslBin = Get-Command openssl -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-        if (-not $opensslBin) {
-            if (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files\Git\usr\bin\openssl.exe" }
-            elseif (Test-Path "C:\Program Files (x86)\Git\usr\bin\openssl.exe") { $opensslBin = "C:\Program Files (x86)\Git\usr\bin\openssl.exe" }
-        }
 
         if ($opensslBin) {
             $rootCaPem = Join-Path $certsDir "rootCA.pem"
