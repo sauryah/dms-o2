@@ -1,3 +1,10 @@
+# Auto-bypass Execution Policy for current session if restricted
+try {
+    if ((Get-ExecutionPolicy -Scope Process) -ne 'Bypass' -and (Get-ExecutionPolicy -Scope Process) -ne 'Unrestricted') {
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
+
 $certsDir = Join-Path $PSScriptRoot "..\certs"
 if (-not (Test-Path $certsDir)) { New-Item -ItemType Directory -Path $certsDir -Force | Out-Null }
 

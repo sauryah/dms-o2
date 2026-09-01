@@ -1,6 +1,13 @@
 # DMS Windows Setup Automation Script
 # Run this script in PowerShell to configure and start the DMS application
 
+# Auto-bypass Execution Policy for current session if restricted
+try {
+    if ((Get-ExecutionPolicy -Scope Process) -ne 'Bypass' -and (Get-ExecutionPolicy -Scope Process) -ne 'Unrestricted') {
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
+
 # --- Configuration ---
 $MTLS_CLIENT_NAME = "lihas.dms"
 
@@ -302,6 +309,7 @@ if ($retries -eq 0) {
 
 # 5. Apply database migrations
 Write-Host ">>> Applying database migrations..."
+docker compose exec --user root django chown -R dmsuser:dmsuser /app/tmp 2>$null
 docker compose exec django python manage.py migrate
 
 # 6. Initialize Root account

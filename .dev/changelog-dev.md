@@ -1,5 +1,14 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-01 Windows Setup Automation Launcher & Execution Policy Auto-Bypass
+*   **Feature / Improvement**: Streamlined the Windows setup and certificate generation workflow to eliminate execution policy blocks and manual setup friction:
+    *   **Root `setup.bat` Launcher**: Created [`setup.bat`](file:///setup.bat) enabling 1-click execution from Windows Explorer or command line, automatically launching PowerShell with `-NoProfile -ExecutionPolicy Bypass`.
+    *   **Self-Bypassing `setup.ps1` & `scripts/generate_openssl_certs.ps1`**: Added an automatic process-scope execution policy bypass check at the top of PowerShell scripts so direct execution (`.\setup.ps1`) works without requiring administrative configuration.
+    *   **Container `/app/tmp` Ownership Hardening**: Ensured `setup.ps1` and `setup.sh` set `dmsuser:dmsuser` ownership on `/app/tmp` along with `/backups` so freshly initialized volumes avoid permission warnings on non-root container operations.
+    *   **Child Script Hardening**: Added `-NoProfile -ExecutionPolicy Bypass` to child PowerShell calls in `scripts/generate-certs.bat` and updated quickstart documentation in `README.md`.
+*   **Affected Modules**: `scripts`, `docker`, `docs`
+*   **Testing Performed**: Verified `setup.bat` execution in a restricted PowerShell environment (exit code 0, all 10 containers healthy); verified Django test suite (200/200 passed), Go test suite (all passed), and frontend Vitest suite (69/69 passed).
+
 ### 2026-08-25 Classic Slate Theme Modernization & Colorful UI Enhancement
 *   **Feature**: Modernized the **Classic** theme (`html[data-theme="classic"]`) to match modern industrial telemetry dashboards (`docs/assets/dms-screenshot.png`):
     *   **Typography**: Integrated Google Fonts `Plus Jakarta Sans` and `Inter` in `frontend/index.html` with geometric heading weights and clean sans-serif text rendering.

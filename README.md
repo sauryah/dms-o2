@@ -208,10 +208,14 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-#### Windows (PowerShell)
+#### Windows (1-Click / Terminal)
+You can double-click **`setup.bat`** or run:
+```cmd
+setup.bat
+```
+Or run directly in PowerShell (execution policy is automatically bypassed for the session):
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-./setup.ps1
+.\setup.ps1
 ```
 
 > [!TIP]
