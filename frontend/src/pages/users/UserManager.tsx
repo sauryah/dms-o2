@@ -942,6 +942,26 @@ export function UserManager() {
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
+                        id="tool-pass-optimizer"
+                        checked={authorizedToolsInput.includes('pass-optimizer')}
+                        onChange={() => {
+                          const isChecked = authorizedToolsInput.includes('pass-optimizer');
+                          setAuthorizedToolsInput(prev =>
+                            isChecked ? prev.filter(id => id !== 'pass-optimizer') : [...prev, 'pass-optimizer']
+                          );
+                        }}
+                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
+                      />
+                      <label htmlFor="tool-pass-optimizer" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
+                        Pass Assignment Optimizer
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
                         id="tool-die-set-planner"
                         checked={authorizedToolsInput.includes('die-set-planner')}
                         onChange={() => {

@@ -8,6 +8,7 @@ import {
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { useDieSetPlanner } from '../hooks/useDieSetPlanner'
 import { useApi } from '../../../hooks/useApi'
+import { useToast } from '../../../contexts/ToastContext'
 import {
   useMachineDieStocks,
   useDieInventoryRecounts,
@@ -32,6 +33,7 @@ type TabType = 'calculator' | 'live-stock' | 'recounts'
 export function DieSetPlannerPage() {
   const [activeTab, setActiveTab] = useState<TabType>('calculator')
   const { request } = useApi()
+  const { showToast } = useToast()
 
   // Planner Engine Hook
   const { result, loading, error, calculate, reset } = useDieSetPlanner()
@@ -104,23 +106,26 @@ export function DieSetPlannerPage() {
     try {
       if (editingRecount) {
         await updateRecount.mutateAsync({ id: editingRecount.id, data: payload })
+        showToast('Recount sheet updated successfully', 'success')
       } else {
         await createRecount.mutateAsync(payload)
+        showToast('Recount sheet created successfully', 'success')
       }
       setIsEditRecountOpen(false)
     } catch (err: any) {
-      alert(`Failed to save recount sheet: ${err.message || err}`)
+      showToast(`Failed to save recount sheet: ${err.message || err}`, 'error')
     }
   }
 
   const handleSubmitRecount = async (id: number) => {
     try {
       await submitRecount.mutateAsync(id)
+      showToast('Recount sheet committed to stock successfully', 'success')
       if (selectedMachineId) {
         refetchStocks()
       }
     } catch (err: any) {
-      alert(`Failed to commit recount sheet: ${err.message || err}`)
+      showToast(`Failed to commit recount sheet: ${err.message || err}`, 'error')
     }
   }
 
@@ -142,12 +147,13 @@ export function DieSetPlannerPage() {
           const formattedRows = stocks.map((s: any) => `${s.die_size}\t${s.quantity}`)
           setExternalInventory(formattedRows.join('\n'))
           setActiveTab('calculator')
+          showToast(`Loaded live stock for ${selectedMachine.name}`, 'info')
         } else {
-          alert(`No inventory stock records found for machine ${selectedMachine.name}.`)
+          showToast(`No inventory stock records found for machine ${selectedMachine.name}.`, 'info')
         }
       })
       .catch((err: any) => {
-        alert(`Failed to load stock: ${err.detail || err.message || err}`)
+        showToast(`Failed to load stock: ${err.detail || err.message || err}`, 'error')
       })
   }
 

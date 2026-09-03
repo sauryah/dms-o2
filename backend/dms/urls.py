@@ -8,7 +8,7 @@ from dies.views import DieViewSet, ImportDiesView, ImportTemplateView, ImportLog
 from users.views import (
     LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet,
     MeView, ChangePasswordView, KeepAliveView, SSETicketView, BackupViewSet,
-    EventStreamView, HealthCheckView, LivenessCheckView, ReadinessCheckView,
+    EventStreamView, HealthCheckView, DetailedHealthCheckView, LivenessCheckView, ReadinessCheckView,
     ServerInfoView, VerifyTokenView, TokenRefreshView,
     MFASetupView, MFAEnableView, MFADisableView, MFAVerifyLoginView,
 )
@@ -61,6 +61,7 @@ urlpatterns = [
     path('api/v1/import/logs/', ImportLogsView.as_view(), name='import-logs'),
     path('api/v1/events/', EventStreamView.as_view(), name='events'),
     path('api/v1/health/', HealthCheckView.as_view(), name='health'),
+    path('api/v1/health/detailed/', DetailedHealthCheckView.as_view(), name='health-detailed'),
     path('api/v1/health/liveness/', LivenessCheckView.as_view(), name='health-liveness'),
     path('api/v1/health/readiness/', ReadinessCheckView.as_view(), name='health-readiness'),
     path('api/v1/server-info/', ServerInfoView.as_view(), name='server-info'),
@@ -86,6 +87,7 @@ urlpatterns = [
     path('api/import/logs/', ImportLogsView.as_view()),
     path('api/events/', EventStreamView.as_view()),
     path('api/health/', HealthCheckView.as_view()),
+    path('api/health/detailed/', DetailedHealthCheckView.as_view()),
     path('api/health/liveness/', LivenessCheckView.as_view()),
     path('api/health/readiness/', ReadinessCheckView.as_view()),
     path('api/server-info/', ServerInfoView.as_view()),

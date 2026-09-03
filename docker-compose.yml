@@ -110,8 +110,8 @@ services:
       - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=150"
       - "traefik.http.routers.django.middlewares=api-ratelimit,api-compress"
       - "traefik.http.middlewares.api-compress.compress=true"
-      # Dedicated login route rate limiting
-      - "traefik.http.routers.django-login.rule=Path(`/api/auth/login/`)"
+      # Dedicated login & MFA route rate limiting
+      - "traefik.http.routers.django-login.rule=Path(`/api/v1/auth/login/`) || Path(`/api/auth/login/`) || Path(`/api/v1/auth/mfa/verify/`) || Path(`/api/auth/mfa/verify/`)"
       - "traefik.http.routers.django-login.entrypoints=websecure"
       - "traefik.http.routers.django-login.tls=true"
       - "traefik.http.routers.django-login.priority=60"
@@ -266,13 +266,19 @@ services:
           cpus: '0.5'
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`) || PathPrefix(`/api/events`)"
+      - "traefik.http.routers.go-api.rule=PathPrefix(`/api/go`)"
       - "traefik.http.routers.go-api.entrypoints=websecure"
       - "traefik.http.routers.go-api.tls=true"
       - "traefik.http.routers.go-api.priority=100"
       - "traefik.http.routers.go-api.middlewares=go-compress"
       - "traefik.http.services.go-api.loadbalancer.server.port=8080"
       - "traefik.http.middlewares.go-compress.compress=true"
+      # Dedicated unbuffered SSE streaming router
+      - "traefik.http.routers.go-events.rule=PathPrefix(`/api/events`)"
+      - "traefik.http.routers.go-events.entrypoints=websecure"
+      - "traefik.http.routers.go-events.tls=true"
+      - "traefik.http.routers.go-events.priority=110"
+      - "traefik.http.routers.go-events.service=go-api"
 
   meilisearch:
     image: getmeili/meilisearch:v1.7

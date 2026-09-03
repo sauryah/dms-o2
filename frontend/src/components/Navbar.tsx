@@ -4,6 +4,7 @@ import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth, useTheme, useToast, useNotifications } from '../contexts'
 import { useApi } from '../hooks/useApi'
+import { ConnectionStatusBadge } from './ConnectionStatusBadge'
 
 export function Navbar() {
   const { username, role, logout, isAuthorizedForTools, authorizedTools } = useAuth()
@@ -308,7 +309,23 @@ export function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
+            <ConnectionStatusBadge />
+
+            {username && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+                }}
+                className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] hover:border-blue-500/40 rounded-sm text-[10px] text-[#6b7280] hover:text-[#e4e4e4] transition font-mono cursor-pointer select-none"
+                title="Open Command Palette (Ctrl+K)"
+              >
+                <span>Search</span>
+                <kbd className="bg-[#0a0a0a] border border-[#2a2a2a] px-1 py-0.2 rounded-sm text-[9px] text-[#e4e4e4]">Ctrl+K</kbd>
+              </button>
+            )}
+
             {username ? (
               <div className="hidden sm:flex items-center space-x-3">
                 <div className="text-right font-mono">

@@ -699,6 +699,97 @@ class ReadinessCheckView(HealthCheckView):
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
+class DetailedHealthCheckView(APIView):
+    """
+    Detailed enterprise telemetry endpoint returning status, latency, and queue backlog.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        import time
+        from django.db import connection
+        from django.utils import timezone
+
+        now = timezone.now()
+        overall_status = "healthy"
+        status_code = status.HTTP_200_OK
+
+        checks = {}
+
+        # 1. PostgreSQL Check
+        db_start = time.perf_counter()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            db_latency = round((time.perf_counter() - db_start) * 1000, 2)
+            checks["database"] = {"status": "up", "latency_ms": db_latency}
+        except Exception as e:
+            checks["database"] = {"status": "down", "error": str(e) if settings.DEBUG else "Connection failed"}
+            overall_status = "unhealthy"
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        # 2. Redis Check
+        redis_start = time.perf_counter()
+        try:
+            broker_url = getattr(settings, 'CELERY_BROKER_URL', 'redis://redis:6379/1')
+            r = redis.Redis.from_url(broker_url)
+            r.ping()
+            redis_latency = round((time.perf_counter() - redis_start) * 1000, 2)
+            checks["redis"] = {"status": "up", "latency_ms": redis_latency}
+        except Exception as e:
+            checks["redis"] = {"status": "down", "error": str(e) if settings.DEBUG else "Connection failed"}
+            overall_status = "unhealthy"
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        # 3. Meilisearch Check
+        meili_start = time.perf_counter()
+        try:
+            from search.meili import client as meili_client
+            res = meili_client.health()
+            meili_latency = round((time.perf_counter() - meili_start) * 1000, 2)
+            if res.get('status') == 'available':
+                checks["meilisearch"] = {"status": "up", "latency_ms": meili_latency}
+            else:
+                checks["meilisearch"] = {"status": "degraded", "latency_ms": meili_latency}
+                if overall_status == "healthy":
+                    overall_status = "degraded"
+        except Exception as e:
+            checks["meilisearch"] = {"status": "down", "error": str(e) if settings.DEBUG else "Connection failed"}
+            if overall_status == "healthy":
+                overall_status = "degraded"
+
+        # 4. Outbox Backlog Check
+        outbox_info = {"pending_tasks": 0, "oldest_task_age_seconds": 0}
+        try:
+            from dies.models import OutboxTask
+            pending_qs = OutboxTask.objects.filter(processed=False).order_by('created_at')
+            pending_count = pending_qs.count()
+            oldest_age = 0
+            if pending_count > 0:
+                oldest_task = pending_qs.first()
+                if oldest_task and oldest_task.created_at:
+                    oldest_age = round((now - oldest_task.created_at).total_seconds(), 1)
+            outbox_info = {
+                "pending_tasks": pending_count,
+                "oldest_task_age_seconds": oldest_age,
+            }
+            if pending_count > 500:
+                if overall_status == "healthy":
+                    overall_status = "degraded"
+        except Exception:
+            pass
+
+        return Response({
+            "status": overall_status,
+            "timestamp": now.isoformat(),
+            "checks": checks,
+            "outbox": outbox_info,
+        }, status=status_code)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ServerInfoView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = []

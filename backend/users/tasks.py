@@ -67,3 +67,68 @@ def auto_backup_task():
     except Exception as exc:
         logger.error(f"Scheduled database backup failed: {exc}")
         return {'status': 'failed', 'error': str(exc)}
+
+
+@shared_task
+def verify_backup_restorability_task():
+    """
+    Automated disaster recovery verification task triggered by Celery Beat.
+    Verifies that the latest .dump file exists and passes pg_restore --list verification.
+    """
+    import subprocess
+    from django.conf import settings
+    from users.services.backup_service import BackupService
+    from users.models import UserActivityLog
+
+    logger.info("Starting automated backup restorability verification...")
+    backups = BackupService.list_backups()
+    if not backups:
+        logger.warning("No backup dump files found in /backups to verify.")
+        return {'status': 'skipped', 'message': 'No backups available'}
+
+    latest_backup = backups[0]
+    filename = latest_backup['filename']
+    filepath = os.path.join(BackupService.get_backup_dir(), filename)
+
+    if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
+        logger.error(f"Latest backup {filename} is empty or missing.")
+        return {'status': 'failed', 'error': 'Backup file empty or missing'}
+
+    db_host = settings.DATABASES['default']['HOST']
+    db_port = settings.DATABASES['default']['PORT']
+    db_user = settings.DATABASES['default']['USER']
+    db_password = settings.DATABASES['default']['PASSWORD']
+
+    env = os.environ.copy()
+    env['PGPASSWORD'] = db_password
+
+    cmd = [
+        'pg_restore',
+        '-h', db_host,
+        '-p', str(db_port),
+        '-U', db_user,
+        '-l',
+        filepath
+    ]
+
+    try:
+        subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+        logger.info(f"Backup {filename} passed restorability verification successfully.")
+        UserActivityLog.objects.create(
+            user=None,
+            username='system:celery-beat',
+            action='BACKUP_VERIFIED',
+            ip_address='127.0.0.1',
+            device=f"Automated pg_restore verification passed for {filename}"
+        )
+        return {'status': 'success', 'filename': filename, 'size_kb': latest_backup.get('size_kb')}
+    except Exception as exc:
+        logger.error(f"Backup restorability verification failed for {filename}: {exc}")
+        UserActivityLog.objects.create(
+            user=None,
+            username='system:celery-beat',
+            action='BACKUP_VERIFY_FAILED',
+            ip_address='127.0.0.1',
+            device=f"Automated pg_restore verification failed for {filename}: {exc}"
+        )
+        return {'status': 'failed', 'filename': filename, 'error': str(exc)}

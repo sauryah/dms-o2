@@ -1,5 +1,33 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-03 Goal & Loop-Oriented Enterprise System Modernization (Loops 1-5)
+*   **Loop 1 — Security & API Ingress Hardening**:
+    *   Implemented `DetailedHealthCheckView` (`/api/v1/health/detailed/` and `/api/health/detailed/`) delivering database latency, Redis latency, Meilisearch latency, and OutboxTask queue telemetry (pending tasks count & oldest uncommitted task age).
+    *   Added automated unit test coverage in `backend/users/tests/test_health.py` validating 200/503 health reporting and latency checks.
+*   **Loop 2 — Database Performance & Composite Indexing**:
+    *   Added safe composite indexes on `(status, die_type)` (`die_status_type_idx`) and `(rack_id, shelf_number)` (`die_rack_shelf_idx`) to `Die.Meta.indexes` in `backend/dies/models.py`.
+    *   Applied Django migration `0015_add_composite_performance_indexes.py` cleanly to Postgres.
+*   **Loop 3 — Plant-Floor Operator UI & SSE Telemetry**:
+    *   Created `frontend/src/components/CommandPalette.tsx` featuring `Ctrl+K` modal trigger, debounced Go search integration (`/api/go/search?q=...`), instant navigation across all 6 engineering tools, direct die status updates, and theme toggling.
+    *   Created `frontend/src/components/ConnectionStatusBadge.tsx` displaying live SSE status (`LIVE`, `SYNCING`, `OFFLINE`).
+    *   Integrated `<ConnectionStatusBadge />` and `[Ctrl+K]` quick launcher in `frontend/src/components/Navbar.tsx`.
+*   **Loop 4 — Automated Disaster Recovery & Integrity Auditing**:
+    *   Implemented `verify_backup_restorability_task` in `backend/users/tasks.py` running automated `pg_restore -l` table-of-contents validation against the latest backup dump, logging success/failure to `UserActivityLog`.
+    *   Scheduled `verify_backup_restorability_task` in `CELERY_BEAT_SCHEDULE` daily at 02:30 AM in `backend/dms/settings.py`.
+    *   Created cross-platform `scripts/dependency-auditor.ps1` for host vulnerability scanning.
+*   **Loop 5 — Full System Integration, Convergence & Documentation**:
+    *   100% full regression pass across all 3 stacks: 203/203 Django tests green (81.5s), 9/9 Go packages green (33.2s), 22/22 frontend test files (72/72 tests) green (7.6s), TypeScript 0 errors, Vite production build clean.
+*   **Affected Modules**: `backend`, `frontend`, `database`, `celery`, `search`, `docker`, `docs`
+*   **Testing Performed**: Full regression suites across all 10 containers passed with 0 errors.
+
+### 2026-09-03 Enterprise Codebase Analysis, Security Rate Limit & Permissions Hardening
+*   **Security & Architecture Hardening**:
+    *   **Traefik Ingress Rate Limiting (P0)**: Expanded dedicated login rate limiting router rule in `docker-compose.yml` and `docker-compose.prod.yml` to strictly enforce rate limits (5 req/min, burst 10) on both `/api/v1/auth/login/`, `/api/auth/login/`, `/api/v1/auth/mfa/verify/`, and `/api/auth/mfa/verify/`.
+    *   **User Permission Matrix Alignment (P1)**: Added `pass-optimizer` (TOOL-04 Pass Assignment Optimizer) into `frontend/src/pages/users/UserManager.tsx` permission tree and `frontend/src/contexts/AuthContext.tsx` default tool lists so administrators can license and grant access to operator accounts.
+    *   **UX & Non-blocking Notifications (P2)**: Replaced browser native `alert(...)` popups with `showToast(...)` across `frontend/src/features/die-set-planner/components/DieSetPlannerPage.tsx`.
+*   **Affected Modules**: `docker`, `frontend`, `security`
+*   **Testing Performed**: All 200 Django tests passed (73.7s); Go API test suites passed 100% green; Vitest suite (69/69 tests) passed; TypeScript check 0 errors; Vite production build completed cleanly in 11.0s.
+
 ### 2026-09-01 Windows Setup Script Winget Error Handling & OpenSSL Discovery
 *   **Fix**: Resolved PowerShell terminating exception (`ApplicationFailedException` / `ResourceUnavailable`) in `setup.ps1` when Windows App Execution Alias for `winget.exe` is inaccessible or restricted:
     *   **Winget Invocation Guard**: Wrapped the `mkcert` install command in a `try/catch` block to handle failed winget executions and proceed to the OpenSSL fallback without terminating the script.

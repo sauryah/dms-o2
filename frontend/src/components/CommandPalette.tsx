@@ -71,12 +71,52 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         perform: () => { navigate('/'); onClose() }
       },
       {
+        id: 'nav-tools',
+        title: 'GO TO ENGINEERING TOOLBOX',
+        subtitle: 'Access all mathematical models, draft optimizers, and solvers',
+        category: 'Navigation',
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
+        perform: () => { navigate('/tools'); onClose() }
+      },
+      {
+        id: 'nav-sizing-calculator',
+        title: 'GO TO SIZING & ELONGATION CALCULATOR',
+        subtitle: 'Forward and backward pass sizing for round and flat dies',
+        category: 'Navigation',
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
+        perform: () => { navigate('/calculator'); onClose() }
+      },
+      {
         id: 'nav-wire-drawing-calculator',
         title: 'GO TO WIRE DRAWING CALCULATOR',
         subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
         category: 'Navigation',
         icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/wire-drawing-calculator'); onClose() }
+      },
+      {
+        id: 'nav-die-series-generator',
+        title: 'GO TO DIE SERIES GENERATOR',
+        subtitle: 'Auto-generate reduction steps from target diameter or pass counts',
+        category: 'Navigation',
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
+        perform: () => { navigate('/die-series-generator'); onClose() }
+      },
+      {
+        id: 'nav-pass-optimizer',
+        title: 'GO TO PASS ASSIGNMENT OPTIMIZER',
+        subtitle: 'Optimal stock die assignment with stress and central burst detection',
+        category: 'Navigation',
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
+        perform: () => { navigate('/pass-optimizer'); onClose() }
+      },
+      {
+        id: 'nav-die-set-planner',
+        title: 'GO TO DIE SET PLANNER',
+        subtitle: 'Operational capacity planning, live stock allocation, and monthly recounts',
+        category: 'Navigation',
+        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
+        perform: () => { navigate('/die-set-planner'); onClose() }
       },
       {
         id: 'nav-inventory',

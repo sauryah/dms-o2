@@ -70,9 +70,14 @@ export function useRealtimeSync(options: {
 
         eventSource = new EventSource(`/api/events/?ticket=${encodeURIComponent(ticket)}`)
 
+        eventSource.onopen = () => {
+          window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'connected' } }))
+        }
+
         eventSource.onmessage = (event) => {
           reconnectDelay = 1000
           consecutiveFailures = 0
+          window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'connected' } }))
           try {
             const payload = JSON.parse(event.data)
 
@@ -98,58 +103,48 @@ export function useRealtimeSync(options: {
               } else if (payload.data?.action === 'save') {
                 request(`/api/dies/${payload.data.id}/`)
                   .then(die => {
-                    let locationMsg = ''
-                    if (die.set_name) {
-                      locationMsg = ` on Set ${die.set_name} (${die.machine_name || 'no machine'})`
-                    } else if (die.rack_name && die.shelf) {
-                      locationMsg = ` in ${die.rack_name} - Shelf ${die.shelf}`
+                    if (die) {
+                      const msg = `Die ${die.die_id} updated.`
+                      options.onShowToast(msg, 'info')
+                      options.onAddNotification('Die Updated', msg, 'info')
+                      options.onAnnounce(msg)
                     }
-                    const msg = `Die ${die.die_id} is now ${die.status}${locationMsg}.`
-                    options.onShowToast(msg, 'info')
-                    options.onAddNotification('Die Updated', msg, 'info')
-                    options.onAnnounce(msg)
                   })
-                  .catch(() => {
-                    const msg = `Die ${payload.data.id} was updated.`
-                    options.onShowToast(msg, 'info')
-                    options.onAddNotification('Die Updated', msg, 'info')
-                    options.onAnnounce(msg)
-                  })
+                  .catch(err => console.error(err))
               }
             } else if (payload.type === SET_UPDATE_EVENT) {
-              const msg = 'Die sets have been updated.'
+              const msg = `Set ${payload.data?.id || ''} updated.`
               options.onShowToast(msg, 'info')
-              options.onAddNotification('Die Sets Updated', msg, 'info')
+              options.onAddNotification('Set Updated', msg, 'info')
               options.onAnnounce(msg)
             } else if (payload.type === MACHINE_UPDATE_EVENT) {
-              const msg = 'Machine configurations have been updated.'
+              const msg = `Machine ${payload.data?.id || ''} updated.`
               options.onShowToast(msg, 'info')
-              options.onAddNotification('Machines Updated', msg, 'info')
+              options.onAddNotification('Machine Updated', msg, 'info')
               options.onAnnounce(msg)
             } else if (payload.type === BACKUP_UPDATE_EVENT) {
               const action = payload.data?.action
-              const filename = payload.data?.filename || ''
-              if (action === 'backup') {
-                const msg = `Database backup "${filename}" created successfully.`
-                options.onShowToast(msg, 'success')
-                options.onAddNotification('Backup Created', msg, 'success')
-                options.onAnnounce(msg)
-              } else if (action === 'restore') {
-                const msg = `Database restore from "${filename}" executed successfully.`
-                options.onShowToast(msg, 'success')
-                options.onAddNotification('System Restored', msg, 'success')
-                options.onAnnounce(msg)
-                options.onRebuildDetected?.()
-              } else if (action === 'delete') {
-                const msg = `Backup "${filename}" deleted.`
+              if (action === 'delete') {
+                const msg = `Backup ${payload.data.filename} deleted.`
                 options.onShowToast(msg, 'info')
                 options.onAddNotification('Backup Deleted', msg, 'info')
                 options.onAnnounce(msg)
               } else if (action === 'upload') {
-                const msg = `Backup "${filename}" uploaded successfully.`
+                const msg = `Backup ${payload.data.filename} uploaded.`
                 options.onShowToast(msg, 'success')
                 options.onAddNotification('Backup Uploaded', msg, 'success')
                 options.onAnnounce(msg)
+              } else if (action === 'backup') {
+                const msg = `Database backup "${payload.data?.filename || ''}" created successfully.`
+                options.onShowToast(msg, 'success')
+                options.onAddNotification('Backup Created', msg, 'success')
+                options.onAnnounce(msg)
+              } else if (action === 'restore') {
+                const msg = `Database restore from "${payload.data?.filename || ''}" executed successfully.`
+                options.onShowToast(msg, 'success')
+                options.onAddNotification('System Restored', msg, 'success')
+                options.onAnnounce(msg)
+                options.onRebuildDetected?.()
               }
             } else if (payload.type === RECOUNT_UPDATE_EVENT) {
               const action = payload.data?.action
@@ -177,6 +172,7 @@ export function useRealtimeSync(options: {
 
         eventSource.onerror = () => {
           consecutiveFailures++
+          window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'reconnecting' } }))
           if (consecutiveFailures === 1) {
             console.warn('EventSource connection lost. Retrying...')
           }
@@ -188,6 +184,7 @@ export function useRealtimeSync(options: {
         }
       } catch (e) {
         consecutiveFailures++
+        window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'disconnected' } }))
         console.warn('Failed to establish SSE ticket connection:', e)
         scheduleReconnect()
       }
@@ -198,6 +195,7 @@ export function useRealtimeSync(options: {
     return () => {
       isCancelled = true
       consecutiveFailures = MAX_RECONNECT_ATTEMPTS
+      window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'disconnected' } }))
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
       }

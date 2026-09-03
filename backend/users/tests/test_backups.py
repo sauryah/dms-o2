@@ -79,3 +79,20 @@ class BackupTests(APITestCase):
 
         # Verify the Celery task was scheduled asynchronously
         mock_delay.assert_called_once()
+
+    @patch('subprocess.run')
+    @patch('os.path.getsize')
+    @patch('os.path.exists')
+    @patch('users.services.backup_service.BackupService.list_backups')
+    def test_verify_backup_restorability_task_success(self, mock_list, mock_exists, mock_getsize, mock_run):
+        from users.tasks import verify_backup_restorability_task
+
+        mock_list.return_value = [{'filename': 'dms_backup_test.dump', 'size_kb': 1024, 'created_at': 1700000000}]
+        mock_exists.return_value = True
+        mock_getsize.return_value = 1048576
+        mock_run.return_value = MagicMock(returncode=0)
+
+        result = verify_backup_restorability_task()
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['filename'], 'dms_backup_test.dump')
+

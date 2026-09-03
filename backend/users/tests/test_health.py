@@ -54,9 +54,40 @@ class HealthCheckTests(APITestCase):
     def test_health_check_redis_unhealthy(self, mock_ping):
         # Mock Redis ping to fail
         mock_ping.side_effect = Exception("Redis connection refused")
-
         response = self.client.get(self.health_url)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(response.data['status'], 'unhealthy')
         self.assertEqual(response.data['database'], 'up')
         self.assertIn('down', response.data['redis'])
+
+
+class DetailedHealthCheckTests(APITestCase):
+    def setUp(self):
+        self.detailed_health_url = reverse('health-detailed')
+
+    @patch('redis.Redis.ping')
+    def test_detailed_health_check_healthy(self, mock_ping):
+        mock_ping.return_value = True
+
+        response = self.client.get(self.detailed_health_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('status', response.data)
+        self.assertIn('timestamp', response.data)
+        self.assertIn('checks', response.data)
+        self.assertIn('database', response.data['checks'])
+        self.assertIn('redis', response.data['checks'])
+        self.assertIn('outbox', response.data)
+        self.assertEqual(response.data['checks']['database']['status'], 'up')
+        self.assertEqual(response.data['checks']['redis']['status'], 'up')
+        self.assertIn('pending_tasks', response.data['outbox'])
+        self.assertIn('oldest_task_age_seconds', response.data['outbox'])
+
+    @patch('redis.Redis.ping')
+    def test_detailed_health_check_redis_unhealthy(self, mock_ping):
+        mock_ping.side_effect = Exception("Redis connection refused")
+
+        response = self.client.get(self.detailed_health_url)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.data['status'], 'unhealthy')
+        self.assertEqual(response.data['checks']['redis']['status'], 'down')
+

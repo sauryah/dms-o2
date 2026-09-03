@@ -21,6 +21,8 @@ class Die(models.Model):
             models.Index(fields=['status']),
             models.Index(fields=['die_type']),
             models.Index(fields=['die_type', 'status']),
+            models.Index(fields=['status', 'die_type'], name='die_status_type_idx'),
+            models.Index(fields=['rack', 'shelf_number'], name='die_rack_shelf_idx'),
             GinIndex(name='die_casing_trgm_idx', fields=['casing'], opclasses=['gin_trgm_ops']),
         ]
 
