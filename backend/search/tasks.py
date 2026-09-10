@@ -413,15 +413,15 @@ def process_outbox_task(self):
                     except Exception as sub_exc:
                         logger.error(f"Failed individual fallback delete task {t.id}: {sub_exc}")
 
-    # Process SYNC_DIE tasks in batches of 100
+    # Process SYNC_DIE tasks in batches of 250
     if sync_tasks:
-        batch_size = 100
+        batch_size = 250
         for i in range(0, len(sync_tasks), batch_size):
             chunk_tasks = sync_tasks[i:i+batch_size]
             die_ids = [t.payload.get('die_id') for t in chunk_tasks if t.payload.get('die_id')]
             
             try:
-                dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie').filter(id__in=die_ids)
+                dies = Die.objects.select_related('current_set__machine', 'rounddie', 'flatdie', 'rack').filter(id__in=die_ids)
                 docs = []
                 for die in dies:
                     docs.append(die_to_meili_document(die))
