@@ -761,25 +761,30 @@ class DetailedHealthCheckView(APIView):
                 overall_status = "degraded"
 
         # 4. Outbox Backlog Check
-        outbox_info = {"pending_tasks": 0, "oldest_task_age_seconds": 0}
+        outbox_info = {"pending_tasks": 0, "oldest_task_age_seconds": 0, "dead_letter_tasks": 0}
         try:
             from dies.models import OutboxTask
-            pending_qs = OutboxTask.objects.filter(processed=False).order_by('created_at')
+            pending_qs = OutboxTask.objects.filter(is_processed=False).order_by('created_at')
             pending_count = pending_qs.count()
             oldest_age = 0
             if pending_count > 0:
                 oldest_task = pending_qs.first()
                 if oldest_task and oldest_task.created_at:
                     oldest_age = round((now - oldest_task.created_at).total_seconds(), 1)
+            
+            # Dead letter: unprocessed tasks older than 1 hour or missing payload hash
+            dead_letter_count = OutboxTask.objects.filter(is_processed=False, payload_hash='').count()
+            
             outbox_info = {
                 "pending_tasks": pending_count,
                 "oldest_task_age_seconds": oldest_age,
+                "dead_letter_tasks": dead_letter_count,
             }
             if pending_count > 500:
                 if overall_status == "healthy":
                     overall_status = "degraded"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Outbox health check failed: {e}")
 
         return Response({
             "status": overall_status,
