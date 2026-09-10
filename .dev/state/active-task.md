@@ -7,19 +7,20 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Decommission Pass Assignment Optimizer
+**Task:** Replace TOTP 2FA with Single-Use Backup Codes Authentication
 **Status:** Complete
 **Started:** 2026-09-10
 **Completed:** 2026-09-10
 **Confidence:** 100%
 
 ## Task Description
-Decommissioned and cleanly removed Pass Assignment Optimizer (`pass-optimizer`, `/pass-optimizer`):
-1. Removed `frontend/src/features/pass-optimizer/` (`PassOptimizerPage.tsx`, `usePassOptimizer.ts`, `types.ts`).
-2. Removed Go route `POST /api/go/tools/optimize-passes` and handler `HandleOptimizePasses` along with unused schemas and physics helpers.
-3. Streamlined engineering toolbox to the 2 core industrial tools: TOOL-01 (Wire Drawing Elongation Calculator) and TOOL-02 (Die Series Generator).
-4. Updated AuthContext, UserManager, Navbar, CommandPalette, and ToolsPage.
-5. Verified 100% test pass (Vitest 21/21 test files, 54/54 tests green, tsc 0 errors, Vite production build clean).
+Replaced RFC 6238 TOTP authenticator app flow with 10 Single-Use Backup / Recovery Codes across backend Django models, authentication endpoints, test suites, and React frontend:
+1. Created `UserBackupCode` model with SHA-256 hashed code storage, single-use invalidation, and migration.
+2. Implemented `/api/v1/auth/backup-codes/generate/`, `/verify/`, `/disable/`, and `/status/` views with rate limiting and password confirmation.
+3. Updated `LoginPage.tsx` with formatted backup recovery code challenge input (`XXXX-XXXX`).
+4. Replaced Section 02 in `SettingsPage.tsx` with full Backup Codes generator, copy-to-clipboard, .txt download, and disable workflows.
+5. Updated `UserManager.tsx` security badge.
+6. 100% test pass across Django (83 tests), Vitest (54 tests), TypeScript (`tsc --noEmit`), and Vite production build.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
