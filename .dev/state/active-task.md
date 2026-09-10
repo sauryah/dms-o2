@@ -7,7 +7,7 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** 3D Wire Drawing Realism & Industrial CAD Workbench
+**Task:** 3D Wire Drawing Realism & Industrial CAD Workbench (Category 1 Upgrade)
 **Status:** Complete
 **Started:** 2026-09-10
 **Completed:** 2026-09-10
@@ -16,10 +16,10 @@ Track current work item for AI sessions.
 ## Task Description
 Overhauled the 3D Workbench in the Wire Drawing Calculator (`StressHeatmap3D.tsx`) to provide complete photorealistic industrial realism for wire drawing dies, casings, materials, and CAD controls:
 1. **Industrial Die Assembly Realism**: Built true-to-life DIN 2812 standard die assemblies featuring brushed stainless/tool steel outer casings with 45° entrance and exit chamfer bevels, sintered brass/cobalt brazing seat rings, and mirror-polished Tungsten Carbide (WC) / PCD / Natural Diamond (ND) nib cores.
-2. **True 4-Zone Internal Bore Profile**: Modeled the authentic 4-zone die bore geometry: Zone 1 Bell Entrance Radius ($R_{bell}$), Zone 2 Reduction Cone ($2\alpha$), Zone 3 Parallel Sizing Bearing Land ($L_B$), Zone 4 Back Relief Exit Cone ($2\beta$), and Exit Chamfer.
-3. **Heavy Machined Die Stand & Bench**: Modeled cast iron / machined steel die boxes with socket head cap screws (hex bolts), T-slot track baseplate, and liquid lubricant catchment.
-4. **Realistic Drawn Wire & Materials**: Metallic cylindrical lighting shaders with specular top-ridge reflections and materials selector for drawn wire (Copper Cu-ETP, High-Carbon Steel AISI 1070, Aluminum Al 1350, Brass CuZn30) and die nibs (Tungsten Carbide WC-Co, PCD Diamond, Natural Diamond).
-5. **CAD Dimensions & Cross-Section Cutaway**: Authentic cutaway slice walls showing layered steel casing and carbide nib cross-sections, CAD dimension leader lines ($d_1$, $d_2$, $2\alpha$, $L_B$), and dynamic FEA stress / shear slip / wireframe modes.
+2. **Solid Turned-Steel Bullblock Pulling Drums**: Replaced previous spoked capstan wheel with heavy-duty solid turned-steel industrial bullblock drums featuring chamfered outer arbor rim, machined wire traction step, center drive axle boss with socket hex nut, and rotating index notch for smooth rotational cues.
+3. **Interactive 4-Zone Die Bore Inspector**: Modeled authentic 4-zone die bore geometry (Zone 1 Bell Entrance Radius $R_{bell}$, Zone 2 Reduction Cone $2\alpha$, Zone 3 Parallel Sizing Bearing Land $L_B$, Zone 4 Back Relief Exit Cone $2\beta$) with 3D glowing contour highlight bands, floating callout markers, and dedicated sidebar mechanics telemetry card.
+4. **Thermal Infrared FEA Heatmap (`thermal` mode)**: Modeled adiabatic plastic deformation and boundary friction heating dissipation ($\Delta T = \frac{\sigma_d \cdot \epsilon}{\rho \cdot c_p}$) from ambient ($25^\circ\text{C}$) to peak friction hot spots ($180^\circ\text{C}$) with false-color colormap on wire and bore surfaces.
+5. **1-Click ISO/DIN Technical Data Sheet (TDS) Export**: Integrated jsPDF + autotable to generate complete landscape A4 engineering drawing PDFs with embedded high-resolution 3D CAD canvas snapshots, full pass-by-pass schedules, and 4-zone tolerance breakdown.
 6. **Decoupled 60–120 FPS CAD Engine**: Replaced React state drag hooks with a mutable `cameraRef` controller eliminating all React tree re-renders on mouse movement. Implemented precomputed trigonometric lookup tables (`LUT_12`, `LUT_18`, `LUT_24`, `LUT_36`), batched single-path background grids, zero-allocation RAF animation loop with delta-time normalization, and adaptive LOD during rapid dragging.
 7. **CAD-Grade Navigation, Fullscreen & 3D Perspective Discs**: Non-passive mouse scroll wheel zoom ($25\%$ to $500\%$), middle/right/shift+left drag pan, floating CAD toolbar, focus crosshairs, 1-click fullscreen viewport mode (`F` / `Esc`), and mathematically exact 3D perspective disc projection with camera-normal backface culling.
 8. **True 3D Depth-Sorted Render Queue & Occlusion**: Implemented unified back-to-front depth-sorted polygon rendering pipeline (`renderQueue.sort((a, b) => a.depth - b.depth)`) in both `MultiPassTrainCanvas` and `SingleDieCanvas`. Wire is nested inside die casings and internal bore cavities, with cutaway slice windows, annular die face openings, and backface occlusion eliminating any optical artifact of wire floating outside die casings.
