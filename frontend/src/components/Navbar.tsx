@@ -194,7 +194,7 @@ export function Navbar() {
                     aria-expanded={showToolsDropdown}
                     aria-haspopup="true"
                     className={`px-2.5 py-1 text-xs font-medium uppercase tracking-wider transition-colors font-mono border flex items-center gap-1 cursor-pointer select-none focus-ring ${
-                      location.pathname.startsWith('/tools') || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator' || location.pathname === '/pass-optimizer'
+                      location.pathname.startsWith('/tools') || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator'
                         ? 'bg-[#141414] text-[#e4e4e4] border-[#2a2a2a] border-b-blue-500'
                         : 'text-[#6b7280] hover:text-[#e4e4e4] hover:bg-[#141414] border-transparent'
                     }`}
@@ -231,20 +231,6 @@ export function Navbar() {
                               <div className="flex flex-col">
                                 <span className="font-medium uppercase">Die Series Generator</span>
                                 <span className="text-[10px] text-[#6b7280]">Target schedule calculation</span>
-                              </div>
-                            </Link>
-                          )}
-
-                          {(role === 'ROOT' || (authorizedTools || []).includes('pass-optimizer')) && (
-                            <Link
-                              to="/pass-optimizer"
-                              onClick={() => setShowToolsDropdown(false)}
-                              className="flex items-start gap-2 px-2.5 py-2 text-xs text-[#e4e4e4] hover:bg-[#141414] rounded-sm transition-colors"
-                            >
-                              <Zap className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
-                              <div className="flex flex-col">
-                                <span className="font-medium uppercase">Pass Optimizer</span>
-                                <span className="text-[10px] text-[#6b7280]">Optimal stock die assignment</span>
                               </div>
                             </Link>
                           )}
@@ -530,16 +516,6 @@ export function Navbar() {
                   >
                     <Zap className="h-3.5 w-3.5 text-amber-400" />
                     <span>Die Series Generator</span>
-                  </Link>
-                )}
-                {(role === 'ROOT' || (authorizedTools || []).includes('pass-optimizer')) && (
-                  <Link
-                    to="/pass-optimizer"
-                    className="flex items-center gap-2 text-xs text-[#e4e4e4] hover:text-blue-400 py-1 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Zap className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Pass Optimizer</span>
                   </Link>
                 )}
               </div>
