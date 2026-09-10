@@ -517,8 +517,8 @@ export function UserManager() {
                               </span>
                             </div>
                             {user.is_mfa_enabled && (
-                              <span className="px-1 py-0.2 text-[8px] font-bold rounded-sm border bg-emerald-950/30 text-emerald-400 border-emerald-500/30 uppercase" title="2-Factor Authentication Enabled">
-                                2FA
+                              <span className="px-1 py-0.2 text-[8px] font-bold rounded-sm border bg-emerald-950/30 text-emerald-400 border-emerald-500/30 uppercase" title="Backup Codes Protection Active">
+                                BACKUP CODES
                               </span>
                             )}
                           </div>
