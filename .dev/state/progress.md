@@ -204,6 +204,7 @@ Track implementation status across all phases.
 - Decommissioned and safely removed the Preventive Wear Prediction feature across the system: dropped `Die.predicted_remaining_days` (migration `0014_remove_die_predicted_remaining_days`), deleted `WearPredictionService`, removed `wear-prediction` endpoint action, updated Go SQL scan layer to omit `PredictedRemainingDays`, removed `WearPredictionSection` from `DieDetailPage.tsx`, and removed prediction badges on die cards.
 - Decommissioned Sizing Calculator (`sizing-calculator`, `/calculator`) and Die Set Planner (`die-set-planner`, `/die-set-planner`): removed 24 files across frontend and Go backend, cleaned mux routes & handler methods, streamlined tools catalog to 3 core industrial tools (`TOOL-01` Wire Drawing Elongation Calculator, `TOOL-02` Die Series Generator, `TOOL-03` Pass Assignment Optimizer), updated AuthContext, UserManager, Navbar, and CommandPalette, and validated 100% test pass.
 - Decommissioned Pass Assignment Optimizer (`pass-optimizer`, `/pass-optimizer`): deleted `frontend/src/features/pass-optimizer`, removed `POST /api/go/tools/optimize-passes` route, cleaned unused calculation handlers/schemas in Go API, streamlined toolbox catalog to the 2 primary industrial tools (`TOOL-01` Wire Drawing Elongation Calculator and `TOOL-02` Die Series Generator), and verified all tests pass green.
+- Replaced TOTP 2-Factor Authentication with Single-Use Backup Codes: created `UserBackupCode` model with SHA-256 hashed code storage and migration `0006_remove_user_totp_secret_userbackupcode`, implemented `/backup-codes/generate/`, `/verify/`, `/disable/`, and `/status/` endpoints with rate limiting, updated `LoginPage.tsx` with recovery code challenge (`XXXX-XXXX`), overhauled `SettingsPage.tsx` with interactive 10-code terminal grid, copy all, and `.txt` download workflows, updated `UserManager.tsx` user security badge, wrote full unit test suite (83 Django tests green, 54 Vitest tests green, TypeScript typecheck 0 errors, Vite production build clean).
 
 ## Overall Progress
 - **AI-EOS:** 100% complete
@@ -216,6 +217,7 @@ Track implementation status across all phases.
 - **Custom Dev Tools & MCP Integration:** 100% complete
 - **Roadmap Phase 3:** 100% complete
 - **Toolbox Streamlining:** 100% complete
+- **Backup Codes Authentication:** 100% complete
 
 ## Next Actions
 1. Execute continuous testing and build verification
