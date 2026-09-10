@@ -131,7 +131,7 @@ graph TD
 * **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius). Supports statuses: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE`.
 * **Modular Die Set Planner & Capacity Engine**: Multi-source stock ingestion (DMS database, live enamel machines, monthly audit recount sheets), bottleneck deficit analytics, series capacity planning, and target set procurement forecasting with 5-decimal precision.
 * **Enamel Machine Tracking & Monthly Recount Audit Sheets**: Machine die allocation ledger and spreadsheet-grade monthly physical inventory audit sheets with Excel/CSV drag-and-drop import and discrepancy reports.
-* **Two-Factor Authentication (2FA / TOTP)**: RFC 6238 time-based one-time password security for operator and admin accounts with QR setup and single active session policy.
+* **Single-Use Backup Codes Authentication**: Cryptographically hashed (SHA-256) one-time recovery codes for secondary sign-in security without requiring mobile authenticator apps.
 * **Real-Time Live SSE Event Distribution**: Redis Pub/Sub multiplexing PostgreSQL `LISTEN/NOTIFY` events across multi-container instances with automatic local fallback.
 * **Interactive CAD Highlighting**: Bidirectional vector sync between table dimensions and blueprint SVG nodes.
 * **Visual Storage Rack Map**: Drag-and-drop grid interface for physical warehouse rack management.
