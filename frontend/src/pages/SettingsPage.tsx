@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun, QrCode, RefreshCw } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun, RefreshCw, Copy, Download, Printer, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { BackupManager } from './users/BackupManager'
@@ -23,22 +23,26 @@ export function SettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  // Two-Factor Authentication state
+  // Backup Codes Authentication state
   const [isMfaEnabled, setIsMfaEnabled] = useState(false)
+  const [backupCodesTotal, setBackupCodesTotal] = useState(0)
+  const [backupCodesRemaining, setBackupCodesRemaining] = useState(0)
   const [isLoadingMfa, setIsLoadingMfa] = useState(false)
-  const [mfaSetupData, setMfaSetupData] = useState<{ secret: string; otpauth_uri: string; qr_code: string } | null>(null)
-  const [mfaEnableCode, setMfaEnableCode] = useState('')
-  const [mfaDisablePassword, setMfaDisablePassword] = useState('')
-  const [mfaDisableCode, setMfaDisableCode] = useState('')
-  const [mfaMode, setMfaMode] = useState<'idle' | 'setup' | 'disable'>('idle')
+  const [generatedCodes, setGeneratedCodes] = useState<string[] | null>(null)
+  const [generatePassword, setGeneratePassword] = useState('')
+  const [disablePassword, setDisablePassword] = useState('')
+  const [backupMode, setBackupMode] = useState<'idle' | 'generate_prompt' | 'view_codes' | 'disable'>('idle')
   const [mfaError, setMfaError] = useState('')
   const [mfaSuccess, setMfaSuccess] = useState('')
+  const [copiedCodes, setCopiedCodes] = useState(false)
 
   const fetchUserProfile = async () => {
     try {
       const data = await request('/api/v1/auth/me/')
-      if (data && typeof data.is_mfa_enabled === 'boolean') {
-        setIsMfaEnabled(data.is_mfa_enabled)
+      if (data) {
+        setIsMfaEnabled(Boolean(data.is_mfa_enabled))
+        setBackupCodesTotal(data.backup_codes_total || 0)
+        setBackupCodesRemaining(data.backup_codes_remaining || 0)
       }
     } catch {
       // silent
@@ -49,63 +53,106 @@ export function SettingsPage() {
     fetchUserProfile()
   }, [])
 
-  const handleStartMfaSetup = async () => {
+  const handleStartGenerateCodes = () => {
+    setMfaError('')
+    setMfaSuccess('')
+    if (isMfaEnabled && backupCodesRemaining > 0) {
+      setBackupMode('generate_prompt')
+      setGeneratePassword('')
+    } else {
+      executeGenerateCodes('')
+    }
+  }
+
+  const executeGenerateCodes = async (passwordToConfirm: string) => {
     setIsLoadingMfa(true)
     setMfaError('')
     setMfaSuccess('')
     try {
-      const data = await request('/api/v1/auth/mfa/setup/', { method: 'POST' })
-      setMfaSetupData(data)
-      setMfaMode('setup')
-      setMfaEnableCode('')
-    } catch (err: any) {
-      setMfaError(err.message || 'Failed to initialize MFA setup.')
-    } finally {
-      setIsLoadingMfa(false)
-    }
-  }
-
-  const handleConfirmMfaEnable = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoadingMfa(true)
-    setMfaError('')
-    try {
-      await request('/api/v1/auth/mfa/enable/', {
+      const data = await request('/api/v1/auth/backup-codes/generate/', {
         method: 'POST',
-        body: JSON.stringify({ code: mfaEnableCode.trim() })
+        body: JSON.stringify({ password: passwordToConfirm || undefined })
       })
+      setGeneratedCodes(data.codes || [])
+      setBackupCodesTotal(data.count || (data.codes ? data.codes.length : 10))
+      setBackupCodesRemaining(data.count || (data.codes ? data.codes.length : 10))
       setIsMfaEnabled(true)
-      setMfaMode('idle')
-      setMfaSetupData(null)
-      setMfaSuccess('Two-factor authentication has been enabled successfully.')
-      showToast('2FA Activated', 'success')
+      setBackupMode('view_codes')
+      setGeneratePassword('')
+      setMfaSuccess('New backup codes generated successfully.')
+      showToast('10 Backup codes generated', 'success')
     } catch (err: any) {
-      setMfaError(err.message || 'Invalid verification code.')
+      setMfaError(err.message || 'Failed to generate backup codes.')
     } finally {
       setIsLoadingMfa(false)
     }
   }
 
-  const handleConfirmMfaDisable = async (e: React.FormEvent) => {
+  const handleCopyAllCodes = () => {
+    if (!generatedCodes || generatedCodes.length === 0) return
+    const textToCopy = [
+      `DMS-O2 Security Backup Codes`,
+      `Account: ${username}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      `-----------------------------------------`,
+      ...generatedCodes.map((c, i) => `${(i + 1).toString().padStart(2, ' ')}. ${c}`),
+      `-----------------------------------------`,
+      `Each code can only be used once for secondary sign-in.`
+    ].join('\n')
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedCodes(true)
+      showToast('All 10 backup codes copied to clipboard', 'info')
+      setTimeout(() => setCopiedCodes(false), 2500)
+    }).catch(() => {
+      showToast('Failed to copy to clipboard', 'error')
+    })
+  }
+
+  const handleDownloadCodes = () => {
+    if (!generatedCodes || generatedCodes.length === 0) return
+    const content = [
+      `DMS-O2 Security Backup Codes`,
+      `Account: ${username}`,
+      `Generated: ${new Date().toISOString()}`,
+      `-----------------------------------------`,
+      ...generatedCodes.map((c, i) => `${(i + 1).toString().padStart(2, ' ')}. ${c}`),
+      `-----------------------------------------`,
+      `Store these codes safely in a secure password manager or vault.`,
+      `Each code is single-use and will be invalidated once entered.`
+    ].join('\n')
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `dms_o2_backup_codes_${username}_${new Date().toISOString().slice(0, 10)}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast('Backup codes file downloaded', 'success')
+  }
+
+  const handleConfirmDisable = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoadingMfa(true)
     setMfaError('')
     try {
-      await request('/api/v1/auth/mfa/disable/', {
+      await request('/api/v1/auth/backup-codes/disable/', {
         method: 'POST',
-        body: JSON.stringify({
-          password: mfaDisablePassword,
-          code: mfaDisableCode.trim()
-        })
+        body: JSON.stringify({ password: disablePassword })
       })
       setIsMfaEnabled(false)
-      setMfaMode('idle')
-      setMfaDisablePassword('')
-      setMfaDisableCode('')
-      setMfaSuccess('Two-factor authentication has been disabled.')
-      showToast('2FA Disabled', 'info')
+      setBackupCodesTotal(0)
+      setBackupCodesRemaining(0)
+      setGeneratedCodes(null)
+      setBackupMode('idle')
+      setDisablePassword('')
+      setMfaSuccess('Backup codes authentication has been disabled.')
+      showToast('Backup codes disabled', 'info')
     } catch (err: any) {
-      setMfaError(err.message || 'Failed to disable 2FA.')
+      setMfaError(err.message || 'Failed to disable backup codes.')
     } finally {
       setIsLoadingMfa(false)
     }
@@ -495,20 +542,25 @@ export function SettingsPage() {
                 </button>
               </form>
 
-              {/* 02 Two-Factor Authentication Section */}
+              {/* 02 Backup Codes Authentication Section */}
               <div className="pt-6 mt-6 border-t border-[#1a1a1a] space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">02 TWO-FACTOR AUTHENTICATION (TOTP)</h2>
+                    <h2 className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">02 BACKUP CODES AUTHENTICATION</h2>
                     <span className="text-[#6b7280] text-xs block mt-0.5">
-                      Protect your account with standard RFC 6238 time-based one-time passcodes (Google Authenticator, Authy, 1Password).
+                      Secure sign-in with 10 single-use recovery codes. No mobile authenticator app required.
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {isMfaEnabled ? (
+                    {isMfaEnabled && backupCodesRemaining > 0 ? (
                       <span className="flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-[10px] px-2.5 py-1 rounded-sm uppercase font-bold">
                         <Check className="h-3 w-3 text-emerald-400" />
-                        2FA Active
+                        Active ({backupCodesRemaining} / {backupCodesTotal} remaining)
+                      </span>
+                    ) : isMfaEnabled && backupCodesRemaining === 0 ? (
+                      <span className="flex items-center gap-1.5 bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] px-2.5 py-1 rounded-sm uppercase font-bold">
+                        <ShieldAlert className="h-3 w-3 text-amber-400" />
+                        Exhausted (0 remaining)
                       </span>
                     ) : (
                       <span className="bg-[#141414] border border-[#2a2a2a] text-[#6b7280] text-[10px] px-2.5 py-1 rounded-sm uppercase font-bold">
@@ -531,72 +583,71 @@ export function SettingsPage() {
                   </div>
                 )}
 
-                {mfaMode === 'idle' && (
-                  <div>
+                {backupMode === 'idle' && (
+                  <div className="flex flex-wrap gap-2">
                     {!isMfaEnabled ? (
                       <button
                         type="button"
-                        onClick={handleStartMfaSetup}
+                        onClick={handleStartGenerateCodes}
                         disabled={isLoadingMfa}
                         className="bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-bold py-2 px-4 rounded-sm transition disabled:opacity-40 cursor-pointer uppercase tracking-wider text-xs font-mono flex items-center gap-2"
                       >
-                        {isLoadingMfa ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
-                        <span>Set Up Two-Factor Authentication</span>
+                        {isLoadingMfa ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                        <span>Generate 10 Backup Codes</span>
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setMfaMode('disable'); setMfaError(''); }}
-                        className="bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/40 text-red-400 hover:text-red-300 font-bold py-2 px-4 rounded-sm transition cursor-pointer uppercase tracking-wider text-xs font-mono"
-                      >
-                        Disable Two-Factor Authentication
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleStartGenerateCodes}
+                          disabled={isLoadingMfa}
+                          className="bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-bold py-2 px-4 rounded-sm transition disabled:opacity-40 cursor-pointer uppercase tracking-wider text-xs font-mono flex items-center gap-2"
+                        >
+                          {isLoadingMfa ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                          <span>Generate New Backup Codes</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setBackupMode('disable'); setMfaError(''); }}
+                          className="bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/40 text-red-400 hover:text-red-300 font-bold py-2 px-4 rounded-sm transition cursor-pointer uppercase tracking-wider text-xs font-mono"
+                        >
+                          Disable Backup Codes
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
 
-                {mfaMode === 'setup' && mfaSetupData && (
-                  <form onSubmit={handleConfirmMfaEnable} className="space-y-4 bg-[#0a0a0a] border border-[#2a2a2a] p-4 rounded-sm">
-                    <p className="text-xs text-[#9ca3af]">
-                      Scan this QR code with your mobile authenticator app (Google Authenticator, Microsoft Authenticator, Authy):
+                {backupMode === 'generate_prompt' && (
+                  <form onSubmit={(e) => { e.preventDefault(); executeGenerateCodes(generatePassword); }} className="space-y-4 bg-[#0a0a0a] border border-amber-500/30 p-4 rounded-sm">
+                    <p className="text-xs text-amber-300 font-mono">
+                      Regenerating backup codes will permanently invalidate your existing unused codes. Enter your password to continue:
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#141414] p-3 rounded-sm border border-[#1a1a1a]">
-                      <img src={mfaSetupData.qr_code} alt="2FA QR Code" className="w-36 h-36 bg-white p-1 rounded-sm" />
-                      <div className="text-xs space-y-1 font-mono">
-                        <span className="text-[10px] text-[#6b7280] uppercase block">Manual Secret Key:</span>
-                        <code className="bg-[#0a0a0a] px-2 py-1 border border-[#2a2a2a] text-emerald-400 select-all block text-[11px]">
-                          {mfaSetupData.secret}
-                        </code>
-                        <span className="text-[10px] text-[#6b7280] block mt-2">Account: {username} (DMS-O2)</span>
-                      </div>
-                    </div>
-
                     <div>
-                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
-                        Enter 6-Digit Code from App
+                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1 font-mono">
+                        Account Password
                       </label>
                       <input
-                        type="text"
-                        maxLength={6}
+                        type="password"
                         required
-                        value={mfaEnableCode}
-                        onChange={(e) => setMfaEnableCode(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-[#0a0a0a] border border-emerald-500/50 focus:border-emerald-400 rounded-sm px-3 py-2 text-center text-base tracking-[0.2em] text-emerald-300 focus:outline-none font-mono"
-                        placeholder="000000"
+                        autoFocus
+                        value={generatePassword}
+                        onChange={(e) => setGeneratePassword(e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-amber-500 rounded-sm px-3 py-2 text-xs text-[#e4e4e4] focus:outline-none font-mono"
+                        placeholder="••••••••"
                       />
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         type="submit"
-                        disabled={isLoadingMfa || mfaEnableCode.length < 6}
+                        disabled={isLoadingMfa || !generatePassword}
                         className="flex-1 bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/60 text-emerald-400 py-2 rounded-sm text-xs font-bold font-mono uppercase transition disabled:opacity-40 cursor-pointer"
                       >
-                        {isLoadingMfa ? 'Verifying Code...' : 'Confirm & Enable 2FA'}
+                        {isLoadingMfa ? 'Generating...' : 'Confirm & Generate 10 New Codes'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setMfaMode('idle'); setMfaSetupData(null); }}
+                        onClick={() => { setBackupMode('idle'); setGeneratePassword(''); }}
                         className="px-4 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#9ca3af] py-2 rounded-sm text-xs font-mono transition cursor-pointer"
                       >
                         Cancel
@@ -605,49 +656,85 @@ export function SettingsPage() {
                   </form>
                 )}
 
-                {mfaMode === 'disable' && (
-                  <form onSubmit={handleConfirmMfaDisable} className="space-y-4 bg-[#0a0a0a] border border-red-500/30 p-4 rounded-sm">
-                    <p className="text-xs text-red-400">
-                      Confirm your current password and 6-digit authenticator code to disable Two-Factor Authentication:
+                {backupMode === 'view_codes' && generatedCodes && (
+                  <div className="space-y-4 bg-[#0a0a0a] border border-emerald-500/40 p-4 rounded-sm">
+                    <div className="flex items-start gap-2 text-xs text-amber-300 bg-[#141414] border border-amber-500/20 p-3 rounded-sm font-mono">
+                      <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
+                      <div>
+                        <span className="font-bold block uppercase text-[11px] text-amber-200">Save your backup codes now</span>
+                        <span>These codes will not be shown again. Each code is single-use for secondary sign-in.</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 bg-[#141414] p-3 rounded-sm border border-[#1a1a1a]">
+                      {generatedCodes.map((code, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-[#0a0a0a] border border-[#2a2a2a] px-3 py-1.5 rounded-sm font-mono">
+                          <span className="text-[10px] text-[#6b7280]">{(idx + 1).toString().padStart(2, '0')}.</span>
+                          <span className="text-emerald-400 font-bold tracking-wider text-xs select-all">{code}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleCopyAllCodes}
+                        className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] hover:border-[#404040] text-[#e4e4e4] py-1.5 px-3 rounded-sm text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Copy className="h-3.5 w-3.5 text-blue-400" />
+                        <span>{copiedCodes ? 'Copied to Clipboard!' : 'Copy All Codes'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDownloadCodes}
+                        className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] hover:border-[#404040] text-[#e4e4e4] py-1.5 px-3 rounded-sm text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Download .TXT</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setBackupMode('idle'); setGeneratedCodes(null); }}
+                        className="ml-auto bg-[#141414] hover:bg-[#1f1f1f] border border-emerald-500/60 text-emerald-400 py-1.5 px-4 rounded-sm text-xs font-mono font-bold uppercase transition cursor-pointer"
+                      >
+                        I Have Saved My Codes
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {backupMode === 'disable' && (
+                  <form onSubmit={handleConfirmDisable} className="space-y-4 bg-[#0a0a0a] border border-red-500/30 p-4 rounded-sm">
+                    <p className="text-xs text-red-400 font-mono">
+                      Enter your account password to confirm disabling backup codes authentication:
                     </p>
                     <div>
-                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
-                        Current Account Password
+                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1 font-mono">
+                        Account Password
                       </label>
                       <input
                         type="password"
                         required
-                        value={mfaDisablePassword}
-                        onChange={(e) => setMfaDisablePassword(e.target.value)}
+                        autoFocus
+                        value={disablePassword}
+                        onChange={(e) => setDisablePassword(e.target.value)}
                         className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm px-3 py-2 text-xs text-[#e4e4e4] focus:outline-none font-mono"
                         placeholder="••••••••"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#6b7280] uppercase tracking-wider mb-1">
-                        6-Digit Authenticator Code
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        required
-                        value={mfaDisableCode}
-                        onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm px-3 py-2 text-xs text-[#e4e4e4] focus:outline-none font-mono text-center tracking-[0.2em]"
-                        placeholder="000000"
                       />
                     </div>
                     <div className="flex gap-2">
                       <button
                         type="submit"
-                        disabled={isLoadingMfa || !mfaDisablePassword || mfaDisableCode.length < 6}
+                        disabled={isLoadingMfa || !disablePassword}
                         className="flex-1 bg-[#141414] hover:bg-[#1f1f1f] border border-red-500/60 text-red-400 py-2 rounded-sm text-xs font-bold font-mono uppercase transition disabled:opacity-40 cursor-pointer"
                       >
-                        {isLoadingMfa ? 'Disabling 2FA...' : 'Disable 2FA'}
+                        {isLoadingMfa ? 'Disabling...' : 'Confirm & Disable Backup Codes'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setMfaMode('idle'); setMfaDisablePassword(''); setMfaDisableCode(''); }}
+                        onClick={() => { setBackupMode('idle'); setDisablePassword(''); }}
                         className="px-4 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#9ca3af] py-2 rounded-sm text-xs font-mono transition cursor-pointer"
                       >
                         Cancel
