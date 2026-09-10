@@ -12,11 +12,31 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='REGULAR')
     is_authorized_for_tools = models.BooleanField(default=False)
     authorized_tools = models.JSONField(default=list, blank=True)
-    totp_secret = models.CharField(max_length=64, blank=True, default='')
     is_mfa_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+    @property
+    def unused_backup_codes_count(self):
+        return self.backup_codes.filter(is_used=False).count()
+
+
+class UserBackupCode(models.Model):
+    user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='backup_codes')
+    code_hash  = models.CharField(max_length=64, db_index=True)
+    is_used    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at    = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_used']),
+        ]
+
+    def __str__(self):
+        return f"BackupCode for {self.user.username} (Used: {self.is_used})"
 
 class UserSession(models.Model):
     user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
