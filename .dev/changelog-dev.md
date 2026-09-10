@@ -1,5 +1,21 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-10 Full-System Architectural, Performance & Observability Enhancements
+*   **Frontend Modernization & Router Future-Proofing**:
+    *   Enabled React Router v7 future flags (`v7_startTransition: true` and `v7_relativeSplatPath: true`) in `frontend/src/App.tsx`, `InventoryPage.test.tsx`, and `PageHeader.test.tsx`, eliminating all deprecation warnings.
+    *   Added exponential backoff with randomized jitter (`Math.random() * 1000`) on SSE reconnect attempts in `frontend/src/hooks/useRealtimeSync.ts` to mitigate thundering-herd reconnection spikes.
+*   **Backend Outbox Batching & Telemetry**:
+    *   Optimized `backend/search/tasks.py` (`process_outbox_task`) with `select_related('current_set__machine', 'rounddie', 'flatdie', 'rack')` to avoid N+1 queries during document serialization, and increased batch size to 250 documents per chunk.
+    *   Fixed `is_processed=False` query in `backend/users/views/auth.py` (`DetailedHealthCheckView`) and added `dead_letter_tasks` count telemetry.
+*   **Go Microservice Telemetry (Prometheus Exporter)**:
+    *   Added `ActiveClientCount()` to `EventManager` in `go-api/internal/events/events.go`.
+    *   Implemented `HandleMetrics` (`GET /api/go/metrics`) in `go-api/internal/handlers/handlers.go` and registered route in `go-api/cmd/server/main.go` exposing Prometheus gauges (`dms_go_db_open_connections`, `dms_go_db_in_use`, `dms_go_db_idle`, `dms_go_db_wait_count`, `dms_go_sse_active_clients`).
+*   **Knowledge Graph & DevOps Automation**:
+    *   Installed and initialized Graphify knowledge graph engine (`graphifyy` via `uv`), building full AST topology (3,072 nodes, 5,486 edges, 243 communities).
+    *   Created `.githooks/post-commit` for automated background Graphify graph updates on code commits.
+*   **Affected Modules**: `frontend`, `backend`, `go-api`, `search`, `users`, `devops`
+*   **Testing Performed**: Vitest suite 72/72 tests passed (8.35s) with 0 warnings; TypeScript compiler passed with 0 errors; Vite production build passed (19.14s); Graphify incremental update verified.
+
 ### 2026-09-03 Goal & Loop-Oriented Enterprise System Modernization (Loops 1-5)
 *   **Loop 1 — Security & API Ingress Hardening**:
     *   Implemented `DetailedHealthCheckView` (`/api/v1/health/detailed/` and `/api/health/detailed/`) delivering database latency, Redis latency, Meilisearch latency, and OutboxTask queue telemetry (pending tasks count & oldest uncommitted task age).
