@@ -339,6 +339,36 @@ func (h *Handler) HandleDBStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) HandleMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	poolStats := h.db.GetPoolStats()
+	activeClients := h.eventManager.ActiveClientCount()
+
+	var b strings.Builder
+	b.WriteString("# HELP dms_go_db_open_connections Current open connections to PostgreSQL\n")
+	b.WriteString("# TYPE dms_go_db_open_connections gauge\n")
+	fmt.Fprintf(&b, "dms_go_db_open_connections %d\n", poolStats.OpenConnections)
+
+	b.WriteString("# HELP dms_go_db_in_use Current in-use database connections\n")
+	b.WriteString("# TYPE dms_go_db_in_use gauge\n")
+	fmt.Fprintf(&b, "dms_go_db_in_use %d\n", poolStats.InUse)
+
+	b.WriteString("# HELP dms_go_db_idle Current idle database connections\n")
+	b.WriteString("# TYPE dms_go_db_idle gauge\n")
+	fmt.Fprintf(&b, "dms_go_db_idle %d\n", poolStats.Idle)
+
+	b.WriteString("# HELP dms_go_db_wait_count Total number of connection waits\n")
+	b.WriteString("# TYPE dms_go_db_wait_count counter\n")
+	fmt.Fprintf(&b, "dms_go_db_wait_count %d\n", poolStats.WaitCount)
+
+	b.WriteString("# HELP dms_go_sse_active_clients Active connected SSE clients\n")
+	b.WriteString("# TYPE dms_go_sse_active_clients gauge\n")
+	fmt.Fprintf(&b, "dms_go_sse_active_clients %d\n", activeClients)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(b.String()))
+}
+
 func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
