@@ -120,6 +120,12 @@ func (m *EventManager) Backfill(w io.Writer, flusher http.Flusher, lastID int64)
 	flusher.Flush()
 }
 
+func (m *EventManager) ActiveClientCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return len(m.clients)
+}
+
 func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *EventManager, onNotify func()) {
 	connStr := cfg.PostgresConnStr()
 
