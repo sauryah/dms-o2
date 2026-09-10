@@ -7,19 +7,19 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Decommission Sizing Calculator & Die Set Planner
+**Task:** Decommission Pass Assignment Optimizer
 **Status:** Complete
 **Started:** 2026-09-10
 **Completed:** 2026-09-10
 **Confidence:** 100%
 
 ## Task Description
-Decommissioned legacy and unneeded tools from DMS-O2:
-1. Sizing Calculator (`sizing-calculator`, `/calculator`, `FlatCalculator`, `RoundCalculator`, `SequenceCalculator`, `FormulaReference`, Go calculate round/flat/sequence endpoints).
-2. Die Set Planner (`die-set-planner`, `/die-set-planner`, `frontend/src/features/die-set-planner`, `go-api/internal/dieset`, Go calculate die-set endpoint).
-3. Renumbered remaining tools: TOOL-01 (Wire Drawing Elongation Calculator), TOOL-02 (Die Series Generator), TOOL-03 (Pass Assignment Optimizer).
-4. Synchronized permissions in AuthContext, UserManager, Navbar, CommandPalette, and ToolsPage.
-5. 100% test pass (Vitest 21/21 test files, 54/54 tests green, tsc 0 errors, Vite production build clean).
+Decommissioned and cleanly removed Pass Assignment Optimizer (`pass-optimizer`, `/pass-optimizer`):
+1. Removed `frontend/src/features/pass-optimizer/` (`PassOptimizerPage.tsx`, `usePassOptimizer.ts`, `types.ts`).
+2. Removed Go route `POST /api/go/tools/optimize-passes` and handler `HandleOptimizePasses` along with unused schemas and physics helpers.
+3. Streamlined engineering toolbox to the 2 core industrial tools: TOOL-01 (Wire Drawing Elongation Calculator) and TOOL-02 (Die Series Generator).
+4. Updated AuthContext, UserManager, Navbar, CommandPalette, and ToolsPage.
+5. Verified 100% test pass (Vitest 21/21 test files, 54/54 tests green, tsc 0 errors, Vite production build clean).
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
