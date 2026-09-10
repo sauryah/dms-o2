@@ -5,24 +5,8 @@ import { useAuth } from '../contexts/AuthContext'
 export function ToolsPage() {
   const tools = [
     {
-      id: 'sizing-calculator',
-      code: 'TOOL-01',
-      title: 'Sizing & Elongation Calculator',
-      description:
-        'Compute forward and backward passes for round drawing dies, calculate area reductions and elongation ratios, and configure multi-draft schedules.',
-      icon: Calculator,
-      path: '/calculator',
-      ctaLabel: 'Open Calculator',
-      features: [
-        'Forward and backward round sizing',
-        'Area reductions and elongation ratios',
-        'Draft sequence progression schedule',
-        'Flat rectangular shape profiling',
-      ],
-    },
-    {
       id: 'wire-drawing-calculator',
-      code: 'TOOL-02',
+      code: 'TOOL-01',
       title: 'Wire Drawing Elongation Calculator',
       description:
         'Analyze multi-pass wire drawing sequences, evaluate pass area reductions and elongation ratios, and export calculation sheets.',
@@ -38,7 +22,7 @@ export function ToolsPage() {
     },
     {
       id: 'die-series-generator',
-      code: 'TOOL-03',
+      code: 'TOOL-02',
       title: 'Die Series Generator',
       description:
         'Generate die drawing series from elongation targets, pass counts, or start and end diameter limits. Preview results before loading into the calculator.',
@@ -54,7 +38,7 @@ export function ToolsPage() {
     },
     {
       id: 'pass-optimizer',
-      code: 'TOOL-04',
+      code: 'TOOL-03',
       title: 'Pass Assignment Optimizer',
       description:
         'Assign stock dies to drawing passes using drawing stress, temperature estimation, and central burst risk detection.',
@@ -66,22 +50,6 @@ export function ToolsPage() {
         'Drawing stress and temperature analysis',
         'Central burst risk detection',
         'Export job sheet to CSV',
-      ],
-    },
-    {
-      id: 'die-set-planner',
-      code: 'TOOL-05',
-      title: 'Die Set Planner',
-      description:
-        'Compare die stock against target series to calculate buildable complete sets, detect bottleneck sizes, and manage monthly audit recounts.',
-      icon: Calculator,
-      path: '/die-set-planner',
-      ctaLabel: 'Open Planner',
-      features: [
-        'Multi-source stock intake & Excel import',
-        'Complete set count and bottleneck deficit charts',
-        'Live enamel machine stock allocation',
-        'Monthly stocktake audit sheets',
       ],
     },
   ]
