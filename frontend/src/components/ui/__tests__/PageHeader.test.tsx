@@ -13,7 +13,7 @@ describe('PageHeader', () => {
 
   test('renders title and breadcrumb items', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <PageHeader title="Die 563214" breadcrumbs={breadcrumbs} />
       </MemoryRouter>
     )
@@ -25,7 +25,7 @@ describe('PageHeader', () => {
 
   test('renders actions slot content', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <PageHeader 
           title="Actions Test" 
           actions={<button>Click Action</button>} 
