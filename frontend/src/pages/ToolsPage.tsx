@@ -36,22 +36,6 @@ export function ToolsPage() {
         'Send series directly to calculator',
       ],
     },
-    {
-      id: 'pass-optimizer',
-      code: 'TOOL-03',
-      title: 'Pass Assignment Optimizer',
-      description:
-        'Assign stock dies to drawing passes using drawing stress, temperature estimation, and central burst risk detection.',
-      icon: Zap,
-      path: '/pass-optimizer',
-      ctaLabel: 'Optimize Passes',
-      features: [
-        'Auto-assign dies from current inventory',
-        'Drawing stress and temperature analysis',
-        'Central burst risk detection',
-        'Export job sheet to CSV',
-      ],
-    },
   ]
 
   const { role, authorizedTools } = useAuth()
