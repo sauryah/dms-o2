@@ -194,7 +194,7 @@ export function Navbar() {
                     aria-expanded={showToolsDropdown}
                     aria-haspopup="true"
                     className={`px-2.5 py-1 text-xs font-medium uppercase tracking-wider transition-colors font-mono border flex items-center gap-1 cursor-pointer select-none focus-ring ${
-                      location.pathname.startsWith('/tools') || location.pathname === '/calculator' || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator' || location.pathname === '/die-set-planner'
+                      location.pathname.startsWith('/tools') || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator' || location.pathname === '/pass-optimizer'
                         ? 'bg-[#141414] text-[#e4e4e4] border-[#2a2a2a] border-b-blue-500'
                         : 'text-[#6b7280] hover:text-[#e4e4e4] hover:bg-[#141414] border-transparent'
                     }`}
@@ -207,20 +207,6 @@ export function Navbar() {
                     <div className="absolute left-0 pt-1 w-64 z-50 animate-fadeIn">
                       <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm overflow-hidden font-mono">
                         <div className="p-1 space-y-0.5">
-                          {(role === 'ROOT' || (authorizedTools || []).includes('sizing-calculator')) && (
-                            <Link
-                              to="/calculator"
-                              onClick={() => setShowToolsDropdown(false)}
-                              className="flex items-start gap-2 px-2.5 py-2 text-xs text-[#e4e4e4] hover:bg-[#141414] rounded-sm transition-colors"
-                            >
-                              <Calculator className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
-                              <div className="flex flex-col">
-                                <span className="font-medium uppercase">Sizing Calculator</span>
-                                <span className="text-[10px] text-[#6b7280]">Round & flat rectangular sizing</span>
-                              </div>
-                            </Link>
-                          )}
-
                           {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
                             <Link
                               to="/wire-drawing-calculator"
@@ -249,16 +235,16 @@ export function Navbar() {
                             </Link>
                           )}
 
-                          {(role === 'ROOT' || (authorizedTools || []).includes('die-set-planner')) && (
+                          {(role === 'ROOT' || (authorizedTools || []).includes('pass-optimizer')) && (
                             <Link
-                              to="/die-set-planner"
+                              to="/pass-optimizer"
                               onClick={() => setShowToolsDropdown(false)}
                               className="flex items-start gap-2 px-2.5 py-2 text-xs text-[#e4e4e4] hover:bg-[#141414] rounded-sm transition-colors"
                             >
-                              <Calculator className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                              <Zap className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
                               <div className="flex flex-col">
-                                <span className="font-medium uppercase">Die Set Planner</span>
-                                <span className="text-[10px] text-[#6b7280]">Build sets from inventory</span>
+                                <span className="font-medium uppercase">Pass Optimizer</span>
+                                <span className="text-[10px] text-[#6b7280]">Optimal stock die assignment</span>
                               </div>
                             </Link>
                           )}
@@ -526,16 +512,6 @@ export function Navbar() {
                 Tools Overview
               </Link>
               <div className="space-y-1 pl-2 mt-1">
-                {(role === 'ROOT' || (authorizedTools || []).includes('sizing-calculator')) && (
-                  <Link
-                    to="/calculator"
-                    className="flex items-center gap-2 text-xs text-[#e4e4e4] hover:text-blue-400 py-1 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Calculator className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Sizing Calculator</span>
-                  </Link>
-                )}
                 {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
                   <Link
                     to="/wire-drawing-calculator"
@@ -556,14 +532,14 @@ export function Navbar() {
                     <span>Die Series Generator</span>
                   </Link>
                 )}
-                {(role === 'ROOT' || (authorizedTools || []).includes('die-set-planner')) && (
+                {(role === 'ROOT' || (authorizedTools || []).includes('pass-optimizer')) && (
                   <Link
-                    to="/die-set-planner"
-                    className="flex items-center gap-2 text-xs text-[#e4e4e4] hover:text-emerald-400 py-1 transition-colors"
+                    to="/pass-optimizer"
+                    className="flex items-center gap-2 text-xs text-[#e4e4e4] hover:text-blue-400 py-1 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Calculator className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Die Set Planner</span>
+                    <Zap className="h-3.5 w-3.5 text-blue-400" />
+                    <span>Pass Optimizer</span>
                   </Link>
                 )}
               </div>
