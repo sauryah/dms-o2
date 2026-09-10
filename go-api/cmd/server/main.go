@@ -79,6 +79,7 @@ func main() {
 	mux.Handle("GET /api/go/search", jwtAuth(http.HandlerFunc(handler.HandleSearch)))
 	mux.Handle("GET /api/go/stats", jwtAuth(http.HandlerFunc(handler.HandleStats)))
 	mux.Handle("GET /api/go/db-stats", jwtAuth(http.HandlerFunc(handler.HandleDBStats)))
+	mux.HandleFunc("GET /api/go/metrics", handler.HandleMetrics)
 	// SSE endpoint uses single-use ticket authentication (not JWT middleware).
 	// Tickets are issued by Django POST /api/v1/auth/sse-ticket/ and validated
 	// inside HandleEvents via Redis lookup + immediate deletion.
