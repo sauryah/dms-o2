@@ -574,23 +574,39 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         }
       };
 
-      // 1. Machine Rail / Cast Foundation Bed
+      // 1. Heavy Machined Foundation Bed & Guideways (Segmented for True 3D Depth Sorting)
       const lineLeft = startX - 80;
       const lineRight = startX + (N - 1) * stationSpacing + 80;
-      const railY = 36;
+      const railY = 48;
       const railDepth = 30;
+      const numBedSegs = Math.max(12, N * 2);
+      const segStep = (lineRight - lineLeft) / numBedSegs;
 
-      const b1 = project(lineLeft, railY, -railDepth);
-      const b2 = project(lineRight, railY, -railDepth);
-      const b3 = project(lineRight, railY + 12, -railDepth);
-      const b4 = project(lineLeft, railY + 12, -railDepth);
-      addQuad(b1, b2, b3, b4, '#0f172a', 'rgba(71, 85, 105, 0.7)', 1.2);
+      for (let s = 0; s < numBedSegs; s++) {
+        const x1 = lineLeft + s * segStep;
+        const x2 = lineLeft + (s + 1) * segStep;
 
-      const t1 = project(lineLeft, railY, -railDepth);
-      const t2 = project(lineRight, railY, -railDepth);
-      const t3 = project(lineRight, railY, railDepth);
-      const t4 = project(lineLeft, railY, railDepth);
-      addQuad(t1, t2, t3, t4, '#1e293b');
+        // Top Foundation Bed Plate Segment
+        const t1 = project(x1, railY, -railDepth);
+        const t2 = project(x2, railY, -railDepth);
+        const t3 = project(x2, railY, railDepth);
+        const t4 = project(x1, railY, railDepth);
+        addQuad(t1, t2, t3, t4, '#0f172a', 'rgba(51, 65, 85, 0.5)', 0.6);
+
+        // Front Bevel Edge
+        const f1 = project(x1, railY, railDepth);
+        const f2 = project(x2, railY, railDepth);
+        const f3 = project(x2, railY + 8, railDepth);
+        const f4 = project(x1, railY + 8, railDepth);
+        addQuad(f1, f2, f3, f4, '#1e293b', 'rgba(71, 85, 105, 0.6)', 0.8);
+
+        // Machined Center Guide Way Groove
+        const g1 = project(x1, railY - 0.2, -6);
+        const g2 = project(x2, railY - 0.2, -6);
+        const g3 = project(x2, railY - 0.2, 6);
+        const g4 = project(x1, railY - 0.2, 6);
+        addQuad(g1, g2, g3, g4, '#1e293b', 'rgba(100, 116, 139, 0.4)', 0.5);
+      }
 
       // 2. Realistic Metallic Drawn Wire (LUT Driven)
       const addWireSegment = (
@@ -758,27 +774,75 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         const xStandStart = st.x - housingThickness / 2;
         const xStandEnd = st.x + housingThickness / 2;
 
-        // A. Heavy Machined Die Holder Block
-        const blockW = housingThickness + 10;
-        const blockH = casingOuterR + 18;
-        const pBlockL = project(st.x - blockW / 2, railY, -18);
-        const pBlockR = project(st.x + blockW / 2, railY, -18);
-        const pBlockTopL = project(st.x - blockW / 2, railY - blockH * 0.4, -18);
-        const pBlockTopR = project(st.x + blockW / 2, railY - blockH * 0.4, -18);
+        // A. True Under-Die 3D Support Pedestal (Zero Obstruction of Dies or Wire)
+        const standW = housingThickness + 6;
+        const standD = 18;
+        const yTop = casingOuterR - 2;
+        const yBot = railY;
 
+        // Front Pedestal Face (z = +standD/2)
+        const pFront1 = project(st.x - standW / 2, yTop, standD / 2);
+        const pFront2 = project(st.x + standW / 2, yTop, standD / 2);
+        const pFront3 = project(st.x + standW / 2, yBot, standD / 2);
+        const pFront4 = project(st.x - standW / 2, yBot, standD / 2);
         addQuad(
-          pBlockL,
-          pBlockR,
-          pBlockTopR,
-          pBlockTopL,
-          isSelected ? 'rgba(88, 28, 135, 0.85)' : 'rgba(30, 41, 59, 0.9)',
-          isSelected ? '#c084fc' : 'rgba(100, 116, 139, 0.7)',
-          isSelected ? 1.8 : 1.0
+          pFront1,
+          pFront2,
+          pFront3,
+          pFront4,
+          isSelected ? 'rgba(88, 28, 135, 0.9)' : '#1e293b',
+          isSelected ? '#c084fc' : '#475569',
+          1.0
         );
 
-        // Socket Bolts
-        const bolt1 = project(st.x - 8, railY - 3, -16);
-        const bolt2 = project(st.x + 8, railY - 3, -16);
+        // Back Pedestal Face (z = -standD/2)
+        const pBack1 = project(st.x + standW / 2, yTop, -standD / 2);
+        const pBack2 = project(st.x - standW / 2, yTop, -standD / 2);
+        const pBack3 = project(st.x - standW / 2, yBot, -standD / 2);
+        const pBack4 = project(st.x + standW / 2, yBot, -standD / 2);
+        addQuad(
+          pBack1,
+          pBack2,
+          pBack3,
+          pBack4,
+          isSelected ? 'rgba(88, 28, 135, 0.9)' : '#1e293b',
+          isSelected ? '#c084fc' : '#475569',
+          1.0
+        );
+
+        // Left Pedestal Face (x = st.x - standW/2)
+        const pLeft1 = project(st.x - standW / 2, yTop, -standD / 2);
+        const pLeft2 = project(st.x - standW / 2, yTop, standD / 2);
+        const pLeft3 = project(st.x - standW / 2, yBot, standD / 2);
+        const pLeft4 = project(st.x - standW / 2, yBot, -standD / 2);
+        addQuad(
+          pLeft1,
+          pLeft2,
+          pLeft3,
+          pLeft4,
+          isSelected ? 'rgba(107, 33, 168, 0.9)' : '#0f172a',
+          isSelected ? '#c084fc' : '#334155',
+          0.8
+        );
+
+        // Right Pedestal Face (x = st.x + standW/2)
+        const pRight1 = project(st.x + standW / 2, yTop, standD / 2);
+        const pRight2 = project(st.x + standW / 2, yTop, -standD / 2);
+        const pRight3 = project(st.x + standW / 2, yBot, -standD / 2);
+        const pRight4 = project(st.x + standW / 2, yBot, standD / 2);
+        addQuad(
+          pRight1,
+          pRight2,
+          pRight3,
+          pRight4,
+          isSelected ? 'rgba(107, 33, 168, 0.9)' : '#0f172a',
+          isSelected ? '#c084fc' : '#334155',
+          0.8
+        );
+
+        // Pedestal Base Anchor Bolts
+        const bolt1 = project(st.x - standW / 2 + 3, railY - 2, standD / 2);
+        const bolt2 = project(st.x + standW / 2 - 3, railY - 2, standD / 2);
         [bolt1, bolt2].forEach((b) => {
           renderQueue.push({
             depth: b.depth,
