@@ -65,8 +65,8 @@ export function LoginPage() {
       }
 
       if (mfaPending) {
-        // MFA verification step
-        const res = await fetch('/api/v1/auth/mfa/verify/', {
+        // Backup code verification step
+        const res = await fetch('/api/v1/auth/backup-codes/verify/', {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -77,7 +77,7 @@ export function LoginPage() {
         })
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}))
-          const msg = errData.detail || 'Invalid verification code'
+          const msg = errData.detail || 'Invalid or previously used backup code'
           throw new Error(msg)
         }
         const data = await res.json()
@@ -116,6 +116,17 @@ export function LoginPage() {
     }
   }
 
+  // Format backup code with hyphen for ease of entry: XXXX-XXXX
+  const handleBackupCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (val.length > 8) val = val.slice(0, 8)
+    if (val.length > 4) {
+      setMfaCode(`${val.slice(0, 4)}-${val.slice(4)}`)
+    } else {
+      setMfaCode(val)
+    }
+  }
+
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a] font-mono">
       <div className="max-w-sm w-full space-y-6 bg-[#0f0f0f] border border-[#2a2a2a] p-6 rounded-sm shadow-2xl font-mono">
@@ -123,15 +134,15 @@ export function LoginPage() {
           <div className="flex items-center space-x-2 text-blue-400 mb-1">
             {mfaPending ? <KeyRound className="h-4 w-4 text-emerald-400" /> : <Shield className="h-4 w-4" />}
             <span className="text-xs uppercase tracking-wider font-bold">
-              {mfaPending ? '02 TWO-FACTOR AUTH' : '01 SYSTEM ACCESS'}
+              {mfaPending ? '02 BACKUP CODE AUTH' : '01 SYSTEM ACCESS'}
             </span>
           </div>
           <h2 className="text-sm font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">
-            {mfaPending ? 'Security Verification' : 'Facility Credentials'}
+            {mfaPending ? 'Recovery Code Entry' : 'Facility Credentials'}
           </h2>
           <p className="text-xs text-[#6b7280] mt-0.5">
             {mfaPending 
-              ? `Enter the 6-digit TOTP code generated for user ${mfaPending.username}.`
+              ? `Enter one of your 8-character single-use backup codes for user ${mfaPending.username}.`
               : 'Authenticate to manage manufacturing assets and line tools.'}
           </p>
         </div>
@@ -159,22 +170,23 @@ export function LoginPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-[10px] text-[#6b7280] uppercase tracking-wider mb-1 font-mono">
-                  6-Digit Authenticator Code
+                  Single-Use Backup Code (XXXX-XXXX)
                 </label>
                 <input 
                   type="text" 
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
+                  maxLength={9}
                   autoFocus
                   required
                   value={mfaCode}
-                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-[#0a0a0a] border border-emerald-500/60 focus:border-emerald-400 rounded-sm py-2.5 px-3 text-center text-lg tracking-[0.3em] text-emerald-300 focus:outline-none font-mono placeholder-[#404040]"
-                  placeholder="000000"
+                  onChange={handleBackupCodeChange}
+                  className="w-full bg-[#0a0a0a] border border-emerald-500/60 focus:border-emerald-400 rounded-sm py-2.5 px-3 text-center text-lg tracking-[0.25em] text-emerald-300 focus:outline-none font-mono placeholder-[#404040]"
+                  placeholder="XXXX-XXXX"
                   autoComplete="one-time-code"
-                  aria-label="6-Digit Verification Code"
+                  aria-label="Single-Use Backup Code"
                 />
+                <p className="text-[10px] text-[#6b7280] mt-1 text-center font-mono">
+                  Each code can only be used once.
+                </p>
               </div>
             </div>
           ) : (
@@ -218,7 +230,7 @@ export function LoginPage() {
 
           <button 
             type="submit"
-            disabled={loading || (mfaPending !== null && mfaCode.length < 6)}
+            disabled={loading || (mfaPending !== null && mfaCode.replace(/[^A-Z0-9]/g, '').length < 8)}
             className={`w-full bg-[#141414] hover:bg-[#1f1f1f] border ${mfaPending ? 'border-emerald-500/50 text-emerald-400 hover:text-emerald-300' : 'border-blue-500/50 text-blue-400 hover:text-blue-300'} py-2 rounded-sm text-xs font-mono uppercase font-bold transition flex items-center justify-center space-x-1.5 disabled:opacity-40 cursor-pointer`}
           >
             {loading ? (
@@ -227,7 +239,7 @@ export function LoginPage() {
                 <span>Verifying...</span>
               </>
             ) : (
-              <span>{mfaPending ? 'Verify & Sign In' : 'Sign In'}</span>
+              <span>{mfaPending ? 'Verify Code & Sign In' : 'Sign In'}</span>
             )}
           </button>
 
