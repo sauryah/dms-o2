@@ -79,14 +79,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         perform: () => { navigate('/tools'); onClose() }
       },
       {
-        id: 'nav-sizing-calculator',
-        title: 'GO TO SIZING & ELONGATION CALCULATOR',
-        subtitle: 'Forward and backward pass sizing for round and flat dies',
-        category: 'Navigation',
-        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
-        perform: () => { navigate('/calculator'); onClose() }
-      },
-      {
         id: 'nav-wire-drawing-calculator',
         title: 'GO TO WIRE DRAWING CALCULATOR',
         subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
@@ -109,14 +101,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         category: 'Navigation',
         icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
         perform: () => { navigate('/pass-optimizer'); onClose() }
-      },
-      {
-        id: 'nav-die-set-planner',
-        title: 'GO TO DIE SET PLANNER',
-        subtitle: 'Operational capacity planning, live stock allocation, and monthly recounts',
-        category: 'Navigation',
-        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
-        perform: () => { navigate('/die-set-planner'); onClose() }
       },
       {
         id: 'nav-inventory',
