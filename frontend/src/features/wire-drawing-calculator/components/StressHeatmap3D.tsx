@@ -439,6 +439,46 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       const dieMat = DIE_MATERIALS[dieNibMaterial];
       const activeLUT = cam.isDragging ? LUT_12 : LUT_24;
 
+      // 3D Render Queue for Zero-Artifact Depth Sorting
+      interface RenderItem {
+        depth: number;
+        draw: () => void;
+      }
+      const renderQueue: RenderItem[] = [];
+
+      const addQuad = (
+        p1: { px: number; py: number; depth: number },
+        p2: { px: number; py: number; depth: number },
+        p3: { px: number; py: number; depth: number },
+        p4: { px: number; py: number; depth: number },
+        fill: string,
+        stroke?: string,
+        strokeW: number = 1,
+        alpha: number = 1.0
+      ) => {
+        const avgDepth = (p1.depth + p2.depth + p3.depth + p4.depth) * 0.25;
+        renderQueue.push({
+          depth: avgDepth,
+          draw: () => {
+            ctx.beginPath();
+            ctx.moveTo(p1.px, p1.py);
+            ctx.lineTo(p2.px, p2.py);
+            ctx.lineTo(p3.px, p3.py);
+            ctx.lineTo(p4.px, p4.py);
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            if (alpha < 0.99) ctx.globalAlpha = alpha;
+            ctx.fill();
+            if (alpha < 0.99) ctx.globalAlpha = 1.0;
+            if (stroke) {
+              ctx.strokeStyle = stroke;
+              ctx.lineWidth = strokeW;
+              ctx.stroke();
+            }
+          },
+        });
+      };
+
       // Draw 3D Rotated Disc using Trigonometric LUT
       const draw3DDisc = (
         xPos: number,
@@ -476,7 +516,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         }
       };
 
-      // 1. Draw Machine Rail / Cast Foundation Bed
+      // 1. Machine Rail / Cast Foundation Bed
       const lineLeft = startX - 80;
       const lineRight = startX + (N - 1) * stationSpacing + 80;
       const railY = 36;
@@ -486,36 +526,16 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       const b2 = project(lineRight, railY, -railDepth);
       const b3 = project(lineRight, railY + 12, -railDepth);
       const b4 = project(lineLeft, railY + 12, -railDepth);
-
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = 'rgba(71, 85, 105, 0.7)';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(b1.px, b1.py);
-      ctx.lineTo(b2.px, b2.py);
-      ctx.lineTo(b3.px, b3.py);
-      ctx.lineTo(b4.px, b4.py);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      addQuad(b1, b2, b3, b4, '#0f172a', 'rgba(71, 85, 105, 0.7)', 1.2);
 
       const t1 = project(lineLeft, railY, -railDepth);
       const t2 = project(lineRight, railY, -railDepth);
       const t3 = project(lineRight, railY, railDepth);
       const t4 = project(lineLeft, railY, railDepth);
+      addQuad(t1, t2, t3, t4, '#1e293b');
 
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.moveTo(t1.px, t1.py);
-      ctx.lineTo(t2.px, t2.py);
-      ctx.lineTo(t3.px, t3.py);
-      ctx.lineTo(t4.px, t4.py);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // 2. Draw Realistic Metallic Drawn Wire (LUT Driven)
-      const drawRealisticWireSegment = (
+      // 2. Realistic Metallic Drawn Wire (LUT Driven)
+      const addWireSegment = (
         xStart: number,
         xEnd: number,
         rStart: number,
@@ -536,48 +556,38 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           const p3 = project(xEnd, rEnd * cos2, rEnd * sin2);
           const p4 = project(xEnd, rEnd * cos1, rEnd * sin1);
 
-          ctx.beginPath();
-          ctx.moveTo(p1.px, p1.py);
-          ctx.lineTo(p2.px, p2.py);
-          ctx.lineTo(p3.px, p3.py);
-          ctx.lineTo(p4.px, p4.py);
-          ctx.closePath();
-
           const normalY = (cos1 + cos2) * 0.5;
-          const normalZ = (sin1 + sin2) * 0.5;
           const diffuse = Math.max(0.2, 0.45 + 0.55 * (-normalY));
+          const fill = isDeforming ? mat.wireContact : mat.wireGradient[0];
 
-          ctx.fillStyle = isDeforming ? mat.wireContact : mat.wireGradient[0];
-          ctx.globalAlpha = diffuse;
-          ctx.fill();
-          ctx.globalAlpha = 1.0;
+          addQuad(p1, p2, p3, p4, fill, undefined, 1, diffuse);
         }
       };
 
       const firstSt = stations[0];
       if (firstSt) {
-        drawRealisticWireSegment(lineLeft, firstSt.x - 14, firstSt.rIn, firstSt.rIn, false);
+        addWireSegment(lineLeft, firstSt.x - 10, firstSt.rIn, firstSt.rIn, false);
       }
 
       for (let i = 0; i < N; i++) {
         const curr = stations[i];
         const next = stations[i + 1];
 
-        const coneStart = curr.x - 14;
-        const coneEnd = curr.x + 10;
-        drawRealisticWireSegment(coneStart, coneEnd, curr.rIn, curr.rOut, true);
+        const dieStart = curr.x - 10;
+        const dieEnd = curr.x + 10;
+        addWireSegment(dieStart, dieEnd, curr.rIn, curr.rOut, true);
 
         if (next) {
-          drawRealisticWireSegment(coneEnd, next.x - 14, curr.rOut, curr.rOut, false);
+          addWireSegment(dieEnd, next.x - 10, curr.rOut, curr.rOut, false);
         }
       }
 
       const lastSt = stations[N - 1];
       if (lastSt) {
-        drawRealisticWireSegment(lastSt.x + 10, lineRight, lastSt.rOut, lastSt.rOut, false);
+        addWireSegment(lastSt.x + 10, lineRight, lastSt.rOut, lastSt.rOut, false);
       }
 
-      // 3. Draw Capstan Pulling Drums
+      // 3. Capstan Pulling Drums
       if (showCapstans) {
         for (let i = 0; i < N - 1; i++) {
           const stA = stations[i];
@@ -590,41 +600,46 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           const drumCenter = project(capstanX, capstanY, capstanZ);
           const drumRotSpeed = flowTime * (stA.speedMultiplier * 0.08);
 
-          ctx.beginPath();
-          const capsegs = 16;
-          for (let s = 0; s <= capsegs; s++) {
-            const angle = (s / capsegs) * Math.PI * 2;
-            const px = capstanX + capstanR * Math.cos(angle);
-            const py = capstanY + capstanR * Math.sin(angle);
-            const p = project(px, py, capstanZ);
-            if (s === 0) ctx.moveTo(p.px, p.py);
-            else ctx.lineTo(p.px, p.py);
-          }
-          ctx.closePath();
-          ctx.fillStyle = '#1e293b';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-          ctx.lineWidth = 1.2;
-          ctx.stroke();
+          renderQueue.push({
+            depth: drumCenter.depth,
+            draw: () => {
+              ctx.beginPath();
+              const capsegs = 16;
+              for (let s = 0; s <= capsegs; s++) {
+                const angle = (s / capsegs) * Math.PI * 2;
+                const px = capstanX + capstanR * Math.cos(angle);
+                const py = capstanY + capstanR * Math.sin(angle);
+                const p = project(px, py, capstanZ);
+                if (s === 0) ctx.moveTo(p.px, p.py);
+                else ctx.lineTo(p.px, p.py);
+              }
+              ctx.closePath();
+              ctx.fillStyle = '#1e293b';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+              ctx.lineWidth = 1.2;
+              ctx.stroke();
 
-          for (let s = 0; s < 4; s++) {
-            const angle = drumRotSpeed + (s * Math.PI) / 2;
-            const spokeX = capstanX + Math.cos(angle) * (capstanR * 0.85);
-            const spokeY = capstanY + Math.sin(angle) * (capstanR * 0.85);
-            const pSpoke = project(spokeX, spokeY, capstanZ);
-            ctx.beginPath();
-            ctx.moveTo(drumCenter.px, drumCenter.py);
-            ctx.lineTo(pSpoke.px, pSpoke.py);
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-            ctx.lineWidth = 1.0;
-            ctx.stroke();
-          }
+              for (let s = 0; s < 4; s++) {
+                const angle = drumRotSpeed + (s * Math.PI) / 2;
+                const spokeX = capstanX + Math.cos(angle) * (capstanR * 0.85);
+                const spokeY = capstanY + Math.sin(angle) * (capstanR * 0.85);
+                const pSpoke = project(spokeX, spokeY, capstanZ);
+                ctx.beginPath();
+                ctx.moveTo(drumCenter.px, drumCenter.py);
+                ctx.lineTo(pSpoke.px, pSpoke.py);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+                ctx.lineWidth = 1.0;
+                ctx.stroke();
+              }
 
-          const pBolt = project(capstanX, capstanY, capstanZ);
-          ctx.beginPath();
-          ctx.arc(pBolt.px, pBolt.py, 3 * zScale, 0, Math.PI * 2);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fill();
+              const pBolt = project(capstanX, capstanY, capstanZ);
+              ctx.beginPath();
+              ctx.arc(pBolt.px, pBolt.py, 3 * zScale, 0, Math.PI * 2);
+              ctx.fillStyle = '#38bdf8';
+              ctx.fill();
+            },
+          });
         }
       }
 
@@ -632,7 +647,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       const frontNormalZ = sinY * cosX;
       const isFrontFaceVisible = frontNormalZ < 0;
 
-      // 4. Draw Precision Industrial Die Assembly & Mounting Stand
+      // 4. Precision Industrial Die Assemblies & Mounting Stands
       stations.forEach((st) => {
         const isSelected = st.idx === selectedPassIdx;
         const casingOuterR = Math.max(26, st.rIn + 16);
@@ -649,33 +664,51 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         const pBlockTopL = project(st.x - blockW / 2, railY - blockH * 0.4, -18);
         const pBlockTopR = project(st.x + blockW / 2, railY - blockH * 0.4, -18);
 
-        ctx.fillStyle = isSelected ? 'rgba(88, 28, 135, 0.85)' : 'rgba(30, 41, 59, 0.9)';
-        ctx.strokeStyle = isSelected ? '#c084fc' : 'rgba(100, 116, 139, 0.7)';
-        ctx.lineWidth = isSelected ? 1.8 : 1.0;
-        ctx.beginPath();
-        ctx.moveTo(pBlockL.px, pBlockL.py);
-        ctx.lineTo(pBlockR.px, pBlockR.py);
-        ctx.lineTo(pBlockTopR.px, pBlockTopR.py);
-        ctx.lineTo(pBlockTopL.px, pBlockTopL.py);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        addQuad(
+          pBlockL,
+          pBlockR,
+          pBlockTopR,
+          pBlockTopL,
+          isSelected ? 'rgba(88, 28, 135, 0.85)' : 'rgba(30, 41, 59, 0.9)',
+          isSelected ? '#c084fc' : 'rgba(100, 116, 139, 0.7)',
+          isSelected ? 1.8 : 1.0
+        );
 
         // Socket Bolts
         const bolt1 = project(st.x - 8, railY - 3, -16);
         const bolt2 = project(st.x + 8, railY - 3, -16);
         [bolt1, bolt2].forEach((b) => {
-          ctx.beginPath();
-          ctx.arc(b.px, b.py, 2 * zScale, 0, Math.PI * 2);
-          ctx.fillStyle = '#94a3b8';
-          ctx.fill();
+          renderQueue.push({
+            depth: b.depth,
+            draw: () => {
+              ctx.beginPath();
+              ctx.arc(b.px, b.py, 2 * zScale, 0, Math.PI * 2);
+              ctx.fillStyle = '#94a3b8';
+              ctx.fill();
+            },
+          });
         });
 
+        // B. Die Back Silhouette (when facing away)
         if (!isFrontFaceVisible) {
-          draw3DDisc(xStandStart, 0, casingOuterR, '#1e293b', '#475569', 1);
+          const pBackCenter = project(xStandStart, 0, 0);
+          renderQueue.push({
+            depth: pBackCenter.depth - 0.05,
+            draw: () => {
+              draw3DDisc(xStandStart, st.rIn, casingOuterR, '#1e293b', '#475569', 1);
+            },
+          });
+        } else {
+          const pBackCenter = project(xStandEnd, 0, 0);
+          renderQueue.push({
+            depth: pBackCenter.depth - 0.05,
+            draw: () => {
+              draw3DDisc(xStandEnd, st.rOut, casingOuterR, '#1e293b', '#475569', 1);
+            },
+          });
         }
 
-        // B. 3D Cylindrical Die Casing Body (LUT Driven)
+        // C. 3D Cylindrical Die Casing Body (LUT Driven)
         const lut = activeLUT;
         const count = lut.count;
         for (let s = 0; s < count; s++) {
@@ -689,39 +722,103 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           const p3 = project(xStandEnd, casingOuterR * cos2, casingOuterR * sin2);
           const p4 = project(xStandEnd, casingOuterR * cos1, casingOuterR * sin1);
 
-          ctx.beginPath();
-          ctx.moveTo(p1.px, p1.py);
-          ctx.lineTo(p2.px, p2.py);
-          ctx.lineTo(p3.px, p3.py);
-          ctx.lineTo(p4.px, p4.py);
-          ctx.closePath();
-
           const normalY = (cos1 + cos2) * 0.5;
           const lightIntensity = Math.max(0.25, 0.5 + 0.5 * (-normalY));
 
+          let fill: string;
           if (isSelected) {
-            ctx.fillStyle = `rgba(168, 85, 247, ${lightIntensity * 0.9})`;
+            fill = `rgba(168, 85, 247, ${lightIntensity * 0.9})`;
           } else {
             const steelVal = Math.floor(100 + lightIntensity * 120);
-            ctx.fillStyle = `rgb(${steelVal * 0.4}, ${steelVal * 0.45}, ${steelVal * 0.55})`;
+            fill = `rgb(${steelVal * 0.4}, ${steelVal * 0.45}, ${steelVal * 0.55})`;
           }
-          ctx.fill();
+
+          addQuad(p1, p2, p3, p4, fill);
         }
 
-        // C. True 3D Rotated Perspective Die Face
+        // D. 3D Rotated Perspective Die Face Annulus (With Real Wire Bore Hole)
         if (isFrontFaceVisible) {
-          draw3DDisc(xStandStart, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
-          draw3DDisc(xStandStart, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
-          draw3DDisc(xStandStart, st.rIn, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
-          draw3DDisc(xStandStart, 0, st.rIn, '#050811', dieMat.rimColor, 0.8);
+          const pFaceCenter = project(xStandStart, 0, 0);
+          renderQueue.push({
+            depth: pFaceCenter.depth + 0.05,
+            draw: () => {
+              draw3DDisc(xStandStart, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
+              draw3DDisc(xStandStart, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
+              draw3DDisc(xStandStart, st.rIn, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
+            },
+          });
         } else {
-          draw3DDisc(xStandEnd, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
-          draw3DDisc(xStandEnd, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
-          draw3DDisc(xStandEnd, st.rOut, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
-          draw3DDisc(xStandEnd, 0, st.rOut, '#050811', dieMat.rimColor, 0.8);
+          const pFaceCenter = project(xStandEnd, 0, 0);
+          renderQueue.push({
+            depth: pFaceCenter.depth + 0.05,
+            draw: () => {
+              draw3DDisc(xStandEnd, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
+              draw3DDisc(xStandEnd, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
+              draw3DDisc(xStandEnd, st.rOut, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
+            },
+          });
+        }
+      });
+
+      // 5. Particle Flow Simulation
+      if (isPlaying) {
+        flowTime += 0.8 * speedRate * dt * 60;
+      }
+
+      for (let i = 0; i < numParticles; i++) {
+        if (isPlaying) {
+          particlePositions[i] = (particlePositions[i] + 0.0035 * speedRate * dt * 60) % 1.0;
         }
 
-        // Selection HUD Halo in 3D
+        const currentLineX = lineLeft + particlePositions[i] * (lineRight - lineLeft);
+        let localRadius = firstSt?.rIn ?? 14;
+        let localSpeedMult = 1.0;
+
+        for (let s = 0; s < N; s++) {
+          const st = stations[s];
+          if (currentLineX >= st.x) {
+            localRadius = st.rOut;
+            localSpeedMult = st.speedMultiplier;
+          }
+        }
+
+        const angle = particleAngles[i];
+        const partY = Math.cos(angle) * (localRadius * 0.7);
+        const partZ = Math.sin(angle) * (localRadius * 0.7);
+        const pPos = project(currentLineX, partY, partZ);
+
+        const streakLen = Math.min(24, 4 * Math.sqrt(localSpeedMult)) * zScale;
+        const tailPos = project(currentLineX - streakLen, partY, partZ);
+
+        renderQueue.push({
+          depth: pPos.depth,
+          draw: () => {
+            ctx.beginPath();
+            ctx.moveTo(tailPos.px, tailPos.py);
+            ctx.lineTo(pPos.px, pPos.py);
+            ctx.strokeStyle = `rgba(244, 114, 182, ${Math.min(1.0, 0.4 + localSpeedMult * 0.06)})`;
+            ctx.lineWidth = Math.max(1.2, 2.0 * (localRadius / 14));
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(pPos.px, pPos.py, Math.max(1.4, 2.2 * (localRadius / 14)), 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+          },
+        });
+      }
+
+      // EXECUTE DEPTH-SORTED RENDER QUEUE (Back to Front)
+      renderQueue.sort((a, b) => a.depth - b.depth);
+      for (let i = 0; i < renderQueue.length; i++) {
+        renderQueue[i].draw();
+      }
+
+      // 6. 2D Selection HUD Halo & Tags (On Top of 3D Scene)
+      stations.forEach((st) => {
+        const isSelected = st.idx === selectedPassIdx;
+        const casingOuterR = Math.max(26, st.rIn + 16);
+
         if (isSelected) {
           ctx.save();
           const haloLut = activeLUT;
@@ -741,7 +838,6 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.restore();
         }
 
-        // 5. Pass Number Tag
         if (showLabels) {
           const topPos = project(st.x, -casingOuterR - 12, 0);
           ctx.save();
@@ -778,49 +874,6 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.restore();
         }
       });
-
-      // 6. Particle Flow Simulation (Normalized to Delta Time)
-      if (isPlaying) {
-        flowTime += 0.8 * speedRate * dt * 60;
-      }
-
-      for (let i = 0; i < numParticles; i++) {
-        if (isPlaying) {
-          particlePositions[i] = (particlePositions[i] + 0.0035 * speedRate * dt * 60) % 1.0;
-        }
-
-        const currentLineX = lineLeft + particlePositions[i] * (lineRight - lineLeft);
-        let localRadius = firstSt?.rIn ?? 14;
-        let localSpeedMult = 1.0;
-
-        for (let s = 0; s < N; s++) {
-          const st = stations[s];
-          if (currentLineX >= st.x) {
-            localRadius = st.rOut;
-            localSpeedMult = st.speedMultiplier;
-          }
-        }
-
-        const angle = particleAngles[i];
-        const partY = Math.cos(angle) * (localRadius * 0.7);
-        const partZ = Math.sin(angle) * (localRadius * 0.7);
-        const pPos = project(currentLineX, partY, partZ);
-
-        const streakLen = Math.min(24, 4 * Math.sqrt(localSpeedMult)) * zScale;
-        const tailPos = project(currentLineX - streakLen, partY, partZ);
-
-        ctx.beginPath();
-        ctx.moveTo(tailPos.px, tailPos.py);
-        ctx.lineTo(pPos.px, pPos.py);
-        ctx.strokeStyle = `rgba(244, 114, 182, ${Math.min(1.0, 0.4 + localSpeedMult * 0.06)})`;
-        ctx.lineWidth = Math.max(1.2, 2.0 * (localRadius / 14));
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(pPos.px, pPos.py, Math.max(1.4, 2.2 * (localRadius / 14)), 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-      }
 
       ctx.restore();
       animId = requestAnimationFrame(render);
@@ -1046,13 +1099,54 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       const sinY = Math.sin(radY);
       const zScale = cam.zoom;
 
+      // 3D Render Queue for Zero-Artifact Depth Sorting
+      interface RenderItem {
+        depth: number;
+        draw: () => void;
+      }
+      const renderQueue: RenderItem[] = [];
+
+      const addQuad = (
+        p1: { px: number; py: number; depth: number },
+        p2: { px: number; py: number; depth: number },
+        p3: { px: number; py: number; depth: number },
+        p4: { px: number; py: number; depth: number },
+        fill: string,
+        stroke?: string,
+        strokeW: number = 1,
+        alpha: number = 1.0
+      ) => {
+        const avgDepth = (p1.depth + p2.depth + p3.depth + p4.depth) * 0.25;
+        renderQueue.push({
+          depth: avgDepth,
+          draw: () => {
+            ctx.beginPath();
+            ctx.moveTo(p1.px, p1.py);
+            ctx.lineTo(p2.px, p2.py);
+            ctx.lineTo(p3.px, p3.py);
+            ctx.lineTo(p4.px, p4.py);
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            if (alpha < 0.99) ctx.globalAlpha = alpha;
+            ctx.fill();
+            if (alpha < 0.99) ctx.globalAlpha = 1.0;
+            if (stroke) {
+              ctx.strokeStyle = stroke;
+              ctx.lineWidth = strokeW;
+              ctx.stroke();
+            }
+          },
+        });
+      };
+
       const project3D = (x: number, y: number, z: number) => {
         const xOffset = x + cam.panX;
         const yOffset = y + cam.panY;
         const x1 = xOffset * cosY + z * sinY;
         const z1 = -xOffset * sinY + z * cosY;
         const y2 = yOffset * cosX - z1 * sinX;
-        return { px: x1 * zScale, py: y2 * zScale };
+        const z2 = yOffset * sinX + z1 * cosX;
+        return { px: x1 * zScale, py: y2 * zScale, depth: z2 };
       };
 
       const mat = WIRE_MATERIALS[wireMaterial];
@@ -1089,16 +1183,16 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         return Math.max(0, Math.min(1, stressVal));
       };
 
-      const draw3DCylinderSection = (
+      const add3DCylinderSection = (
         xStart: number,
         xEnd: number,
         rStart: number,
         rEnd: number,
-        layerType: 'casing' | 'braze' | 'nib' | 'wire'
+        layerType: 'casing' | 'braze' | 'nib' | 'bore' | 'wire'
       ) => {
         for (let i = 0; i < count; i++) {
           const angle1 = (i / count) * Math.PI * 2;
-          if (layerType !== 'wire' && angle1 > maxCutoffRad) continue;
+          if (layerType !== 'wire' && sliceAngleDeg < 360 && angle1 > maxCutoffRad) continue;
 
           const cos1 = activeLUT.cos[i];
           const sin1 = activeLUT.sin[i];
@@ -1110,68 +1204,57 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           const p3 = project3D(xEnd, rEnd * cos2, rEnd * sin2);
           const p4 = project3D(xEnd, rEnd * cos1, rEnd * sin1);
 
-          ctx.beginPath();
-          ctx.moveTo(p1.px, p1.py);
-          ctx.lineTo(p2.px, p2.py);
-          ctx.lineTo(p3.px, p3.py);
-          ctx.lineTo(p4.px, p4.py);
-          ctx.closePath();
-
           const normalY = (cos1 + cos2) * 0.5;
           const lightFactor = Math.max(0.2, 0.5 + 0.5 * (-normalY));
 
           if (layerType === 'casing') {
-            if (renderMode === 'wireframe') {
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
-              ctx.strokeStyle = 'rgba(94, 234, 212, 0.4)';
-            } else {
-              const steelVal = Math.floor(110 + lightFactor * 130);
-              ctx.fillStyle = `rgb(${steelVal * 0.45}, ${steelVal * 0.5}, ${steelVal * 0.6})`;
-              ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
-            }
-            ctx.lineWidth = 0.8;
-            ctx.fill();
-            ctx.stroke();
+            const steelVal = Math.floor(110 + lightFactor * 130);
+            const fill = renderMode === 'wireframe' ? 'rgba(15, 23, 42, 0.35)' : `rgb(${steelVal * 0.45}, ${steelVal * 0.5}, ${steelVal * 0.6})`;
+            const stroke = renderMode === 'wireframe' ? 'rgba(94, 234, 212, 0.4)' : 'rgba(148, 163, 184, 0.45)';
+            addQuad(p1, p2, p3, p4, fill, stroke, 0.8);
           } else if (layerType === 'braze') {
-            ctx.fillStyle = dieMat.brazeColor;
-            ctx.fill();
+            addQuad(p1, p2, p3, p4, dieMat.brazeColor);
           } else if (layerType === 'nib') {
-            ctx.fillStyle = dieMat.coreColor;
-            ctx.fill();
+            addQuad(p1, p2, p3, p4, dieMat.coreColor);
+          } else if (layerType === 'bore') {
+            const innerLight = Math.max(0.12, 0.3 + 0.35 * normalY);
+            addQuad(p1, p2, p3, p4, dieMat.coreColor, 'rgba(51, 65, 85, 0.4)', 0.8, innerLight);
           } else {
             const midX = (xStart + xEnd) / 2;
             const stressVal = computeStressAtX(midX);
 
             if (renderMode === 'realistic') {
-              ctx.fillStyle = mat.wireGradient[0];
-              ctx.globalAlpha = lightFactor;
+              addQuad(p1, p2, p3, p4, mat.wireGradient[0], undefined, 1, lightFactor);
             } else if (renderMode === 'heatmap') {
-              if (midX >= xConeEnd && midX <= xBearEnd) {
-                ctx.fillStyle = `rgba(245, 158, 11, ${0.6 + 0.4 * stressVal})`;
-              } else {
-                ctx.fillStyle = stressToColor(stressVal);
-              }
-              ctx.globalAlpha = 0.92;
+              const fill = midX >= xConeEnd && midX <= xBearEnd
+                ? `rgba(245, 158, 11, ${0.6 + 0.4 * stressVal})`
+                : stressToColor(stressVal);
+              addQuad(p1, p2, p3, p4, fill, undefined, 1, 0.95);
             } else {
-              ctx.fillStyle = stressToColor(stressVal);
-              ctx.globalAlpha = 0.85;
+              addQuad(p1, p2, p3, p4, stressToColor(stressVal), undefined, 1, 0.85);
             }
-            ctx.fill();
-            ctx.globalAlpha = 1.0;
           }
         }
       };
 
-      // 1. Draw Outer Stainless Steel Die Casing
-      draw3DCylinderSection(xCasingFront + casingChamfer, xCasingBack - casingChamfer, rDieCasingOuter, rDieCasingOuter, 'casing');
-      draw3DCylinderSection(xCasingFront, xCasingFront + casingChamfer, rDieCasingOuter - casingChamfer, rDieCasingOuter, 'casing');
-      draw3DCylinderSection(xCasingBack - casingChamfer, xCasingBack, rDieCasingOuter, rDieCasingOuter - casingChamfer, 'casing');
+      // 1. Outer Stainless Steel Die Casing (3 Axial Zones)
+      add3DCylinderSection(xCasingFront, xCasingFront + casingChamfer, rDieCasingOuter - casingChamfer, rDieCasingOuter, 'casing');
+      add3DCylinderSection(xCasingFront + casingChamfer, xCasingBack - casingChamfer, rDieCasingOuter, rDieCasingOuter, 'casing');
+      add3DCylinderSection(xCasingBack - casingChamfer, xCasingBack, rDieCasingOuter, rDieCasingOuter - casingChamfer, 'casing');
 
-      // 2. Draw Sintered Brazing Seat Ring & Carbide Nib
-      draw3DCylinderSection(xCasingFront + 2, xCasingBack - 2, rNibOuter + 2, rNibOuter + 2, 'braze');
-      draw3DCylinderSection(xCasingFront + 4, xCasingBack - 4, rNibOuter, rNibOuter, 'nib');
+      // 2. Sintered Brazing Seat Ring & Carbide Nib Outer Body
+      add3DCylinderSection(xCasingFront + 2, xCasingBack - 2, rNibOuter + 2, rNibOuter + 2, 'braze');
+      add3DCylinderSection(xCasingFront + 4, xCasingBack - 4, rNibOuter, rNibOuter, 'nib');
 
-      // 3. Draw Cutaway Walls
+      // 3. Nib Internal Bore Cavity (Visible When Cut Open)
+      if (sliceAngleDeg < 360) {
+        add3DCylinderSection(xBellStart, xConeStart, rIn + 6, rIn, 'bore');
+        add3DCylinderSection(xConeStart, xConeEnd, rIn, rOut, 'bore');
+        add3DCylinderSection(xConeEnd, xBearEnd, rOut, rOut, 'bore');
+        add3DCylinderSection(xBearEnd, xReliefEnd, rOut, rOut + (rIn - rOut) * 0.6, 'bore');
+      }
+
+      // 4. Cutaway Longitudinal Slice Walls
       if (sliceAngleDeg < 360) {
         const cutAngles = [0, maxCutoffRad];
         cutAngles.forEach((cutAngle) => {
@@ -1182,40 +1265,18 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           const pC2 = project3D(xCasingBack, (rDieCasingOuter - casingChamfer) * cosA, (rDieCasingOuter - casingChamfer) * sinA);
           const pN2 = project3D(xCasingBack, rNibOuter * cosA, rNibOuter * sinA);
           const pN1 = project3D(xCasingFront, rNibOuter * cosA, rNibOuter * sinA);
-
-          ctx.fillStyle = 'rgba(51, 65, 85, 0.85)';
-          ctx.strokeStyle = '#94a3b8';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(pC1.px, pC1.py);
-          ctx.lineTo(pC2.px, pC2.py);
-          ctx.lineTo(pN2.px, pN2.py);
-          ctx.lineTo(pN1.px, pN1.py);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+          addQuad(pC1, pC2, pN2, pN1, 'rgba(51, 65, 85, 0.9)', '#94a3b8', 1);
 
           const pB1 = project3D(xCasingFront + 4, rNibOuter * cosA, rNibOuter * sinA);
           const pB2 = project3D(xCasingBack - 4, rNibOuter * cosA, rNibOuter * sinA);
           const pB3 = project3D(xCasingBack - 4, rOut * cosA, rOut * sinA);
           const pB4 = project3D(xCasingFront + 4, rIn * cosA, rIn * sinA);
-
-          ctx.fillStyle = dieMat.coreColor;
-          ctx.strokeStyle = dieMat.brazeColor;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.moveTo(pB1.px, pB1.py);
-          ctx.lineTo(pB2.px, pB2.py);
-          ctx.lineTo(pB3.px, pB3.py);
-          ctx.lineTo(pB4.px, pB4.py);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+          addQuad(pB1, pB2, pB3, pB4, dieMat.coreColor, dieMat.brazeColor, 1.2);
         });
       }
 
-      // 4. Draw Continuous Wire Profile
-      draw3DCylinderSection(xEntrance, xBellStart, rIn, rIn, 'wire');
+      // 5. Continuous Drawn Wire Profile (Fully Segmented in 3D)
+      add3DCylinderSection(xEntrance, xBellStart, rIn, rIn, 'wire');
 
       const stepsBell = 6;
       for (let s = 0; s < stepsBell; s++) {
@@ -1225,7 +1286,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         const t2 = (s + 1) / stepsBell;
         const r1 = rIn + 6 * (1 - Math.sin(t1 * Math.PI * 0.5));
         const r2 = rIn + 6 * (1 - Math.sin(t2 * Math.PI * 0.5));
-        draw3DCylinderSection(x1, x2, r1, r2, 'wire');
+        add3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
       const stepsCone = 10;
@@ -1234,10 +1295,10 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         const x2 = xConeStart + ((s + 1) / stepsCone) * (xConeEnd - xConeStart);
         const r1 = rIn - (s / stepsCone) * (rIn - rOut);
         const r2 = rIn - ((s + 1) / stepsCone) * (rIn - rOut);
-        draw3DCylinderSection(x1, x2, r1, r2, 'wire');
+        add3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
-      draw3DCylinderSection(xConeEnd, xBearEnd, rOut, rOut, 'wire');
+      add3DCylinderSection(xConeEnd, xBearEnd, rOut, rOut, 'wire');
 
       const stepsRelief = 6;
       for (let s = 0; s < stepsRelief; s++) {
@@ -1245,15 +1306,13 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         const x2 = xBearEnd + ((s + 1) / stepsRelief) * (xReliefEnd - xBearEnd);
         const r1 = rOut + (s / stepsRelief) * ((rIn - rOut) * 0.6);
         const r2 = rOut + ((s + 1) / stepsRelief) * ((rIn - rOut) * 0.6);
-        draw3DCylinderSection(x1, x2, r1, r2, 'wire');
+        add3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
-      draw3DCylinderSection(xReliefEnd, xExit, rOut, rOut, 'wire');
+      add3DCylinderSection(xReliefEnd, xExit, rOut, rOut, 'wire');
 
+      // 6. Central Burst Defect Chevrons
       if (isCentralBurstRisk) {
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 1.6;
         const numChevrons = 3;
         for (let c = 0; c < numChevrons; c++) {
           const xc = xConeStart + 15 + c * ((xConeEnd - xConeStart - 30) / (numChevrons - 1));
@@ -1262,40 +1321,53 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           const pMidBottom = project3D(xc, -4, 0);
           const pRight = project3D(xc + 8, 0, 0);
 
-          ctx.beginPath();
-          ctx.moveTo(pLeft.px, pLeft.py);
-          ctx.lineTo(pMidTop.px, pMidTop.py);
-          ctx.lineTo(pRight.px, pRight.py);
-          ctx.lineTo(pMidBottom.px, pMidBottom.py);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+          renderQueue.push({
+            depth: pLeft.depth,
+            draw: () => {
+              ctx.beginPath();
+              ctx.moveTo(pLeft.px, pLeft.py);
+              ctx.lineTo(pMidTop.px, pMidTop.py);
+              ctx.lineTo(pRight.px, pRight.py);
+              ctx.lineTo(pMidBottom.px, pMidBottom.py);
+              ctx.closePath();
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
+              ctx.strokeStyle = '#ef4444';
+              ctx.lineWidth = 1.6;
+              ctx.fill();
+              ctx.stroke();
+            },
+          });
         }
       }
 
+      // 7. Flow Particles
       if (isPlaying) {
         particleOffset = (particleOffset + 1.4 * dt * 60) % 40;
       }
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const stepP = 16;
       for (let px = xEntrance; px < xExit; px += stepP) {
         const offsetPx = px + particleOffset;
         if (offsetPx > xExit) continue;
 
-        let currentR = rIn;
-        if (offsetPx >= xConeStart && offsetPx <= xConeEnd) {
-          const t = (offsetPx - xConeStart) / (xConeEnd - xConeStart);
-          currentR = rIn - t * (rIn - rOut);
-        } else if (offsetPx > xConeEnd) {
-          currentR = rOut;
-        }
-
         const p = project3D(offsetPx, 0, 0);
-        ctx.beginPath();
-        ctx.arc(p.px, p.py, 2.5, 0, Math.PI * 2);
-        ctx.fill();
+        renderQueue.push({
+          depth: p.depth,
+          draw: () => {
+            ctx.beginPath();
+            ctx.arc(p.px, p.py, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fill();
+          },
+        });
       }
 
+      // EXECUTE DEPTH-SORTED RENDER QUEUE (Back to Front)
+      renderQueue.sort((a, b) => a.depth - b.depth);
+      for (let i = 0; i < renderQueue.length; i++) {
+        renderQueue[i].draw();
+      }
+
+      // 8. 2D CAD Dimension Leaders & Overlays (On Top of 3D Scene)
       if (showDimensions) {
         ctx.save();
         ctx.font = 'bold 9px monospace';
