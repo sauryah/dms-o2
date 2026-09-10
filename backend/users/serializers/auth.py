@@ -20,16 +20,21 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
-class MFAEnableSerializer(serializers.Serializer):
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
-
-
-class MFADisableSerializer(serializers.Serializer):
-    password = serializers.CharField(required=True)
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
-
-
-class MFAVerifyLoginSerializer(serializers.Serializer):
+class BackupCodeVerifySerializer(serializers.Serializer):
     mfa_token = serializers.CharField(required=True)
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
+    code = serializers.CharField(required=True, min_length=4, max_length=32)
     client_ip = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class BackupCodeGenerateSerializer(serializers.Serializer):
+    password = serializers.CharField(required=False, allow_blank=True, default='', write_only=True)
+
+
+class BackupCodeDisableSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True, write_only=True)
+
+
+# Backwards compatibility aliases
+MFAVerifyLoginSerializer = BackupCodeVerifySerializer
+MFAEnableSerializer = BackupCodeGenerateSerializer
+MFADisableSerializer = BackupCodeDisableSerializer
