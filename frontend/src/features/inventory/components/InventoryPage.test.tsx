@@ -50,7 +50,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   const testQueryClient = createTestQueryClient()
   return (
     <QueryClientProvider client={testQueryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         {children}
       </BrowserRouter>
     </QueryClientProvider>
