@@ -95,14 +95,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         perform: () => { navigate('/die-series-generator'); onClose() }
       },
       {
-        id: 'nav-pass-optimizer',
-        title: 'GO TO PASS ASSIGNMENT OPTIMIZER',
-        subtitle: 'Optimal stock die assignment with stress and central burst detection',
-        category: 'Navigation',
-        icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
-        perform: () => { navigate('/pass-optimizer'); onClose() }
-      },
-      {
         id: 'nav-inventory',
         title: 'GO TO DIE INVENTORY',
         subtitle: 'Browse and filter all extrusion dies in the catalog',
