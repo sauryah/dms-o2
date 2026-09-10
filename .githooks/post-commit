@@ -1,0 +1,8 @@
+#!/bin/sh
+# DMS-O2 Post-commit hook: Auto-update Graphify Knowledge Graph
+# Install: git config core.hooksPath .githooks
+
+if command -v graphify >/dev/null 2>&1; then
+    echo "Updating Graphify knowledge graph..."
+    graphify update . -q >/dev/null 2>&1 &
+fi
