@@ -20,12 +20,10 @@ const UsersPage = lazyWithRetry(() => import('./pages/UsersPage').then(m => ({ d
 const HistoryPage = lazyWithRetry(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const CalculatorPage = lazyWithRetry(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })))
 const ToolsPage = lazyWithRetry(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
 const WireDrawingCalculatorPage = lazyWithRetry(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 const DieSeriesGeneratorPage = lazyWithRetry(() => import('./pages/DieSeriesGeneratorPage').then(m => ({ default: m.DieSeriesGeneratorPage })))
 const PassOptimizerPage = lazyWithRetry(() => import('./features/pass-optimizer/components/PassOptimizerPage').then(m => ({ default: m.PassOptimizerPage })))
-const DieSetPlannerPage = lazyWithRetry(() => import('./features/die-set-planner/components/DieSetPlannerPage').then(m => ({ default: m.DieSetPlannerPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -214,13 +212,6 @@ function AppContent() {
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
-            <Route path="/calculator" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth toolId="sizing-calculator">
-                  <CalculatorPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
             <Route path="/wire-drawing-calculator" element={
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
@@ -239,13 +230,6 @@ function AppContent() {
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="pass-optimizer">
                   <PassOptimizerPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/die-set-planner" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth toolId="die-set-planner">
-                  <DieSetPlannerPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
