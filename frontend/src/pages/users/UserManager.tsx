@@ -804,7 +804,7 @@ export function UserManager() {
                       const nextVal = !isAuthorizedForToolsInput
                       setIsAuthorizedForToolsInput(nextVal)
                       if (nextVal && authorizedToolsInput.length === 0) {
-                        setAuthorizedToolsInput(['sizing-calculator', 'wire-drawing-calculator'])
+                        setAuthorizedToolsInput(['wire-drawing-calculator'])
                       }
                     }
                   }}
@@ -821,7 +821,7 @@ export function UserManager() {
                       const checked = e.target.checked
                       setIsAuthorizedForToolsInput(checked)
                       if (checked && authorizedToolsInput.length === 0) {
-                        setAuthorizedToolsInput(['sizing-calculator', 'wire-drawing-calculator'])
+                        setAuthorizedToolsInput(['wire-drawing-calculator'])
                       }
                     }}
                     className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
@@ -836,26 +836,6 @@ export function UserManager() {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">
                       Permission Matrix
                     </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="tool-sizing-calculator"
-                        checked={authorizedToolsInput.includes('sizing-calculator')}
-                        onChange={() => {
-                          const isChecked = authorizedToolsInput.includes('sizing-calculator');
-                          setAuthorizedToolsInput(prev =>
-                            isChecked ? prev.filter(id => id !== 'sizing-calculator') : [...prev, 'sizing-calculator']
-                          );
-                        }}
-                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
-                      />
-                      <label htmlFor="tool-sizing-calculator" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
-                        Sizing & Elongation Calculator
-                      </label>
-                    </div>
                   </div>
 
                   <div className="p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm space-y-2">
@@ -954,26 +934,6 @@ export function UserManager() {
                       />
                       <label htmlFor="tool-pass-optimizer" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
                         Pass Assignment Optimizer
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="tool-die-set-planner"
-                        checked={authorizedToolsInput.includes('die-set-planner')}
-                        onChange={() => {
-                          const isChecked = authorizedToolsInput.includes('die-set-planner');
-                          setAuthorizedToolsInput(prev =>
-                            isChecked ? prev.filter(id => id !== 'die-set-planner') : [...prev, 'die-set-planner']
-                          );
-                        }}
-                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
-                      />
-                      <label htmlFor="tool-die-set-planner" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
-                        Die Set Planner
                       </label>
                     </div>
                   </div>
