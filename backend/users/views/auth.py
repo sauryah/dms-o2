@@ -21,20 +21,35 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiType
 from rest_framework import serializers
 
 from django.core import signing
-import pyotp
-import qrcode
-import base64
-import io
+import secrets
+import string
 
-from users.models import User, UserSession, UserActivityLog
+from users.models import User, UserBackupCode, UserSession, UserActivityLog
 from users.serializers import (
     LoginSerializer,
     ChangePasswordSerializer,
+    BackupCodeVerifySerializer,
+    BackupCodeGenerateSerializer,
+    BackupCodeDisableSerializer,
     MFAEnableSerializer,
     MFADisableSerializer,
     MFAVerifyLoginSerializer,
 )
 from rest_framework.throttling import AnonRateThrottle
+
+# Alphanumeric character set avoiding visually ambiguous glyphs (0, O, 1, I, L)
+BACKUP_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+
+def generate_backup_code() -> str:
+    """Generate an 8-character uppercase alphanumeric code formatted as XXXX-XXXX."""
+    p1 = ''.join(secrets.choice(BACKUP_CODE_ALPHABET) for _ in range(4))
+    p2 = ''.join(secrets.choice(BACKUP_CODE_ALPHABET) for _ in range(4))
+    return f"{p1}-{p2}"
+
+def hash_backup_code(raw_code: str) -> str:
+    """Normalize and compute the SHA-256 hash of a backup code."""
+    cleaned = raw_code.replace('-', '').replace(' ', '').strip().upper()
+    return hashlib.sha256(cleaned.encode('utf-8')).hexdigest()
 
 DOCKER_INTERNAL_SUBNETS = [
     ipaddress.ip_network('172.16.0.0/12'),  # 172.16.0.0 - 172.31.255.255 (Docker standard bridges)
@@ -206,6 +221,7 @@ class LoginView(APIView):
                     'role': serializers.CharField(required=False),
                     'mfa_required': serializers.BooleanField(required=False),
                     'mfa_token': serializers.CharField(required=False),
+                    'remaining_codes': serializers.IntegerField(required=False),
                 },
             ),
             401: OpenApiResponse(description='Invalid credentials or inactive account'),
@@ -271,43 +287,45 @@ class LoginView(APIView):
             except Exception:
                 pass
 
-        # If user has MFA enabled, return MFA required response with a temporary signed token
-        if user.is_mfa_enabled and user.totp_secret:
+        # If user has backup codes MFA enabled and has unused codes, require backup code verification
+        unused_codes_count = user.backup_codes.filter(is_used=False).count()
+        if user.is_mfa_enabled and unused_codes_count > 0:
             mfa_payload = {
                 "user_id": user.id,
                 "username": user.username,
-                "stage": "mfa_pending"
+                "stage": "backup_code_pending"
             }
             mfa_token = signing.dumps(mfa_payload, salt="dms-mfa-login")
             return Response({
                 "mfa_required": True,
                 "mfa_token": mfa_token,
                 "username": user.username,
+                "remaining_codes": unused_codes_count,
             }, status=status.HTTP_200_OK)
 
         return issue_user_login_tokens(user, request)
 
 
-class MFAVerifyLoginView(APIView):
+class BackupCodeVerifyLoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
-        request=MFAVerifyLoginSerializer,
+        request=BackupCodeVerifySerializer,
         responses={
             200: inline_serializer(
-                name='MFAVerifyLoginResponse',
+                name='BackupCodeVerifyLoginResponse',
                 fields={
                     'token': serializers.CharField(),
                     'role': serializers.CharField(),
                 },
             ),
-            400: OpenApiResponse(description='Invalid or expired MFA token / code'),
+            400: OpenApiResponse(description='Invalid or expired MFA token / backup code'),
         },
     )
     def post(self, request, *args, **kwargs):
-        serializer = MFAVerifyLoginSerializer(data=request.data)
+        serializer = BackupCodeVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         mfa_token = serializer.validated_data['mfa_token']
         code = serializer.validated_data['code'].strip()
@@ -315,170 +333,180 @@ class MFAVerifyLoginView(APIView):
         try:
             payload = signing.loads(mfa_token, salt="dms-mfa-login", max_age=300)
         except signing.SignatureExpired:
-            return Response({"detail": "MFA verification session expired. Please log in again."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Verification session expired. Please log in again."}, status=status.HTTP_400_BAD_REQUEST)
         except signing.BadSignature:
-            return Response({"detail": "Invalid MFA verification token."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid verification token."}, status=status.HTTP_400_BAD_REQUEST)
 
         user_id = payload.get("user_id")
         user = User.objects.filter(id=user_id, is_active=True).first()
-        if not user or not user.is_mfa_enabled or not user.totp_secret:
-            return Response({"detail": "User not found or MFA not configured."}, status=status.HTTP_400_BAD_REQUEST)
+        if not user or not user.is_mfa_enabled:
+            return Response({"detail": "User not found or backup codes not enabled."}, status=status.HTTP_400_BAD_REQUEST)
 
-        totp = pyotp.TOTP(user.totp_secret)
-        if not totp.verify(code, valid_window=1):
-            UserActivityLog.objects.create(
+        code_hash = hash_backup_code(code)
+        with transaction.atomic():
+            backup_code = UserBackupCode.objects.select_for_update().filter(
                 user=user,
-                username=user.username,
-                action='FAILED_LOGIN',
-                ip_address=get_client_ip(request),
-                device=request.META.get('HTTP_USER_AGENT', '')[:255]
-            )
-            return Response({"detail": "Invalid 6-digit verification code."}, status=status.HTTP_400_BAD_REQUEST)
+                code_hash=code_hash,
+                is_used=False
+            ).first()
+
+            if not backup_code:
+                UserActivityLog.objects.create(
+                    user=user,
+                    username=user.username,
+                    action='FAILED_LOGIN',
+                    ip_address=get_client_ip(request),
+                    device=request.META.get('HTTP_USER_AGENT', '')[:255]
+                )
+                return Response({"detail": "Invalid or already used backup code."}, status=status.HTTP_400_BAD_REQUEST)
+
+            from django.utils import timezone
+            backup_code.is_used = True
+            backup_code.used_at = timezone.now()
+            backup_code.save()
 
         return issue_user_login_tokens(user, request)
 
 
-class MFASetupView(APIView):
+class BackupCodeGenerateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=BackupCodeGenerateSerializer,
+        responses={
+            200: inline_serializer(
+                name='BackupCodeGenerateResponse',
+                fields={
+                    'codes': serializers.ListField(child=serializers.CharField()),
+                    'count': serializers.IntegerField(),
+                    'message': serializers.CharField(),
+                },
+            ),
+            400: OpenApiResponse(description='Invalid password'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = BackupCodeGenerateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+
+        # If user already has active backup codes, require password confirmation
+        if user.is_mfa_enabled and user.backup_codes.filter(is_used=False).exists():
+            password = serializer.validated_data.get('password', '')
+            if not password or not user.check_password(password):
+                return Response({"password": "Incorrect current password required to regenerate backup codes."}, status=status.HTTP_400_BAD_REQUEST)
+
+        raw_codes = []
+        with transaction.atomic():
+            # Invalidate all prior backup codes
+            user.backup_codes.all().delete()
+
+            code_objects = []
+            for _ in range(10):
+                c = generate_backup_code()
+                while c in raw_codes:
+                    c = generate_backup_code()
+                raw_codes.append(c)
+                code_objects.append(
+                    UserBackupCode(
+                        user=user,
+                        code_hash=hash_backup_code(c),
+                        is_used=False
+                    )
+                )
+            UserBackupCode.objects.bulk_create(code_objects)
+
+            user.is_mfa_enabled = True
+            user.save()
+
+        UserActivityLog.objects.create(
+            user=user,
+            username=user.username,
+            action='PERMISSIONS_CHANGED',
+            ip_address=get_client_ip(request),
+            device=f"Generated 10 new backup recovery codes"
+        )
+
+        return Response({
+            "codes": raw_codes,
+            "count": len(raw_codes),
+            "message": "Store these backup codes safely. They will not be displayed again."
+        }, status=status.HTTP_200_OK)
+
+
+class BackupCodeDisableView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=BackupCodeDisableSerializer,
+        responses={
+            200: inline_serializer(
+                name='BackupCodeDisableResponse',
+                fields={'detail': serializers.CharField()},
+            ),
+            400: OpenApiResponse(description='Invalid password'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = BackupCodeDisableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        password = serializer.validated_data['password']
+        user = request.user
+
+        if not user.check_password(password):
+            return Response({"password": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            user.backup_codes.all().delete()
+            user.is_mfa_enabled = False
+            user.save()
+
+        UserActivityLog.objects.create(
+            user=user,
+            username=user.username,
+            action='PERMISSIONS_CHANGED',
+            ip_address=get_client_ip(request),
+            device="Disabled backup codes authentication"
+        )
+
+        return Response({"detail": "Backup codes authentication has been disabled successfully."}, status=status.HTTP_200_OK)
+
+
+class BackupCodeStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=None,
         responses={
             200: inline_serializer(
-                name='MFASetupResponse',
+                name='BackupCodeStatusResponse',
                 fields={
-                    'secret': serializers.CharField(),
-                    'otpauth_uri': serializers.CharField(),
-                    'qr_code': serializers.CharField(),
+                    'is_enabled': serializers.BooleanField(),
+                    'total_codes': serializers.IntegerField(),
+                    'unused_codes': serializers.IntegerField(),
+                    'used_codes': serializers.IntegerField(),
                 },
             ),
         },
     )
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = request.user
-        secret = pyotp.random_base32()
-        totp = pyotp.TOTP(secret)
-        otpauth_uri = totp.provisioning_uri(name=user.username, issuer_name="DMS-O2")
-
-        # Generate QR code base64
-        qr_img = qrcode.make(otpauth_uri)
-        buffer = io.BytesIO()
-        qr_img.save(buffer)
-        qr_b64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-        qr_code_data_url = f"data:image/png;base64,{qr_b64}"
-
-        # Store pending secret in Redis for 10 minutes
-        try:
-            redis_url = settings.CACHES['default']['LOCATION']
-            r = redis.Redis.from_url(redis_url)
-            r.setex(f"mfa_setup_secret:{user.id}", 600, secret)
-        except Exception as e:
-            logger.warning(f"Redis cache write failed during MFA setup: {e}")
-
+        total = user.backup_codes.count()
+        unused = user.backup_codes.filter(is_used=False).count()
+        used = total - unused
         return Response({
-            "secret": secret,
-            "otpauth_uri": otpauth_uri,
-            "qr_code": qr_code_data_url,
+            "is_enabled": user.is_mfa_enabled and total > 0,
+            "total_codes": total,
+            "unused_codes": unused,
+            "used_codes": used,
         }, status=status.HTTP_200_OK)
 
 
-class MFAEnableView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        request=MFAEnableSerializer,
-        responses={
-            200: inline_serializer(
-                name='MFAEnableResponse',
-                fields={'detail': serializers.CharField()},
-            ),
-            400: OpenApiResponse(description='Invalid code or setup expired'),
-        },
-    )
-    def post(self, request, *args, **kwargs):
-        serializer = MFAEnableSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        code = serializer.validated_data['code'].strip()
-        user = request.user
-
-        secret = None
-        try:
-            redis_url = settings.CACHES['default']['LOCATION']
-            r = redis.Redis.from_url(redis_url)
-            cached_secret = r.get(f"mfa_setup_secret:{user.id}")
-            if cached_secret:
-                secret = cached_secret.decode('utf-8')
-        except Exception as e:
-            logger.warning(f"Redis lookup failed during MFA enable: {e}")
-
-        if not secret:
-            return Response({"detail": "MFA setup session expired or not initialized. Please click Setup again."}, status=status.HTTP_400_BAD_REQUEST)
-
-        totp = pyotp.TOTP(secret)
-        if not totp.verify(code, valid_window=1):
-            return Response({"detail": "Invalid 6-digit verification code. Check your authenticator app."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.totp_secret = secret
-        user.is_mfa_enabled = True
-        user.save()
-
-        try:
-            r.delete(f"mfa_setup_secret:{user.id}")
-        except Exception:
-            pass
-
-        UserActivityLog.objects.create(
-            user=user,
-            username=user.username,
-            action='PERMISSIONS_CHANGED',
-            ip_address=get_client_ip(request),
-            device=request.META.get('HTTP_USER_AGENT', '')[:255]
-        )
-
-        return Response({"detail": "Two-factor authentication has been enabled successfully."}, status=status.HTTP_200_OK)
-
-
-class MFADisableView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        request=MFADisableSerializer,
-        responses={
-            200: inline_serializer(
-                name='MFADisableResponse',
-                fields={'detail': serializers.CharField()},
-            ),
-            400: OpenApiResponse(description='Invalid password or code'),
-        },
-    )
-    def post(self, request, *args, **kwargs):
-        serializer = MFADisableSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        password = serializer.validated_data['password']
-        code = serializer.validated_data['code'].strip()
-        user = request.user
-
-        if not user.check_password(password):
-            return Response({"password": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if user.is_mfa_enabled and user.totp_secret:
-            totp = pyotp.TOTP(user.totp_secret)
-            if not totp.verify(code, valid_window=1):
-                return Response({"code": "Invalid 6-digit verification code."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.totp_secret = ''
-        user.is_mfa_enabled = False
-        user.save()
-
-        UserActivityLog.objects.create(
-            user=user,
-            username=user.username,
-            action='PERMISSIONS_CHANGED',
-            ip_address=get_client_ip(request),
-            device=request.META.get('HTTP_USER_AGENT', '')[:255]
-        )
-
-        return Response({"detail": "Two-factor authentication has been disabled successfully."}, status=status.HTTP_200_OK)
+# Backwards compatibility views
+MFAVerifyLoginView = BackupCodeVerifyLoginView
+MFASetupView = BackupCodeGenerateView
+MFAEnableView = BackupCodeGenerateView
+MFADisableView = BackupCodeDisableView
 
 
 class ChangePasswordView(APIView):
