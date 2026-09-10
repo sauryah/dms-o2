@@ -96,7 +96,7 @@ export const useApi = () => {
     }
 
     let targetUrl = url
-    if (url.startsWith('/api/') && !url.startsWith('/api/go/') && !url.startsWith('/api/events/')) {
+    if (url.startsWith('/api/') && !url.startsWith('/api/v1/') && !url.startsWith('/api/go/') && !url.startsWith('/api/events/')) {
       targetUrl = '/api/v1/' + url.substring(5)
     }
 
