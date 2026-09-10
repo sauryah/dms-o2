@@ -7,22 +7,19 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Goal & Loop-Oriented Enterprise System Modernization (Loops 1-5)
+**Task:** Decommission Sizing Calculator & Die Set Planner
 **Status:** Complete
-**Started:** 2026-09-03
-**Completed:** 2026-09-03
+**Started:** 2026-09-10
+**Completed:** 2026-09-10
 **Confidence:** 100%
 
 ## Task Description
-Autonomously executed all 5 sequential execution loops of the Enterprise Modernization Plan:
-1. **Loop 1 — Security & API Ingress Hardening**: Implemented `/api/v1/health/detailed/` exposing database latency, Redis latency, Meilisearch latency, and Outbox backlog queue metrics.
-2. **Loop 2 — Database Performance & Composite Indexing**: Added composite indexes on `(status, die_type)` and `(rack_id, shelf_number)` (`0015_add_composite_performance_indexes.py`) to optimize relational filtering.
-3. **Loop 3 — Plant-Floor Operator UI & SSE Telemetry**: Implemented `<CommandPalette />` (`Ctrl+K` keyboard launcher & real-time search), `<ConnectionStatusBadge />` (live SSE state indicator), and non-blocking toast notifications.
-4. **Loop 4 — Automated Disaster Recovery & Integrity Auditing**: Added `verify_backup_restorability_task` testing dump restorability via `pg_restore -l`, scheduled daily in Celery Beat at 02:30 AM, and created `scripts/dependency-auditor.ps1`.
-5. **Loop 5 — Convergence & Regression Verification**: 100% test pass across all 3 stacks:
-   - Django: 203/203 tests passed (81.5s).
-   - Go API: 9/9 packages passed (33.2s).
-   - Frontend: 22/22 test files, 72/72 tests passed (7.6s), TypeScript 0 errors, Vite production build succeeded.
+Decommissioned legacy and unneeded tools from DMS-O2:
+1. Sizing Calculator (`sizing-calculator`, `/calculator`, `FlatCalculator`, `RoundCalculator`, `SequenceCalculator`, `FormulaReference`, Go calculate round/flat/sequence endpoints).
+2. Die Set Planner (`die-set-planner`, `/die-set-planner`, `frontend/src/features/die-set-planner`, `go-api/internal/dieset`, Go calculate die-set endpoint).
+3. Renumbered remaining tools: TOOL-01 (Wire Drawing Elongation Calculator), TOOL-02 (Die Series Generator), TOOL-03 (Pass Assignment Optimizer).
+4. Synchronized permissions in AuthContext, UserManager, Navbar, CommandPalette, and ToolsPage.
+5. 100% test pass (Vitest 21/21 test files, 54/54 tests green, tsc 0 errors, Vite production build clean).
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
