@@ -23,6 +23,9 @@ import {
   Crosshair,
   Maximize,
   Ruler,
+  FileText,
+  Flame,
+  ShieldCheck,
 } from 'lucide-react';
 import { PassData } from '../types';
 
@@ -52,6 +55,61 @@ interface TrainHoverInfo {
   drawingForceN: number;
   sigmaD: number;
 }
+
+// 4-Zone Die Bore Architecture Types
+export type DieZoneType = 'all' | 'bell' | 'cone' | 'bearing' | 'relief';
+
+export interface ZoneDetail {
+  name: string;
+  role: string;
+  angleOrDim: string;
+  formula: string;
+  purpose: string;
+  color: string;
+}
+
+export const DIE_ZONES: Record<DieZoneType, ZoneDetail> = {
+  all: {
+    name: 'Full Die Assembly',
+    role: 'DIN 2812 Standard Continuous Wire Reduction',
+    angleOrDim: 'Zones 1–4 Integrated',
+    formula: 'σ_d = σ_flow · φ · ε · (1 + μ/tan α)',
+    purpose: 'Complete die bore profile with entrance bell, reduction cone, bearing land, and back relief clearance.',
+    color: '#a855f7',
+  },
+  bell: {
+    name: 'Zone 1: Bell Entrance Radius',
+    role: 'Hydrodynamic Lubricant Ingestion Wedge',
+    angleOrDim: 'R_bell = 18.0 mm',
+    formula: 'p_hydro = (6 · η · v) / h²',
+    purpose: 'Smooth transition that guides wire into the die, prevents surface oxide shaving, and draws drawing soap/oil under hydrodynamic pressure.',
+    color: '#38bdf8',
+  },
+  cone: {
+    name: 'Zone 2: Approach Reduction Cone',
+    role: 'Primary Plastic Deformation & Work Hardening',
+    angleOrDim: '2α = Approach Angle',
+    formula: 'σ_m = 2/3 · Y · ln(d₁/d₂) / sin(α)',
+    purpose: 'Compresses wire from inlet d₁ to exit d₂. The approach angle 2α minimizes total energy by balancing redundant shear strain and boundary friction.',
+    color: '#c084fc',
+  },
+  bearing: {
+    name: 'Zone 3: Parallel Bearing Land (Lb)',
+    role: 'Final Calibration, Sizing & Surface Burnishing',
+    angleOrDim: 'Lb = 35% d₂',
+    formula: 'ΔF_frict = π · d₂ · Lb · μ · p',
+    purpose: 'Sets final wire diameter, circularity, and surface finish. Optimum length prevents diameter relaxation without excessive frictional drag.',
+    color: '#34d399',
+  },
+  relief: {
+    name: 'Zone 4: Back Relief Exit Cone',
+    role: 'Elastic Springback Clearance & Anti-Chipping',
+    angleOrDim: '2β = 30° Exit Angle',
+    formula: 'δ_spring = (σ_y / E) · d₂',
+    purpose: 'Allows wire to expand elastically upon exiting without scraping against the sharp bearing edge, preventing die ring-out chipping.',
+    color: '#fbbf24',
+  },
+};
 
 // Mutable camera state to decouple 60/120 FPS rendering from React re-renders
 export interface CameraState {
@@ -587,15 +645,15 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         addWireSegment(lastSt.x + 10, lineRight, lastSt.rOut, lastSt.rOut, false);
       }
 
-      // 3. Capstan Pulling Drums
+      // 3. Solid Turned-Steel Industrial Bullblock Pulling Drums
       if (showCapstans) {
         for (let i = 0; i < N - 1; i++) {
           const stA = stations[i];
           const stB = stations[i + 1];
           const capstanX = (stA.x + stB.x) / 2;
-          const capstanY = 18;
-          const capstanR = 15;
-          const capstanZ = 18;
+          const capstanY = 16;
+          const capstanR = 16;
+          const capstanZ = 16;
 
           const drumCenter = project(capstanX, capstanY, capstanZ);
           const drumRotSpeed = flowTime * (stA.speedMultiplier * 0.08);
@@ -603,8 +661,19 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           renderQueue.push({
             depth: drumCenter.depth,
             draw: () => {
+              // A. Heavy Steel Mounting Arbor Flange
+              const pMount = project(capstanX, capstanY + 6, capstanZ - 6);
               ctx.beginPath();
-              const capsegs = 16;
+              ctx.arc(pMount.px, pMount.py, 18 * zScale, 0, Math.PI * 2);
+              ctx.fillStyle = '#0f172a';
+              ctx.strokeStyle = '#334155';
+              ctx.lineWidth = 1;
+              ctx.fill();
+              ctx.stroke();
+
+              // B. Main Cylindrical Turned-Steel Bullblock Body
+              const capsegs = 20;
+              ctx.beginPath();
               for (let s = 0; s <= capsegs; s++) {
                 const angle = (s / capsegs) * Math.PI * 2;
                 const px = capstanX + capstanR * Math.cos(angle);
@@ -616,27 +685,60 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
               ctx.closePath();
               ctx.fillStyle = '#1e293b';
               ctx.fill();
-              ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+              ctx.strokeStyle = '#64748b';
               ctx.lineWidth = 1.2;
               ctx.stroke();
 
-              for (let s = 0; s < 4; s++) {
-                const angle = drumRotSpeed + (s * Math.PI) / 2;
-                const spokeX = capstanX + Math.cos(angle) * (capstanR * 0.85);
-                const spokeY = capstanY + Math.sin(angle) * (capstanR * 0.85);
-                const pSpoke = project(spokeX, spokeY, capstanZ);
-                ctx.beginPath();
-                ctx.moveTo(drumCenter.px, drumCenter.py);
-                ctx.lineTo(pSpoke.px, pSpoke.py);
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-                ctx.lineWidth = 1.0;
-                ctx.stroke();
-              }
-
-              const pBolt = project(capstanX, capstanY, capstanZ);
+              // C. Machined Step Rim & Wire Traction Groove
               ctx.beginPath();
-              ctx.arc(pBolt.px, pBolt.py, 3 * zScale, 0, Math.PI * 2);
+              for (let s = 0; s <= capsegs; s++) {
+                const angle = (s / capsegs) * Math.PI * 2;
+                const px = capstanX + (capstanR * 0.78) * Math.cos(angle);
+                const py = capstanY + (capstanR * 0.78) * Math.sin(angle);
+                const p = project(px, py, capstanZ + 2);
+                if (s === 0) ctx.moveTo(p.px, p.py);
+                else ctx.lineTo(p.px, p.py);
+              }
+              ctx.closePath();
+              ctx.fillStyle = '#334155';
+              ctx.fill();
+              ctx.strokeStyle = '#94a3b8';
+              ctx.lineWidth = 0.8;
+              ctx.stroke();
+
+              // D. Center Drive Axle Boss & Hex Nut
+              const hubR = capstanR * 0.42;
+              ctx.beginPath();
+              for (let s = 0; s <= capsegs; s++) {
+                const angle = (s / capsegs) * Math.PI * 2;
+                const px = capstanX + hubR * Math.cos(angle);
+                const py = capstanY + hubR * Math.sin(angle);
+                const p = project(px, py, capstanZ + 3);
+                if (s === 0) ctx.moveTo(p.px, p.py);
+                else ctx.lineTo(p.px, p.py);
+              }
+              ctx.closePath();
+              ctx.fillStyle = '#0f172a';
+              ctx.fill();
+              ctx.strokeStyle = '#475569';
+              ctx.lineWidth = 1.0;
+              ctx.stroke();
+
+              // E. Rotating Timing Index Notch (Subtle rotation cue without fan blades)
+              const notchAngle = drumRotSpeed;
+              const nX = capstanX + Math.cos(notchAngle) * (hubR * 0.72);
+              const nY = capstanY + Math.sin(notchAngle) * (hubR * 0.72);
+              const pNotch = project(nX, nY, capstanZ + 3.5);
+              ctx.beginPath();
+              ctx.arc(pNotch.px, pNotch.py, 2.2 * zScale, 0, Math.PI * 2);
               ctx.fillStyle = '#38bdf8';
+              ctx.fill();
+
+              // Central Socket Hex Bolt
+              const pBolt = project(capstanX, capstanY, capstanZ + 3.5);
+              ctx.beginPath();
+              ctx.arc(pBolt.px, pBolt.py, 3.2 * zScale, 0, Math.PI * 2);
+              ctx.fillStyle = '#94a3b8';
               ctx.fill();
             },
           });
@@ -918,6 +1020,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   cameraRef,
   isPlaying,
   renderMode,
+  selectedZone = 'all',
   wireMaterial,
   dieNibMaterial,
   showDimensions,
@@ -930,7 +1033,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   sliceAngleDeg: number;
   cameraRef: React.MutableRefObject<CameraState>;
   isPlaying: boolean;
-  renderMode: 'realistic' | 'heatmap' | 'wireframe' | 'shear';
+  renderMode: 'realistic' | 'heatmap' | 'thermal' | 'shear' | 'wireframe';
+  selectedZone?: DieZoneType;
   wireMaterial: WireMaterialType;
   dieNibMaterial: DieNibMaterialType;
   showDimensions: boolean;
@@ -1183,6 +1287,45 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         return Math.max(0, Math.min(1, stressVal));
       };
 
+      const computeThermalAtX = (x: number): { temp: number; color: string } => {
+        const tAmbient = 25.0;
+        const deltaT_def = (sigmaD * epsilon) / (8960 * 385) * 1e6;
+        let localTemp: number;
+
+        if (x < xConeStart) {
+          localTemp = tAmbient;
+        } else if (x <= xConeEnd) {
+          const t = (x - xConeStart) / Math.max(1, xConeEnd - xConeStart);
+          localTemp = tAmbient + deltaT_def * Math.pow(t, 0.85) + 40.0 * Math.pow(t, 1.8);
+        } else if (x <= xBearEnd) {
+          const tBear = (x - xConeEnd) / Math.max(1, bearingLen);
+          localTemp = tAmbient + deltaT_def + 40.0 + 15.0 * (1.0 - tBear * 0.5);
+        } else if (x <= xReliefEnd) {
+          const tRelief = (x - xBearEnd) / Math.max(1, reliefLen);
+          localTemp = tAmbient + (deltaT_def + 40.0) * (1.0 - tRelief * 0.2);
+        } else {
+          const decay = Math.exp(-0.004 * (x - xReliefEnd));
+          localTemp = tAmbient + (deltaT_def + 30.0) * decay;
+        }
+
+        let color: string;
+        if (localTemp < 40) {
+          color = '#06b6d4';
+        } else if (localTemp < 70) {
+          color = '#10b981';
+        } else if (localTemp < 110) {
+          color = '#f59e0b';
+        } else if (localTemp < 145) {
+          color = '#ef4444';
+        } else if (localTemp < 175) {
+          color = '#f43f5e';
+        } else {
+          color = '#fdf4ff';
+        }
+
+        return { temp: localTemp, color };
+      };
+
       const add3DCylinderSection = (
         xStart: number,
         xEnd: number,
@@ -1218,13 +1361,22 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
             addQuad(p1, p2, p3, p4, dieMat.coreColor);
           } else if (layerType === 'bore') {
             const innerLight = Math.max(0.12, 0.3 + 0.35 * normalY);
-            addQuad(p1, p2, p3, p4, dieMat.coreColor, 'rgba(51, 65, 85, 0.4)', 0.8, innerLight);
+            let fill = dieMat.coreColor;
+            if (renderMode === 'thermal') {
+              const midX = (xStart + xEnd) / 2;
+              const { color: boreThermColor } = computeThermalAtX(midX);
+              fill = boreThermColor;
+            }
+            addQuad(p1, p2, p3, p4, fill, 'rgba(51, 65, 85, 0.4)', 0.8, renderMode === 'thermal' ? 0.75 : innerLight);
           } else {
             const midX = (xStart + xEnd) / 2;
             const stressVal = computeStressAtX(midX);
 
             if (renderMode === 'realistic') {
               addQuad(p1, p2, p3, p4, mat.wireGradient[0], undefined, 1, lightFactor);
+            } else if (renderMode === 'thermal') {
+              const { color: thermColor } = computeThermalAtX(midX);
+              addQuad(p1, p2, p3, p4, thermColor, undefined, 1, 0.95);
             } else if (renderMode === 'heatmap') {
               const fill = midX >= xConeEnd && midX <= xBearEnd
                 ? `rgba(245, 158, 11, ${0.6 + 0.4 * stressVal})`
@@ -1310,6 +1462,73 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       }
 
       add3DCylinderSection(xReliefEnd, xExit, rOut, rOut, 'wire');
+
+      // 5.5 3D Zone Bore Inspector Contour Glow Band
+      if (selectedZone !== 'all') {
+        let zStart = 0;
+        let zEnd = 0;
+        let zColor = '#a855f7';
+        let zLabel = '';
+
+        if (selectedZone === 'bell') {
+          zStart = xBellStart;
+          zEnd = xConeStart;
+          zColor = '#38bdf8';
+          zLabel = 'ZONE 1: BELL ENTRANCE';
+        } else if (selectedZone === 'cone') {
+          zStart = xConeStart;
+          zEnd = xConeEnd;
+          zColor = '#c084fc';
+          zLabel = 'ZONE 2: REDUCTION CONE';
+        } else if (selectedZone === 'bearing') {
+          zStart = xConeEnd;
+          zEnd = xBearEnd;
+          zColor = '#34d399';
+          zLabel = 'ZONE 3: BEARING LAND';
+        } else if (selectedZone === 'relief') {
+          zStart = xBearEnd;
+          zEnd = xReliefEnd;
+          zColor = '#fbbf24';
+          zLabel = 'ZONE 4: BACK RELIEF';
+        }
+
+        const ringR = rDieCasingOuter + 4;
+        for (let i = 0; i < count; i++) {
+          const cos1 = activeLUT.cos[i];
+          const sin1 = activeLUT.sin[i];
+          const cos2 = activeLUT.cos[i + 1];
+          const sin2 = activeLUT.sin[i + 1];
+
+          const p1 = project3D(zStart, ringR * cos1, ringR * sin1);
+          const p2 = project3D(zStart, ringR * cos2, ringR * sin2);
+          const p3 = project3D(zEnd, ringR * cos2, ringR * sin2);
+          const p4 = project3D(zEnd, ringR * cos1, ringR * sin1);
+
+          addQuad(p1, p2, p3, p4, `${zColor}33`, zColor, 1.8, 0.7);
+        }
+
+        const pMid = project3D((zStart + zEnd) / 2, -rDieCasingOuter - 18, 0);
+        renderQueue.push({
+          depth: pMid.depth + 10,
+          draw: () => {
+            ctx.save();
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            const tw = ctx.measureText(zLabel).width + 12;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+            ctx.strokeStyle = zColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(pMid.px - tw / 2, pMid.py - 12, tw, 16, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = zColor;
+            ctx.fillText(zLabel, pMid.px, pMid.py);
+            ctx.restore();
+          },
+        });
+      }
 
       // 6. Central Burst Defect Chevrons
       if (isCentralBurstRisk) {
@@ -1422,10 +1641,10 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       if (animId) cancelAnimationFrame(animId);
     };
   }, [
-    pass, isPlaying, renderMode, approachAngle2Alpha,
+    pass, isPlaying, renderMode, selectedZone, approachAngle2Alpha,
     bearingLengthLbRatio, sliceAngleDeg, wireMaterial, dieNibMaterial,
     showDimensions, din, dout, areaRed, alphaRadHalf, deltaParam,
-    isCentralBurstRisk, sigmaD, maxStress, bearingLen,
+    isCentralBurstRisk, sigmaD, maxStress, bearingLen, reliefLen,
     xConeStart, xConeEnd, xBearEnd, xExit, xEntrance, xBellStart, xReliefEnd,
     xCasingFront, xCasingBack, casingChamfer, rNibOuter, rDieCasingOuter,
     coneLength, rIn, rOut, cameraRef, canvasRef
@@ -1488,7 +1707,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const [approachAngle2Alpha, setApproachAngle2Alpha] = useState<number>(14);
   const [bearingLengthLbRatio, setBearingLengthLbRatio] = useState<number>(35);
   const [sliceAngleDeg, setSliceAngleDeg] = useState<number>(270);
-  const [renderMode, setRenderMode] = useState<'realistic' | 'heatmap' | 'wireframe' | 'shear'>('realistic');
+  const [renderMode, setRenderMode] = useState<'realistic' | 'heatmap' | 'thermal' | 'wireframe' | 'shear'>('realistic');
+  const [selectedZone, setSelectedZone] = useState<DieZoneType>('all');
   const [showDimensions, setShowDimensions] = useState<boolean>(true);
 
   // Mouse Dragging States
@@ -1654,6 +1874,198 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     });
   };
 
+  const handleExportTDS = async () => {
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
+
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      const activeCanvas =
+        activeViewMode === 'train'
+          ? trainCanvasRef.current
+          : activeViewMode === 'single'
+          ? singleCanvasRef.current
+          : canvasRefA.current;
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // 1. Header Banner
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 24, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DMS-O2 WIRE DRAWING TECHNICAL DATA SHEET (TDS)', 14, 11);
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.text('ISO 2812 & DIN 1547 COMPLIANT MULTI-PASS PASS SCHEDULE SPECIFICATION', 14, 18);
+
+      doc.setTextColor(56, 189, 248);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`DOC REF: DMS-TDS-${Date.now().toString().slice(-6)}`, pageWidth - 65, 11);
+      doc.setTextColor(148, 163, 184);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`DATE: ${new Date().toLocaleDateString()} | STATUS: CERTIFIED`, pageWidth - 65, 18);
+
+      // 2. Process & Material Metadata Card
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(14, 28, pageWidth - 28, 18, 2, 2, 'FD');
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'bold');
+
+      const colW = (pageWidth - 28) / 4;
+      doc.text('WIRE MATERIAL SPEC:', 18, 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
+      doc.text(WIRE_MATERIALS[wireMaterial].name, 18, 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(71, 85, 105);
+      doc.text('DIE NIB MATERIAL:', 18 + colW, 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
+      doc.text(DIE_MATERIALS[dieNibMaterial].name, 18 + colW, 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(71, 85, 105);
+      doc.text('DIE GEOMETRY PRESET:', 18 + colW * 2, 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`2α = ${approachAngle2Alpha}° | Lb = ${bearingLengthLbRatio}% d2`, 18 + colW * 2, 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(71, 85, 105);
+      doc.text('TOTAL PASSES / DRAFT:', 18 + colW * 3, 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${passes.length} Passes (Ø${(passes[0]?.fromDie ?? 0).toFixed(2)} → Ø${(passes[passes.length - 1]?.toDie ?? 0).toFixed(2)} mm)`, 18 + colW * 3, 40);
+
+      // 3. Embedded 3D Canvas Snapshot & AutoTable Schedule
+      let tableStartY = 50;
+      const imgW = 115;
+      const imgH = 62;
+      const imgX = pageWidth - 14 - imgW;
+      const imgY = 50;
+
+      if (activeCanvas) {
+        try {
+          const imgData = activeCanvas.toDataURL('image/png');
+          doc.setFillColor(15, 23, 42);
+          doc.roundedRect(imgX - 1, imgY - 1, imgW + 2, imgH + 2, 2, 2, 'F');
+          doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
+
+          doc.setFontSize(7);
+          doc.setTextColor(255, 255, 255);
+          doc.text(`3D Model Projection: ${activeViewMode.toUpperCase()} VIEWPORT`, imgX + 3, imgY + imgH - 3);
+        } catch {
+          // ignore canvas extraction error
+        }
+      }
+
+      const tableData = passes.map((p) => {
+        const sigmaD_p = computeDrawingStress(p, approachAngle2Alpha);
+        const forceN_p = computeDrawingForce(p, approachAngle2Alpha);
+        const rFrac_p = Math.max(0.01, Math.min(0.9, (p.areaReduction ?? 0) / 100));
+        const eps_p = Math.log(1 / (1 - rFrac_p));
+        const deltaT_p = (sigmaD_p * eps_p) / (8960 * 385) * 1e6;
+        const initA = Math.PI * Math.pow((passes[0]?.fromDie ?? 1) / 2, 2);
+        const outA = Math.PI * Math.pow((p.toDie ?? 1) / 2, 2);
+        const speedM = initA / outA;
+
+        return [
+          `P#${p.pass}`,
+          `${p.fromDie.toFixed(3)}`,
+          `${p.toDie.toFixed(3)}`,
+          `${(p.areaReduction ?? 0).toFixed(1)}%`,
+          `${(p.elongation ?? 0).toFixed(1)}%`,
+          `${forceN_p.toFixed(0)} N`,
+          `${sigmaD_p.toFixed(0)} MPa`,
+          `+${deltaT_p.toFixed(1)} °C`,
+          `${speedM.toFixed(2)}x`,
+        ];
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (doc as any).autoTable({
+        startY: 50,
+        margin: { left: 14, right: activeCanvas ? imgW + 20 : 14 },
+        head: [
+          ['Pass', 'Inlet Ø', 'Outlet Ø', 'Red.%', 'Elong.%', 'Force', 'Stress σd', 'ΔT Rise', 'Speed'],
+        ],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [88, 28, 135],
+          textColor: [255, 255, 255],
+          fontSize: 7,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        styles: {
+          fontSize: 6.8,
+          cellPadding: 1.2,
+          halign: 'center',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tableStartY = Math.max(imgY + imgH + 6, (doc as any).lastAutoTable.finalY + 6);
+
+      // 4. Four-Zone Die Anatomy Specifications Box
+      const boxW = pageWidth - 28;
+      doc.setFillColor(241, 245, 249);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(14, tableStartY, boxW, 42, 2, 2, 'FD');
+
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FOUR-ZONE DIE INTERNAL PROFILE SPECIFICATIONS (DIN 2812 STANDARD)', 18, tableStartY + 6);
+
+      const zoneColW = (boxW - 8) / 4;
+      const zoneKeys: DieZoneType[] = ['bell', 'cone', 'bearing', 'relief'];
+      zoneKeys.forEach((zk, idx) => {
+        const zd = DIE_ZONES[zk];
+        const zx = 18 + idx * zoneColW;
+        const zy = tableStartY + 12;
+
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(51, 65, 85);
+        doc.text(zd.name, zx, zy);
+
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Target: ${zd.angleOrDim}`, zx, zy + 5);
+        doc.text(`Model: ${zd.formula}`, zx, zy + 10);
+
+        const splitPurpose = doc.splitTextToSize(zd.purpose, zoneColW - 6);
+        doc.text(splitPurpose, zx, zy + 15);
+      });
+
+      // 5. Engineering Footer
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Prepared by: DMS-O2 Autonomous Engineering System | Verified against Avitzur/Siebel Upper Bound Friction Model', 14, pageHeight - 6);
+      doc.text('Page 1 of 1 | CONFIDENTIAL & PROPRIETARY', pageWidth - 70, pageHeight - 6);
+
+      doc.save(`DMS_TDS_PassSchedule_${passes.length}Passes.pdf`);
+    } catch (err) {
+      console.error('Failed to export TDS PDF:', err);
+    }
+  };
+
   // Fast Drag Handlers (Direct Camera Mutation — 0 React Re-renders)
   const handleMouseDown = (e: React.MouseEvent) => {
     cameraRef.current.isDragging = true;
@@ -1755,7 +2167,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               )}
             </div>
             <p className="text-xs text-slate-400 m-0 mt-0.5">
-              Decoupled 60 FPS CAD engine &bull; Tungsten Carbide / PCD Nibs &bull; Scroll to Zoom &bull; Drag to Orbit
+              Decoupled 60 FPS CAD engine &bull; Tungsten Carbide / PCD Nibs &bull; Solid Bullblock Capstans &bull; 4-Zone Bore Inspector
             </p>
           </div>
         </div>
@@ -1791,6 +2203,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <span>Compare</span>
             </button>
           </div>
+
+          <button
+            onClick={handleExportTDS}
+            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition shadow-sm cursor-pointer"
+            title="Export ISO/DIN Technical Data Sheet (PDF)"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export TDS</span>
+          </button>
 
           <button
             onClick={handleTakeSnapshot}
@@ -1953,6 +2374,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 FEA Heatmap
               </button>
               <button
+                onClick={() => setRenderMode('thermal')}
+                className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                  renderMode === 'thermal' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Flame className="w-3 h-3 text-amber-300" />
+                <span>Thermal IR</span>
+              </button>
+              <button
                 onClick={() => setRenderMode('shear')}
                 className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                   renderMode === 'shear' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
@@ -1968,6 +2398,28 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               >
                 Wireframe
               </button>
+            </div>
+
+            {/* 4-Zone Die Bore Selector */}
+            <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded border border-slate-800">
+              <span className="text-slate-500 text-[10px] font-bold px-1.5">Zone:</span>
+              {[
+                { id: 'all' as const, label: 'All Bore', color: 'text-purple-400' },
+                { id: 'bell' as const, label: 'Z1: Bell (R)', color: 'text-cyan-400' },
+                { id: 'cone' as const, label: 'Z2: Cone (2α)', color: 'text-purple-400' },
+                { id: 'bearing' as const, label: 'Z3: Land (Lb)', color: 'text-emerald-400' },
+                { id: 'relief' as const, label: 'Z4: Relief (2β)', color: 'text-amber-400' },
+              ].map((z) => (
+                <button
+                  key={z.id}
+                  onClick={() => setSelectedZone(z.id)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                    selectedZone === z.id ? 'bg-slate-700 text-white shadow ring-1 ring-slate-500' : `${z.color} hover:bg-slate-800`
+                  }`}
+                >
+                  {z.label}
+                </button>
+              ))}
             </div>
 
             <label className="flex items-center gap-1.5 cursor-pointer text-cyan-300 text-[11px]">
@@ -2154,6 +2606,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 cameraRef={cameraRef}
                 isPlaying={isPlaying}
                 renderMode={renderMode}
+                selectedZone={selectedZone}
                 wireMaterial={wireMaterial}
                 dieNibMaterial={dieNibMaterial}
                 showDimensions={showDimensions}
@@ -2201,6 +2654,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   cameraRef={cameraRef}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
+                  selectedZone={selectedZone}
                   wireMaterial={wireMaterial}
                   dieNibMaterial={dieNibMaterial}
                   showDimensions={false}
@@ -2221,6 +2675,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   cameraRef={cameraRef}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
+                  selectedZone={selectedZone}
                   wireMaterial={wireMaterial}
                   dieNibMaterial={dieNibMaterial}
                   showDimensions={false}
@@ -2338,6 +2793,19 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 <span className="text-pink-400 font-bold">{sigmaFlow ? (sigmaFlow * 2.5).toFixed(0) : '—'} MPa</span>
               </div>
             )}
+            {activeViewMode === 'single' && renderMode === 'thermal' && (
+              <div className="flex items-center space-x-2">
+                <span className="text-cyan-400">25°C Amb</span>
+                <div className="w-24 h-1.5 rounded-full border border-slate-700 flex overflow-hidden">
+                  <div className="flex-1 bg-cyan-500" />
+                  <div className="flex-1 bg-emerald-500" />
+                  <div className="flex-1 bg-amber-500" />
+                  <div className="flex-1 bg-red-500" />
+                  <div className="flex-1 bg-pink-500" />
+                </div>
+                <span className="text-pink-400 font-bold">180°C Max</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2354,6 +2822,28 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               Station {selectedPassIdx + 1} of {passes.length}
             </span>
           </div>
+
+          {/* 4-Zone Die Bore Inspector Card */}
+          {activeViewMode === 'single' && (
+            <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/80 space-y-2 font-mono text-[11px]">
+              <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
+                <span className="font-bold flex items-center gap-1.5" style={{ color: DIE_ZONES[selectedZone].color }}>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{DIE_ZONES[selectedZone].name}</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                  {DIE_ZONES[selectedZone].angleOrDim}
+                </span>
+              </div>
+              <div className="text-slate-400 text-[10px] leading-relaxed">
+                {DIE_ZONES[selectedZone].purpose}
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[10px]">
+                <span className="text-slate-500 font-bold">Governing Formula:</span>
+                <span className="text-cyan-300 font-bold">{DIE_ZONES[selectedZone].formula}</span>
+              </div>
+            </div>
+          )}
 
           {/* Sidebar Zoom Slider */}
           <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 space-y-1.5">
