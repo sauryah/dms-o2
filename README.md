@@ -421,6 +421,14 @@ Run `make help` to view available CLI tasks:
   ```bash
   docker compose exec db psql -U dms_user -d dms
   ```
+* **Emergency Password Reset**:
+  ```bash
+  docker compose exec django python manage.py changepassword root
+  ```
+* **Emergency Backup Codes / 2FA Reset**:
+  ```bash
+  docker compose exec django python manage.py reset_mfa root
+  ```
 
 ---
 
@@ -676,6 +684,7 @@ Below are solutions to common setup, network, and database issues. Click on a ca
 | **401 Unauthorized loops after login** | Go API cannot check tokens because `DJANGO_ALLOWED_HOSTS` is missing the `django` service name | Add `django` to `DJANGO_ALLOWED_HOSTS` in `.env` (e.g. `DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,django`) and restart: `docker compose restart`. |
 | **401 Unauthorized loops (other)** | Database was reset or session became invalid | Clear local storage / cookies in your browser's developer tools and log back in. |
 | **Locked out / forgot root password** | Administrator credentials lost | Reset the password inside the container: `docker compose exec django python manage.py changepassword root`. |
+| **Locked out / lost backup recovery codes** | User lost all single-use backup codes for secondary sign-in | Clear backup codes and disable 2FA challenge via server CLI: `docker compose exec django python manage.py reset_mfa root` (or specify any user: `... reset_mfa <username>`). |
 
 </details>
 
