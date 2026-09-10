@@ -53,13 +53,23 @@ interface TrainHoverInfo {
   sigmaD: number;
 }
 
+// Mutable camera state to decouple 60/120 FPS rendering from React re-renders
+export interface CameraState {
+  rotX: number;
+  rotY: number;
+  zoom: number;
+  panX: number;
+  panY: number;
+  isDragging: boolean;
+}
+
 // Material presets for realistic rendering
 type WireMaterialType = 'copper' | 'steel' | 'aluminum' | 'brass';
 type DieNibMaterialType = 'carbide' | 'pcd' | 'diamond';
 
 interface MaterialTheme {
   name: string;
-  wireGradient: [string, string, string]; // start, specular highlight, base
+  wireGradient: [string, string, string];
   wireContact: string;
   sparkColor: string;
 }
@@ -96,14 +106,14 @@ const DIE_MATERIALS: Record<DieNibMaterialType, { name: string; coreColor: strin
     name: 'Tungsten Carbide (WC-Co 6%)',
     coreColor: '#1e293b',
     rimColor: '#334155',
-    brazeColor: '#ca8a04', // Golden brass brazing joint
+    brazeColor: '#ca8a04',
     luster: '#94a3b8',
   },
   pcd: {
     name: 'Polycrystalline Diamond (PCD)',
     coreColor: '#0f172a',
     rimColor: '#1e293b',
-    brazeColor: '#0284c7', // High-temp cobalt braze
+    brazeColor: '#0284c7',
     luster: '#38bdf8',
   },
   diamond: {
@@ -115,10 +125,35 @@ const DIE_MATERIALS: Record<DieNibMaterialType, { name: string; coreColor: strin
   },
 };
 
+// =========================================================================
+// HIGH-PERFORMANCE TRIGONOMETRIC LOOKUP TABLES (ZERO ALLOCATION)
+// =========================================================================
+interface TrigLUT {
+  cos: Float32Array;
+  sin: Float32Array;
+  count: number;
+}
+
+function createTrigLUT(count: number): TrigLUT {
+  const cos = new Float32Array(count + 1);
+  const sin = new Float32Array(count + 1);
+  for (let i = 0; i <= count; i++) {
+    const a = (i / count) * Math.PI * 2;
+    cos[i] = Math.cos(a);
+    sin[i] = Math.sin(a);
+  }
+  return { cos, sin, count };
+}
+
+const LUT_12 = createTrigLUT(12); // Fast Drag LOD
+const LUT_18 = createTrigLUT(18); // Standard wire cylinder
+const LUT_24 = createTrigLUT(24); // Die Casing & Disc
+const LUT_36 = createTrigLUT(36); // High-Precision Single Die
+
 // Physical and material constants for wire drawing stress calculations
-const STRENGTH_COEFFICIENT_K = 315;      // K parameter (MPa)
-const HARDENING_EXPONENT_N = 0.54;       // n exponent
-const FRICTION_COEFFICIENT_MU = 0.04;     // mu coefficient
+const STRENGTH_COEFFICIENT_K = 315;
+const HARDENING_EXPONENT_N = 0.54;
+const FRICTION_COEFFICIENT_MU = 0.04;
 
 const computeDrawingStress = (pass: PassData, approachAngle2Alpha: number = 14) => {
   if (!pass) return 0;
@@ -133,23 +168,19 @@ const computeDrawingStress = (pass: PassData, approachAngle2Alpha: number = 14) 
 
 const computeDrawingForce = (pass: PassData, approachAngle2Alpha: number = 14) => {
   if (!pass) return 0;
-  const sigmaD = computeDrawingStress(pass, approachAngle2Alpha); // MPa (N/mm^2)
-  const exitArea = Math.PI * Math.pow((pass.toDie ?? 1.0) / 2, 2); // mm^2
-  return sigmaD * exitArea; // Newtons
+  const sigmaD = computeDrawingStress(pass, approachAngle2Alpha);
+  const exitArea = Math.PI * Math.pow((pass.toDie ?? 1.0) / 2, 2);
+  return sigmaD * exitArea;
 };
 
 // =========================================================================
-// 1. MULTI-PASS CONTINUOUS WIRE DRAWING TRAIN 3D CANVAS
+// 1. MULTI-PASS CONTINUOUS WIRE DRAWING TRAIN 3D CANVAS (60+ FPS OPTIMIZED)
 // =========================================================================
 const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
   passes,
   selectedPassIdx,
   onSelectPass,
-  rotationX,
-  rotationY,
-  zoom,
-  panX,
-  panY,
+  cameraRef,
   isPlaying,
   speedRate,
   showCapstans,
@@ -163,11 +194,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
   passes: PassData[];
   selectedPassIdx: number;
   onSelectPass: (idx: number) => void;
-  rotationX: number;
-  rotationY: number;
-  zoom: number;
-  panX: number;
-  panY: number;
+  cameraRef: React.MutableRefObject<CameraState>;
   isPlaying: boolean;
   speedRate: number;
   showCapstans: boolean;
@@ -179,51 +206,17 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 800, h: 420 });
-  const isActuallyPlayingRef = useRef(true);
-
-  // ResizeObserver for responsive canvas
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        setDisplaySize({
-          w: Math.max(320, Math.floor(width)),
-          h: Math.max(300, Math.floor(height)),
-        });
-      }
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  // Update canvas pixel ratio
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = displaySize.w * dpr;
-    canvas.height = displaySize.h * dpr;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(dpr, dpr);
-  }, [displaySize, canvasRef]);
-
-  useEffect(() => {
-    isActuallyPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+  const displaySizeRef = useRef<{ w: number; h: number }>({ w: 800, h: 420 });
 
   // Geometry computation for multi-die line
   const N = passes.length;
   const initialDia = passes[0]?.fromDie ?? 2.5;
   const initialArea = Math.PI * Math.pow(initialDia / 2, 2);
 
-  // Spacing between die stands
   const stationSpacing = Math.max(95, Math.min(140, 1050 / Math.max(N, 1)));
   const totalLength = (N - 1) * stationSpacing;
   const startX = -totalLength / 2;
 
-  // Compute station positions and wire radii
   const stations = passes.map((p, idx) => {
     const x = startX + idx * stationSpacing;
     const din = p.fromDie;
@@ -233,7 +226,6 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     const forceN = computeDrawingForce(p);
     const sigmaD = computeDrawingStress(p);
 
-    // Graphical radius scaling (normalized for visual clarity)
     const rawRin = (din / initialDia) * 14;
     const rawRout = (dout / initialDia) * 14;
     const rIn = Math.max(3.0, rawRin);
@@ -255,7 +247,31 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     };
   });
 
-  // Mouse hover & station detection
+  // ResizeObserver for responsive canvas
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const w = Math.max(320, Math.floor(width));
+        const h = Math.max(300, Math.floor(height));
+        displaySizeRef.current = { w, h };
+
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const dpr = Math.min(2, window.devicePixelRatio || 1);
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+          const ctx = canvas.getContext('2d');
+          if (ctx) ctx.scale(dpr, dpr);
+        }
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [canvasRef]);
+
+  // Station hover detection via direct ref reading
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -263,20 +279,21 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const radX = (rotationX * Math.PI) / 180;
-    const radY = (rotationY * Math.PI) / 180;
-    const centerCanvasX = displaySize.w / 2;
-    const centerCanvasY = displaySize.h / 2;
+    const cam = cameraRef.current;
+    const radX = (cam.rotX * Math.PI) / 180;
+    const radY = (cam.rotY * Math.PI) / 180;
+    const centerCanvasX = displaySizeRef.current.w / 2;
+    const centerCanvasY = displaySizeRef.current.h / 2;
 
     let closestStation: TrainHoverInfo | null = null;
     let minDistance = 50;
 
     stations.forEach((st) => {
-      const x1 = (st.x + panX) * Math.cos(radY);
-      const z1 = -(st.x + panX) * Math.sin(radY);
-      const y2 = panY * Math.cos(radX) - z1 * Math.sin(radX);
-      const px = centerCanvasX + x1 * zoom;
-      const py = centerCanvasY + y2 * zoom;
+      const x1 = (st.x + cam.panX) * Math.cos(radY);
+      const z1 = -(st.x + cam.panX) * Math.sin(radY);
+      const y2 = cam.panY * Math.cos(radX) - z1 * Math.sin(radX);
+      const px = centerCanvasX + x1 * cam.zoom;
+      const py = centerCanvasY + y2 * cam.zoom;
 
       const dist = Math.hypot(mouseX - px, mouseY - py);
       if (dist < minDistance) {
@@ -298,7 +315,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     });
 
     onHoverStation(closestStation);
-  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, panY, onHoverStation]);
+  }, [canvasRef, stations, cameraRef, onHoverStation]);
 
   const handleMouseLeave = useCallback(() => {
     onHoverStation(null);
@@ -311,20 +328,21 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const radX = (rotationX * Math.PI) / 180;
-    const radY = (rotationY * Math.PI) / 180;
-    const centerCanvasX = displaySize.w / 2;
-    const centerCanvasY = displaySize.h / 2;
+    const cam = cameraRef.current;
+    const radX = (cam.rotX * Math.PI) / 180;
+    const radY = (cam.rotY * Math.PI) / 180;
+    const centerCanvasX = displaySizeRef.current.w / 2;
+    const centerCanvasY = displaySizeRef.current.h / 2;
 
     let targetIdx: number | null = null;
     let minDistance = 45;
 
     stations.forEach((st) => {
-      const x1 = (st.x + panX) * Math.cos(radY);
-      const z1 = -(st.x + panX) * Math.sin(radY);
-      const y2 = panY * Math.cos(radX) - z1 * Math.sin(radX);
-      const px = centerCanvasX + x1 * zoom;
-      const py = centerCanvasY + y2 * zoom;
+      const x1 = (st.x + cam.panX) * Math.cos(radY);
+      const z1 = -(st.x + cam.panX) * Math.sin(radY);
+      const y2 = cam.panY * Math.cos(radX) - z1 * Math.sin(radX);
+      const px = centerCanvasX + x1 * cam.zoom;
+      const py = centerCanvasY + y2 * cam.zoom;
 
       const dist = Math.hypot(mouseX - px, mouseY - py);
       if (dist < minDistance) {
@@ -336,79 +354,92 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     if (targetIdx !== null) {
       onSelectPass(targetIdx);
     }
-  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, panY, onSelectPass]);
+  }, [canvasRef, stations, cameraRef, onSelectPass]);
 
-  // Main 3D Animation & Rendering Loop
+  // High-Performance Zero-GC Render Loop
   useEffect(() => {
     let animId: number;
     let flowTime = 0;
+    let lastTime = performance.now();
 
-    const numParticles = Math.min(90, Math.max(36, N * 6));
-    const particles = Array.from({ length: numParticles }, (_, i) => ({
-      normPos: i / numParticles,
-      laneAngle: (i * 1.37) % (Math.PI * 2),
-    }));
+    const numParticles = Math.min(80, Math.max(30, N * 5));
+    const particlePositions = new Float32Array(numParticles);
+    const particleAngles = new Float32Array(numParticles);
+    for (let i = 0; i < numParticles; i++) {
+      particlePositions[i] = i / numParticles;
+      particleAngles[i] = (i * 1.37) % (Math.PI * 2);
+    }
 
-    const render = () => {
+    const render = (now: number) => {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const width = displaySize.w;
-      const height = displaySize.h;
+      const width = displaySizeRef.current.w;
+      const height = displaySizeRef.current.h;
       ctx.clearRect(0, 0, width, height);
 
-      // Deep Industrial Studio Background
-      const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 40, width / 2, height / 2, width * 0.85);
-      bgGrad.addColorStop(0, '#0c1322');
-      bgGrad.addColorStop(0.6, '#060a12');
-      bgGrad.addColorStop(1, '#020408');
-      ctx.fillStyle = bgGrad;
+      // Deep Industrial Studio Background (Single Fill)
+      ctx.fillStyle = '#060a12';
       ctx.fillRect(0, 0, width, height);
 
-      // Floor Machine Bed Grid with Perspective Dimming
+      // Batched Grid Lines in Single Path (Zero Overhead)
       ctx.strokeStyle = 'rgba(51, 65, 85, 0.2)';
       ctx.lineWidth = 1;
+      ctx.beginPath();
       const gridSpacing = 40;
       for (let x = 0; x < width; x += gridSpacing) {
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
-        ctx.stroke();
       }
       for (let y = 0; y < height; y += gridSpacing) {
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
-        ctx.stroke();
       }
+      ctx.stroke();
 
       ctx.save();
       ctx.translate(width / 2, height / 2);
 
-      const radX = (rotationX * Math.PI) / 180;
-      const radY = (rotationY * Math.PI) / 180;
+      const cam = cameraRef.current;
+      const radX = (cam.rotX * Math.PI) / 180;
+      const radY = (cam.rotY * Math.PI) / 180;
+      const cosX = Math.cos(radX);
+      const sinX = Math.sin(radX);
+      const cosY = Math.cos(radY);
+      const sinY = Math.sin(radY);
+      const zScale = cam.zoom;
 
-      // 3D Perspective Projection Function
+      // 3D Perspective Projection Function (Inlined Matrix Multiplications)
       const project = (x: number, y: number, z: number) => {
-        const xOffset = x + panX;
-        const yOffset = y + panY;
-        const x1 = xOffset * Math.cos(radY) + z * Math.sin(radY);
-        const z1 = -xOffset * Math.sin(radY) + z * Math.cos(radY);
-        const y2 = yOffset * Math.cos(radX) - z1 * Math.sin(radX);
-        const z2 = yOffset * Math.sin(radX) + z1 * Math.cos(radX);
+        const xOffset = x + cam.panX;
+        const yOffset = y + cam.panY;
+        const x1 = xOffset * cosY + z * sinY;
+        const z1 = -xOffset * sinY + z * cosY;
+        const y2 = yOffset * cosX - z1 * sinX;
+        const z2 = yOffset * sinX + z1 * cosX;
         return {
-          px: x1 * zoom,
-          py: y2 * zoom,
+          px: x1 * zScale,
+          py: y2 * zScale,
           depth: z2,
         };
       };
 
       const mat = WIRE_MATERIALS[wireMaterial];
       const dieMat = DIE_MATERIALS[dieNibMaterial];
+      const activeLUT = cam.isDragging ? LUT_12 : LUT_24;
 
-      // Helper function to render a true 3D rotated disc/annular ring in the Y-Z plane at position X
+      // Draw 3D Rotated Disc using Trigonometric LUT
       const draw3DDisc = (
         xPos: number,
         rInner: number,
@@ -417,23 +448,20 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         strokeStyle?: string,
         lineWidth: number = 1
       ) => {
-        const segs = 32;
+        const lut = activeLUT;
+        const count = lut.count;
         ctx.beginPath();
-        // Outer perimeter (clockwise)
-        for (let s = 0; s <= segs; s++) {
-          const angle = (s / segs) * Math.PI * 2;
-          const y = rOuter * Math.cos(angle);
-          const z = rOuter * Math.sin(angle);
+        for (let s = 0; s <= count; s++) {
+          const y = rOuter * lut.cos[s];
+          const z = rOuter * lut.sin[s];
           const p = project(xPos, y, z);
           if (s === 0) ctx.moveTo(p.px, p.py);
           else ctx.lineTo(p.px, p.py);
         }
-        // Inner perimeter (counter-clockwise cutout for annular rings)
         if (rInner > 0.5) {
-          for (let s = segs; s >= 0; s--) {
-            const angle = (s / segs) * Math.PI * 2;
-            const y = rInner * Math.cos(angle);
-            const z = rInner * Math.sin(angle);
+          for (let s = count; s >= 0; s--) {
+            const y = rInner * lut.cos[s];
+            const z = rInner * lut.sin[s];
             const p = project(xPos, y, z);
             ctx.lineTo(p.px, p.py);
           }
@@ -454,13 +482,12 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       const railY = 36;
       const railDepth = 30;
 
-      // Bed Side Wall
       const b1 = project(lineLeft, railY, -railDepth);
       const b2 = project(lineRight, railY, -railDepth);
       const b3 = project(lineRight, railY + 12, -railDepth);
       const b4 = project(lineLeft, railY + 12, -railDepth);
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.fillStyle = '#0f172a';
       ctx.strokeStyle = 'rgba(71, 85, 105, 0.7)';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -472,18 +499,12 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       ctx.fill();
       ctx.stroke();
 
-      // Bed Top Surface (Machined Steel Plate)
       const t1 = project(lineLeft, railY, -railDepth);
       const t2 = project(lineRight, railY, -railDepth);
       const t3 = project(lineRight, railY, railDepth);
       const t4 = project(lineLeft, railY, railDepth);
 
-      const bedGrad = ctx.createLinearGradient(t1.px, t1.py, t4.px, t4.py);
-      bedGrad.addColorStop(0, '#1e293b');
-      bedGrad.addColorStop(0.5, '#334155');
-      bedGrad.addColorStop(1, '#0f172a');
-
-      ctx.fillStyle = bedGrad;
+      ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.moveTo(t1.px, t1.py);
       ctx.lineTo(t2.px, t2.py);
@@ -491,24 +512,9 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       ctx.lineTo(t4.px, t4.py);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = 'rgba(100, 116, 139, 0.6)';
       ctx.stroke();
 
-      // Machined T-Slot Track centerline along the bench
-      const c1 = project(lineLeft, railY - 0.5, -4);
-      const c2 = project(lineRight, railY - 0.5, -4);
-      const c3 = project(lineRight, railY - 0.5, 4);
-      const c4 = project(lineLeft, railY - 0.5, 4);
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.beginPath();
-      ctx.moveTo(c1.px, c1.py);
-      ctx.lineTo(c2.px, c2.py);
-      ctx.lineTo(c3.px, c3.py);
-      ctx.lineTo(c4.px, c4.py);
-      ctx.closePath();
-      ctx.fill();
-
-      // 2. Draw Realistic Metallic Drawn Wire
+      // 2. Draw Realistic Metallic Drawn Wire (LUT Driven)
       const drawRealisticWireSegment = (
         xStart: number,
         xEnd: number,
@@ -516,25 +522,19 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         rEnd: number,
         isDeforming: boolean
       ) => {
-        const segments = 18;
-        for (let i = 0; i < segments; i++) {
-          const a1 = (i / segments) * Math.PI * 2;
-          const a2 = ((i + 1) / segments) * Math.PI * 2;
+        const lut = cam.isDragging ? LUT_12 : LUT_18;
+        const count = lut.count;
 
-          const y1s = rStart * Math.cos(a1);
-          const z1s = rStart * Math.sin(a1);
-          const y2s = rStart * Math.cos(a2);
-          const z2s = rStart * Math.sin(a2);
+        for (let i = 0; i < count; i++) {
+          const cos1 = lut.cos[i];
+          const sin1 = lut.sin[i];
+          const cos2 = lut.cos[i + 1];
+          const sin2 = lut.sin[i + 1];
 
-          const y1e = rEnd * Math.cos(a1);
-          const z1e = rEnd * Math.sin(a1);
-          const y2e = rEnd * Math.cos(a2);
-          const z2e = rEnd * Math.sin(a2);
-
-          const p1 = project(xStart, y1s, z1s);
-          const p2 = project(xStart, y2s, z2s);
-          const p3 = project(xEnd, y2e, z2e);
-          const p4 = project(xEnd, y1e, z1e);
+          const p1 = project(xStart, rStart * cos1, rStart * sin1);
+          const p2 = project(xStart, rStart * cos2, rStart * sin2);
+          const p3 = project(xEnd, rEnd * cos2, rEnd * sin2);
+          const p4 = project(xEnd, rEnd * cos1, rEnd * sin1);
 
           ctx.beginPath();
           ctx.moveTo(p1.px, p1.py);
@@ -543,87 +543,41 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.lineTo(p4.px, p4.py);
           ctx.closePath();
 
-          const normalY = Math.cos((a1 + a2) / 2);
-          const normalZ = Math.sin((a1 + a2) / 2);
-          const specular = Math.pow(Math.max(0, -normalY * 0.7 - normalZ * 0.7), 4);
+          const normalY = (cos1 + cos2) * 0.5;
+          const normalZ = (sin1 + sin2) * 0.5;
           const diffuse = Math.max(0.2, 0.45 + 0.55 * (-normalY));
 
-          const grad = ctx.createLinearGradient(p1.px, p1.py, p3.px, p3.py);
-          if (isDeforming) {
-            grad.addColorStop(0, mat.wireContact);
-            grad.addColorStop(1, mat.wireGradient[2]);
-          } else {
-            grad.addColorStop(0, mat.wireGradient[0]);
-            grad.addColorStop(0.5, mat.wireGradient[1]);
-            grad.addColorStop(1, mat.wireGradient[2]);
-          }
-
-          ctx.fillStyle = grad;
-          ctx.globalAlpha = Math.min(1.0, diffuse + specular * 0.6);
+          ctx.fillStyle = isDeforming ? mat.wireContact : mat.wireGradient[0];
+          ctx.globalAlpha = diffuse;
           ctx.fill();
-
-          if (specular > 0.4) {
-            ctx.strokeStyle = mat.sparkColor;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
           ctx.globalAlpha = 1.0;
         }
       };
 
-      // Entrance raw rod
       const firstSt = stations[0];
       if (firstSt) {
-        drawRealisticWireSegment(
-          lineLeft,
-          firstSt.x - 14,
-          firstSt.rIn,
-          firstSt.rIn,
-          false
-        );
+        drawRealisticWireSegment(lineLeft, firstSt.x - 14, firstSt.rIn, firstSt.rIn, false);
       }
 
-      // Span between sequential dies
       for (let i = 0; i < N; i++) {
         const curr = stations[i];
         const next = stations[i + 1];
 
-        // Conical Reduction Zone inside die nib
         const coneStart = curr.x - 14;
         const coneEnd = curr.x + 10;
-        drawRealisticWireSegment(
-          coneStart,
-          coneEnd,
-          curr.rIn,
-          curr.rOut,
-          true
-        );
+        drawRealisticWireSegment(coneStart, coneEnd, curr.rIn, curr.rOut, true);
 
-        // Continuous wire running to next die station
         if (next) {
-          drawRealisticWireSegment(
-            coneEnd,
-            next.x - 14,
-            curr.rOut,
-            curr.rOut,
-            false
-          );
+          drawRealisticWireSegment(coneEnd, next.x - 14, curr.rOut, curr.rOut, false);
         }
       }
 
-      // Exit fine drawn wire
       const lastSt = stations[N - 1];
       if (lastSt) {
-        drawRealisticWireSegment(
-          lastSt.x + 10,
-          lineRight,
-          lastSt.rOut,
-          lastSt.rOut,
-          false
-        );
+        drawRealisticWireSegment(lastSt.x + 10, lineRight, lastSt.rOut, lastSt.rOut, false);
       }
 
-      // 3. Draw Capstan Pulling Drums between stands (if enabled)
+      // 3. Draw Capstan Pulling Drums
       if (showCapstans) {
         for (let i = 0; i < N - 1; i++) {
           const stA = stations[i];
@@ -636,9 +590,8 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           const drumCenter = project(capstanX, capstanY, capstanZ);
           const drumRotSpeed = flowTime * (stA.speedMultiplier * 0.08);
 
-          // 3D projected circular face for capstan drum in the X-Y plane
           ctx.beginPath();
-          const capsegs = 20;
+          const capsegs = 16;
           for (let s = 0; s <= capsegs; s++) {
             const angle = (s / capsegs) * Math.PI * 2;
             const px = capstanX + capstanR * Math.cos(angle);
@@ -651,10 +604,9 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.fillStyle = '#1e293b';
           ctx.fill();
           ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.2;
           ctx.stroke();
 
-          // Spoke lines for spinning visual
           for (let s = 0; s < 4; s++) {
             const angle = drumRotSpeed + (s * Math.PI) / 2;
             const spokeX = capstanX + Math.cos(angle) * (capstanR * 0.85);
@@ -664,23 +616,20 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
             ctx.moveTo(drumCenter.px, drumCenter.py);
             ctx.lineTo(pSpoke.px, pSpoke.py);
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = 1.0;
             ctx.stroke();
           }
 
-          // Center spindle bolt
           const pBolt = project(capstanX, capstanY, capstanZ);
           ctx.beginPath();
-          ctx.arc(pBolt.px, pBolt.py, 3.5 * zoom, 0, Math.PI * 2);
+          ctx.arc(pBolt.px, pBolt.py, 3 * zScale, 0, Math.PI * 2);
           ctx.fillStyle = '#38bdf8';
           ctx.fill();
         }
       }
 
-      // Check camera view direction along the wire axis:
-      // When frontNormalZ < 0, the FRONT ENTRANCE face (at xStandStart) is facing the camera.
-      // When frontNormalZ >= 0, the REAR EXIT face (at xStandEnd) is facing the camera.
-      const frontNormalZ = Math.sin(radY) * Math.cos(radX);
+      // Camera view direction check for front/rear visibility
+      const frontNormalZ = sinY * cosX;
       const isFrontFaceVisible = frontNormalZ < 0;
 
       // 4. Draw Precision Industrial Die Assembly & Mounting Stand
@@ -692,7 +641,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         const xStandStart = st.x - housingThickness / 2;
         const xStandEnd = st.x + housingThickness / 2;
 
-        // A. Heavy Machined Die Holder Block / Casting Box
+        // A. Heavy Machined Die Holder Block
         const blockW = housingThickness + 10;
         const blockH = casingOuterR + 18;
         const pBlockL = project(st.x - blockW / 2, railY, -18);
@@ -712,39 +661,33 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         ctx.fill();
         ctx.stroke();
 
-        // Socket Head Cap Fasteners (Bolts on stand)
+        // Socket Bolts
         const bolt1 = project(st.x - 8, railY - 3, -16);
         const bolt2 = project(st.x + 8, railY - 3, -16);
         [bolt1, bolt2].forEach((b) => {
           ctx.beginPath();
-          ctx.arc(b.px, b.py, 2 * zoom, 0, Math.PI * 2);
+          ctx.arc(b.px, b.py, 2 * zScale, 0, Math.PI * 2);
           ctx.fillStyle = '#94a3b8';
           ctx.fill();
-          ctx.strokeStyle = '#0f172a';
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
         });
 
-        // If front face is not facing camera, draw rear face first before the cylinder
         if (!isFrontFaceVisible) {
           draw3DDisc(xStandStart, 0, casingOuterR, '#1e293b', '#475569', 1);
         }
 
-        // B. Precision 3D Cylindrical Die Casing (Stainless/Tool Steel Case)
-        const segs = 24;
-        for (let s = 0; s < segs; s++) {
-          const a1 = (s / segs) * Math.PI * 2;
-          const a2 = ((s + 1) / segs) * Math.PI * 2;
+        // B. 3D Cylindrical Die Casing Body (LUT Driven)
+        const lut = activeLUT;
+        const count = lut.count;
+        for (let s = 0; s < count; s++) {
+          const cos1 = lut.cos[s];
+          const sin1 = lut.sin[s];
+          const cos2 = lut.cos[s + 1];
+          const sin2 = lut.sin[s + 1];
 
-          const y1 = casingOuterR * Math.cos(a1);
-          const z1 = casingOuterR * Math.sin(a1);
-          const y2 = casingOuterR * Math.cos(a2);
-          const z2 = casingOuterR * Math.sin(a2);
-
-          const p1 = project(xStandStart, y1, z1);
-          const p2 = project(xStandStart, y2, z2);
-          const p3 = project(xStandEnd, y2, z2);
-          const p4 = project(xStandEnd, y1, z1);
+          const p1 = project(xStandStart, casingOuterR * cos1, casingOuterR * sin1);
+          const p2 = project(xStandStart, casingOuterR * cos2, casingOuterR * sin2);
+          const p3 = project(xStandEnd, casingOuterR * cos2, casingOuterR * sin2);
+          const p4 = project(xStandEnd, casingOuterR * cos1, casingOuterR * sin1);
 
           ctx.beginPath();
           ctx.moveTo(p1.px, p1.py);
@@ -753,118 +696,39 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.lineTo(p4.px, p4.py);
           ctx.closePath();
 
-          // Brushed Stainless Steel Specular Reflection
-          const normalY = Math.cos((a1 + a2) / 2);
-          const normalZ = Math.sin((a1 + a2) / 2);
-          const lightIntensity = Math.max(0.25, 0.5 + 0.5 * (-normalY) + 0.2 * (-normalZ));
+          const normalY = (cos1 + cos2) * 0.5;
+          const lightIntensity = Math.max(0.25, 0.5 + 0.5 * (-normalY));
 
           if (isSelected) {
             ctx.fillStyle = `rgba(168, 85, 247, ${lightIntensity * 0.9})`;
-            ctx.strokeStyle = '#d8b4fe';
           } else {
             const steelVal = Math.floor(100 + lightIntensity * 120);
             ctx.fillStyle = `rgb(${steelVal * 0.4}, ${steelVal * 0.45}, ${steelVal * 0.55})`;
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
           }
-          ctx.lineWidth = 0.75;
           ctx.fill();
-          ctx.stroke();
         }
 
-        // C. True 3D Rotated Die Face (Entrance Bell & Sintered Nib vs Rear Exit Relief)
+        // C. True 3D Rotated Perspective Die Face
         if (isFrontFaceVisible) {
-          // Front Face is visible (Entrance side: xStandStart)
-          // 1. Outer Casing Bevel Face (Annular Ring)
-          draw3DDisc(
-            xStandStart,
-            nibOuterR + 2,
-            casingOuterR,
-            isSelected ? '#581c87' : '#334155',
-            isSelected ? '#e9d5ff' : '#94a3b8',
-            1.2
-          );
-
-          // 2. Brass/Cobalt Sintered Brazing Ring
-          draw3DDisc(
-            xStandStart,
-            nibOuterR,
-            nibOuterR + 2,
-            dieMat.brazeColor,
-            '#fef08a',
-            0.8
-          );
-
-          // 3. Dark Tungsten Carbide / PCD Nib Core
-          draw3DDisc(
-            xStandStart,
-            st.rIn,
-            nibOuterR,
-            dieMat.coreColor,
-            dieMat.luster,
-            1.0
-          );
-
-          // 4. Entrance Bell Ingress Funnel Hole
-          draw3DDisc(
-            xStandStart,
-            0,
-            st.rIn,
-            '#050811',
-            dieMat.rimColor,
-            0.8
-          );
+          draw3DDisc(xStandStart, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
+          draw3DDisc(xStandStart, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
+          draw3DDisc(xStandStart, st.rIn, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
+          draw3DDisc(xStandStart, 0, st.rIn, '#050811', dieMat.rimColor, 0.8);
         } else {
-          // Rear Face is visible (Exit side: xStandEnd)
-          // 1. Rear Casing Bevel Face
-          draw3DDisc(
-            xStandEnd,
-            nibOuterR + 2,
-            casingOuterR,
-            isSelected ? '#581c87' : '#334155',
-            isSelected ? '#e9d5ff' : '#94a3b8',
-            1.2
-          );
-
-          // 2. Rear Brazing Ring
-          draw3DDisc(
-            xStandEnd,
-            nibOuterR,
-            nibOuterR + 2,
-            dieMat.brazeColor,
-            '#fef08a',
-            0.8
-          );
-
-          // 3. Rear Carbide Nib Core
-          draw3DDisc(
-            xStandEnd,
-            st.rOut,
-            nibOuterR,
-            dieMat.coreColor,
-            dieMat.luster,
-            1.0
-          );
-
-          // 4. Back Relief Exit Hole
-          draw3DDisc(
-            xStandEnd,
-            0,
-            st.rOut,
-            '#050811',
-            dieMat.rimColor,
-            0.8
-          );
+          draw3DDisc(xStandEnd, nibOuterR + 2, casingOuterR, isSelected ? '#581c87' : '#334155', isSelected ? '#e9d5ff' : '#94a3b8', 1.2);
+          draw3DDisc(xStandEnd, nibOuterR, nibOuterR + 2, dieMat.brazeColor, '#fef08a', 0.8);
+          draw3DDisc(xStandEnd, st.rOut, nibOuterR, dieMat.coreColor, dieMat.luster, 1.0);
+          draw3DDisc(xStandEnd, 0, st.rOut, '#050811', dieMat.rimColor, 0.8);
         }
 
-        // Selected station glowing 3D CAD HUD Halo (rotates in 3D around die)
+        // Selection HUD Halo in 3D
         if (isSelected) {
           ctx.save();
-          const haloSegs = 32;
+          const haloLut = activeLUT;
           ctx.beginPath();
-          for (let s = 0; s <= haloSegs; s++) {
-            const angle = (s / haloSegs) * Math.PI * 2;
-            const y = (casingOuterR + 8) * Math.cos(angle);
-            const z = (casingOuterR + 8) * Math.sin(angle);
+          for (let s = 0; s <= haloLut.count; s++) {
+            const y = (casingOuterR + 8) * haloLut.cos[s];
+            const z = (casingOuterR + 8) * haloLut.sin[s];
             const p = project(st.x, y, z);
             if (s === 0) ctx.moveTo(p.px, p.py);
             else ctx.lineTo(p.px, p.py);
@@ -877,14 +741,13 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.restore();
         }
 
-        // 5. Pass Number Tag & Die Specifications Callout
+        // 5. Pass Number Tag
         if (showLabels) {
           const topPos = project(st.x, -casingOuterR - 12, 0);
           ctx.save();
           ctx.font = 'bold 9px monospace';
           ctx.textAlign = 'center';
 
-          // Badge background
           ctx.fillStyle = isSelected ? '#7e22ce' : '#0f172a';
           ctx.strokeStyle = isSelected ? '#d8b4fe' : '#334155';
           ctx.lineWidth = 1;
@@ -899,14 +762,12 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.fillStyle = isSelected ? '#ffffff' : '#94a3b8';
           ctx.fillText(tagText, topPos.px, topPos.py - 2);
 
-          // Calibrated Output Diameter Callout
           ctx.font = 'bold 8.5px monospace';
           ctx.fillStyle = isSelected ? '#c084fc' : '#38bdf8';
           ctx.fillText(`Ø${st.dout.toFixed(3)} mm`, topPos.px, topPos.py + 10);
           ctx.restore();
         }
 
-        // Velocity Acceleration Tag below Machine Bed
         if (showVelocityTags) {
           const botPos = project(st.x, railY + 18, 0);
           ctx.save();
@@ -918,18 +779,17 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
         }
       });
 
-      // 6. Animate Speed-Proportional Drawing Particles & Flow Streaks
+      // 6. Particle Flow Simulation (Normalized to Delta Time)
       if (isPlaying) {
-        flowTime += 0.8 * speedRate;
+        flowTime += 0.8 * speedRate * dt * 60;
       }
 
-      particles.forEach((pt) => {
+      for (let i = 0; i < numParticles; i++) {
         if (isPlaying) {
-          pt.normPos = (pt.normPos + 0.0035 * speedRate) % 1.0;
+          particlePositions[i] = (particlePositions[i] + 0.0035 * speedRate * dt * 60) % 1.0;
         }
 
-        const currentLineX = lineLeft + pt.normPos * (lineRight - lineLeft);
-
+        const currentLineX = lineLeft + particlePositions[i] * (lineRight - lineLeft);
         let localRadius = firstSt?.rIn ?? 14;
         let localSpeedMult = 1.0;
 
@@ -941,43 +801,41 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           }
         }
 
-        const partY = Math.cos(pt.laneAngle) * (localRadius * 0.7);
-        const partZ = Math.sin(pt.laneAngle) * (localRadius * 0.7);
+        const angle = particleAngles[i];
+        const partY = Math.cos(angle) * (localRadius * 0.7);
+        const partZ = Math.sin(angle) * (localRadius * 0.7);
         const pPos = project(currentLineX, partY, partZ);
 
-        const streakLen = Math.min(28, 5 * Math.sqrt(localSpeedMult)) * zoom;
+        const streakLen = Math.min(24, 4 * Math.sqrt(localSpeedMult)) * zScale;
         const tailPos = project(currentLineX - streakLen, partY, partZ);
 
         ctx.beginPath();
         ctx.moveTo(tailPos.px, tailPos.py);
         ctx.lineTo(pPos.px, pPos.py);
         ctx.strokeStyle = `rgba(244, 114, 182, ${Math.min(1.0, 0.4 + localSpeedMult * 0.06)})`;
-        ctx.lineWidth = Math.max(1.2, 2.2 * (localRadius / 14));
+        ctx.lineWidth = Math.max(1.2, 2.0 * (localRadius / 14));
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(pPos.px, pPos.py, Math.max(1.4, 2.4 * (localRadius / 14)), 0, Math.PI * 2);
+        ctx.arc(pPos.px, pPos.py, Math.max(1.4, 2.2 * (localRadius / 14)), 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
-      });
+      }
 
       ctx.restore();
-
-      if (isActuallyPlayingRef.current) {
-        animId = requestAnimationFrame(render);
-      }
+      animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
   }, [
-    passes, stations, selectedPassIdx, rotationX, rotationY, zoom, panX, panY,
-    isPlaying, speedRate, showCapstans, showLabels, showVelocityTags,
-    wireMaterial, dieNibMaterial, displaySize, N, startX, stationSpacing,
-    initialDia, initialArea, canvasRef
+    passes, stations, selectedPassIdx, isPlaying, speedRate,
+    showCapstans, showLabels, showVelocityTags, wireMaterial,
+    dieNibMaterial, N, startX, stationSpacing, initialDia,
+    initialArea, cameraRef, canvasRef
   ]);
 
   return (
@@ -997,18 +855,14 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
 });
 
 // =========================================================================
-// 2. SINGLE DIE DEEP DEFORMATION ZONE CANVAS (PHOTOREALISTIC CUTAWAY)
+// 2. SINGLE DIE DEEP DEFORMATION ZONE CANVAS (60+ FPS OPTIMIZED)
 // =========================================================================
 const SingleDieCanvas = React.memo(function SingleDieCanvas({
   pass,
   approachAngle2Alpha,
   bearingLengthLbRatio,
   sliceAngleDeg,
-  rotationX,
-  rotationY,
-  zoom,
-  panX,
-  panY,
+  cameraRef,
   isPlaying,
   renderMode,
   wireMaterial,
@@ -1021,11 +875,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   approachAngle2Alpha: number;
   bearingLengthLbRatio: number;
   sliceAngleDeg: number;
-  rotationX: number;
-  rotationY: number;
-  zoom: number;
-  panX: number;
-  panY: number;
+  cameraRef: React.MutableRefObject<CameraState>;
   isPlaying: boolean;
   renderMode: 'realistic' | 'heatmap' | 'wireframe' | 'shear';
   wireMaterial: WireMaterialType;
@@ -1035,37 +885,30 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 400, h: 300 });
-  const isActuallyPlayingRef = useRef(true);
+  const displaySizeRef = useRef<{ w: number; h: number }>({ w: 400, h: 300 });
 
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        setDisplaySize({
-          w: Math.max(200, Math.floor(width)),
-          h: Math.max(200, Math.floor(height)),
-        });
+        const w = Math.max(200, Math.floor(width));
+        const h = Math.max(200, Math.floor(height));
+        displaySizeRef.current = { w, h };
+
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const dpr = Math.min(2, window.devicePixelRatio || 1);
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+          const ctx = canvas.getContext('2d');
+          if (ctx) ctx.scale(dpr, dpr);
+        }
       }
     });
     ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = displaySize.w * dpr;
-    canvas.height = displaySize.h * dpr;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(dpr, dpr);
-  }, [displaySize, canvasRef]);
-
-  useEffect(() => {
-    isActuallyPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+  }, [canvasRef]);
 
   const din = pass?.fromDie ?? 3.0;
   const dout = pass?.toDie ?? 2.5;
@@ -1084,12 +927,10 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   const sigmaD = sigmaFlow * phi * epsilon * (1 + mu / Math.tan(Math.max(alphaRadHalf, 0.01)));
   const maxStress = sigmaFlow * 2.5;
 
-  // Real industrial standard scaling factor
   const scaleR = 20;
   const rIn = (din / 2) * scaleR;
   const rOut = (dout / 2) * scaleR;
 
-  // True 4-Zone Internal Die Geometry Profile
   const rBell = 18;
   const coneLength = Math.max(35, Math.min(130, (rIn - rOut) / Math.tan(Math.max(alphaRadHalf, 0.01))));
   const bearingLen = (bearingLengthLbRatio / 100) * dout * scaleR;
@@ -1103,7 +944,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   const xReliefEnd = xBearEnd + reliefLen;
   const xExit = Math.max(xReliefEnd + 100, xConeEnd + 210);
 
-  // Outer Casing & Sintered Nib Dimensions (DIN 2812 Standard Proportions)
   const rNibOuter = Math.max(rIn + 22, 36);
   const rDieCasingOuter = Math.max(rNibOuter + 30, 68);
   const xCasingFront = xBellStart - 10;
@@ -1155,61 +995,70 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   useEffect(() => {
     let animId: number;
     let particleOffset = 0;
+    let lastTime = performance.now();
 
-    const render = () => {
+    const render = (now: number) => {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const width = displaySize.w;
-      const height = displaySize.h;
+      const width = displaySizeRef.current.w;
+      const height = displaySizeRef.current.h;
       ctx.clearRect(0, 0, width, height);
 
-      // Deep CAD Dark Room Background
-      const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 40, width / 2, height / 2, width * 0.85);
-      bgGrad.addColorStop(0, '#0c1322');
-      bgGrad.addColorStop(0.7, '#060a12');
-      bgGrad.addColorStop(1, '#020408');
-      ctx.fillStyle = bgGrad;
+      ctx.fillStyle = '#060a12';
       ctx.fillRect(0, 0, width, height);
 
-      // Shopfloor Precision Grid
+      // Batched Grid Lines
       ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
       ctx.lineWidth = 1;
+      ctx.beginPath();
       const gridSize = 40;
       for (let x = 0; x < width; x += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
-        ctx.stroke();
       }
       for (let y = 0; y < height; y += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
-        ctx.stroke();
       }
+      ctx.stroke();
 
       ctx.save();
       ctx.translate(width / 2, height / 2);
 
-      const radX = (rotationX * Math.PI) / 180;
-      const radY = (rotationY * Math.PI) / 180;
+      const cam = cameraRef.current;
+      const radX = (cam.rotX * Math.PI) / 180;
+      const radY = (cam.rotY * Math.PI) / 180;
+      const cosX = Math.cos(radX);
+      const sinX = Math.sin(radX);
+      const cosY = Math.cos(radY);
+      const sinY = Math.sin(radY);
+      const zScale = cam.zoom;
 
       const project3D = (x: number, y: number, z: number) => {
-        const xOffset = x + panX;
-        const yOffset = y + panY;
-        const x1 = xOffset * Math.cos(radY) + z * Math.sin(radY);
-        const z1 = -xOffset * Math.sin(radY) + z * Math.cos(radY);
-        const y2 = yOffset * Math.cos(radX) - z1 * Math.sin(radX);
-        return { px: x1 * zoom, py: y2 * zoom };
+        const xOffset = x + cam.panX;
+        const yOffset = y + cam.panY;
+        const x1 = xOffset * cosY + z * sinY;
+        const z1 = -xOffset * sinY + z * cosY;
+        const y2 = yOffset * cosX - z1 * sinX;
+        return { px: x1 * zScale, py: y2 * zScale };
       };
 
       const mat = WIRE_MATERIALS[wireMaterial];
       const dieMat = DIE_MATERIALS[dieNibMaterial];
-
-      const numSegments = 36;
+      const activeLUT = cam.isDragging ? LUT_18 : LUT_36;
+      const count = activeLUT.count;
       const maxCutoffRad = (sliceAngleDeg * Math.PI) / 180;
 
       const stressToColor = (stressVal: number): string => {
@@ -1240,7 +1089,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         return Math.max(0, Math.min(1, stressVal));
       };
 
-      // Helper to render 3D Cylinder Shell / Cutaway Sections
       const draw3DCylinderSection = (
         xStart: number,
         xEnd: number,
@@ -1248,27 +1096,19 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         rEnd: number,
         layerType: 'casing' | 'braze' | 'nib' | 'wire'
       ) => {
-        for (let i = 0; i < numSegments; i++) {
-          const angle1 = (i / numSegments) * Math.PI * 2;
-          const angle2 = ((i + 1) / numSegments) * Math.PI * 2;
-
-          // Skip section if inside cutaway window (so interior profile & wire are visible)
+        for (let i = 0; i < count; i++) {
+          const angle1 = (i / count) * Math.PI * 2;
           if (layerType !== 'wire' && angle1 > maxCutoffRad) continue;
 
-          const y1s = rStart * Math.cos(angle1);
-          const z1s = rStart * Math.sin(angle1);
-          const y2s = rStart * Math.cos(angle2);
-          const z2s = rStart * Math.sin(angle2);
+          const cos1 = activeLUT.cos[i];
+          const sin1 = activeLUT.sin[i];
+          const cos2 = activeLUT.cos[i + 1];
+          const sin2 = activeLUT.sin[i + 1];
 
-          const y1e = rEnd * Math.cos(angle1);
-          const z1e = rEnd * Math.sin(angle1);
-          const y2e = rEnd * Math.cos(angle2);
-          const z2e = rEnd * Math.sin(angle2);
-
-          const p1 = project3D(xStart, y1s, z1s);
-          const p2 = project3D(xStart, y2s, z2s);
-          const p3 = project3D(xEnd, y2e, z2e);
-          const p4 = project3D(xEnd, y1e, z1e);
+          const p1 = project3D(xStart, rStart * cos1, rStart * sin1);
+          const p2 = project3D(xStart, rStart * cos2, rStart * sin2);
+          const p3 = project3D(xEnd, rEnd * cos2, rEnd * sin2);
+          const p4 = project3D(xEnd, rEnd * cos1, rEnd * sin1);
 
           ctx.beginPath();
           ctx.moveTo(p1.px, p1.py);
@@ -1277,10 +1117,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           ctx.lineTo(p4.px, p4.py);
           ctx.closePath();
 
-          const normalY = Math.cos((angle1 + angle2) / 2);
-          const normalZ = Math.sin((angle1 + angle2) / 2);
-          const specular = Math.pow(Math.max(0, -normalY * 0.7 - normalZ * 0.7), 4);
-          const lightFactor = Math.max(0.2, 0.5 + 0.5 * (-normalY) + 0.2 * (-normalZ));
+          const normalY = (cos1 + cos2) * 0.5;
+          const lightFactor = Math.max(0.2, 0.5 + 0.5 * (-normalY));
 
           if (layerType === 'casing') {
             if (renderMode === 'wireframe') {
@@ -1296,31 +1134,20 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
             ctx.stroke();
           } else if (layerType === 'braze') {
             ctx.fillStyle = dieMat.brazeColor;
-            ctx.strokeStyle = '#fef08a';
-            ctx.lineWidth = 0.6;
             ctx.fill();
-            ctx.stroke();
           } else if (layerType === 'nib') {
             ctx.fillStyle = dieMat.coreColor;
-            ctx.strokeStyle = dieMat.luster;
-            ctx.lineWidth = 0.7;
             ctx.fill();
-            ctx.stroke();
           } else {
             const midX = (xStart + xEnd) / 2;
             const stressVal = computeStressAtX(midX);
 
             if (renderMode === 'realistic') {
-              const grad = ctx.createLinearGradient(p1.px, p1.py, p3.px, p3.py);
-              grad.addColorStop(0, mat.wireGradient[0]);
-              grad.addColorStop(0.5, mat.wireGradient[1]);
-              grad.addColorStop(1, mat.wireGradient[2]);
-              ctx.fillStyle = grad;
-              ctx.globalAlpha = Math.min(1.0, lightFactor + specular * 0.6);
+              ctx.fillStyle = mat.wireGradient[0];
+              ctx.globalAlpha = lightFactor;
             } else if (renderMode === 'heatmap') {
               if (midX >= xConeEnd && midX <= xBearEnd) {
-                const amberIntensity = 0.6 + 0.4 * stressVal;
-                ctx.fillStyle = `rgba(245, 158, 11, ${amberIntensity})`;
+                ctx.fillStyle = `rgba(245, 158, 11, ${0.6 + 0.4 * stressVal})`;
               } else {
                 ctx.fillStyle = stressToColor(stressVal);
               }
@@ -1329,35 +1156,28 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
               ctx.fillStyle = stressToColor(stressVal);
               ctx.globalAlpha = 0.85;
             }
-
-            ctx.strokeStyle = renderMode === 'wireframe'
-              ? 'rgba(255, 255, 255, 0.5)'
-              : 'rgba(0, 0, 0, 0.3)';
-            ctx.lineWidth = 0.75;
             ctx.fill();
-            ctx.stroke();
             ctx.globalAlpha = 1.0;
           }
         }
       };
 
-      // 1. Draw Outer Stainless Steel Die Casing (DIN 2812 Standard)
+      // 1. Draw Outer Stainless Steel Die Casing
       draw3DCylinderSection(xCasingFront + casingChamfer, xCasingBack - casingChamfer, rDieCasingOuter, rDieCasingOuter, 'casing');
       draw3DCylinderSection(xCasingFront, xCasingFront + casingChamfer, rDieCasingOuter - casingChamfer, rDieCasingOuter, 'casing');
       draw3DCylinderSection(xCasingBack - casingChamfer, xCasingBack, rDieCasingOuter, rDieCasingOuter - casingChamfer, 'casing');
 
-      // 2. Draw Sintered Brazing Seat Ring & Carbide Nib Core Body
+      // 2. Draw Sintered Brazing Seat Ring & Carbide Nib
       draw3DCylinderSection(xCasingFront + 2, xCasingBack - 2, rNibOuter + 2, rNibOuter + 2, 'braze');
       draw3DCylinderSection(xCasingFront + 4, xCasingBack - 4, rNibOuter, rNibOuter, 'nib');
 
-      // 3. Draw Cutaway Cross-Section Hatched Walls (if sliced)
+      // 3. Draw Cutaway Walls
       if (sliceAngleDeg < 360) {
         const cutAngles = [0, maxCutoffRad];
         cutAngles.forEach((cutAngle) => {
           const cosA = Math.cos(cutAngle);
           const sinA = Math.sin(cutAngle);
 
-          // Casing Cut Section Face
           const pC1 = project3D(xCasingFront, (rDieCasingOuter - casingChamfer) * cosA, (rDieCasingOuter - casingChamfer) * sinA);
           const pC2 = project3D(xCasingBack, (rDieCasingOuter - casingChamfer) * cosA, (rDieCasingOuter - casingChamfer) * sinA);
           const pN2 = project3D(xCasingBack, rNibOuter * cosA, rNibOuter * sinA);
@@ -1375,7 +1195,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           ctx.fill();
           ctx.stroke();
 
-          // Carbide Nib Cut Section Face
           const pB1 = project3D(xCasingFront + 4, rNibOuter * cosA, rNibOuter * sinA);
           const pB2 = project3D(xCasingBack - 4, rNibOuter * cosA, rNibOuter * sinA);
           const pB3 = project3D(xCasingBack - 4, rOut * cosA, rOut * sinA);
@@ -1395,11 +1214,9 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         });
       }
 
-      // 4. Draw Continuous Wire with Complete 4-Zone Internal Profile
-      // Zone 0: Entry Rod before die
+      // 4. Draw Continuous Wire Profile
       draw3DCylinderSection(xEntrance, xBellStart, rIn, rIn, 'wire');
 
-      // Zone 1: Bell Entrance Radius (Curved Funnel)
       const stepsBell = 6;
       for (let s = 0; s < stepsBell; s++) {
         const x1 = xBellStart + (s / stepsBell) * (xConeStart - xBellStart);
@@ -1411,8 +1228,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         draw3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
-      // Zone 2: Approach / Reduction Cone (2alpha)
-      const stepsCone = 12;
+      const stepsCone = 10;
       for (let s = 0; s < stepsCone; s++) {
         const x1 = xConeStart + (s / stepsCone) * (xConeEnd - xConeStart);
         const x2 = xConeStart + ((s + 1) / stepsCone) * (xConeEnd - xConeStart);
@@ -1421,10 +1237,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         draw3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
-      // Zone 3: Bearing Cylinder (Parallel Sizing Land Lb)
       draw3DCylinderSection(xConeEnd, xBearEnd, rOut, rOut, 'wire');
 
-      // Zone 4: Back Relief Exit Cone
       const stepsRelief = 6;
       for (let s = 0; s < stepsRelief; s++) {
         const x1 = xBearEnd + (s / stepsRelief) * (xReliefEnd - xBearEnd);
@@ -1434,10 +1248,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         draw3DCylinderSection(x1, x2, r1, r2, 'wire');
       }
 
-      // Zone 5: Exit Calibrated Wire
       draw3DCylinderSection(xReliefEnd, xExit, rOut, rOut, 'wire');
 
-      // 5. Central Burst Risk Chevrons (if delta parameter is critical)
       if (isCentralBurstRisk) {
         ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
         ctx.strokeStyle = '#ef4444';
@@ -1461,9 +1273,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         }
       }
 
-      // 6. Animate Ingress Particles
       if (isPlaying) {
-        particleOffset = (particleOffset + 1.4) % 40;
+        particleOffset = (particleOffset + 1.4 * dt * 60) % 40;
       }
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const stepP = 16;
@@ -1485,7 +1296,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         ctx.fill();
       }
 
-      // 7. CAD Dimension Annotations Overlay (if enabled)
       if (showDimensions) {
         ctx.save();
         ctx.font = 'bold 9px monospace';
@@ -1493,7 +1303,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         ctx.fillStyle = '#38bdf8';
         ctx.lineWidth = 1;
 
-        // Entrance Diameter (d1)
         const pInTop = project3D(xEntrance + 20, -rIn, 0);
         const pInBot = project3D(xEntrance + 20, rIn, 0);
         ctx.beginPath();
@@ -1506,7 +1315,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         ctx.stroke();
         ctx.fillText(`d1: Ø${din.toFixed(3)} mm`, pInTop.px + 8, (pInTop.py + pInBot.py) / 2);
 
-        // Exit Diameter (d2)
         const pOutTop = project3D(xExit - 20, -rOut, 0);
         const pOutBot = project3D(xExit - 20, rOut, 0);
         ctx.beginPath();
@@ -1519,11 +1327,9 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
         ctx.stroke();
         ctx.fillText(`d2: Ø${dout.toFixed(3)} mm`, pOutTop.px + 8, (pOutTop.py + pOutBot.py) / 2);
 
-        // Approach Angle (2alpha)
         const pConeMid = project3D((xConeStart + xConeEnd) / 2, -rDieCasingOuter - 10, 0);
         ctx.fillText(`Approach 2α: ${approachAngle2Alpha}°`, pConeMid.px - 40, pConeMid.py);
 
-        // Bearing Length (Lb)
         const pBearStart = project3D(xConeEnd, rDieCasingOuter + 10, 0);
         const pBearEndP = project3D(xBearEnd, rDieCasingOuter + 10, 0);
         ctx.beginPath();
@@ -1535,26 +1341,22 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       }
 
       ctx.restore();
-
-      if (isActuallyPlayingRef.current) {
-        animId = requestAnimationFrame(render);
-      }
+      animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
   }, [
-    pass, rotationX, rotationY, zoom, panX, panY, isPlaying, renderMode,
-    approachAngle2Alpha, bearingLengthLbRatio, sliceAngleDeg,
-    wireMaterial, dieNibMaterial, showDimensions,
-    displaySize, din, dout, areaRed, alphaRadHalf, deltaParam,
+    pass, isPlaying, renderMode, approachAngle2Alpha,
+    bearingLengthLbRatio, sliceAngleDeg, wireMaterial, dieNibMaterial,
+    showDimensions, din, dout, areaRed, alphaRadHalf, deltaParam,
     isCentralBurstRisk, sigmaD, maxStress, bearingLen,
     xConeStart, xConeEnd, xBearEnd, xExit, xEntrance, xBellStart, xReliefEnd,
     xCasingFront, xCasingBack, casingChamfer, rNibOuter, rDieCasingOuter,
-    coneLength, rIn, rOut, canvasRef
+    coneLength, rIn, rOut, cameraRef, canvasRef
   ]);
 
   return (
@@ -1573,28 +1375,30 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
 });
 
 // =========================================================================
-// 3. MAIN WORKBENCH COMPONENT
+// 3. MAIN WORKBENCH COMPONENT WITH DECOUPLED CAMERA CONTROLLER
 // =========================================================================
 export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
-  // Navigation mode: 'train' (Multi-Die Sequence) | 'single' (Single Die Zone) | 'compare' (Compare 2 Passes)
   const [activeViewMode, setActiveViewMode] = useState<'train' | 'single' | 'compare'>('train');
-
-  // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-
-  // Interaction Tool mode: 'orbit' | 'pan'
   const [navTool, setNavTool] = useState<'orbit' | 'pan'>('orbit');
 
   const [selectedPassIdx, setSelectedPassIdx] = useState<number>(0);
   const [comparePassIdxA, setComparePassIdxA] = useState<number>(0);
   const [comparePassIdxB, setComparePassIdxB] = useState<number>(Math.min(1, passes.length - 1));
 
-  // CAD 3D Camera Angles, Pan & Zoom
-  const [rotationX, setRotationX] = useState<number>(22);
-  const [rotationY, setRotationY] = useState<number>(-28);
-  const [zoom, setZoom] = useState<number>(1.0);
-  const [panX, setPanX] = useState<number>(0);
-  const [panY, setPanY] = useState<number>(0);
+  // Mutable camera controller ref: 0 React re-renders on mousemove
+  const cameraRef = useRef<CameraState>({
+    rotX: 22,
+    rotY: -28,
+    zoom: 1.0,
+    panX: 0,
+    panY: 0,
+    isDragging: false,
+  });
+
+  // UI display zoom for badge
+  const [uiZoom, setUiZoom] = useState<number>(1.0);
+
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [speedRate, setSpeedRate] = useState<number>(1.0);
 
@@ -1616,9 +1420,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const [showDimensions, setShowDimensions] = useState<boolean>(true);
 
   // Mouse Dragging States
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragButton, setDragButton] = useState<number>(0); // 0: left, 1: middle, 2: right
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragButtonRef = useRef<number>(0);
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Hover Telemetry States
   const [trainHoverInfo, setTrainHoverInfo] = useState<TrainHoverInfo | null>(null);
@@ -1634,16 +1437,17 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const canvasRefA = useRef<HTMLCanvasElement | null>(null);
   const canvasRefB = useRef<HTMLCanvasElement | null>(null);
 
-  // Non-passive wheel listener for smooth CAD-style mouse scroll zoom
+  // Non-passive wheel listener for smooth CAD-style mouse scroll zoom (0 React lag)
   useEffect(() => {
     const container = mainContainerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // CAD Zoom: scroll up -> zoom in, scroll down -> zoom out
-      const factor = e.deltaY < 0 ? 1.15 : 0.87;
-      setZoom((prev) => Math.max(0.25, Math.min(5.0, Number((prev * factor).toFixed(3)))));
+      const factor = e.deltaY < 0 ? 1.12 : 0.89;
+      const newZoom = Math.max(0.25, Math.min(5.0, Number((cameraRef.current.zoom * factor).toFixed(3))));
+      cameraRef.current.zoom = newZoom;
+      setUiZoom(newZoom);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -1665,7 +1469,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     }
   }, [isFullscreen]);
 
-  // Synchronize with browser native fullscreen events & key shortcuts
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -1680,10 +1483,14 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         toggleFullscreen();
       }
       if (e.key === '+' || e.key === '=') {
-        setZoom((z) => Math.min(5.0, z + 0.15));
+        const newZ = Math.min(5.0, cameraRef.current.zoom + 0.15);
+        cameraRef.current.zoom = newZ;
+        setUiZoom(newZ);
       }
       if (e.key === '-' || e.key === '_') {
-        setZoom((z) => Math.max(0.25, z - 0.15));
+        const newZ = Math.max(0.25, cameraRef.current.zoom - 0.15);
+        cameraRef.current.zoom = newZ;
+        setUiZoom(newZ);
       }
     };
 
@@ -1696,13 +1503,14 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     };
   }, [isFullscreen, toggleFullscreen]);
 
-  // Zoom Extents / Fit to View
+  // CAD Zoom Extents / Fit to View
   const fitView = () => {
-    setRotationX(22);
-    setRotationY(-28);
-    setPanX(0);
-    setPanY(0);
-    setZoom(1.0);
+    cameraRef.current.rotX = 22;
+    cameraRef.current.rotY = -28;
+    cameraRef.current.panX = 0;
+    cameraRef.current.panY = 0;
+    cameraRef.current.zoom = 1.0;
+    setUiZoom(1.0);
   };
 
   // Center Camera onto Selected Die Station
@@ -1712,46 +1520,50 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     const totalLength = (N - 1) * stationSpacing;
     const startX = -totalLength / 2;
     const targetX = startX + selectedPassIdx * stationSpacing;
-    setPanX(-targetX);
-    setPanY(0);
-    setZoom(1.8);
+    cameraRef.current.panX = -targetX;
+    cameraRef.current.panY = 0;
+    cameraRef.current.zoom = 1.8;
+    setUiZoom(1.8);
   };
 
   // View Angle Presets
   const setViewPreset = (preset: 'iso' | 'side' | 'top' | 'front') => {
     switch (preset) {
       case 'iso':
-        setRotationX(22);
-        setRotationY(-28);
-        setPanX(0);
-        setPanY(0);
-        setZoom(1.0);
+        cameraRef.current.rotX = 22;
+        cameraRef.current.rotY = -28;
+        cameraRef.current.panX = 0;
+        cameraRef.current.panY = 0;
+        cameraRef.current.zoom = 1.0;
+        setUiZoom(1.0);
         break;
       case 'side':
-        setRotationX(0);
-        setRotationY(0);
-        setPanX(0);
-        setPanY(0);
-        setZoom(1.05);
+        cameraRef.current.rotX = 0;
+        cameraRef.current.rotY = 0;
+        cameraRef.current.panX = 0;
+        cameraRef.current.panY = 0;
+        cameraRef.current.zoom = 1.05;
+        setUiZoom(1.05);
         break;
       case 'top':
-        setRotationX(85);
-        setRotationY(0);
-        setPanX(0);
-        setPanY(0);
-        setZoom(0.95);
+        cameraRef.current.rotX = 85;
+        cameraRef.current.rotY = 0;
+        cameraRef.current.panX = 0;
+        cameraRef.current.panY = 0;
+        cameraRef.current.zoom = 0.95;
+        setUiZoom(0.95);
         break;
       case 'front':
-        setRotationX(10);
-        setRotationY(-80);
-        setPanX(0);
-        setPanY(0);
-        setZoom(1.1);
+        cameraRef.current.rotX = 10;
+        cameraRef.current.rotY = -80;
+        cameraRef.current.panX = 0;
+        cameraRef.current.panY = 0;
+        cameraRef.current.zoom = 1.1;
+        setUiZoom(1.1);
         break;
     }
   };
 
-  // Snapshot exporter
   const handleTakeSnapshot = () => {
     const activeCanvas =
       activeViewMode === 'train'
@@ -1770,32 +1582,35 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     });
   };
 
-  // Mouse drag orbit/pan handlers with CAD multi-button support
+  // Fast Drag Handlers (Direct Camera Mutation — 0 React Re-renders)
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragButton(e.button);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    cameraRef.current.isDragging = true;
+    dragButtonRef.current = e.button;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - dragStart.x;
-    const deltaY = e.clientY - dragStart.y;
+    if (!cameraRef.current.isDragging) return;
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
 
-    const isPanning = dragButton === 1 || dragButton === 2 || e.shiftKey || navTool === 'pan';
+    const isPanning = dragButtonRef.current === 1 || dragButtonRef.current === 2 || e.shiftKey || navTool === 'pan';
 
     if (isPanning) {
-      const panSensitivity = 1.0 / Math.max(0.2, zoom);
-      setPanX((prev) => prev + deltaX * panSensitivity);
-      setPanY((prev) => prev + deltaY * panSensitivity);
+      const panSensitivity = 1.0 / Math.max(0.2, cameraRef.current.zoom);
+      cameraRef.current.panX += deltaX * panSensitivity;
+      cameraRef.current.panY += deltaY * panSensitivity;
     } else {
-      setRotationY((prev) => prev + deltaX * 0.4);
-      setRotationX((prev) => Math.max(-85, Math.min(85, prev - deltaY * 0.4)));
+      cameraRef.current.rotY += deltaX * 0.4;
+      cameraRef.current.rotX = Math.max(-85, Math.min(85, cameraRef.current.rotX - deltaY * 0.4));
     }
-    setDragStart({ x: e.clientX, y: e.clientY });
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = () => {
+    cameraRef.current.isDragging = false;
+    setUiZoom(Number(cameraRef.current.zoom.toFixed(2)));
+  };
 
   if (!passes || passes.length === 0) {
     return (
@@ -1817,7 +1632,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     return `${sign}${delta.toFixed(3)}`;
   };
 
-  // Physics telemetry for current single pass
   const din = activePassSingle?.fromDie ?? 3.0;
   const dout = activePassSingle?.toDie ?? 2.5;
   const areaRed = activePassSingle?.areaReduction ?? 0;
@@ -1859,6 +1673,9 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {passes.length} Passes Active
               </span>
+              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                60-120 FPS HIGH PERF
+              </span>
               {isFullscreen && (
                 <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
                   FULLSCREEN (ESC / F)
@@ -1866,7 +1683,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               )}
             </div>
             <p className="text-xs text-slate-400 m-0 mt-0.5">
-              3D CAD perspective orbit &bull; Tungsten Carbide / PCD Nibs &bull; Scroll to Zoom &bull; Drag to Orbit
+              Decoupled 60 FPS CAD engine &bull; Tungsten Carbide / PCD Nibs &bull; Scroll to Zoom &bull; Drag to Orbit
             </p>
           </div>
         </div>
@@ -1912,7 +1729,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             <span className="hidden sm:inline">Snapshot</span>
           </button>
 
-          {/* Fullscreen Trigger Button */}
           <button
             onClick={toggleFullscreen}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition shadow-sm cursor-pointer ${
@@ -1951,7 +1767,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
       {/* Material & Physics Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-900 text-xs font-mono shrink-0">
-        {/* Wire & Die Material Selectors */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400 text-[11px] font-bold">Wire Metal:</span>
@@ -1983,7 +1798,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
         {activeViewMode === 'train' && (
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            {/* CAD Camera Views */}
             <div className="flex items-center gap-1">
               <span className="text-slate-500 text-[10px] font-bold mr-1">View:</span>
               {[
@@ -2002,7 +1816,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               ))}
             </div>
 
-            {/* Feature Toggles */}
             <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
               <input
                 type="checkbox"
@@ -2031,7 +1844,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <span>Speed</span>
             </label>
 
-            {/* Line Speed Feed */}
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500 text-[10px]">Feed:</span>
               {[0.5, 1.0, 2.0].map((rate) => (
@@ -2051,7 +1863,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
         {activeViewMode === 'single' && (
           <div className="flex flex-wrap items-center gap-3">
-            {/* Shading Mode Tabs */}
             <div className="flex items-center bg-slate-900 p-0.5 rounded border border-slate-800">
               <button
                 onClick={() => setRenderMode('realistic')}
@@ -2190,7 +2001,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
       {/* Main 3D Viewport Grid */}
       <div className={`grid grid-cols-1 ${isFullscreen ? 'lg:grid-cols-12 flex-1 min-h-0' : 'lg:grid-cols-12'} gap-6 items-stretch`}>
-        {/* Render Canvas Area with Full CAD Navigation */}
+        {/* Render Canvas Area with Decoupled CAD Navigation */}
         <div
           ref={mainContainerRef}
           onMouseDown={handleMouseDown}
@@ -2199,9 +2010,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           onMouseLeave={handleMouseUp}
           onContextMenu={(e) => e.preventDefault()}
           style={{
-            cursor: isDragging
-              ? (dragButton === 1 || dragButton === 2 || navTool === 'pan' ? 'move' : 'grabbing')
-              : (navTool === 'pan' ? 'grab' : 'crosshair'),
+            cursor: navTool === 'pan' ? 'grab' : 'crosshair',
             touchAction: 'none'
           }}
           className={`${
@@ -2214,11 +2023,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 passes={passes}
                 selectedPassIdx={selectedPassIdx}
                 onSelectPass={setSelectedPassIdx}
-                rotationX={rotationX}
-                rotationY={rotationY}
-                zoom={zoom}
-                panX={panX}
-                panY={panY}
+                cameraRef={cameraRef}
                 isPlaying={isPlaying}
                 speedRate={speedRate}
                 showCapstans={showCapstans}
@@ -2274,11 +2079,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 approachAngle2Alpha={approachAngle2Alpha}
                 bearingLengthLbRatio={bearingLengthLbRatio}
                 sliceAngleDeg={sliceAngleDeg}
-                rotationX={rotationX}
-                rotationY={rotationY}
-                zoom={zoom}
-                panX={panX}
-                panY={panY}
+                cameraRef={cameraRef}
                 isPlaying={isPlaying}
                 renderMode={renderMode}
                 wireMaterial={wireMaterial}
@@ -2325,11 +2126,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   approachAngle2Alpha={approachAngle2Alpha}
                   bearingLengthLbRatio={bearingLengthLbRatio}
                   sliceAngleDeg={sliceAngleDeg}
-                  rotationX={rotationX}
-                  rotationY={rotationY}
-                  zoom={zoom}
-                  panX={panX}
-                  panY={panY}
+                  cameraRef={cameraRef}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
                   wireMaterial={wireMaterial}
@@ -2349,11 +2146,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   approachAngle2Alpha={approachAngle2Alpha}
                   bearingLengthLbRatio={bearingLengthLbRatio}
                   sliceAngleDeg={sliceAngleDeg}
-                  rotationX={rotationX}
-                  rotationY={rotationY}
-                  zoom={zoom}
-                  panX={panX}
-                  panY={panY}
+                  cameraRef={cameraRef}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
                   wireMaterial={wireMaterial}
@@ -2366,9 +2159,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             </div>
           )}
 
-          {/* Top-Left CAD Toolbar: Play, Orbit, Pan, Zoom, Focus, Fit, Reset */}
+          {/* Top-Left CAD Toolbar */}
           <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-20 bg-slate-900/85 backdrop-blur p-1.5 rounded-xl border border-slate-800 shadow-xl">
-            {/* Play/Pause Feed */}
             <button
               onClick={() => setIsPlaying(!isPlaying)}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
@@ -2379,7 +2171,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
             <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
 
-            {/* Orbit Tool */}
             <button
               onClick={() => setNavTool('orbit')}
               className={`p-1.5 rounded-lg transition cursor-pointer ${
@@ -2390,7 +2181,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <Compass className="w-3.5 h-3.5" />
             </button>
 
-            {/* Pan Tool */}
             <button
               onClick={() => setNavTool('pan')}
               className={`p-1.5 rounded-lg transition cursor-pointer ${
@@ -2403,25 +2193,30 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
             <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
 
-            {/* Zoom In */}
             <button
-              onClick={() => setZoom((z) => Math.min(5.0, Number((z * 1.2).toFixed(2))))}
+              onClick={() => {
+                const newZ = Math.min(5.0, Number((cameraRef.current.zoom * 1.2).toFixed(2)));
+                cameraRef.current.zoom = newZ;
+                setUiZoom(newZ);
+              }}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
               title="Zoom In (Scroll Up or +)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
 
-            {/* Zoom Out */}
             <button
-              onClick={() => setZoom((z) => Math.max(0.25, Number((z * 0.83).toFixed(2))))}
+              onClick={() => {
+                const newZ = Math.max(0.25, Number((cameraRef.current.zoom * 0.83).toFixed(2)));
+                cameraRef.current.zoom = newZ;
+                setUiZoom(newZ);
+              }}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
               title="Zoom Out (Scroll Down or -)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
 
-            {/* Focus Station */}
             <button
               onClick={focusSelectedPass}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700/60 transition cursor-pointer"
@@ -2430,7 +2225,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <Crosshair className="w-3.5 h-3.5" />
             </button>
 
-            {/* Fit View */}
             <button
               onClick={fitView}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700/60 transition cursor-pointer"
@@ -2439,7 +2233,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <Maximize className="w-3.5 h-3.5" />
             </button>
 
-            {/* Reset */}
             <button
               onClick={fitView}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
@@ -2448,13 +2241,12 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
 
-            {/* Zoom Percent readout */}
             <span className="text-[10px] font-mono font-bold text-slate-400 px-1.5">
-              {Math.round(zoom * 100)}%
+              {Math.round(uiZoom * 100)}%
             </span>
           </div>
 
-          {/* Bottom Legend / Instructions */}
+          {/* Bottom Legend */}
           <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur border border-slate-800/80 px-3.5 py-1.5 rounded-xl flex items-center justify-between text-[10px] font-mono z-20">
             <div className="flex items-center gap-2 text-slate-400">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -2491,19 +2283,23 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             </span>
           </div>
 
-          {/* Granular Zoom Slider in Sidebar */}
+          {/* Sidebar Zoom Slider */}
           <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 space-y-1.5">
             <div className="flex justify-between text-[11px] font-mono">
               <span className="text-slate-400">CAD View Zoom:</span>
-              <span className="text-cyan-400 font-bold">{Math.round(zoom * 100)}%</span>
+              <span className="text-cyan-400 font-bold">{Math.round(uiZoom * 100)}%</span>
             </div>
             <input
               type="range"
               min="0.25"
               max="4.0"
               step="0.05"
-              value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              value={uiZoom}
+              onChange={(e) => {
+                const z = parseFloat(e.target.value);
+                cameraRef.current.zoom = z;
+                setUiZoom(z);
+              }}
               className="w-full accent-cyan-500 cursor-pointer"
             />
             <div className="flex justify-between text-[9px] font-mono text-slate-500">
@@ -2592,7 +2388,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             </div>
           )}
 
-          {/* Educational Explainer Accordion */}
+          {/* Educational Explainer */}
           <div className="pt-2 border-t border-slate-900">
             <button
               onClick={() => setShowExplainer(!showExplainer)}
@@ -2641,7 +2437,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   );
 }
 
-// Helper to safely get container width
 function displaySizeW(ref: React.RefObject<HTMLDivElement | null>): number {
   return ref.current?.getBoundingClientRect().width ?? 600;
 }
