@@ -202,6 +202,7 @@ Track implementation status across all phases.
 - Added comprehensive Python unit tests for the recount and stock ViewSets, and verified frontend compilation and test suites pass completely.
 - Verified: all tests green across Go API (`dieset`, `handlers`, `database`) and TypeScript Vitest suite (69/69 green), typescript compiles without errors (`tsc --noEmit`), and Vite production build succeeds.
 - Decommissioned and safely removed the Preventive Wear Prediction feature across the system: dropped `Die.predicted_remaining_days` (migration `0014_remove_die_predicted_remaining_days`), deleted `WearPredictionService`, removed `wear-prediction` endpoint action, updated Go SQL scan layer to omit `PredictedRemainingDays`, removed `WearPredictionSection` from `DieDetailPage.tsx`, and removed prediction badges on die cards.
+- Decommissioned Sizing Calculator (`sizing-calculator`, `/calculator`) and Die Set Planner (`die-set-planner`, `/die-set-planner`): removed 24 files across frontend and Go backend, cleaned mux routes & handler methods, streamlined tools catalog to 3 core industrial tools (`TOOL-01` Wire Drawing Elongation Calculator, `TOOL-02` Die Series Generator, `TOOL-03` Pass Assignment Optimizer), updated AuthContext, UserManager, Navbar, and CommandPalette, and validated 100% test pass.
 
 ## Overall Progress
 - **AI-EOS:** 100% complete
@@ -213,7 +214,7 @@ Track implementation status across all phases.
 - **Package Security Audits & Upgrades:** 100% complete
 - **Custom Dev Tools & MCP Integration:** 100% complete
 - **Roadmap Phase 3:** 100% complete
-- **Die Set Planner Tool:** 100% complete
+- **Toolbox Streamlining:** 100% complete
 
 ## Next Actions
 1. Execute continuous testing and build verification
