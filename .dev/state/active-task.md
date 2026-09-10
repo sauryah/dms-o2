@@ -20,7 +20,7 @@ Overhauled the 3D Workbench in the Wire Drawing Calculator (`StressHeatmap3D.tsx
 3. **Heavy Machined Die Stand & Bench**: Modeled cast iron / machined steel die boxes with socket head cap screws (hex bolts), T-slot track baseplate, and liquid lubricant catchment.
 4. **Realistic Drawn Wire & Materials**: Metallic cylindrical lighting shaders with specular top-ridge reflections and materials selector for drawn wire (Copper Cu-ETP, High-Carbon Steel AISI 1070, Aluminum Al 1350, Brass CuZn30) and die nibs (Tungsten Carbide WC-Co, PCD Diamond, Natural Diamond).
 5. **CAD Dimensions & Cross-Section Cutaway**: Authentic cutaway slice walls showing layered steel casing and carbide nib cross-sections, CAD dimension leader lines ($d_1$, $d_2$, $2\alpha$, $L_B$), and dynamic FEA stress / shear slip / wireframe modes.
-6. **CAD-Grade Navigation & Fullscreen**: Non-passive mouse scroll wheel zoom ($25\%$ to $500\%$), middle/right/shift+left drag pan, floating CAD toolbar, focus crosshairs, and 1-click fullscreen viewport mode (`F` / `Esc`).
+6. **CAD-Grade Navigation, Fullscreen & 3D Perspective Discs**: Non-passive mouse scroll wheel zoom ($25\%$ to $500\%$), middle/right/shift+left drag pan, floating CAD toolbar, focus crosshairs, 1-click fullscreen viewport mode (`F` / `Esc`), and mathematically exact 3D perspective disc projection with camera-normal backface culling (so die front entrance faces and rear exit reliefs accurately tilt, rotate into perspective ellipses, and occlude on 3D drag).
 7. **Zero Regression Pass**: 54 Vitest tests green, `tsc --noEmit` 0 errors, Vite production build clean.
 
 ## Completed
