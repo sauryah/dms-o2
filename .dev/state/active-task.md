@@ -17,10 +17,11 @@ Track current work item for AI sessions.
 Replaced RFC 6238 TOTP authenticator app flow with 10 Single-Use Backup / Recovery Codes across backend Django models, authentication endpoints, test suites, and React frontend:
 1. Created `UserBackupCode` model with SHA-256 hashed code storage, single-use invalidation, and migration.
 2. Implemented `/api/v1/auth/backup-codes/generate/`, `/verify/`, `/disable/`, and `/status/` views with rate limiting and password confirmation.
-3. Updated `LoginPage.tsx` with formatted backup recovery code challenge input (`XXXX-XXXX`).
-4. Replaced Section 02 in `SettingsPage.tsx` with full Backup Codes generator, copy-to-clipboard, .txt download, and disable workflows.
-5. Updated `UserManager.tsx` security badge.
-6. 100% test pass across Django (83 tests), Vitest (54 tests), TypeScript (`tsc --noEmit`), and Vite production build.
+3. Added CLI emergency recovery command `python manage.py reset_mfa [username]` allowing immediate MFA reset if root or any user forgets their backup codes.
+4. Updated `LoginPage.tsx` with formatted backup recovery code challenge input (`XXXX-XXXX`).
+5. Replaced Section 02 in `SettingsPage.tsx` with full Backup Codes generator, copy-to-clipboard, .txt download, and disable workflows.
+6. Updated `UserManager.tsx` security badge.
+7. 100% test pass across Django (83 tests), Vitest (54 tests), TypeScript (`tsc --noEmit`), and Vite production build.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
