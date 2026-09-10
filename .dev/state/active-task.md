@@ -20,7 +20,7 @@ Overhauled the 3D Workbench in the Wire Drawing Calculator (`StressHeatmap3D.tsx
 3. **Mass-Conservation Velocity Acceleration**: Speed-proportional flow particles and glowing velocity streaks that accelerate dynamically after each pass based on $v_i \propto 1/A_i$.
 4. **Rotating Capstans**: Synchronized spinning capstan drums between stands matching the accelerated line speed.
 5. **Interactive Station Inspection**: Hover & click detection on any die stand displaying real-time telemetry (draft diameters, reduction %, elongation %, drawing force, and line speed multiplier).
-6. **Camera Presets & Physics Controls**: Isometric, Side Elevation, Top Floor, and Line Ingress camera angles, line speed controls (0.5x, 1.0x, 2.0x), and interactive "How Multi-Pass Drawing Works" educational explainer panel.
+6. **Camera Presets, Physics Controls & Fullscreen**: Isometric, Side Elevation, Top Floor, and Line Ingress camera angles, line speed controls (0.5x, 1.0x, 2.0x), immersive one-click Fullscreen mode (keyboard shortcuts `F` and `Esc`), and interactive "How Multi-Pass Drawing Works" educational explainer panel.
 7. **Zero Regression Pass**: Single Die Zone (von Mises stress heatmap, cutaways, chevrons) and Compare Mode preserved 100%. 54 Vitest tests green, `tsc --noEmit` 0 errors, Vite production build clean.
 
 ## Completed
