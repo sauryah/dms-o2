@@ -252,6 +252,8 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
+        total_codes = user.backup_codes.count()
+        unused_codes = user.backup_codes.filter(is_used=False).count()
         return Response({
             'id': user.id,
             'username': user.username,
@@ -261,7 +263,9 @@ class MeView(APIView):
             'last_name': user.last_name,
             'is_authorized_for_tools': user.is_authorized_for_tools,
             'authorized_tools': user.authorized_tools,
-            'is_mfa_enabled': user.is_mfa_enabled,
+            'is_mfa_enabled': user.is_mfa_enabled and unused_codes > 0,
+            'backup_codes_total': total_codes,
+            'backup_codes_remaining': unused_codes,
         })
 
 
