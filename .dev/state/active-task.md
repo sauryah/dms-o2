@@ -7,21 +7,21 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** Replace TOTP 2FA with Single-Use Backup Codes Authentication
+**Task:** 3D Multi-Pass Wire Drawing Train Visualization
 **Status:** Complete
 **Started:** 2026-09-10
 **Completed:** 2026-09-10
 **Confidence:** 100%
 
 ## Task Description
-Replaced RFC 6238 TOTP authenticator app flow with 10 Single-Use Backup / Recovery Codes across backend Django models, authentication endpoints, test suites, and React frontend:
-1. Created `UserBackupCode` model with SHA-256 hashed code storage, single-use invalidation, and migration.
-2. Implemented `/api/v1/auth/backup-codes/generate/`, `/verify/`, `/disable/`, and `/status/` views with rate limiting and password confirmation.
-3. Added CLI emergency recovery command `python manage.py reset_mfa [username]` allowing immediate MFA reset if root or any user forgets their backup codes.
-4. Updated `LoginPage.tsx` with formatted backup recovery code challenge input (`XXXX-XXXX`).
-5. Replaced Section 02 in `SettingsPage.tsx` with full Backup Codes generator, copy-to-clipboard, .txt download, and disable workflows.
-6. Updated `UserManager.tsx` security badge.
-7. 100% test pass across Django (83 tests), Vitest (54 tests), TypeScript (`tsc --noEmit`), and Vite production build.
+Overhauled the 3D Workbench in the Wire Drawing Calculator (`StressHeatmap3D.tsx`) to provide a complete interactive continuous multi-pass drawing visualization:
+1. **Multi-Die Drawing Train Mode**: Renders the complete multi-die drawing machine bench in 3D with all sequential die stands, die housings, chamfered nibs, and mounting brackets along the line.
+2. **Continuous Tapering Wire**: Live wire model passing through all consecutive dies, visually tapering down in diameter from raw entry rod ($d_0$) to fine drawn wire ($d_N$).
+3. **Mass-Conservation Velocity Acceleration**: Speed-proportional flow particles and glowing velocity streaks that accelerate dynamically after each pass based on $v_i \propto 1/A_i$.
+4. **Rotating Capstans**: Synchronized spinning capstan drums between stands matching the accelerated line speed.
+5. **Interactive Station Inspection**: Hover & click detection on any die stand displaying real-time telemetry (draft diameters, reduction %, elongation %, drawing force, and line speed multiplier).
+6. **Camera Presets & Physics Controls**: Isometric, Side Elevation, Top Floor, and Line Ingress camera angles, line speed controls (0.5x, 1.0x, 2.0x), and interactive "How Multi-Pass Drawing Works" educational explainer panel.
+7. **Zero Regression Pass**: Single Die Zone (von Mises stress heatmap, cutaways, chevrons) and Compare Mode preserved 100%. 54 Vitest tests green, `tsc --noEmit` 0 errors, Vite production build clean.
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
