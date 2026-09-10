@@ -22,8 +22,6 @@ import {
   Compass,
   Crosshair,
   Maximize,
-  Sparkles,
-  Shield,
   Ruler,
 } from 'lucide-react';
 import { PassData } from '../types';
@@ -271,7 +269,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     const centerCanvasY = displaySize.h / 2;
 
     let closestStation: TrainHoverInfo | null = null;
-    let minDistance = 50; // pixel threshold
+    let minDistance = 50;
 
     stations.forEach((st) => {
       const x1 = (st.x + panX) * Math.cos(radY);
@@ -392,6 +390,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       const radX = (rotationX * Math.PI) / 180;
       const radY = (rotationY * Math.PI) / 180;
 
+      // 3D Perspective Projection Function
       const project = (x: number, y: number, z: number) => {
         const xOffset = x + panX;
         const yOffset = y + panY;
@@ -408,6 +407,46 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
 
       const mat = WIRE_MATERIALS[wireMaterial];
       const dieMat = DIE_MATERIALS[dieNibMaterial];
+
+      // Helper function to render a true 3D rotated disc/annular ring in the Y-Z plane at position X
+      const draw3DDisc = (
+        xPos: number,
+        rInner: number,
+        rOuter: number,
+        fillStyle: string,
+        strokeStyle?: string,
+        lineWidth: number = 1
+      ) => {
+        const segs = 32;
+        ctx.beginPath();
+        // Outer perimeter (clockwise)
+        for (let s = 0; s <= segs; s++) {
+          const angle = (s / segs) * Math.PI * 2;
+          const y = rOuter * Math.cos(angle);
+          const z = rOuter * Math.sin(angle);
+          const p = project(xPos, y, z);
+          if (s === 0) ctx.moveTo(p.px, p.py);
+          else ctx.lineTo(p.px, p.py);
+        }
+        // Inner perimeter (counter-clockwise cutout for annular rings)
+        if (rInner > 0.5) {
+          for (let s = segs; s >= 0; s--) {
+            const angle = (s / segs) * Math.PI * 2;
+            const y = rInner * Math.cos(angle);
+            const z = rInner * Math.sin(angle);
+            const p = project(xPos, y, z);
+            ctx.lineTo(p.px, p.py);
+          }
+        }
+        ctx.closePath();
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+        if (strokeStyle) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineWidth;
+          ctx.stroke();
+        }
+      };
 
       // 1. Draw Machine Rail / Cast Foundation Bed
       const lineLeft = startX - 80;
@@ -504,7 +543,6 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.lineTo(p4.px, p4.py);
           ctx.closePath();
 
-          // Metallic Cylindrical Lighting Normals
           const normalY = Math.cos((a1 + a2) / 2);
           const normalZ = Math.sin((a1 + a2) / 2);
           const specular = Math.pow(Math.max(0, -normalY * 0.7 - normalZ * 0.7), 4);
@@ -524,7 +562,6 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.globalAlpha = Math.min(1.0, diffuse + specular * 0.6);
           ctx.fill();
 
-          // Highlight ridge on top of wire
           if (specular > 0.4) {
             ctx.strokeStyle = mat.sparkColor;
             ctx.lineWidth = 0.5;
@@ -599,21 +636,19 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           const drumCenter = project(capstanX, capstanY, capstanZ);
           const drumRotSpeed = flowTime * (stA.speedMultiplier * 0.08);
 
-          // Drum body with metallic gradient
+          // 3D projected circular face for capstan drum in the X-Y plane
           ctx.beginPath();
-          ctx.arc(drumCenter.px, drumCenter.py, capstanR * zoom, 0, Math.PI * 2);
-          const drumGrad = ctx.createRadialGradient(
-            drumCenter.px - 3 * zoom,
-            drumCenter.py - 3 * zoom,
-            2 * zoom,
-            drumCenter.px,
-            drumCenter.py,
-            capstanR * zoom
-          );
-          drumGrad.addColorStop(0, '#64748b');
-          drumGrad.addColorStop(0.7, '#1e293b');
-          drumGrad.addColorStop(1, '#0f172a');
-          ctx.fillStyle = drumGrad;
+          const capsegs = 20;
+          for (let s = 0; s <= capsegs; s++) {
+            const angle = (s / capsegs) * Math.PI * 2;
+            const px = capstanX + capstanR * Math.cos(angle);
+            const py = capstanY + capstanR * Math.sin(angle);
+            const p = project(px, py, capstanZ);
+            if (s === 0) ctx.moveTo(p.px, p.py);
+            else ctx.lineTo(p.px, p.py);
+          }
+          ctx.closePath();
+          ctx.fillStyle = '#1e293b';
           ctx.fill();
           ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
           ctx.lineWidth = 1.4;
@@ -622,26 +657,31 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           // Spoke lines for spinning visual
           for (let s = 0; s < 4; s++) {
             const angle = drumRotSpeed + (s * Math.PI) / 2;
-            const spokeX = drumCenter.px + Math.cos(angle) * (capstanR * 0.85 * zoom);
-            const spokeY = drumCenter.py + Math.sin(angle) * (capstanR * 0.85 * zoom);
+            const spokeX = capstanX + Math.cos(angle) * (capstanR * 0.85);
+            const spokeY = capstanY + Math.sin(angle) * (capstanR * 0.85);
+            const pSpoke = project(spokeX, spokeY, capstanZ);
             ctx.beginPath();
             ctx.moveTo(drumCenter.px, drumCenter.py);
-            ctx.lineTo(spokeX, spokeY);
+            ctx.lineTo(pSpoke.px, pSpoke.py);
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
             ctx.lineWidth = 1.2;
             ctx.stroke();
           }
 
           // Center spindle bolt
+          const pBolt = project(capstanX, capstanY, capstanZ);
           ctx.beginPath();
-          ctx.arc(drumCenter.px, drumCenter.py, 3.5 * zoom, 0, Math.PI * 2);
+          ctx.arc(pBolt.px, pBolt.py, 3.5 * zoom, 0, Math.PI * 2);
           ctx.fillStyle = '#38bdf8';
           ctx.fill();
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
         }
       }
+
+      // Check camera view direction along the wire axis:
+      // When frontNormalZ < 0, the FRONT ENTRANCE face (at xStandStart) is facing the camera.
+      // When frontNormalZ >= 0, the REAR EXIT face (at xStandEnd) is facing the camera.
+      const frontNormalZ = Math.sin(radY) * Math.cos(radX);
+      const isFrontFaceVisible = frontNormalZ < 0;
 
       // 4. Draw Precision Industrial Die Assembly & Mounting Stand
       stations.forEach((st) => {
@@ -685,6 +725,11 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.stroke();
         });
 
+        // If front face is not facing camera, draw rear face first before the cylinder
+        if (!isFrontFaceVisible) {
+          draw3DDisc(xStandStart, 0, casingOuterR, '#1e293b', '#475569', 1);
+        }
+
         // B. Precision 3D Cylindrical Die Casing (Stainless/Tool Steel Case)
         const segs = 24;
         for (let s = 0; s < segs; s++) {
@@ -726,61 +771,105 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
           ctx.stroke();
         }
 
-        // C. Front Face of Die with Sintered Nib, Brazing Ring & Entrance Bell
-        const pCenterFront = project(xStandStart, 0, 0);
+        // C. True 3D Rotated Die Face (Entrance Bell & Sintered Nib vs Rear Exit Relief)
+        if (isFrontFaceVisible) {
+          // Front Face is visible (Entrance side: xStandStart)
+          // 1. Outer Casing Bevel Face (Annular Ring)
+          draw3DDisc(
+            xStandStart,
+            nibOuterR + 2,
+            casingOuterR,
+            isSelected ? '#581c87' : '#334155',
+            isSelected ? '#e9d5ff' : '#94a3b8',
+            1.2
+          );
 
-        // Outer Casing Chamfer Bevel Ring
-        ctx.beginPath();
-        ctx.arc(pCenterFront.px, pCenterFront.py, (casingOuterR - 2) * zoom, 0, Math.PI * 2);
-        ctx.fillStyle = isSelected ? '#581c87' : '#334155';
-        ctx.fill();
-        ctx.strokeStyle = isSelected ? '#e9d5ff' : '#94a3b8';
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
+          // 2. Brass/Cobalt Sintered Brazing Ring
+          draw3DDisc(
+            xStandStart,
+            nibOuterR,
+            nibOuterR + 2,
+            dieMat.brazeColor,
+            '#fef08a',
+            0.8
+          );
 
-        // Brass/Cobalt Brazing Seat Ring
-        ctx.beginPath();
-        ctx.arc(pCenterFront.px, pCenterFront.py, (nibOuterR + 2) * zoom, 0, Math.PI * 2);
-        ctx.fillStyle = dieMat.brazeColor;
-        ctx.fill();
-        ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
+          // 3. Dark Tungsten Carbide / PCD Nib Core
+          draw3DDisc(
+            xStandStart,
+            st.rIn,
+            nibOuterR,
+            dieMat.coreColor,
+            dieMat.luster,
+            1.0
+          );
 
-        // Dark Tungsten Carbide / PCD Nib Core
-        ctx.beginPath();
-        ctx.arc(pCenterFront.px, pCenterFront.py, nibOuterR * zoom, 0, Math.PI * 2);
-        ctx.fillStyle = dieMat.coreColor;
-        ctx.fill();
-        ctx.strokeStyle = dieMat.luster;
-        ctx.lineWidth = 1.0;
-        ctx.stroke();
+          // 4. Entrance Bell Ingress Funnel Hole
+          draw3DDisc(
+            xStandStart,
+            0,
+            st.rIn,
+            '#050811',
+            dieMat.rimColor,
+            0.8
+          );
+        } else {
+          // Rear Face is visible (Exit side: xStandEnd)
+          // 1. Rear Casing Bevel Face
+          draw3DDisc(
+            xStandEnd,
+            nibOuterR + 2,
+            casingOuterR,
+            isSelected ? '#581c87' : '#334155',
+            isSelected ? '#e9d5ff' : '#94a3b8',
+            1.2
+          );
 
-        // Entrance Bell Funnel (Conical Ingress Hole)
-        ctx.beginPath();
-        ctx.arc(pCenterFront.px, pCenterFront.py, st.rIn * zoom, 0, Math.PI * 2);
-        const bellGrad = ctx.createRadialGradient(
-          pCenterFront.px,
-          pCenterFront.py,
-          st.rOut * zoom,
-          pCenterFront.px,
-          pCenterFront.py,
-          st.rIn * zoom
-        );
-        bellGrad.addColorStop(0, '#000000');
-        bellGrad.addColorStop(0.7, dieMat.rimColor);
-        bellGrad.addColorStop(1, dieMat.coreColor);
-        ctx.fillStyle = bellGrad;
-        ctx.fill();
-        ctx.strokeStyle = dieMat.luster;
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
+          // 2. Rear Brazing Ring
+          draw3DDisc(
+            xStandEnd,
+            nibOuterR,
+            nibOuterR + 2,
+            dieMat.brazeColor,
+            '#fef08a',
+            0.8
+          );
 
-        // Selected station glowing CAD HUD Halo
+          // 3. Rear Carbide Nib Core
+          draw3DDisc(
+            xStandEnd,
+            st.rOut,
+            nibOuterR,
+            dieMat.coreColor,
+            dieMat.luster,
+            1.0
+          );
+
+          // 4. Back Relief Exit Hole
+          draw3DDisc(
+            xStandEnd,
+            0,
+            st.rOut,
+            '#050811',
+            dieMat.rimColor,
+            0.8
+          );
+        }
+
+        // Selected station glowing 3D CAD HUD Halo (rotates in 3D around die)
         if (isSelected) {
           ctx.save();
+          const haloSegs = 32;
           ctx.beginPath();
-          ctx.arc(pCenterFront.px, pCenterFront.py, (casingOuterR + 10) * zoom, 0, Math.PI * 2);
+          for (let s = 0; s <= haloSegs; s++) {
+            const angle = (s / haloSegs) * Math.PI * 2;
+            const y = (casingOuterR + 8) * Math.cos(angle);
+            const z = (casingOuterR + 8) * Math.sin(angle);
+            const p = project(st.x, y, z);
+            if (s === 0) ctx.moveTo(p.px, p.py);
+            else ctx.lineTo(p.px, p.py);
+          }
+          ctx.closePath();
           ctx.strokeStyle = 'rgba(192, 132, 252, 0.9)';
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 4]);
@@ -1001,10 +1090,9 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   const rOut = (dout / 2) * scaleR;
 
   // True 4-Zone Internal Die Geometry Profile
-  const rBell = 18; // Bell entrance radius
+  const rBell = 18;
   const coneLength = Math.max(35, Math.min(130, (rIn - rOut) / Math.tan(Math.max(alphaRadHalf, 0.01))));
   const bearingLen = (bearingLengthLbRatio / 100) * dout * scaleR;
-  const backReliefAngleRad = (30 * Math.PI) / 180; // 60 deg included back relief
   const reliefLen = Math.max(25, (rIn - rOut) * 0.8);
 
   const xEntrance = -190;
@@ -1195,7 +1283,6 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
           const lightFactor = Math.max(0.2, 0.5 + 0.5 * (-normalY) + 0.2 * (-normalZ));
 
           if (layerType === 'casing') {
-            // Stainless Steel Die Case
             if (renderMode === 'wireframe') {
               ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
               ctx.strokeStyle = 'rgba(94, 234, 212, 0.4)';
@@ -1208,21 +1295,18 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
             ctx.fill();
             ctx.stroke();
           } else if (layerType === 'braze') {
-            // Sintered Brass/Cobalt Joint Line
             ctx.fillStyle = dieMat.brazeColor;
             ctx.strokeStyle = '#fef08a';
             ctx.lineWidth = 0.6;
             ctx.fill();
             ctx.stroke();
           } else if (layerType === 'nib') {
-            // Sintered Carbide / PCD Core
             ctx.fillStyle = dieMat.coreColor;
             ctx.strokeStyle = dieMat.luster;
             ctx.lineWidth = 0.7;
             ctx.fill();
             ctx.stroke();
           } else {
-            // Live Drawn Wire with Stress / Realistic Shading
             const midX = (xStart + xEnd) / 2;
             const stressVal = computeStressAtX(midX);
 
@@ -1258,9 +1342,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       };
 
       // 1. Draw Outer Stainless Steel Die Casing (DIN 2812 Standard)
-      // Main Casing Body
       draw3DCylinderSection(xCasingFront + casingChamfer, xCasingBack - casingChamfer, rDieCasingOuter, rDieCasingOuter, 'casing');
-      // Front & Back Bevel Chamfers
       draw3DCylinderSection(xCasingFront, xCasingFront + casingChamfer, rDieCasingOuter - casingChamfer, rDieCasingOuter, 'casing');
       draw3DCylinderSection(xCasingBack - casingChamfer, xCasingBack, rDieCasingOuter, rDieCasingOuter - casingChamfer, 'casing');
 
@@ -1784,7 +1866,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               )}
             </div>
             <p className="text-xs text-slate-400 m-0 mt-0.5">
-              Photorealistic CAD assembly &bull; Tungsten Carbide / PCD Nibs &bull; Scroll to Zoom &bull; Drag to Orbit
+              3D CAD perspective orbit &bull; Tungsten Carbide / PCD Nibs &bull; Scroll to Zoom &bull; Drag to Orbit
             </p>
           </div>
         </div>
