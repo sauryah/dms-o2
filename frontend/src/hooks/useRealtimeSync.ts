@@ -44,10 +44,12 @@ export function useRealtimeSync(options: {
 
     const scheduleReconnect = () => {
       if (!isCancelled && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
+        const baseDelay = Math.min(1000 * Math.pow(2, consecutiveFailures), 30000)
+        const jitter = Math.random() * 1000
+        const delay = baseDelay + jitter
         reconnectTimer = setTimeout(() => {
-          reconnectDelay = Math.min(reconnectDelay * 2, 30000)
           connectSSE()
-        }, reconnectDelay)
+        }, delay)
       } else if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS) {
         console.warn('EventSource max reconnection attempts reached. Realtime updates suspended.')
       }
