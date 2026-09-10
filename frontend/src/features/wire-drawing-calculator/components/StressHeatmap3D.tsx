@@ -18,6 +18,10 @@ import {
   ZoomOut,
   Maximize2,
   Minimize2,
+  Move,
+  Compass,
+  Crosshair,
+  Maximize,
 } from 'lucide-react';
 import { PassData } from '../types';
 
@@ -82,6 +86,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
   rotationY,
   zoom,
   panX,
+  panY,
   isPlaying,
   speedRate,
   showCapstans,
@@ -97,6 +102,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
   rotationY: number;
   zoom: number;
   panX: number;
+  panY: number;
   isPlaying: boolean;
   speedRate: number;
   showCapstans: boolean;
@@ -201,7 +207,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     stations.forEach((st) => {
       const x1 = (st.x + panX) * Math.cos(radY);
       const z1 = -(st.x + panX) * Math.sin(radY);
-      const y2 = 0 - z1 * Math.sin(radX);
+      const y2 = panY * Math.cos(radX) - z1 * Math.sin(radX);
       const px = centerCanvasX + x1 * zoom;
       const py = centerCanvasY + y2 * zoom;
 
@@ -225,7 +231,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     });
 
     onHoverStation(closestStation);
-  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, onHoverStation]);
+  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, panY, onHoverStation]);
 
   const handleMouseLeave = useCallback(() => {
     onHoverStation(null);
@@ -249,7 +255,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     stations.forEach((st) => {
       const x1 = (st.x + panX) * Math.cos(radY);
       const z1 = -(st.x + panX) * Math.sin(radY);
-      const y2 = 0 - z1 * Math.sin(radX);
+      const y2 = panY * Math.cos(radX) - z1 * Math.sin(radX);
       const px = centerCanvasX + x1 * zoom;
       const py = centerCanvasY + y2 * zoom;
 
@@ -263,7 +269,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
     if (targetIdx !== null) {
       onSelectPass(targetIdx);
     }
-  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, onSelectPass]);
+  }, [canvasRef, displaySize, stations, rotationX, rotationY, zoom, panX, panY, onSelectPass]);
 
   // Main 3D Animation & Rendering Loop
   useEffect(() => {
@@ -319,10 +325,11 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
 
       const project = (x: number, y: number, z: number) => {
         const xOffset = x + panX;
+        const yOffset = y + panY;
         const x1 = xOffset * Math.cos(radY) + z * Math.sin(radY);
         const z1 = -xOffset * Math.sin(radY) + z * Math.cos(radY);
-        const y2 = y * Math.cos(radX) - z1 * Math.sin(radX);
-        const z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+        const y2 = yOffset * Math.cos(radX) - z1 * Math.sin(radX);
+        const z2 = yOffset * Math.sin(radX) + z1 * Math.cos(radX);
         return {
           px: x1 * zoom,
           py: y2 * zoom,
@@ -697,7 +704,7 @@ const MultiPassTrainCanvas = React.memo(function MultiPassTrainCanvas({
       if (animId) cancelAnimationFrame(animId);
     };
   }, [
-    passes, stations, selectedPassIdx, rotationX, rotationY, zoom, panX,
+    passes, stations, selectedPassIdx, rotationX, rotationY, zoom, panX, panY,
     isPlaying, speedRate, showCapstans, showLabels, showVelocityTags,
     displaySize, N, startX, stationSpacing, initialDia, initialArea,
     canvasRef
@@ -730,6 +737,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   rotationX,
   rotationY,
   zoom,
+  panX,
+  panY,
   isPlaying,
   renderMode,
   onHover,
@@ -742,6 +751,8 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
   rotationX: number;
   rotationY: number;
   zoom: number;
+  panX: number;
+  panY: number;
   isPlaying: boolean;
   renderMode: 'heatmap' | 'wireframe' | 'shear';
   onHover?: (info: HoverInfo | null) => void;
@@ -888,16 +899,17 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
 
       ctx.save();
       ctx.translate(width / 2, height / 2);
-      ctx.scale(zoom, zoom);
 
       const radX = (rotationX * Math.PI) / 180;
       const radY = (rotationY * Math.PI) / 180;
 
       const project3D = (x: number, y: number, z: number) => {
-        const x1 = x * Math.cos(radY) + z * Math.sin(radY);
-        const z1 = -x * Math.sin(radY) + z * Math.cos(radY);
-        const y2 = y * Math.cos(radX) - z1 * Math.sin(radX);
-        return { px: x1, py: y2 };
+        const xOffset = x + panX;
+        const yOffset = y + panY;
+        const x1 = xOffset * Math.cos(radY) + z * Math.sin(radY);
+        const z1 = -xOffset * Math.sin(radY) + z * Math.cos(radY);
+        const y2 = yOffset * Math.cos(radX) - z1 * Math.sin(radX);
+        return { px: x1 * zoom, py: y2 * zoom };
       };
 
       const numSegments = 36;
@@ -1074,7 +1086,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
       if (animId) cancelAnimationFrame(animId);
     };
   }, [
-    pass, rotationX, rotationY, zoom, isPlaying, renderMode,
+    pass, rotationX, rotationY, zoom, panX, panY, isPlaying, renderMode,
     approachAngle2Alpha, bearingLengthLbRatio, sliceAngleDeg,
     displaySize, din, dout, areaRed, alphaRadHalf, deltaParam,
     isCentralBurstRisk, sigmaD, maxStress, bearingLen,
@@ -1107,15 +1119,19 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
+  // Interaction Tool mode: 'orbit' | 'pan'
+  const [navTool, setNavTool] = useState<'orbit' | 'pan'>('orbit');
+
   const [selectedPassIdx, setSelectedPassIdx] = useState<number>(0);
   const [comparePassIdxA, setComparePassIdxA] = useState<number>(0);
   const [comparePassIdxB, setComparePassIdxB] = useState<number>(Math.min(1, passes.length - 1));
 
-  // 3D Camera Angles & Pan
+  // CAD 3D Camera Angles, Pan & Zoom
   const [rotationX, setRotationX] = useState<number>(22);
   const [rotationY, setRotationY] = useState<number>(-28);
   const [zoom, setZoom] = useState<number>(1.0);
   const [panX, setPanX] = useState<number>(0);
+  const [panY, setPanY] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [speedRate, setSpeedRate] = useState<number>(1.0);
 
@@ -1133,6 +1149,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
   // Mouse Dragging States
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragButton, setDragButton] = useState<number>(0); // 0: left, 1: middle, 2: right
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Hover Telemetry States
@@ -1149,14 +1166,28 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const canvasRefA = useRef<HTMLCanvasElement | null>(null);
   const canvasRefB = useRef<HTMLCanvasElement | null>(null);
 
+  // Non-passive wheel listener for smooth CAD-style mouse scroll zoom
+  useEffect(() => {
+    const container = mainContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // CAD Zoom: scroll up -> zoom in, scroll down -> zoom out
+      const factor = e.deltaY < 0 ? 1.15 : 0.87;
+      setZoom((prev) => Math.max(0.25, Math.min(5.0, Number((prev * factor).toFixed(3)))));
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Toggle Fullscreen Viewport Mode
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
       if (wrapperRef.current && wrapperRef.current.requestFullscreen) {
-        wrapperRef.current.requestFullscreen().catch(() => {
-          // Fallback to CSS overlay mode if browser blocks native fullscreen
-        });
+        wrapperRef.current.requestFullscreen().catch(() => {});
       }
     } else {
       setIsFullscreen(false);
@@ -1166,7 +1197,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     }
   }, [isFullscreen]);
 
-  // Synchronize with browser native fullscreen events
+  // Synchronize with browser native fullscreen events & key shortcuts
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -1180,6 +1211,12 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         e.preventDefault();
         toggleFullscreen();
       }
+      if (e.key === '+' || e.key === '=') {
+        setZoom((z) => Math.min(5.0, z + 0.15));
+      }
+      if (e.key === '-' || e.key === '_') {
+        setZoom((z) => Math.max(0.25, z - 0.15));
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -1191,6 +1228,27 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     };
   }, [isFullscreen, toggleFullscreen]);
 
+  // Zoom Extents / Fit to View
+  const fitView = () => {
+    setRotationX(22);
+    setRotationY(-28);
+    setPanX(0);
+    setPanY(0);
+    setZoom(1.0);
+  };
+
+  // Center Camera onto Selected Die Station
+  const focusSelectedPass = () => {
+    const N = passes.length;
+    const stationSpacing = Math.max(85, Math.min(130, 950 / Math.max(N, 1)));
+    const totalLength = (N - 1) * stationSpacing;
+    const startX = -totalLength / 2;
+    const targetX = startX + selectedPassIdx * stationSpacing;
+    setPanX(-targetX);
+    setPanY(0);
+    setZoom(1.8);
+  };
+
   // View Angle Presets
   const setViewPreset = (preset: 'iso' | 'side' | 'top' | 'front') => {
     switch (preset) {
@@ -1198,24 +1256,28 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
         setRotationX(22);
         setRotationY(-28);
         setPanX(0);
+        setPanY(0);
         setZoom(1.0);
         break;
       case 'side':
         setRotationX(0);
         setRotationY(0);
         setPanX(0);
+        setPanY(0);
         setZoom(1.05);
         break;
       case 'top':
         setRotationX(85);
         setRotationY(0);
         setPanX(0);
+        setPanY(0);
         setZoom(0.95);
         break;
       case 'front':
         setRotationX(10);
         setRotationY(-80);
         setPanX(0);
+        setPanY(0);
         setZoom(1.1);
         break;
     }
@@ -1240,9 +1302,10 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     });
   };
 
-  // Mouse drag orbit/pan handlers
+  // Mouse drag orbit/pan handlers with CAD multi-button support
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
+    setDragButton(e.button);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
@@ -1251,9 +1314,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
 
-    if (e.shiftKey) {
-      setPanX((prev) => prev + deltaX * 0.8);
+    // Pan when: Middle Click (button 1), Right Click (button 2), Shift + Left Click, or Pan tool active
+    const isPanning = dragButton === 1 || dragButton === 2 || e.shiftKey || navTool === 'pan';
+
+    if (isPanning) {
+      const panSensitivity = 1.0 / Math.max(0.2, zoom);
+      setPanX((prev) => prev + deltaX * panSensitivity);
+      setPanY((prev) => prev + deltaY * panSensitivity);
     } else {
+      // 3D Orbital rotation
       setRotationY((prev) => prev + deltaX * 0.4);
       setRotationX((prev) => Math.max(-85, Math.min(85, prev - deltaY * 0.4)));
     }
@@ -1320,19 +1389,19 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-[var(--color-text)] m-0 font-heading">
-                3D Multi-Pass Wire Drawing Workbench
+                3D CAD Wire Drawing Workbench
               </h3>
               <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {passes.length} Passes Active
               </span>
               {isFullscreen && (
                 <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  FULLSCREEN MODE (ESC to exit)
+                  FULLSCREEN (ESC / F)
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-400 m-0 mt-0.5">
-              Interactive 3D simulation of continuous wire drawing across sequential dies & capstan stands
+              Interactive CAD visualizer &bull; Scroll wheel to zoom &bull; Middle-click / Shift+Drag to pan &bull; Drag to orbit
             </p>
           </div>
         </div>
@@ -1418,13 +1487,14 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
       {/* Mode Specific Controls & Toolbars */}
       {activeViewMode === 'train' && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-900 text-xs font-mono shrink-0">
+          {/* CAD Camera Views */}
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px] font-bold mr-1">3D View:</span>
+            <span className="text-slate-400 text-[11px] font-bold mr-1">Views:</span>
             {[
-              { id: 'iso' as const, label: 'Isometric' },
+              { id: 'iso' as const, label: '3D Iso' },
               { id: 'side' as const, label: 'Side Elevation' },
-              { id: 'top' as const, label: 'Top Floor' },
-              { id: 'front' as const, label: 'Line Ingress' },
+              { id: 'top' as const, label: 'Top Plan' },
+              { id: 'front' as const, label: 'Ingress' },
             ].map((v) => (
               <button
                 key={v.id}
@@ -1436,6 +1506,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             ))}
           </div>
 
+          {/* Feature Toggles */}
           <div className="flex items-center gap-3 text-[11px]">
             <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
               <input
@@ -1444,7 +1515,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 onChange={(e) => setShowCapstans(e.target.checked)}
                 className="rounded border-slate-700 text-purple-600 focus:ring-0"
               />
-              <span>Capstan Drums</span>
+              <span>Capstans</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
               <input
@@ -1453,7 +1524,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 onChange={(e) => setShowLabels(e.target.checked)}
                 className="rounded border-slate-700 text-purple-600 focus:ring-0"
               />
-              <span>Die Badges</span>
+              <span>Labels</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
               <input
@@ -1462,12 +1533,13 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 onChange={(e) => setShowVelocityTags(e.target.checked)}
                 className="rounded border-slate-700 text-purple-600 focus:ring-0"
               />
-              <span>Speed Tags</span>
+              <span>Speed</span>
             </label>
           </div>
 
+          {/* Line Speed Rate */}
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 text-[11px]">Line Speed:</span>
+            <span className="text-slate-400 text-[11px]">Feed:</span>
             {[0.5, 1.0, 2.0].map((rate) => (
               <button
                 key={rate}
@@ -1570,16 +1642,22 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
       {/* Main 3D Viewport Grid */}
       <div className={`grid grid-cols-1 ${isFullscreen ? 'lg:grid-cols-12 flex-1 min-h-0' : 'lg:grid-cols-12'} gap-6 items-stretch`}>
-        {/* Render Canvas Area */}
+        {/* Render Canvas Area with Full CAD Navigation */}
         <div
           ref={mainContainerRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{
+            cursor: isDragging
+              ? (dragButton === 1 || dragButton === 2 || navTool === 'pan' ? 'move' : 'grabbing')
+              : (navTool === 'pan' ? 'grab' : 'crosshair'),
+            touchAction: 'none'
+          }}
           className={`${
-            isFullscreen ? 'lg:col-span-8 xl:col-span-9 h-full' : 'lg:col-span-8 min-h-[420px]'
+            isFullscreen ? 'lg:col-span-8 xl:col-span-9 h-full' : 'lg:col-span-8 min-h-[440px]'
           } bg-slate-950/90 border border-slate-900 rounded-xl relative overflow-hidden shadow-inner p-2 flex items-stretch`}
         >
           {activeViewMode === 'train' && (
@@ -1592,6 +1670,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 rotationY={rotationY}
                 zoom={zoom}
                 panX={panX}
+                panY={panY}
                 isPlaying={isPlaying}
                 speedRate={speedRate}
                 showCapstans={showCapstans}
@@ -1648,6 +1727,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 rotationX={rotationX}
                 rotationY={rotationY}
                 zoom={zoom}
+                panX={panX}
+                panY={panY}
                 isPlaying={isPlaying}
                 renderMode={renderMode}
                 canvasRef={singleCanvasRef}
@@ -1694,6 +1775,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   rotationX={rotationX}
                   rotationY={rotationY}
                   zoom={zoom}
+                  panX={panX}
+                  panY={panY}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
                   canvasRef={canvasRefA}
@@ -1713,6 +1796,8 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   rotationX={rotationX}
                   rotationY={rotationY}
                   zoom={zoom}
+                  panX={panX}
+                  panY={panY}
                   isPlaying={isPlaying}
                   renderMode={renderMode}
                   canvasRef={canvasRefB}
@@ -1722,45 +1807,101 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             </div>
           )}
 
-          {/* Top-Left Play / Zoom / Reset Controls */}
-          <div className="absolute top-3 left-3 flex items-center space-x-1.5 z-20">
+          {/* Top-Left CAD Toolbar: Play, Orbit, Pan, Zoom, Focus, Fit, Reset */}
+          <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-20 bg-slate-900/85 backdrop-blur p-1.5 rounded-xl border border-slate-800 shadow-xl">
+            {/* Play/Pause Feed */}
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800/80 transition cursor-pointer"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
               title={isPlaying ? 'Pause wire feed' : 'Start wire feed'}
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
             </button>
+
+            <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
+
+            {/* Orbit Tool */}
             <button
-              onClick={() => setZoom((z) => Math.min(3.0, z + 0.15))}
-              className="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800/80 transition cursor-pointer"
-              title="Zoom In"
+              onClick={() => setNavTool('orbit')}
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                navTool === 'orbit' ? 'bg-purple-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+              title="Orbit 3D (Left Drag)"
+            >
+              <Compass className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Pan Tool */}
+            <button
+              onClick={() => setNavTool('pan')}
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                navTool === 'pan' ? 'bg-purple-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+              title="Pan View (Middle Drag / Shift+Drag)"
+            >
+              <Move className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
+
+            {/* Zoom In */}
+            <button
+              onClick={() => setZoom((z) => Math.min(5.0, Number((z * 1.2).toFixed(2))))}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+              title="Zoom In (Scroll Up or +)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
+
+            {/* Zoom Out */}
             <button
-              onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}
-              className="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800/80 transition cursor-pointer"
-              title="Zoom Out"
+              onClick={() => setZoom((z) => Math.max(0.25, Number((z * 0.83).toFixed(2))))}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+              title="Zoom Out (Scroll Down or -)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
+
+            {/* Focus Station */}
             <button
-              onClick={() => {
-                setViewPreset('iso');
-              }}
-              className="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800/80 transition cursor-pointer"
-              title="Reset 3D View"
+              onClick={focusSelectedPass}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700/60 transition cursor-pointer"
+              title="Focus Camera on Selected Die Station"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Fit View */}
+            <button
+              onClick={fitView}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700/60 transition cursor-pointer"
+              title="Fit to Window / Reset CAD View"
+            >
+              <Maximize className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Reset */}
+            <button
+              onClick={fitView}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+              title="Reset Angles"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
+
+            {/* Zoom Percent readout */}
+            <span className="text-[10px] font-mono font-bold text-slate-400 px-1.5">
+              {Math.round(zoom * 100)}%
+            </span>
           </div>
 
           {/* Bottom Legend / Instructions */}
           <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur border border-slate-800/80 px-3.5 py-1.5 rounded-xl flex items-center justify-between text-[10px] font-mono z-20">
             <div className="flex items-center gap-2 text-slate-400">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>Drag to orbit 3D &bull; Shift+Drag to pan &bull; Click any die station to inspect &bull; Press <strong>F</strong> for Fullscreen</span>
+              <span>
+                <strong>Mouse Scroll:</strong> Zoom &bull; <strong>Left-Drag:</strong> Orbit &bull; <strong>Right/Middle-Drag:</strong> Pan &bull; <strong>Click Station:</strong> Inspect
+              </span>
             </div>
             {activeViewMode === 'single' && (
               <div className="flex items-center space-x-2">
@@ -1789,6 +1930,28 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
             <span className="text-[10px] font-mono text-purple-400 font-bold bg-purple-950/40 px-2 py-0.5 rounded border border-purple-900/30 uppercase tracking-wide">
               Station {selectedPassIdx + 1} of {passes.length}
             </span>
+          </div>
+
+          {/* Granular Zoom Slider in Sidebar */}
+          <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 space-y-1.5">
+            <div className="flex justify-between text-[11px] font-mono">
+              <span className="text-slate-400">CAD View Zoom:</span>
+              <span className="text-cyan-400 font-bold">{Math.round(zoom * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.25"
+              max="4.0"
+              step="0.05"
+              value={zoom}
+              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              className="w-full accent-cyan-500 cursor-pointer"
+            />
+            <div className="flex justify-between text-[9px] font-mono text-slate-500">
+              <span>Wide (25%)</span>
+              <span>100%</span>
+              <span>Micro (400%)</span>
+            </div>
           </div>
 
           {activeViewMode !== 'compare' ? (
