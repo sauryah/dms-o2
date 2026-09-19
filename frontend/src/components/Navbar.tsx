@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { Layers, LogOut, LogIn, X, Menu, Bell, Settings, Calculator, ChevronDown, Zap, Terminal, Palette, Sun } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth, useTheme, useToast, useNotifications } from '../contexts'
+import type { NotificationItem } from '../contexts/NotificationContext'
 import { useApi } from '../hooks/useApi'
 import { ConnectionStatusBadge } from './ConnectionStatusBadge'
 
@@ -404,7 +405,7 @@ export function Navbar() {
                           <p className="text-xs text-[#6b7280]">No notifications</p>
                         </div>
                       ) : (
-                        notifications.map((notif: any) => (
+                        notifications.map((notif: NotificationItem) => (
                           <div
                             key={notif.id}
                             className={`p-3 hover:bg-[#141414] transition-colors relative ${
