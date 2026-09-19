@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Trash2, Printer, Download, Calendar, MapPin, Layers, Wrench } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { Trash2, Printer, Download, MapPin, Wrench } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useApi } from '../../../hooks/useApi'
@@ -24,6 +24,66 @@ import { Skeleton } from '../../../components/ui/Skeleton'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { SearchableSelect } from '../../../components/SearchableSelect'
 
+export interface MaintenanceLog {
+  id: number | string
+  category?: string
+  created_by_username?: string
+  created_at: string
+  note: string
+}
+
+export interface DieHistoryItem {
+  timestamp: string
+  changed_by_username?: string
+  field_name: string
+  old_value?: string | number | null
+  new_value?: string | number | null
+}
+
+export interface DieDetailRecord {
+  die_id: string
+  die_type: 'ROUND' | 'FLAT' | string
+  casing: string
+  status: string
+  rack?: number | null
+  rack_name?: string
+  shelf?: number | null
+  remarks?: string | null
+  current_set?: string | number | null
+  version?: number
+  rounddie?: { current_size?: string | number; punched_size?: string | number }
+  flatdie?: { current_width?: string | number; current_thickness?: string | number; punched_width?: string | number; punched_thickness?: string | number; radius?: string | number }
+  history?: DieHistoryItem[]
+  current_size?: string
+  current_width?: string
+  current_thickness?: string
+  set_name?: string
+  machine_name?: string
+  punched_size?: string
+  punched_width?: string
+  punched_thickness?: string
+  radius?: string
+  [key: string]: unknown
+}
+
+export interface RackOption {
+  id: number
+  name: string
+}
+
+export interface SetOption {
+  id: number
+  name: string
+  machine_name?: string
+}
+
+export interface DieUpdateContext {
+  previousDie: unknown
+  previousDieDetail: unknown
+  previousDiesQueries: [unknown, unknown][]
+  previousSearchDiesQueries: [unknown, unknown][]
+}
+
 function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boolean }) {
   const { request } = useApi()
   const queryClient = useQueryClient()
@@ -32,13 +92,13 @@ function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boole
   const [note, setNote] = useState('')
   const [category, setCategory] = useState('INSPECTION')
 
-  const { data: logs, isLoading } = useQuery({
+  const { data: logs, isLoading } = useQuery<MaintenanceLog[]>({
     queryKey: ['maintenanceLogs', dieId],
     queryFn: () => request(`/api/dies/${dieId}/maintenance-logs/`),
   })
 
   const addLogMutation = useMutation({
-    mutationFn: (data: any) => request(`/api/dies/${dieId}/maintenance-logs/`, {
+    mutationFn: (data: { note: string; category: string }) => request(`/api/dies/${dieId}/maintenance-logs/`, {
       method: 'POST',
       body: JSON.stringify(data)
     }),
@@ -132,11 +192,11 @@ function MaintenanceLogSection({ dieId, canAdd }: { dieId: string; canAdd: boole
         ) : !logs || logs.length === 0 ? (
           <p className="text-[#6b7280] text-xs italic">No maintenance logs recorded.</p>
         ) : (
-          logs.map((log: any) => (
+          logs.map((log: MaintenanceLog) => (
             <div key={log.id} className="bg-[#0a0a0a] rounded-sm p-2.5 border border-[#1a1a1a] font-mono">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
-                  <span className={`px-1.5 py-0.2 text-[9px] font-mono uppercase rounded-sm border ${categoryBadge(log.category)}`}>
+                  <span className={`px-1.5 py-0.2 text-[9px] font-mono uppercase rounded-sm border ${categoryBadge(log.category || '')}`}>
                     {log.category || 'OTHER'}
                   </span>
                   <span className="text-[9px] text-[#6b7280]">{log.created_by_username || 'System'}</span>
@@ -183,7 +243,7 @@ export function DieDetailPage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [radiusVal, setRadiusVal] = useState('')
   const [showStatusConfirm, setShowStatusConfirm] = useState(false)
-  const [pendingPayload, setPendingPayload] = useState<any>(null)
+  const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null)
 
   const [isRecutOpen, setIsRecutOpen] = useState(false)
   const [newSize, setNewSize] = useState('')
@@ -194,7 +254,7 @@ export function DieDetailPage() {
   const [recutError, setRecutError] = useState<string | null>(null)
 
   // Query details
-  const { data: die, isLoading, error } = useQuery({
+  const { data: die, isLoading, error } = useQuery<DieDetailRecord>({
     queryKey: ['die', id],
     queryFn: () => request(`/api/dies/${id}/`),
   })
@@ -214,7 +274,7 @@ export function DieDetailPage() {
 
   // Mutation for recutting die
   const recutMutation = useMutation({
-    mutationFn: (data: any) => request(`/api/dies/${id}/recut/`, {
+    mutationFn: (data: Record<string, unknown>) => request(`/api/dies/${id}/recut/`, {
       method: 'POST',
       body: JSON.stringify(data)
     }),
@@ -234,7 +294,7 @@ export function DieDetailPage() {
     }
   })
 
-  const { data: racksList } = useQuery({
+  const { data: racksList } = useQuery<RackOption[]>({
     queryKey: ['racksList'],
     queryFn: () => request('/api/racks/')
   })
@@ -252,7 +312,7 @@ export function DieDetailPage() {
       setRack(die.rack ? String(die.rack) : '')
       setShelf(die.shelf ? String(die.shelf) : '')
       setRemarks(die.remarks || '')
-      setCurrentSetId(die.current_set || '')
+      setCurrentSetId(die.current_set ? String(die.current_set) : '')
       setCurrentSize(die.current_size || '')
       setCurrentWidth(die.current_width || '')
       setCurrentThickness(die.current_thickness || '')
@@ -264,14 +324,14 @@ export function DieDetailPage() {
   }, [die])
 
   // Fetch sets list for editing dropdown
-  const { data: setsList } = useQuery({
+  const { data: setsList } = useQuery<SetOption[]>({
     queryKey: ['setsDropdownDetail'],
     queryFn: () => request('/api/sets/')
   })
 
   // Mutation for updating die
-  const updateMutation = useMutation({
-    mutationFn: (data: any) => request(`/api/dies/${id}/`, {
+  const updateMutation = useMutation<DieDetailRecord, Error, Record<string, unknown>, DieUpdateContext>({
+    mutationFn: (data: Record<string, unknown>) => request(`/api/dies/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
@@ -283,40 +343,38 @@ export function DieDetailPage() {
 
       const previousDie = queryClient.getQueryData(['die', id])
       const previousDieDetail = queryClient.getQueryData(['dieDetail', id])
-      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] })
-      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] })
+      const previousDiesQueries = queryClient.getQueriesData({ queryKey: ['dies'] }) as [unknown, unknown][]
+      const previousSearchDiesQueries = queryClient.getQueriesData({ queryKey: ['searchDies'] }) as [unknown, unknown][]
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient.setQueryData(['die', id], (old: any) => old ? { ...old, ...data } : old)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient.setQueryData(['dieDetail', id], (old: any) => old ? { ...old, ...data } : old)
+      queryClient.setQueryData<DieDetailRecord>(['die', id], (old) => old ? { ...old, ...data } : old)
+      queryClient.setQueryData<DieDetailRecord>(['dieDetail', id], (old) => old ? { ...old, ...data } : old)
 
-      queryClient.setQueriesData({ queryKey: ['dies'] }, (old: any) => {
+      queryClient.setQueriesData({ queryKey: ['dies'] }, (old: unknown) => {
         if (!Array.isArray(old)) return old
-        return old.map((d: any) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
+        return (old as DieDetailRecord[]).map((d) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
       })
-      queryClient.setQueriesData({ queryKey: ['searchDies'] }, (old: any) => {
+      queryClient.setQueriesData({ queryKey: ['searchDies'] }, (old: unknown) => {
         if (!Array.isArray(old)) return old
-        return old.map((d: any) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
+        return (old as DieDetailRecord[]).map((d) => String(d.die_id) === String(id) ? { ...d, ...data } : d)
       })
 
       return { previousDie, previousDieDetail, previousDiesQueries, previousSearchDiesQueries }
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: DieDetailRecord) => {
       showToast('Die updated successfully.', 'success')
       if (data && data.die_id && String(data.die_id) !== String(id)) {
         navigate(`/dies/${data.die_id}`, { replace: true })
       }
     },
-    onError: (err, data, context: any) => {
+    onError: (_err, _data, context) => {
       if (context) {
         if (context.previousDie !== undefined) queryClient.setQueryData(['die', id], context.previousDie)
         if (context.previousDieDetail !== undefined) queryClient.setQueryData(['dieDetail', id], context.previousDieDetail)
         if (context.previousDiesQueries) {
-          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key as QueryKey, () => val))
         }
         if (context.previousSearchDiesQueries) {
-          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousSearchDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key as QueryKey, () => val))
         }
       }
       showToast('Failed to update die. Please try again.', 'error')
@@ -355,7 +413,7 @@ export function DieDetailPage() {
       return
     }
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       die_id: trimmedId,
       casing: casingVal,
       status: statusVal,
@@ -365,7 +423,7 @@ export function DieDetailPage() {
       current_set: currentSetId || null,
       version: die?.version
     }
-    if (die.die_type === 'ROUND') {
+    if (die?.die_type === 'ROUND') {
       payload.current_size = currentSize
       payload.punched_size = punchedSize
     } else {
@@ -432,7 +490,7 @@ export function DieDetailPage() {
   const canEdit = role === 'ROOT' || role === 'ADMIN'
 
   const sortedHistory = [...(die.history || [])].sort(
-    (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    (a: DieHistoryItem, b: DieHistoryItem) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   )
   const historyTotal = sortedHistory.length
   const paginatedHistory = sortedHistory.slice((historyPage - 1) * 20, historyPage * 20)
@@ -443,11 +501,11 @@ export function DieDetailPage() {
   ]
 
   const historyColumns = [
-    { key: 'timestamp', label: 'Timestamp', render: (row: any) => <span className="tabular-nums font-mono">{new Date(row.timestamp).toLocaleString()}</span> },
+    { key: 'timestamp', label: 'Timestamp', render: (row: DieHistoryItem) => <span className="tabular-nums font-mono">{new Date(row.timestamp).toLocaleString()}</span> },
     { key: 'changed_by_username', label: 'User' },
-    { key: 'field_name', label: 'Property', render: (row: any) => row.field_name.replace(/_/g, ' ').toUpperCase() },
-    { key: 'old_value', label: 'Previous Value', render: (row: any) => <span className="font-mono text-red-400 tabular-nums">{row.old_value || '—'}</span> },
-    { key: 'new_value', label: 'New Value', render: (row: any) => <span className="font-mono text-emerald-400 tabular-nums">{row.new_value || '—'}</span> }
+    { key: 'field_name', label: 'Property', render: (row: DieHistoryItem) => row.field_name.replace(/_/g, ' ').toUpperCase() },
+    { key: 'old_value', label: 'Previous Value', render: (row: DieHistoryItem) => <span className="font-mono text-red-400 tabular-nums">{String(row.old_value ?? '—')}</span> },
+    { key: 'new_value', label: 'New Value', render: (row: DieHistoryItem) => <span className="font-mono text-emerald-400 tabular-nums">{String(row.new_value ?? '—')}</span> }
   ]
 
   const headerActions = (
@@ -770,7 +828,7 @@ export function DieDetailPage() {
                 className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2.5 text-[#e4e4e4] focus:border-blue-500 focus:outline-none text-xs font-mono uppercase cursor-pointer"
               >
                 <option value="">SELECT RACK...</option>
-                {racks.map((r: any) => (
+                {racks.map((r: RackOption) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
@@ -789,7 +847,7 @@ export function DieDetailPage() {
             <SearchableSelect
               value={currentSetId}
               onChange={(val) => setCurrentSetId(String(val))}
-              options={setsList?.map((s: any) => ({
+              options={setsList?.map((s: SetOption) => ({
                 value: s.id,
                 label: `${s.name} (${s.machine_name || 'No Machine'})`
               })) || []}
@@ -1024,7 +1082,7 @@ export function DieDetailPage() {
                   type="button"
                   disabled={recutMutation.isPending}
                   onClick={() => {
-                    const payload: any = { note: recutNote }
+                    const payload: Record<string, unknown> = { note: recutNote }
                     if (die.die_type === 'ROUND') {
                       payload.new_size = newSize
                     } else {
