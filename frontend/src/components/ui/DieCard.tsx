@@ -1,9 +1,10 @@
 import React from 'react'
 import { StatusBadge } from './StatusBadge'
 import { Hash, MapPin, Box, Database, Cpu } from 'lucide-react'
+import type { Die } from '../../types'
 
 export interface DieCardProps {
-  die: any
+  die: Omit<Partial<Die>, 'die_type' | 'status'> & { die_id: string; die_type: string; status: string; location?: string }
   onClick?: () => void
   viewMode?: 'grid' | 'list'
 }
@@ -11,8 +12,8 @@ export interface DieCardProps {
 export const DieCard = React.memo(function DieCard({ die, onClick, viewMode = 'grid' }: DieCardProps) {
   const isRound = die.die_type === 'ROUND'
   const sizeText = isRound
-    ? `${parseFloat(die.current_size || 0).toFixed(3)} mm`
-    : `${parseFloat(die.current_width || 0).toFixed(3)} × ${parseFloat(die.current_thickness || 0).toFixed(3)} mm`
+    ? `${parseFloat(String(die.current_size || 0)).toFixed(3)} mm`
+    : `${parseFloat(String(die.current_width || 0)).toFixed(3)} × ${parseFloat(String(die.current_thickness || 0)).toFixed(3)} mm`
 
   const locationText = die.rack_name && die.shelf
     ? `${die.rack_name} - S${die.shelf}`
