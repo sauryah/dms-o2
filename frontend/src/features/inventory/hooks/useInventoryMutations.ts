@@ -1,19 +1,57 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '../../../hooks/useApi'
 import { useToast } from '../../../contexts/ToastContext'
+import { Die, Set as DieSet, Machine } from '../../../types'
 
-const mapQueryDataList = (old: any, mapFn: (d: any) => any) => {
+interface PaginatedResults<T> {
+  results: T[]
+  count?: number
+  next?: string | null
+  previous?: string | null
+  [key: string]: unknown
+}
+
+const mapQueryDataList = <T extends { die_id?: string | number }>(
+  old: unknown,
+  mapFn: (d: T) => T
+): unknown => {
   if (!old) return old
   if (Array.isArray(old)) {
-    return old.map(mapFn)
+    return old.map(mapFn as (item: unknown) => unknown)
   }
-  if (old && typeof old === 'object' && Array.isArray(old.results)) {
+  if (old && typeof old === 'object' && Array.isArray((old as PaginatedResults<T>).results)) {
     return {
-      ...old,
-      results: old.results.map(mapFn)
+      ...(old as Record<string, unknown>),
+      results: (old as PaginatedResults<T>).results.map(mapFn)
     }
   }
   return old
+}
+
+interface MoveDieContext {
+  previousDies: [readonly unknown[], unknown][]
+  previousSearch: [readonly unknown[], unknown][]
+}
+
+interface ReallocateDieContext {
+  previousDiesQueries: [readonly unknown[], unknown][]
+  previousSearchDiesQueries: [readonly unknown[], unknown][]
+  previousMachines: unknown
+  previousSets: unknown
+  previousDie: unknown
+  previousDieDetail: unknown
+}
+
+interface ReallocateSetContext {
+  previousDiesQueries: [readonly unknown[], unknown][]
+  previousSearchDiesQueries: [readonly unknown[], unknown][]
+  previousMachines: unknown
+  previousSets: unknown
+}
+
+interface ReorderSetsContext {
+  previousMachines: unknown
+  previousSets: unknown
 }
 
 export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void, setCreateError?: (err: string | null) => void) {
@@ -23,7 +61,7 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
   // Create die mutation
   const createDieMutation = useMutation({
-    mutationFn: (payload: any) => request('/api/dies/', {
+    mutationFn: (payload: Record<string, unknown>) => request('/api/dies/', {
       method: 'POST',
       body: JSON.stringify(payload)
     }),
@@ -32,43 +70,43 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       if (setIsCreateOpen) setIsCreateOpen(false)
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       if (setCreateError) setCreateError(err.message)
     }
   })
 
   // Mutation for updating die location (visual grid)
-  const moveDieLocationMutation = useMutation({
-    mutationFn: ({ dieId, rack, shelf }: { dieId: string, rack?: number | null, shelf?: number | null }) => request(`/api/dies/${dieId}/`, {
+  const moveDieLocationMutation = useMutation<unknown, Error, { dieId: string; rack?: number | null; shelf?: number | null }, MoveDieContext>({
+    mutationFn: ({ dieId, rack, shelf }) => request(`/api/dies/${dieId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ rack, shelf })
     }),
-    onMutate: async ({ dieId, rack, shelf }: { dieId: string, rack?: number | null, shelf?: number | null }) => {
+    onMutate: async ({ dieId, rack, shelf }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       const previousDies = queryClient.getQueriesData({ queryKey: ['dies'] })
       const previousSearch = queryClient.getQueriesData({ queryKey: ['searchDies'] })
 
-      const updateLoc = (old: any) => {
-        return mapQueryDataList(old, (d: any) => String(d.die_id) === String(dieId) ? { ...d, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
+      const updateLoc = (old: unknown) => {
+        return mapQueryDataList<Die>(old, (d) => String(d.die_id) === String(dieId) ? { ...d, rack_id: rack !== undefined ? rack : d.rack_id, shelf: shelf !== undefined ? shelf : d.shelf } : d)
       }
       queryClient.setQueriesData({ queryKey: ['dies'] }, updateLoc)
       queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateLoc)
 
       return { previousDies, previousSearch }
     },
-    onError: (err: any, variables: any, context: any) => {
+    onError: (err, _variables, context) => {
       if (context) {
         if (context.previousDies) {
-          context.previousDies.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousDies.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
         if (context.previousSearch) {
-          context.previousSearch.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousSearch.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
       }
       showToast(`Failed to move die: ${err.message}`, 'error')
     },
-    onSuccess: (data: any, variables: any) => {
+    onSuccess: (_data, variables) => {
       showToast(`Successfully moved die ${variables.dieId}.`, 'success')
     },
     onSettled: () => {
@@ -79,12 +117,12 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
   })
 
   // Mutation for reallocating a die to a set
-  const reallocateDieMutation = useMutation({
-    mutationFn: ({ dieId, setId }: { dieId: any, setId: any }) => request(`/api/dies/${dieId}/`, {
+  const reallocateDieMutation = useMutation<unknown, Error, { dieId: string | number; setId: number | null }, ReallocateDieContext>({
+    mutationFn: ({ dieId, setId }) => request(`/api/dies/${dieId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ current_set: setId })
     }),
-    onMutate: async ({ dieId, setId }: { dieId: any, setId: any }) => {
+    onMutate: async ({ dieId, setId }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       await queryClient.cancelQueries({ queryKey: ['machinesList'] })
@@ -97,13 +135,13 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       let newSetName = ''
       if (setId) {
-        const sets: any[] = (previousSets as any[]) || []
-        const foundSet = sets.find((s: any) => Number(s.id) === Number(setId))
+        const sets: DieSet[] = (previousSets as DieSet[]) || []
+        const foundSet = sets.find((s) => Number(s.id) === Number(setId))
         if (foundSet) {
           newSetName = foundSet.name
         } else if (previousMachines) {
-          for (const machine of (previousMachines as any[])) {
-            const foundSetInMachine = machine.sets?.find((s: any) => Number(s.id) === Number(setId))
+          for (const machine of (previousMachines as Machine[])) {
+            const foundSetInMachine = machine.sets?.find((s) => Number(s.id) === Number(setId))
             if (foundSetInMachine) {
               newSetName = foundSetInMachine.name
               break
@@ -112,8 +150,8 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
         }
       }
 
-      const updateCurrentSet = (old: any) => {
-        return mapQueryDataList(old, (die: any) => {
+      const updateCurrentSet = (old: unknown) => {
+        return mapQueryDataList<Die>(old, (die) => {
           if (String(die.die_id) === String(dieId)) {
             return {
               ...die,
@@ -129,16 +167,17 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       queryClient.setQueriesData({ queryKey: ['searchDies'] }, updateCurrentSet)
 
       if (previousSets) {
-        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
+        queryClient.setQueryData(['setsDropdownList'], (old: unknown) => {
           if (!Array.isArray(old)) return old
-          let foundDie: any = null
-          const updatedSets = old.map((set: any) => {
-            const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
+          let foundDie: Die | null = null
+          const setsList = old as DieSet[]
+          const updatedSets = setsList.map((set) => {
+            const hasDie = set.dies?.some((d) => String(d.die_id) === String(dieId))
             if (hasDie) {
-              foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
+              foundDie = set.dies.find((d) => String(d.die_id) === String(dieId)) || null
               return {
                 ...set,
-                dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
+                dies: set.dies.filter((d) => String(d.die_id) !== String(dieId))
               }
             }
             return set
@@ -147,22 +186,22 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
           if (!foundDie) {
             for (const [, diesData] of previousDiesQueries) {
               if (Array.isArray(diesData)) {
-                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
+                foundDie = (diesData as Die[]).find((d) => String(d.die_id) === String(dieId)) || null
                 if (foundDie) break
               }
             }
           }
 
           if (foundDie) {
-            const updatedDie = {
+            const updatedDie: Die = {
               ...foundDie,
               current_set: setId ? Number(setId) : null,
               current_set_name: newSetName || undefined,
               set_name: newSetName || undefined,
             }
-            return updatedSets.map((set: any) => {
+            return updatedSets.map((set) => {
               if (setId && Number(set.id) === Number(setId)) {
-                const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
+                const otherDies = (set.dies || []).filter((d) => String(d.die_id) !== String(dieId))
                 return {
                   ...set,
                   dies: [...otherDies, updatedDie]
@@ -176,18 +215,19 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       }
 
       if (previousMachines) {
-        queryClient.setQueryData(['machinesList'], (old: any) => {
+        queryClient.setQueryData(['machinesList'], (old: unknown) => {
           if (!Array.isArray(old)) return old
-          let foundDie: any = null
-          const updatedMachines = old.map((machine: any) => {
+          let foundDie: Die | null = null
+          const machinesList = old as Machine[]
+          const updatedMachines = machinesList.map((machine) => {
             if (!machine.sets) return machine
-            const updatedSets = machine.sets.map((set: any) => {
-              const hasDie = set.dies?.some((d: any) => String(d.die_id) === String(dieId))
+            const updatedSets = machine.sets.map((set) => {
+              const hasDie = set.dies?.some((d) => String(d.die_id) === String(dieId))
               if (hasDie) {
-                foundDie = set.dies.find((d: any) => String(d.die_id) === String(dieId))
+                foundDie = set.dies.find((d) => String(d.die_id) === String(dieId)) || null
                 return {
                   ...set,
-                  dies: set.dies.filter((d: any) => String(d.die_id) !== String(dieId))
+                  dies: set.dies.filter((d) => String(d.die_id) !== String(dieId))
                 }
               }
               return set
@@ -198,24 +238,24 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
           if (!foundDie) {
             for (const [, diesData] of previousDiesQueries) {
               if (Array.isArray(diesData)) {
-                foundDie = diesData.find((d: any) => String(d.die_id) === String(dieId))
+                foundDie = (diesData as Die[]).find((d) => String(d.die_id) === String(dieId)) || null
                 if (foundDie) break
               }
             }
           }
 
           if (foundDie) {
-            const updatedDie = {
+            const updatedDie: Die = {
               ...foundDie,
               current_set: setId ? Number(setId) : null,
               current_set_name: newSetName || undefined,
               set_name: newSetName || undefined,
             }
-            return updatedMachines.map((machine: any) => {
+            return updatedMachines.map((machine) => {
               if (!machine.sets) return machine
-              const updatedSets = machine.sets.map((set: any) => {
+              const updatedSets = machine.sets.map((set) => {
                 if (setId && Number(set.id) === Number(setId)) {
-                  const otherDies = (set.dies || []).filter((d: any) => String(d.die_id) !== String(dieId))
+                  const otherDies = (set.dies || []).filter((d) => String(d.die_id) !== String(dieId))
                   return {
                     ...set,
                     dies: [...otherDies, updatedDie]
@@ -233,16 +273,16 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       const p1 = queryClient.getQueryData(['die', dieId])
       const p2 = queryClient.getQueryData(['dieDetail', dieId])
       if (p1 !== undefined) {
-        queryClient.setQueryData(['die', dieId], (old: any) => old ? {
-          ...old,
+        queryClient.setQueryData(['die', dieId], (old: unknown) => old ? {
+          ...(old as Record<string, unknown>),
           current_set: setId ? Number(setId) : null,
           current_set_name: newSetName || undefined,
           set_name: newSetName || undefined,
         } : old)
       }
       if (p2 !== undefined) {
-        queryClient.setQueryData(['dieDetail', dieId], (old: any) => old ? {
-          ...old,
+        queryClient.setQueryData(['dieDetail', dieId], (old: unknown) => old ? {
+          ...(old as Record<string, unknown>),
           current_set: setId ? Number(setId) : null,
           current_set_name: newSetName || undefined,
           set_name: newSetName || undefined,
@@ -251,13 +291,13 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets, previousDie: p1, previousDieDetail: p2 }
     },
-    onError: (err: any, variables: any, context: any) => {
+    onError: (err, variables, context) => {
       if (context) {
         if (context.previousDiesQueries) {
-          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
         if (context.previousSearchDiesQueries) {
-          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousSearchDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
         if (context.previousMachines !== undefined) {
           queryClient.setQueryData(['machinesList'], context.previousMachines)
@@ -274,7 +314,7 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       }
       showToast(`Failed to allocate die: ${err.message}`, 'error')
     },
-    onSettled: (data: any, err: any, variables: any) => {
+    onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: ['dies'] })
       queryClient.invalidateQueries({ queryKey: ['searchDies'] })
       queryClient.invalidateQueries({ queryKey: ['machinesList'] })
@@ -286,12 +326,12 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
   })
 
   // Mutation for reallocating a set to a machine
-  const reallocateSetMutation = useMutation({
-    mutationFn: ({ setId, machineId }: { setId: any, machineId: any }) => request(`/api/sets/${setId}/`, {
+  const reallocateSetMutation = useMutation<unknown, Error, { setId: number | string; machineId: number | null }, ReallocateSetContext>({
+    mutationFn: ({ setId, machineId }) => request(`/api/sets/${setId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ machine: machineId })
     }),
-    onMutate: async ({ setId, machineId }: { setId: any, machineId: any }) => {
+    onMutate: async ({ setId, machineId }) => {
       await queryClient.cancelQueries({ queryKey: ['dies'] })
       await queryClient.cancelQueries({ queryKey: ['searchDies'] })
       await queryClient.cancelQueries({ queryKey: ['machinesList'] })
@@ -304,16 +344,16 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       let newMachineName = ''
       if (machineId && previousMachines) {
-        const foundMachine = (previousMachines as any[]).find((m: any) => Number(m.id) === Number(machineId))
+        const foundMachine = (previousMachines as Machine[]).find((m) => Number(m.id) === Number(machineId))
         if (foundMachine) {
           newMachineName = foundMachine.name
         }
       }
 
       if (previousSets) {
-        queryClient.setQueryData(['setsDropdownList'], (old: any) => {
+        queryClient.setQueryData(['setsDropdownList'], (old: unknown) => {
           if (!Array.isArray(old)) return old
-          return old.map((set: any) => {
+          return (old as DieSet[]).map((set) => {
             if (Number(set.id) === Number(setId)) {
               return {
                 ...set,
@@ -327,34 +367,35 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
       }
 
       if (previousMachines) {
-        queryClient.setQueryData(['machinesList'], (old: any) => {
+        queryClient.setQueryData(['machinesList'], (old: unknown) => {
           if (!Array.isArray(old)) return old
-          let foundSet: any = null
-          const updatedMachines = old.map((machine: any) => {
-            const hasSet = machine.sets?.some((s: any) => Number(s.id) === Number(setId))
+          let foundSet: DieSet | null = null
+          const machinesList = old as Machine[]
+          const updatedMachines = machinesList.map((machine) => {
+            const hasSet = machine.sets?.some((s) => Number(s.id) === Number(setId))
             if (hasSet) {
-              foundSet = machine.sets.find((s: any) => Number(s.id) === Number(setId))
+              foundSet = machine.sets.find((s) => Number(s.id) === Number(setId)) || null
               return {
                 ...machine,
-                sets: machine.sets.filter((s: any) => Number(s.id) !== Number(setId))
+                sets: machine.sets.filter((s) => Number(s.id) !== Number(setId))
               }
             }
             return machine
           })
 
           if (!foundSet && previousSets) {
-            foundSet = (previousSets as any[]).find((s: any) => Number(s.id) === Number(setId))
+            foundSet = (previousSets as DieSet[]).find((s) => Number(s.id) === Number(setId)) || null
           }
 
           if (foundSet) {
-            const updatedSet = {
+            const updatedSet: DieSet = {
               ...foundSet,
               machine: machineId ? Number(machineId) : null,
               machine_name: newMachineName || undefined,
             }
-            return updatedMachines.map((machine: any) => {
+            return updatedMachines.map((machine) => {
               if (machineId && Number(machine.id) === Number(machineId)) {
-                const otherSets = (machine.sets || []).filter((s: any) => Number(s.id) !== Number(setId))
+                const otherSets = (machine.sets || []).filter((s) => Number(s.id) !== Number(setId))
                 return {
                   ...machine,
                   sets: [...otherSets, updatedSet]
@@ -367,8 +408,8 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
         })
       }
 
-      const updateSetMachine = (old: any) => {
-        return mapQueryDataList(old, (die: any) => {
+      const updateSetMachine = (old: unknown) => {
+        return mapQueryDataList<Die>(old, (die) => {
           if (Number(die.current_set) === Number(setId)) {
             return {
               ...die,
@@ -383,13 +424,13 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       return { previousDiesQueries, previousSearchDiesQueries, previousMachines, previousSets }
     },
-    onError: (err: any, variables: any, context: any) => {
+    onError: (err, _variables, context) => {
       if (context) {
         if (context.previousDiesQueries) {
-          context.previousDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
         if (context.previousSearchDiesQueries) {
-          context.previousSearchDiesQueries.forEach(([key, val]: any) => queryClient.setQueryData(key, val))
+          context.previousSearchDiesQueries.forEach(([key, val]) => queryClient.setQueryData(key, val))
         }
         if (context.previousMachines !== undefined) {
           queryClient.setQueryData(['machinesList'], context.previousMachines)
@@ -409,8 +450,8 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
   })
 
   // Mutation for reordering sets in a machine
-  const reorderSetsMutation = useMutation({
-    mutationFn: ({ machineId, orderedSetIds }: { machineId: any, orderedSetIds: any[] }) => request('/api/sets/reorder/', {
+  const reorderSetsMutation = useMutation<unknown, Error, { machineId: number | string; orderedSetIds: number[] }, ReorderSetsContext>({
+    mutationFn: ({ machineId, orderedSetIds }) => request('/api/sets/reorder/', {
       method: 'POST',
       body: JSON.stringify({ machine_id: machineId, ordered_set_ids: orderedSetIds })
     }),
@@ -423,9 +464,9 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       // Optimistically update the UI order
       if (previousMachines) {
-        queryClient.setQueryData(['machinesList'], (old: any) => {
+        queryClient.setQueryData(['machinesList'], (old: unknown) => {
           if (!Array.isArray(old)) return old
-          return old.map((machine: any) => {
+          return (old as Machine[]).map((machine) => {
             if (Number(machine.id) === Number(machineId)) {
               const sets = machine.sets || []
               const sortedSets = [...sets].sort((a, b) => {
@@ -447,7 +488,7 @@ export function useInventoryMutations(setIsCreateOpen?: (open: boolean) => void,
 
       return { previousMachines, previousSets }
     },
-    onError: (err: any, variables: any, context: any) => {
+    onError: (err, _variables, context) => {
       if (context) {
         if (context.previousMachines !== undefined) {
           queryClient.setQueryData(['machinesList'], context.previousMachines)
