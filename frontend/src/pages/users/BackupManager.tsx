@@ -6,19 +6,27 @@ import { useToast } from '../../contexts/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 
+export interface BackupItem {
+  filename: string
+  created_at: string
+  size?: number | string
+  size_bytes?: number
+  size_kb?: number
+}
+
 export function BackupManager() {
   const { request } = useApi()
   const { showToast } = useToast()
   const { token } = useAuth()
   const queryClient = useQueryClient()
 
-  const [selectedBackup, setSelectedBackup] = useState<any>(null)
+  const [selectedBackup, setSelectedBackup] = useState<BackupItem | null>(null)
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [backupToDelete, setBackupToDelete] = useState<string | null>(null)
 
   // Fetch Backups
-  const { data: backups, isLoading: isBackupsLoading, error: backupsError } = useQuery({
+  const { data: backups = [], isLoading: isBackupsLoading, error: backupsError } = useQuery<BackupItem[]>({
     queryKey: ['backupsList'],
     queryFn: () => request('/api/backups/')
   })
@@ -39,7 +47,7 @@ export function BackupManager() {
 
   // Delete Backup Mutation
   const deleteBackupMutation = useMutation({
-    mutationFn: (filename: any) => request('/api/backups/delete_backup/', {
+    mutationFn: (filename: string) => request('/api/backups/delete_backup/', {
       method: 'POST',
       body: JSON.stringify({ filename })
     }),
@@ -54,7 +62,7 @@ export function BackupManager() {
 
   // Restore Backup Mutation
   const restoreBackupMutation = useMutation({
-    mutationFn: (filename: any) => request('/api/backups/restore/', {
+    mutationFn: (filename: string) => request('/api/backups/restore/', {
       method: 'POST',
       body: JSON.stringify({ filename })
     }),
@@ -86,7 +94,7 @@ export function BackupManager() {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-    } catch (err: any) {
+    } catch (_err: unknown) {
       showToast('Failed to download backup file', 'error')
     }
   }
@@ -111,8 +119,9 @@ export function BackupManager() {
       })
       showToast(`Backup "${res.filename}" uploaded successfully!`, 'success')
       queryClient.invalidateQueries({ queryKey: ['backupsList'] })
-    } catch (err: any) {
-      showToast(err.message || 'Failed to upload backup archive', 'error')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to upload backup archive'
+      showToast(msg, 'error')
     } finally {
       setIsUploading(false)
       e.target.value = ''
@@ -254,7 +263,7 @@ export function BackupManager() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
-                  {backups.map((backup: any) => {
+                  {backups.map((backup: BackupItem) => {
                     const dateStr = new Date(backup.created_at).toLocaleString()
                     
                     return (
@@ -278,9 +287,11 @@ export function BackupManager() {
                         
                         <td className="py-2.5 px-4">
                           <span className="bg-[#141414] text-blue-400 border border-[#2a2a2a] px-1.5 py-0.2 rounded-sm text-[10px] font-mono tabular-nums">
-                            {backup.size_kb >= 1024 
-                              ? `${(backup.size_kb / 1024).toFixed(2)} MB` 
-                              : `${backup.size_kb.toFixed(1)} KB`}
+                            {typeof backup.size_kb === 'number'
+                              ? backup.size_kb >= 1024 
+                                ? `${(backup.size_kb / 1024).toFixed(2)} MB` 
+                                : `${backup.size_kb.toFixed(1)} KB`
+                              : '—'}
                           </span>
                         </td>
                         
