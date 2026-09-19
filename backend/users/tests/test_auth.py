@@ -712,9 +712,9 @@ class UserActivityLogTests(APITestCase):
         req_docker_19 = factory.get('/', HTTP_X_FORWARDED_FOR='172.19.0.1', REMOTE_ADDR='172.19.0.1')
         self.assertEqual(get_client_ip(req_docker_19), '127.0.0.1')
 
-        # 6. Direct client device IP header
+        # 6. Untrusted client device IP header is ignored (prevents IP spoofing)
         req_dev = factory.get('/', HTTP_X_CLIENT_DEVICE_IP='192.168.1.105', REMOTE_ADDR='172.18.0.1')
-        self.assertEqual(get_client_ip(req_dev), '192.168.1.105')
+        self.assertEqual(get_client_ip(req_dev), '127.0.0.1')
 
 
 
