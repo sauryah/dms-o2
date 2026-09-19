@@ -11,6 +11,37 @@ import ElongationChart from '../features/wire-drawing-calculator/components/Elon
 import AreaReductionChart from '../features/wire-drawing-calculator/components/AreaReductionChart';
 import DieProgression from '../features/wire-drawing-calculator/components/DieProgression';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import type { PassData, Statistics, ConsistencyData } from '../features/wire-drawing-calculator/types';
+
+interface WireDrawingApiResponse {
+  passes: Array<{
+    pass: number;
+    from_die: number;
+    to_die: number;
+    area_before: number;
+    area_after: number;
+    area_reduction: number;
+    elongation: number;
+    reduction_ratio: number;
+  }>;
+  stats: {
+    total_passes: number;
+    starting_die: number;
+    final_die: number;
+    avg_elongation: number;
+    max_elongation: number;
+    min_elongation: number;
+    avg_area_reduction: number;
+    overall_area_reduction: number;
+    overall_reduction_ratio: number;
+  };
+  consistency: {
+    avg_elongation: number;
+    variation: number;
+    quality_rating: string;
+    stars: number;
+  };
+}
 
 export function DieSeriesGeneratorPage() {
   const navigate = useNavigate();
@@ -20,9 +51,9 @@ export function DieSeriesGeneratorPage() {
   const [pendingDies, setPendingDies] = useState<number[] | null>(null);
 
   const { request } = useApi();
-  const [passes, setPasses] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [consistency, setConsistency] = useState<any>(null);
+  const [passes, setPasses] = useState<PassData[]>([]);
+  const [stats, setStats] = useState<Statistics | null>(null);
+  const [consistency, setConsistency] = useState<ConsistencyData | null>(null);
 
   useEffect(() => {
     if (dies.length < 2) {
@@ -35,14 +66,14 @@ export function DieSeriesGeneratorPage() {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const res = await request('/api/go/tools/calculate/wire-drawing', {
+        const res = await request<WireDrawingApiResponse>('/api/go/tools/calculate/wire-drawing', {
           method: 'POST',
           body: JSON.stringify({ dies }),
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal
         });
         if (res) {
-          setPasses(res.passes.map((p: any) => ({
+          setPasses(res.passes.map(p => ({
             pass: p.pass,
             fromDie: p.from_die,
             toDie: p.to_die,
@@ -70,8 +101,8 @@ export function DieSeriesGeneratorPage() {
             stars: res.consistency.stars
           });
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError' && (err as { type?: string })?.type !== 'aborted') {
           console.error(err);
         }
       }
