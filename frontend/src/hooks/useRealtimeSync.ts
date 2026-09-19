@@ -38,7 +38,6 @@ export function useRealtimeSync(options: {
     let eventSource: EventSource | null = null
     let isCancelled = false
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-    let reconnectDelay = 1000
     let consecutiveFailures = 0
     const MAX_RECONNECT_ATTEMPTS = 5
 
@@ -77,7 +76,6 @@ export function useRealtimeSync(options: {
         }
 
         eventSource.onmessage = (event) => {
-          reconnectDelay = 1000
           consecutiveFailures = 0
           window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'connected' } }))
           try {
