@@ -108,8 +108,9 @@ func main() {
 		Handler:           limitedMux,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      0, // Disabled to allow persistent Server-Sent Events (SSE) streaming
+		WriteTimeout:      30 * time.Second, // ResponseController clears deadline for SSE streaming in HandleEvents
 		IdleTimeout:       120 * time.Second,
+
 	}
 
 	stopChan := make(chan os.Signal, 1)
