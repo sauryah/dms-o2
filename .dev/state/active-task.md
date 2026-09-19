@@ -7,23 +7,27 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ## Current Task
-**Task:** 3D Wire Drawing Realism & Industrial CAD Workbench (Category 1 Upgrade)
+**Task:** Autonomous Frontend Zero-Warning ESLint & Strict TypeScript Type Hardening
 **Status:** Complete
-**Started:** 2026-09-10
-**Completed:** 2026-09-10
+**Started:** 2026-09-19
+**Completed:** 2026-09-19
 **Confidence:** 100%
 
 ## Task Description
-Overhauled the 3D Workbench in the Wire Drawing Calculator (`StressHeatmap3D.tsx`) to provide complete photorealistic industrial realism for wire drawing dies, casings, materials, and CAD controls:
-1. **Industrial Die Assembly Realism**: Built true-to-life DIN 2812 standard die assemblies featuring brushed stainless/tool steel outer casings with 45° entrance and exit chamfer bevels, sintered brass/cobalt brazing seat rings, and mirror-polished Tungsten Carbide (WC) / PCD / Natural Diamond (ND) nib cores.
-2. **Solid Turned-Steel Bullblock Pulling Drums**: Replaced previous spoked capstan wheel with heavy-duty solid turned-steel industrial bullblock drums featuring chamfered outer arbor rim, machined wire traction step, center drive axle boss with socket hex nut, and rotating index notch for smooth rotational cues.
-3. **Interactive 4-Zone Die Bore Inspector**: Modeled authentic 4-zone die bore geometry (Zone 1 Bell Entrance Radius $R_{bell}$, Zone 2 Reduction Cone $2\alpha$, Zone 3 Parallel Sizing Bearing Land $L_B$, Zone 4 Back Relief Exit Cone $2\beta$) with 3D glowing contour highlight bands, floating callout markers, and dedicated sidebar mechanics telemetry card.
-4. **Thermal Infrared FEA Heatmap (`thermal` mode)**: Modeled adiabatic plastic deformation and boundary friction heating dissipation ($\Delta T = \frac{\sigma_d \cdot \epsilon}{\rho \cdot c_p}$) from ambient ($25^\circ\text{C}$) to peak friction hot spots ($180^\circ\text{C}$) with false-color colormap on wire and bore surfaces.
-5. **1-Click ISO/DIN Technical Data Sheet (TDS) Export**: Integrated jsPDF + autotable to generate complete landscape A4 engineering drawing PDFs with embedded high-resolution 3D CAD canvas snapshots, full pass-by-pass schedules, and 4-zone tolerance breakdown.
-6. **Decoupled 60–120 FPS CAD Engine**: Replaced React state drag hooks with a mutable `cameraRef` controller eliminating all React tree re-renders on mouse movement. Implemented precomputed trigonometric lookup tables (`LUT_12`, `LUT_18`, `LUT_24`, `LUT_36`), batched single-path background grids, zero-allocation RAF animation loop with delta-time normalization, and adaptive LOD during rapid dragging.
-7. **CAD-Grade Navigation, Fullscreen & 3D Perspective Discs**: Non-passive mouse scroll wheel zoom ($25\%$ to $500\%$), middle/right/shift+left drag pan, floating CAD toolbar, focus crosshairs, 1-click fullscreen viewport mode (`F` / `Esc`), and mathematically exact 3D perspective disc projection with camera-normal backface culling.
-8. **True 3D Depth-Sorted Render Queue & Occlusion**: Implemented unified back-to-front depth-sorted polygon rendering pipeline (`renderQueue.sort((a, b) => a.depth - b.depth)`) in both `MultiPassTrainCanvas` and `SingleDieCanvas`. Wire is nested inside die casings and internal bore cavities, with cutaway slice windows, annular die face openings, and backface occlusion eliminating any optical artifact of wire floating outside die casings.
-9. **Zero Regression Pass**: 54 Vitest tests green, `tsc --noEmit` 0 errors, Vite production build clean.
+Executed autonomous frontend debt elimination across the entire DMS-O2 repository, achieving **0 errors, 0 warnings** under `npm run lint` and `npx tsc --noEmit`:
+1. **DataTable Type Safety**: Broadened generic constraint from `T extends Record<string, unknown>` to `T extends object = object`, restoring type compatibility for typed TypeScript interfaces without index signature workarounds.
+2. **DieCard Projections**: Typed `die` prop using `Omit<Partial<Die>, 'die_type' | 'status'> & { die_id: string; die_type: string; status: string; location?: string }` and coerced dimension parsing.
+3. **Hook Dependencies & Scope**: Fixed `react-hooks/exhaustive-deps` warnings in `CommandPalette.tsx`, `useApi.ts`, `StressHeatmap3D.tsx`, and `App.tsx`.
+4. **Interface Contracts**: Added clean TypeScript interfaces for wire drawing API responses (`WireDrawingApiResponse`), die audit history (`DieHistoryItem`, `HistoryApiResponse`), and tolerance configs.
+5. **Context & State Cleanliness**: Eliminated `as any` context initializers in `AuthContext`, `NotificationContext`, and `ToastContext`.
+6. **Query v5 Rollback Functions**: Handled TanStack Query v5 `setQueryData` updaters with functional updater signatures (`Updater<TData, TData>`).
+7. **Verification Passed**:
+   - `npm --prefix frontend run lint`: 0 errors, 0 warnings
+   - `npx tsc --noEmit`: 0 errors
+   - Vitest: 21 test files, 54/54 tests passed
+   - Production Build: `npm --prefix frontend run build` clean (9.28s)
+   - Backend Tests: 204/204 Django unit tests passed (Docker), 8/8 Go packages passed (Docker)
+   - Knowledge Graph: Re-indexed via `graphify update .` (2,983 nodes, 5,184 edges, 256 communities)
 
 ## Completed
 1. **Go domain engine** (`go-api/internal/dieset/`) — isolated business-logic package:
