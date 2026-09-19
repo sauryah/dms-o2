@@ -70,12 +70,10 @@ def get_client_ip(request):
     Extracts the real client IP address from incoming request headers.
     Prioritizes headers in standard reverse-proxy order:
     1. HTTP_CF_CONNECTING_IP (Cloudflare)
-    2. HTTP_X_CLIENT_DEVICE_IP (Direct browser-detected client IP)
-    3. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
+    2. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
        - Returns the leftmost originating client IP address (skipping Docker bridge internal hops)
-    4. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
-    5. Request body client_ip (if sent during login)
-    6. REMOTE_ADDR (Direct connection fallback)
+    3. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
+    4. REMOTE_ADDR (Direct connection fallback)
 
     If the only available IP is a Docker internal gateway/bridge (e.g. 172.18.0.1, 172.19.0.1),
     the request originated from the Docker host machine itself, so it resolves to '127.0.0.1'.
@@ -85,15 +83,10 @@ def get_client_ip(request):
 
     # 1. Cloudflare header
     cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
-    if cf_ip and cf_ip.strip():
+    if cf_ip and cf_ip.strip() and not is_docker_internal_ip(cf_ip):
         return cf_ip.strip()
 
-    # 2. Direct browser client device header
-    client_dev_ip = request.META.get('HTTP_X_CLIENT_DEVICE_IP')
-    if client_dev_ip and client_dev_ip.strip():
-        return client_dev_ip.strip()
-
-    # 3. X-Forwarded-For chain (inspect from leftmost client to right)
+    # 2. X-Forwarded-For chain (inspect from leftmost client to right)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for and x_forwarded_for.strip():
         ips = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
@@ -101,12 +94,12 @@ def get_client_ip(request):
             if not is_docker_internal_ip(ip):
                 return ip
 
-    # 4. Direct real IP header from Nginx/reverse proxy
+    # 3. Direct real IP header from Nginx/reverse proxy
     x_real_ip = request.META.get('HTTP_X_REAL_IP')
     if x_real_ip and x_real_ip.strip() and not is_docker_internal_ip(x_real_ip):
         return x_real_ip.strip()
 
-    # 5. Fallback to REMOTE_ADDR
+    # 4. Fallback to REMOTE_ADDR
     remote_addr = request.META.get('REMOTE_ADDR')
     if remote_addr and remote_addr.strip() and not is_docker_internal_ip(remote_addr):
         return remote_addr.strip()
