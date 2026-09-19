@@ -6,6 +6,17 @@ import { parseUserAgent } from '../../utils/parseUserAgent'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { AnimatePresence } from 'framer-motion'
 
+export interface ActiveSession {
+  id: number
+  username: string
+  role: string
+  created_at: string
+  last_activity?: string
+  last_seen?: string
+  ip_address: string
+  device: string
+}
+
 export function ActiveSessionsList() {
   const { request } = useApi()
   const queryClient = useQueryClient()
@@ -17,7 +28,7 @@ export function ActiveSessionsList() {
   const [showBulkRevokeConfirm, setShowBulkRevokeConfirm] = useState(false)
   const [preserveOwn] = useState(true)
 
-  const { data: sessions = [], isLoading, error } = useQuery({
+  const { data: sessions = [], isLoading, error } = useQuery<ActiveSession[]>({
     queryKey: ['activeSessions'],
     queryFn: () => request('/api/active-sessions/')
   })
@@ -70,7 +81,7 @@ export function ActiveSessionsList() {
     if (selected.size === sessions.length) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(sessions.map((s: any) => s.id)))
+      setSelected(new Set(sessions.map((s) => s.id)))
     }
   }
 
@@ -116,7 +127,7 @@ export function ActiveSessionsList() {
         <div className="text-center py-8 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-6 max-w-xl mx-auto">
           <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-2" />
           <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">Query Failure</h3>
-          <p className="text-red-400 font-mono text-xs">{(error as any).message}</p>
+          <p className="text-red-400 font-mono text-xs">{(error as Error).message}</p>
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 max-w-md mx-auto select-none">
@@ -186,7 +197,7 @@ export function ActiveSessionsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
-                {sessions.map((sess: any) => {
+                {sessions.map((sess) => {
                   const client = parseUserAgent(sess.device)
                   const isSessSelected = selected.has(sess.id)
                   
@@ -219,7 +230,7 @@ export function ActiveSessionsList() {
                       <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
                         <div className="flex items-center space-x-1">
                           <Clock className="h-3 w-3 text-blue-400" />
-                          <span>{new Date(sess.last_seen).toLocaleString()}</span>
+                          <span>{sess.last_seen ? new Date(sess.last_seen).toLocaleString() : '—'}</span>
                         </div>
                       </td>
                       <td className="py-2.5 px-4 text-[#6b7280] tabular-nums">
