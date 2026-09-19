@@ -26,8 +26,10 @@ import {
   FileText,
   Flame,
   ShieldCheck,
+  Cpu,
 } from 'lucide-react';
 import { PassData } from '../types';
+import { useWasmFeaSolver } from '../hooks/useWasmFeaSolver';
 
 interface StressHeatmap3DProps {
   passes: PassData[];
@@ -2193,6 +2195,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const deltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
   const forceN = computeDrawingForce(activePassSingle, approachAngle2Alpha);
 
+  const { physics: wasmPhysics, isWasmReady } = useWasmFeaSolver({
+    dInMm: din,
+    dOutMm: dout,
+    approachAngle2AlphaDeg: approachAngle2Alpha,
+    bearingLengthLbRatioPct: bearingLengthLbRatio,
+    materialStr: wireMaterial,
+    enabled: activeViewMode === 'single',
+  });
+
   return (
     <motion.div
       ref={wrapperRef}
@@ -2880,9 +2891,17 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
               <Zap className="w-3.5 h-3.5 text-purple-400" />
               <span>Pass #{activePassSingle.pass} Telemetry</span>
             </h4>
-            <span className="text-[10px] font-mono text-purple-400 font-bold bg-purple-950/40 px-2 py-0.5 rounded border border-purple-900/30 uppercase tracking-wide">
-              Station {selectedPassIdx + 1} of {passes.length}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isWasmReady && (
+                <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900/40 uppercase font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  WASM CORE
+                </span>
+              )}
+              <span className="text-[10px] font-mono text-purple-400 font-bold bg-purple-950/40 px-2 py-0.5 rounded border border-purple-900/30 uppercase tracking-wide">
+                Station {selectedPassIdx + 1} of {passes.length}
+              </span>
+            </div>
           </div>
 
           {/* 4-Zone Die Bore Inspector Card */}
@@ -2965,6 +2984,15 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                 <span className="text-slate-400">Temp Rise (&Delta;T):</span>
                 <span className="text-amber-400 font-bold">+{deltaT.toFixed(1)} &deg;C</span>
               </div>
+              {wasmPhysics && (
+                <div className="flex justify-between p-2 bg-purple-950/20 rounded border border-purple-900/40">
+                  <span className="text-purple-300 flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Wasm Power (P):</span>
+                  </span>
+                  <span className="text-purple-300 font-bold">{wasmPhysics.drawing_power_kw.toFixed(2)} kW</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3 font-mono text-[10px]">
