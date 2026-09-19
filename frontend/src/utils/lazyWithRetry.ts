@@ -4,8 +4,9 @@ import React, { ComponentType } from 'react'
  * Wraps React.lazy to automatically reload the window once if a dynamic import fails
  * (e.g. after a deployment when asset hashes change and old chunk files no longer exist).
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function lazyWithRetry<T extends ComponentType<any>>(
-  componentImport: () => Promise<{ default: T } | any>
+  componentImport: () => Promise<{ default: T }>
 ) {
   return React.lazy(async () => {
     const pageAlreadyRefreshed = JSON.parse(
@@ -16,12 +17,13 @@ export function lazyWithRetry<T extends ComponentType<any>>(
       const component = await componentImport()
       window.sessionStorage.setItem('retry-lazy-refreshed', 'false')
       return component
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string } | null
       const isChunkLoadError =
-        error?.name === 'ChunkLoadError' ||
-        /failed to fetch dynamically imported module/i.test(error?.message || '') ||
-        /error loading dynamically imported module/i.test(error?.message || '') ||
-        /importing a module script failed/i.test(error?.message || '')
+        err?.name === 'ChunkLoadError' ||
+        /failed to fetch dynamically imported module/i.test(err?.message || '') ||
+        /error loading dynamically imported module/i.test(err?.message || '') ||
+        /importing a module script failed/i.test(err?.message || '')
 
       if (isChunkLoadError && !pageAlreadyRefreshed) {
         window.sessionStorage.setItem('retry-lazy-refreshed', 'true')
