@@ -17,6 +17,7 @@ class Die(models.Model):
     version                  = models.IntegerField(default=1)
 
     class Meta:
+        ordering = ['die_id']
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['die_type']),
@@ -25,6 +26,7 @@ class Die(models.Model):
             models.Index(fields=['rack', 'shelf_number'], name='die_rack_shelf_idx'),
             GinIndex(name='die_casing_trgm_idx', fields=['casing'], opclasses=['gin_trgm_ops']),
         ]
+
 
     def __str__(self):
         return f"{self.die_id} ({self.die_type})"
@@ -102,8 +104,22 @@ class DieTolerance(models.Model):
     warning_percentage = models.IntegerField(default=70) # Alert at 70% wear
     critical_percentage = models.IntegerField(default=90) # Alert at 90% wear
 
+    class Meta:
+        ordering = ['die_type']
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete(f"die_tolerance_{self.die_type}")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete(f"die_tolerance_{self.die_type}")
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return f"Tolerance for {self.die_type}: Max {self.max_wear_mm}mm"
+
 
 
 class WearAlert(models.Model):
