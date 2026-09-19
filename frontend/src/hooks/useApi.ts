@@ -20,6 +20,14 @@ export class ApiError extends Error {
   }
 }
 
+export interface RequestOptions extends Omit<RequestInit, 'signal'> {
+  timeout?: number
+  cancelKey?: string
+  abortPrevious?: boolean
+  keepMetadata?: boolean
+  signal?: AbortSignal | null
+}
+
 let inflightRefresh: Promise<string | null> | null = null
 
 export const useApi = () => {
@@ -31,7 +39,7 @@ export const useApi = () => {
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-  const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     if (inflightRefresh) {
       return inflightRefresh
     }
@@ -50,9 +58,9 @@ export const useApi = () => {
           body: JSON.stringify({})
         })
         if (!res.ok) {
-          let errData: any = null
+          let errData: { code?: string; evicted_by_ip?: string; evicted_at?: string } | null = null
           if (typeof res.json === 'function') {
-            errData = await res.json().catch(() => null)
+            errData = (await res.json().catch(() => null)) as { code?: string; evicted_by_ip?: string; evicted_at?: string } | null
           }
           if (errData && errData.code === 'session_evicted') {
             localStorage.setItem('dms_logout_reason', 'session_evicted')
@@ -66,7 +74,7 @@ export const useApi = () => {
           handleRefreshFailure()
           return null
         }
-        const data = await res.json()
+        const data = (await res.json()) as { access: string }
         setToken(data.access)
         resetRefreshFailures()
         return data.access
@@ -79,18 +87,15 @@ export const useApi = () => {
     })()
 
     return inflightRefresh
-  }
+  }, [handleRefreshFailure, logout, resetRefreshFailures, setToken, shouldBlockRefresh])
 
-  const request = useCallback(async (url: string, options: any = {}) => {
-    const headers = { ...options.headers }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const request = useCallback(async <T = any>(url: string, options: RequestOptions = {}): Promise<T> => {
+    const headers: Record<string, string> = { ...(options.headers as Record<string, string>) }
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json'
     }
     headers['X-Requested-With'] = 'XMLHttpRequest'
-    const cachedClientIp = sessionStorage.getItem('dms_client_ip')
-    if (cachedClientIp) {
-      headers['X-Client-Device-IP'] = cachedClientIp
-    }
     if (tokenRef.current) {
       headers['Authorization'] = `Bearer ${tokenRef.current}`
     }
@@ -123,7 +128,7 @@ export const useApi = () => {
 
         const loopController = new AbortController()
         const onAbort = () => {
-          let reason: any = new ApiError('Request aborted', 'aborted')
+          let reason: unknown = new ApiError('Request aborted', 'aborted')
           if (options.signal?.aborted) {
             reason = options.signal.reason || new ApiError('Request aborted', 'aborted')
           } else if (rapidAbortController.signal.aborted) {
@@ -146,10 +151,10 @@ export const useApi = () => {
           const res = await fetch(targetUrl, { ...options, headers, signal: loopController.signal })
 
           if (res.status === 401) {
-            let errData: any = null
+            let errData: { code?: string; evicted_by_ip?: string; evicted_at?: string; detail?: string } | null = null
             if (typeof res.clone === 'function') {
               const resClone = res.clone()
-              errData = await resClone.json().catch(() => null)
+              errData = (await resClone.json().catch(() => null)) as { code?: string; evicted_by_ip?: string; evicted_at?: string; detail?: string } | null
             }
             if (errData && errData.code === 'session_evicted') {
               localStorage.setItem('dms_logout_reason', 'session_evicted')
@@ -173,12 +178,12 @@ export const useApi = () => {
                 window.location.hash = '/login'
                 throw new ApiError('Unauthorized', 'unauthorized', 401)
               }
-              if (retryRes.status === 204) return null
+              if (retryRes.status === 204) return null as unknown as T
               const retryData = await retryRes.json()
               if (!options.keepMetadata && retryData && typeof retryData === 'object' && 'results' in retryData && Array.isArray(retryData.results)) {
-                return retryData.results
+                return retryData.results as T
               }
-              return retryData
+              return retryData as T
             }
             logout()
             window.location.hash = '/login'
@@ -186,8 +191,8 @@ export const useApi = () => {
           }
 
           if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}))
-            let errMsg = errorData.detail || errorData.error
+            const errorData = (await res.json().catch(() => ({}))) as Record<string, unknown>
+            let errMsg = (errorData.detail || errorData.error) as string | undefined
             if (!errMsg && typeof errorData === 'object' && errorData !== null) {
               const fieldErrors = Object.entries(errorData).map(([key, val]) => {
                 const valStr = Array.isArray(val) ? val.join(', ') : String(val)
@@ -214,19 +219,20 @@ export const useApi = () => {
             continue
           }
 
-          if (res.status === 204) return null
+          if (res.status === 204) return null as unknown as T
           const data = await res.json()
           if (!options.keepMetadata && data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
-            return data.results
+            return data.results as T
           }
-          return data
-        } catch (error: any) {
+          return data as T
+        } catch (error: unknown) {
           clearTimeout(timeoutId)
           options.signal?.removeEventListener('abort', onAbort)
           rapidAbortController.signal.removeEventListener('abort', onAbort)
           timeoutController.signal.removeEventListener('abort', onAbort)
 
-          if (error.name === 'AbortError') {
+          const err = error as { name?: string; message?: string }
+          if (err?.name === 'AbortError') {
             const reason = loopController.signal.reason
             if (reason instanceof ApiError) {
               throw reason
@@ -238,7 +244,7 @@ export const useApi = () => {
           if (error instanceof ApiError) {
             apiErr = error
           } else {
-            apiErr = new ApiError(error.message || 'Network error', 'network')
+            apiErr = new ApiError(err?.message || 'Network error', 'network')
           }
 
           lastError = apiErr
@@ -267,7 +273,7 @@ export const useApi = () => {
         activeRequestsRef.current.delete(cancelKey)
       }
     }
-  }, [logout, setToken])
+  }, [logout, refreshAccessToken])
 
   return { request }
 }
