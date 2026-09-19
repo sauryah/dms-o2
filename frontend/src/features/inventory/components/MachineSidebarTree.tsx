@@ -9,29 +9,44 @@ import {
   Layers, 
   Sliders 
 } from 'lucide-react'
-import { isDieActive } from '../../../utils/dieHelpers'
+import { Die } from '../../../types'
 
 export interface MachineSidebarTreeRef {
   expandAll: () => void;
   collapseAll: () => void;
 }
 
+export interface SetTreeItem {
+  id: number | string;
+  name: string;
+  machine?: number | string | null;
+  die_count: number;
+  dies?: Die[];
+}
+
+export interface MachineTreeItem {
+  id: number | string;
+  name: string;
+  totalDies: number;
+  sets: SetTreeItem[];
+}
+
 export interface MachineSidebarTreeProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   isSidebarCollapsed: boolean;
-  selectedNode: { type: string; id?: any; machineId?: any } | null;
-  setSelectedNode: (node: { type: string; id?: any; machineId?: any } | null) => void;
-  machinesWithData: any[];
-  dies: any[];
+  selectedNode: { type: string; id?: string | number; machineId?: string | number } | null;
+  setSelectedNode: (node: { type: string; id?: string | number; machineId?: string | number } | null) => void;
+  machinesWithData: MachineTreeItem[];
+  dies: Die[];
   unassignedCount: number;
   isSearchActive: boolean;
   canCreate: boolean;
   activeDragType: string | null;
   setActiveDragType: (type: string | null) => void;
-  onReallocateDie: (dieId: any, setId: any) => void;
-  onReallocateSet: (setId: any, machineId: any) => void;
-  onReorderSets: (machineId: any, orderedSetIds: any[]) => void;
+  onReallocateDie: (dieId: string | number, setId: string | number | null) => void;
+  onReallocateSet: (setId: string | number, machineId: string | number) => void;
+  onReorderSets: (machineId: string | number, orderedSetIds: (string | number)[]) => void;
 }
 
 export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSidebarTreeProps>(
@@ -59,15 +74,21 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
     const [treeSearch, setTreeSearch] = useState('')
     const [showEmptyNodes, setShowEmptyNodes] = useState(true)
     const [expandedMachines, setExpandedMachines] = useState<Record<string | number, boolean>>({})
-    const [expandedSets, setExpandedSets] = useState<Record<string | number, boolean>>({})
-    const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: any } | null>(null)
+    const [dragOverNode, setDragOverNode] = useState<{ type: string; id?: string | number } | null>(null)
 
     // Filtered machines list for the tree navigation search
     const filteredMachines = useMemo(() => {
-      if (!treeSearch) return machinesWithData
+      let result = machinesWithData
+      if (!showEmptyNodes) {
+        result = result.map((m) => ({
+          ...m,
+          sets: m.sets.filter((s) => s.die_count > 0)
+        })).filter((m) => m.totalDies > 0 || m.sets.length > 0)
+      }
+      if (!treeSearch) return result
       const query = treeSearch.toLowerCase()
-      return machinesWithData.map((m: any) => {
-        const matchingSets = m.sets.filter((s: any) => s.name.toLowerCase().includes(query))
+      return result.map((m) => {
+        const matchingSets = m.sets.filter((s) => s.name.toLowerCase().includes(query))
         const machineMatches = m.name.toLowerCase().includes(query)
         if (machineMatches || matchingSets.length > 0) {
           return {
@@ -76,35 +97,29 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
           }
         }
         return null
-      }).filter(Boolean) as any[]
-    }, [machinesWithData, treeSearch])
+      }).filter((m): m is MachineTreeItem => m !== null)
+    }, [machinesWithData, treeSearch, showEmptyNodes])
 
     // Expose expand/collapse operations to parent
     useImperativeHandle(ref, () => ({
       expandAll() {
         const nextMachs: Record<string | number, boolean> = {}
-        const nextSets: Record<string | number, boolean> = {}
-        machinesWithData.forEach((m: any) => {
+        machinesWithData.forEach((m) => {
           nextMachs[m.id] = true
-          m.sets.forEach((s: any) => {
-            nextSets[s.id] = true
-          })
         })
         setExpandedMachines(nextMachs)
-        setExpandedSets(nextSets)
       },
       collapseAll() {
         setExpandedMachines({})
-        setExpandedSets({})
       }
     }))
 
-    const toggleMachine = useCallback((id: any) => {
-      setExpandedMachines((prev: Record<string | number, boolean>) => ({ ...prev, [id]: !prev[id] }))
+    const toggleMachine = useCallback((id: string | number) => {
+      setExpandedMachines((prev) => ({ ...prev, [id]: !prev[id] }))
     }, [])
 
     // Drag and Drop Handlers
-    const handleDropOnMachine = useCallback((e: React.DragEvent, machineId: any) => {
+    const handleDropOnMachine = useCallback((e: React.DragEvent, machineId: string | number) => {
       e.preventDefault()
       setDragOverNode(null)
       setActiveDragType(null)
@@ -121,7 +136,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
       }
     }, [canCreate, onReallocateSet, setActiveDragType])
 
-    const handleDropOnSet = useCallback((e: React.DragEvent, targetSetId: any, targetMachineId: any) => {
+    const handleDropOnSet = useCallback((e: React.DragEvent, targetSetId: string | number, targetMachineId: string | number) => {
       e.preventDefault()
       setDragOverNode(null)
       setActiveDragType(null)
@@ -135,13 +150,13 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
           const { id: draggedSetId } = data
           if (Number(draggedSetId) === Number(targetSetId)) return
           
-          const targetMachine = machinesWithData.find((m: any) => Number(m.id) === Number(targetMachineId))
+          const targetMachine = machinesWithData.find((m) => Number(m.id) === Number(targetMachineId))
           if (targetMachine) {
             const currentSets = targetMachine.sets || []
-            let orderedSetIds = currentSets.map((s: any) => s.id)
+            let orderedSetIds = currentSets.map((s) => s.id)
             
             // Remove the dragged set ID if it is already in this machine
-            orderedSetIds = orderedSetIds.filter((id: any) => Number(id) !== Number(draggedSetId))
+            orderedSetIds = orderedSetIds.filter((id) => Number(id) !== Number(draggedSetId))
             
             // Insert it before the target set
             const targetIndex = orderedSetIds.indexOf(targetSetId)
@@ -252,7 +267,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
               {filteredMachines.length === 0 ? (
                 <div className="px-2 py-1.5 text-xs text-[#6b7280] italic">No matches found</div>
               ) : (
-                filteredMachines.map((machine: any) => {
+                filteredMachines.map((machine) => {
                   const isMachineExpanded = treeSearch ? true : !!expandedMachines[machine.id]
                   const isMachineSelected = selectedNode?.type === 'machine' && selectedNode?.id === machine.id
                   const isMachineDragOver = dragOverNode?.type === 'machine' && dragOverNode?.id === machine.id
@@ -271,7 +286,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                         }`}
                         onClick={() => setSelectedNode({ type: 'machine', id: machine.id })}
                         onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') e.preventDefault(); } : undefined}
-                        onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
+                        onDragEnter={canCreate ? (_e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'set') setDragOverNode({ type: 'machine', id: machine.id }); } : undefined}
                         onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                         onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnMachine(e, machine.id) : undefined}
                       >
@@ -299,7 +314,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                       {isMachineExpanded && (
                         <div className="relative pl-3 space-y-0.5 ml-3 mt-0.5">
                           <div className="tree-branch-line" />
-                          {machine.sets.map((set: any) => {
+                          {machine.sets.map((set) => {
                             const isSetSelected = selectedNode?.type === 'set' && selectedNode?.id === set.id
                             const isSetDragOver = dragOverNode?.type === 'set' && dragOverNode?.id === set.id
                             return (
@@ -321,7 +336,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                                     setDragOverNode(null);
                                   }}
                                   onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') e.preventDefault(); } : undefined}
-                                  onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
+                                  onDragEnter={canCreate ? (_e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die' || activeDragType === 'set') setDragOverNode({ type: 'set', id: set.id }); } : undefined}
                                   onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                                   onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnSet(e, set.id, machine.id) : undefined}
                                   className={`flex items-center w-full rounded-sm transition-colors select-none py-1 px-1.5 border-l-2 font-mono ${
@@ -363,7 +378,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
                     <div
                       onClick={() => setSelectedNode({ type: 'unassigned' })}
                       onDragOver={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') e.preventDefault(); } : undefined}
-                      onDragEnter={canCreate ? (e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
+                      onDragEnter={canCreate ? (_e: React.DragEvent<HTMLDivElement>) => { if (activeDragType === 'die') setDragOverNode({ type: 'unassigned' }); } : undefined}
                       onDragLeave={canCreate ? () => setDragOverNode(null) : undefined}
                       onDrop={canCreate ? (e: React.DragEvent<HTMLDivElement>) => handleDropOnUnassigned(e) : undefined}
                       className={`flex items-center w-full rounded-sm transition-colors select-none cursor-pointer py-1.5 px-2 border-l-2 font-mono ${
