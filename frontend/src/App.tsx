@@ -101,7 +101,7 @@ function AppContent() {
       return
     }
     checkIndexStatus()
-  }, [token])
+  }, [token, checkIndexStatus])
 
   useEffect(() => {
     if (!isPolling || !token) return
@@ -127,8 +127,9 @@ function AppContent() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#e4e4e4] font-mono selection:bg-[#1f1f1f] selection:text-[#e4e4e4] flex flex-col">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-mono selection:bg-[#1f1f1f] selection:text-[#e4e4e4] flex flex-col">
       <div className="flex-grow">
+
         <Navbar />
         {rebuildStatus && rebuildStatus.status === 'rebuilding' && (
           <div className="bg-[#0f0f0f] border-b border-[#2a2a2a] px-4 py-2 flex items-center justify-between animate-fadeIn font-mono text-xs">
