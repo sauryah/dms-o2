@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState, Suspense } from 'react';
-import { Toaster } from 'react-hot-toast';
 import { useUndo } from '../features/wire-drawing-calculator/hooks/useUndo';
+
 import { useApi } from '../hooks/useApi';
 import Header from '../features/wire-drawing-calculator/components/Header';
 import InputPanel from '../features/wire-drawing-calculator/components/InputPanel';
@@ -61,6 +61,38 @@ const DEFAULT_DIES = [
   0.778, 0.693, 0.617, 0.550, 0.490, 0.437, 0.389, 0.347, 0.309,
 ];
 
+import type { PassData, Statistics, ConsistencyData } from '../features/wire-drawing-calculator/types';
+
+interface WireDrawingApiResponse {
+  passes: Array<{
+    pass: number;
+    from_die: number;
+    to_die: number;
+    area_before: number;
+    area_after: number;
+    area_reduction: number;
+    elongation: number;
+    reduction_ratio: number;
+  }>;
+  stats: {
+    total_passes: number;
+    starting_die: number;
+    final_die: number;
+    avg_elongation: number;
+    max_elongation: number;
+    min_elongation: number;
+    avg_area_reduction: number;
+    overall_area_reduction: number;
+    overall_reduction_ratio: number;
+  };
+  consistency: {
+    avg_elongation: number;
+    variation: number;
+    quality_rating: string;
+    stars: number;
+  };
+}
+
 export function WireDrawingCalculatorPage() {
   const { role, authorizedTools = [], refetchPermissions } = useAuth();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
@@ -77,9 +109,9 @@ export function WireDrawingCalculatorPage() {
   const canAccessTheory = isRoot || authorizedTools.includes('engineering-theory');
 
   const { request } = useApi();
-  const [passes, setPasses] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [consistency, setConsistency] = useState<any>(null);
+  const [passes, setPasses] = useState<PassData[]>([]);
+  const [stats, setStats] = useState<Statistics | null>(null);
+  const [consistency, setConsistency] = useState<ConsistencyData | null>(null);
 
   useEffect(() => {
     if (dies.length < 2) {
@@ -92,14 +124,14 @@ export function WireDrawingCalculatorPage() {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const res = await request('/api/go/tools/calculate/wire-drawing', {
+        const res = await request<WireDrawingApiResponse>('/api/go/tools/calculate/wire-drawing', {
           method: 'POST',
           body: JSON.stringify({ dies }),
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal
         });
         if (res) {
-          setPasses(res.passes.map((p: any) => ({
+          setPasses(res.passes.map(p => ({
             pass: p.pass,
             fromDie: p.from_die,
             toDie: p.to_die,
@@ -127,8 +159,8 @@ export function WireDrawingCalculatorPage() {
             stars: res.consistency.stars
           });
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.type !== 'aborted') {
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError' && (err as { type?: string })?.type !== 'aborted') {
           console.error(err);
         }
       }
@@ -165,20 +197,6 @@ export function WireDrawingCalculatorPage() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#0f0f0f',
-            color: '#e4e4e4',
-            borderRadius: '2px',
-            border: '1px solid #2a2a2a',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-          },
-        }}
-      />
-
       <div className="max-w-[1400px] mx-auto space-y-6" ref={printRef}>
         <Header />
 
@@ -220,7 +238,7 @@ export function WireDrawingCalculatorPage() {
                       </div>
                       <Suspense fallback={<BlueprintSkeleton />}>
                         <DieBlueprint 
-                          die={simulatedDie as any}
+                          die={simulatedDie}
                           activeHighlight={null}
                           onHoverDim={() => {}}
                         />
