@@ -1,20 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Database, Move, ArrowRightLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '../../../hooks/useApi'
 
-interface Die {
-  die_id: string
-  die_type: string
-  status: string
-  rack?: number | null
-  rack_id?: number | null
-  rack_name?: string
-  shelf?: number | null
-  current_size?: string
-  current_width?: string
-  current_thickness?: string
-  casing?: string
+import type { Die } from '../../../types'
+
+export interface RackRecord {
+  id: number
+  name: string
 }
 
 interface RackLayoutGridProps {
@@ -36,11 +29,11 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
   const [targetCell, setTargetCell] = useState<{ rack: string; shelf: string } | null>(null)
 
   const { request } = useApi()
-  const { data: racksList } = useQuery({
+  const { data: racksList } = useQuery<RackRecord[]>({
     queryKey: ['racksList'],
     queryFn: () => request('/api/racks/')
   })
-  const racks = racksList || []
+  const racks = useMemo(() => racksList || [], [racksList])
 
   // Parse location using structured fields
   const parsedDies = dies.map(die => {
@@ -127,7 +120,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
     if (dieId) {
       const shelfNum = Number(shelfName.replace(/Shelf\s+/i, ''))
       const pureRackName = rackName.replace(/Rack\s+/i, '').trim()
-      const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
+      const matchedRack = racks.find((r: RackRecord) => r.name.toLowerCase() === pureRackName.toLowerCase())
       
       if (matchedRack) {
         onMoveDie(dieId, matchedRack.id, shelfNum)
@@ -197,7 +190,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
         e.preventDefault()
         const shelfNum = Number(targetCell.shelf.replace(/Shelf\s+/i, ''))
         const pureRackName = targetCell.rack.replace(/Rack\s+/i, '').trim()
-        const matchedRack = racks.find((r: any) => r.name.toLowerCase() === pureRackName.toLowerCase())
+        const matchedRack = racks.find((r: RackRecord) => r.name.toLowerCase() === pureRackName.toLowerCase())
         
         if (matchedRack) {
           onMoveDie(pickedUpDie.die_id, matchedRack.id, shelfNum)
@@ -215,7 +208,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
 
     window.addEventListener('keydown', handleGlobalKeys)
     return () => window.removeEventListener('keydown', handleGlobalKeys)
-  }, [pickedUpDie, targetCell, allRacks, allShelves, racks])
+  }, [pickedUpDie, targetCell, allRacks, allShelves, racks, onMoveDie])
 
   return (
     <div className="flex flex-col gap-4 w-full font-mono">
@@ -460,7 +453,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                               onChange={(e) => setSelectedRackId(Number(e.target.value))}
                               className="w-full bg-[#141414] border border-[#2a2a2a] text-xs text-[#e4e4e4] rounded-sm p-1 focus:outline-none focus:border-blue-500 font-mono"
                             >
-                              {racks.map((r: any) => (
+                              {racks.map((r: RackRecord) => (
                                 <option key={r.id} value={r.id}>
                                   RACK {r.name}
                                 </option>
@@ -492,7 +485,7 @@ export function RackLayoutGrid({ dies, onMoveDie, canMove, navigate }: RackLayou
                           <button
                             type="button"
                             onClick={() => {
-                              const rObj = racks.find((r: any) => r.id === selectedRackId)
+                              const rObj = racks.find((r: RackRecord) => r.id === selectedRackId)
                               if (rObj) {
                                 onMoveDie(
                                   die.die_id,
