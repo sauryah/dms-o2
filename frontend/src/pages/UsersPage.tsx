@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Database, ClipboardList, Shield, Activity } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
