@@ -3,9 +3,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Folder, Plus } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Category } from '../../types'
 
 interface CategoriesTabProps {
-  categories: any[] | undefined
+  categories: Category[] | undefined
   isCatsLoading: boolean
   isWritable: boolean
 }
@@ -16,11 +17,11 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
 
   const [searchQuery, setSearchQuery] = useState('')
   const [catName, setCatName] = useState('')
-  const [editingCat, setEditingCat] = useState<any>(null)
-  const [categoryToDelete, setCategoryToDelete] = useState<any>(null)
+  const [editingCat, setEditingCat] = useState<Category | null>(null)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
 
   const createCategory = useMutation({
-    mutationFn: (data: any) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: { name: string }) => request('/api/categories/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       setCatName('')
@@ -29,7 +30,7 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
   })
 
   const updateCategory = useMutation({
-    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/categories/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: number; data: { name: string } }) => request(`/api/categories/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       setCatName('')
@@ -38,13 +39,13 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
   })
 
   const deleteCategory = useMutation({
-    mutationFn: (id: any) => request(`/api/categories/${id}/`, { method: 'DELETE' }),
+    mutationFn: (id: number) => request(`/api/categories/${id}/`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] })
   })
 
   const filteredCategories = useMemo(() => {
     if (!categories) return []
-    return categories.filter((cat: any) => 
+    return categories.filter((cat) => 
       cat.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [categories, searchQuery])
@@ -81,7 +82,7 @@ export function CategoriesTab({ categories, isCatsLoading, isWritable }: Categor
           <p className="text-[#6b7280] text-xs py-4 text-center">No matching machine categories found.</p>
         ) : (
           <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1">
-            {filteredCategories.map((cat: any) => (
+            {filteredCategories.map((cat) => (
               <div key={cat.id} className="bg-[#0a0a0a] flex justify-between items-center p-2.5 rounded-sm border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#141414] transition-colors font-mono">
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-[#141414] text-blue-400 rounded-sm border border-[#2a2a2a]">
