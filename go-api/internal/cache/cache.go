@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"dms-go-api/internal/config"
@@ -11,7 +13,8 @@ import (
 )
 
 type Cache struct {
-	client *redis.Client
+	client    *redis.Client
+	searchGen atomic.Int64
 }
 
 func NewCache(cfg *config.Config) *Cache {
@@ -37,35 +40,56 @@ func NewCache(cfg *config.Config) *Cache {
 	}
 
 	slog.Info("Successfully connected to Redis", "addr", addr)
-	return &Cache{client: client}
+	c := &Cache{client: client}
+
+	gen, err := client.Get(ctx, "search_cache_gen").Int64()
+	if err != nil {
+		gen = 1
+		_ = client.Set(ctx, "search_cache_gen", 1, 0).Err()
+	}
+	c.searchGen.Store(gen)
+
+	return c
 }
 
 func (c *Cache) Enabled() bool {
 	return c.client != nil
 }
 
+func (c *Cache) resolveKey(ctx context.Context, key string) string {
+	if !strings.HasPrefix(key, "search:") {
+		return key
+	}
+	gen := c.searchGen.Load()
+	if gen == 0 {
+		if c.client != nil {
+			val, err := c.client.Get(ctx, "search_cache_gen").Int64()
+			if err != nil {
+				gen = 1
+				_ = c.client.Set(ctx, "search_cache_gen", 1, 0).Err()
+			} else {
+				gen = val
+			}
+			c.searchGen.Store(gen)
+		} else {
+			gen = 1
+		}
+	}
+	return fmt.Sprintf("search:%d:%s", gen, key[7:])
+}
+
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	if c.client == nil {
 		return nil, fmt.Errorf("redis cache is disabled")
 	}
-	return c.client.Get(ctx, key).Bytes()
+	return c.client.Get(ctx, c.resolveKey(ctx, key)).Bytes()
 }
 
 func (c *Cache) Set(ctx context.Context, key string, val []byte, expiration time.Duration) error {
 	if c.client == nil {
 		return fmt.Errorf("redis cache is disabled")
 	}
-	err := c.client.Set(ctx, key, val, expiration).Err()
-	if err != nil {
-		return err
-	}
-	if len(key) >= 7 && key[:7] == "search:" {
-		errSAdd := c.client.SAdd(ctx, "cached_searches", key).Err()
-		if errSAdd != nil {
-			slog.Warn("Failed to add key to cached_searches tracker", "key", key, "error", errSAdd)
-		}
-	}
-	return nil
+	return c.client.Set(ctx, c.resolveKey(ctx, key), val, expiration).Err()
 }
 
 func (c *Cache) Invalidate(ctx context.Context) {
@@ -81,25 +105,13 @@ func (c *Cache) Invalidate(ctx context.Context) {
 		slog.Info("Successfully invalidated stats cache (marked stale)")
 	}
 
-	// Retrieve all tracked search keys from the Set
-	keys, err := c.client.SMembers(ctx, "cached_searches").Result()
+	// Invalidate search cache atomically in O(1) via generation counter
+	newGen, err := c.client.Incr(ctx, "search_cache_gen").Result()
 	if err != nil {
-		slog.Warn("Failed to retrieve cached search keys from Set", "error", err)
-		return
-	}
-
-	if len(keys) > 0 {
-		err = c.client.Del(ctx, keys...).Err()
-		if err != nil {
-			slog.Warn("Failed to delete tracked search cache keys", "error", err)
-		} else {
-			slog.Info("Successfully invalidated search cache keys", "count", len(keys))
-		}
-	}
-
-	err = c.client.Del(ctx, "cached_searches").Err()
-	if err != nil {
-		slog.Warn("Failed to delete cached_searches tracker Set", "error", err)
+		slog.Warn("Failed to increment search_cache_gen", "error", err)
+	} else {
+		c.searchGen.Store(newGen)
+		slog.Info("Successfully invalidated search cache via generation increment", "generation", newGen)
 	}
 }
 
@@ -107,7 +119,7 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 	if c.client == nil {
 		return fmt.Errorf("redis cache is disabled")
 	}
-	return c.client.Del(ctx, key).Err()
+	return c.client.Del(ctx, c.resolveKey(ctx, key)).Err()
 }
 
 func (c *Cache) Ping(ctx context.Context) error {
