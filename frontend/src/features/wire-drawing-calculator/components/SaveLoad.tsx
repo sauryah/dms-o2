@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Trash2 } from 'lucide-react';
 import type { DieSchedule } from '../types';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../../../contexts';
+
 
 interface SaveLoadProps {
   dies: number[];
@@ -18,6 +19,7 @@ function getSchedules(): DieSchedule[] {
 function saveSchedules(s: DieSchedule[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
 export default function SaveLoad({ dies, onLoad }: SaveLoadProps) {
+  const { showToast } = useToast();
   const [schedules, setSchedules] = useState<DieSchedule[]>(getSchedules);
   const [name, setName] = useState('');
 
@@ -29,8 +31,9 @@ export default function SaveLoad({ dies, onLoad }: SaveLoadProps) {
     setSchedules(u);
     saveSchedules(u);
     setName('');
-    toast.success('Saved "' + n + '"');
+    showToast('Saved "' + n + '"', 'success');
   };
+
 
   return (
     <motion.div
@@ -59,13 +62,14 @@ export default function SaveLoad({ dies, onLoad }: SaveLoadProps) {
         <div className="space-y-1.5 max-h-48 overflow-y-auto">
           {schedules.map((s) => (
             <div key={s.id} className="flex items-center justify-between p-2.5 bg-white/[0.02] rounded-[8px] border border-white/[0.04] hover:border-white/[0.08] transition-all group">
-              <div className="cursor-pointer flex-1 min-w-0" onClick={() => { onLoad(s.dies); toast.success('Loaded "' + s.name + '"'); }}>
+              <div className="cursor-pointer flex-1 min-w-0" onClick={() => { onLoad(s.dies); showToast('Loaded "' + s.name + '"', 'success'); }}>
                 <div className="text-[12px] font-medium text-[#94A3B8] group-hover:text-[#F8FAFC] transition-colors truncate">{s.name}</div>
                 <div className="text-[10px] text-[#334155] font-mono">{s.dies.length} dies · {s.dies[0]} → {s.dies[s.dies.length - 1]}</div>
               </div>
-              <button onClick={() => { const u = schedules.filter((x) => x.id !== s.id); setSchedules(u); saveSchedules(u); toast.success('Deleted'); }} className="wdc-btn wdc-btn-danger text-xs px-2 py-1">
+              <button onClick={() => { const u = schedules.filter((x) => x.id !== s.id); setSchedules(u); saveSchedules(u); showToast('Deleted schedule', 'success'); }} className="wdc-btn wdc-btn-danger text-xs px-2 py-1">
                 <Trash2 className="w-3 h-3" />
               </button>
+
             </div>
           ))}
         </div>
