@@ -7,13 +7,24 @@ import { validateDieCreate } from '../../../types/validation'
 import { SearchableSelect } from '../../../components/SearchableSelect'
 import { StepWizard } from '../../../components/ui/StepWizard'
 
+export interface RackOption {
+  id: number
+  name: string
+}
+
+export interface SetOption {
+  id: number
+  name: string
+  machine_name?: string
+}
+
 interface CreateDieModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (payload: any) => void
+  onSubmit: (payload: Record<string, unknown>) => void
   isSubmitting: boolean
   error: string | null
-  setsList: any[]
+  setsList: SetOption[]
 }
 
 export function CreateDieModal({
@@ -37,7 +48,7 @@ export function CreateDieModal({
   const [currentStep, setCurrentStep] = useState(0)
 
   const { request } = useApi()
-  const { data: racksList } = useQuery({
+  const { data: racksList } = useQuery<RackOption[]>({
     queryKey: ['racksList'],
     queryFn: () => request('/api/racks/'),
     enabled: isOpen
@@ -175,10 +186,10 @@ export function CreateDieModal({
     if (isSubmitting) return
     setValidationErrors({})
     
-    const selectedRack = racks.find((r: any) => String(r.id) === String(rack))
+    const selectedRack = racks.find((r: RackOption) => String(r.id) === String(rack))
     const finalLocation = selectedRack && shelf ? `${selectedRack.name} - Shelf ${shelf}` : ''
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       die_id: dieId.trim(),
       die_type: dieType,
       casing: casing.trim(),
@@ -216,7 +227,9 @@ export function CreateDieModal({
       return
     }
 
-    onSubmit(validation.data)
+    if (validation.data) {
+      onSubmit(validation.data)
+    }
   }
 
   const getFieldError = (fieldName: string) => validationErrors[fieldName]
@@ -225,13 +238,13 @@ export function CreateDieModal({
   const isStep1Valid = dieType !== ''
   const isStep2Valid = dieId.trim() !== '' && casing.trim() !== '' && !dieIdExists && !checkingUniqueness
   const isStep3Valid = dieType === 'ROUND'
-    ? (originalSize.trim() !== '' && currentSize.trim() !== '')
+  ? (originalSize.trim() !== '' && currentSize.trim() !== '')
     : (originalWidth.trim() !== '' && currentWidth.trim() !== '' && originalThickness.trim() !== '' && currentThickness.trim() !== '' && radius.trim() !== '')
   const isStep4Valid = true // Optional set assignment
 
-  const selectedSetObj = setsList?.find((s: any) => String(s.id) === String(currentSet))
+  const selectedSetObj = setsList?.find((s: SetOption) => String(s.id) === String(currentSet))
   const machineName = selectedSetObj ? (selectedSetObj.machine_name || 'No Machine') : ''
-  const selectedRackObj = racks.find((r: any) => String(r.id) === String(rack))
+  const selectedRackObj = racks.find((r: RackOption) => String(r.id) === String(rack))
   const displayLocation = selectedRackObj && shelf ? `${selectedRackObj.name} - Shelf ${shelf}` : 'Unassigned'
 
   // Steps definition for StepWizard
@@ -351,7 +364,7 @@ export function CreateDieModal({
                 className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 px-2 text-xs text-[#e4e4e4] focus:outline-none cursor-pointer uppercase font-mono"
               >
                 <option value="">SELECT RACK...</option>
-                {racks.map((r: any) => (
+                {racks.map((r: RackOption) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
@@ -575,7 +588,7 @@ export function CreateDieModal({
               value={currentSet}
               disabled={isSubmitting}
               onChange={(val) => handleFieldChange('current_set', String(val), setCurrentSet)}
-              options={setsList?.map((s: any) => ({
+              options={setsList?.map((s: SetOption) => ({
                 value: s.id,
                 label: `${s.name} (${s.machine_name || 'No Machine'})`
               })) || []}
