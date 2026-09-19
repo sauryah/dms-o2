@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
 
+const IDLE_LIMIT = 28 * 60 * 1000
+const WARNING_LIMIT = 2 * 60 * 1000
+
 export function SessionTimeoutManager() {
   const { token, logout } = useAuth()
   const { request } = useApi()
@@ -10,9 +13,6 @@ export function SessionTimeoutManager() {
   const [showWarning, setShowWarning] = useState(false)
   const [countdown, setCountdown] = useState(120)
   const lastActivity = useRef(Date.now())
-
-  const IDLE_LIMIT = 28 * 60 * 1000
-  const WARNING_LIMIT = 2 * 60 * 1000
 
   useEffect(() => {
     if (!token) {
