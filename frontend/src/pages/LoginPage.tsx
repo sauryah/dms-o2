@@ -13,7 +13,6 @@ export function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState<{ hostname: string; ip: string } | null>(null)
-  const [detectedClientIp, setDetectedClientIp] = useState<string>('')
   const [evictedInfo] = useState<{ ip: string | null; at: string | null } | null>(() => {
     const reason = localStorage.getItem('dms_logout_reason')
     if (reason === 'session_evicted') {
@@ -37,17 +36,6 @@ export function LoginPage() {
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setServerInfo(data) })
       .catch(() => {})
-
-    // Non-blocking browser IP discovery (zero downloads, runs natively in browser)
-    fetch('https://api64.ipify.org?format=json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.ip) {
-          setDetectedClientIp(data.ip)
-          sessionStorage.setItem('dms_client_ip', data.ip)
-        }
-      })
-      .catch(() => {})
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,9 +48,6 @@ export function LoginPage() {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       }
-      if (detectedClientIp) {
-        headers['X-Client-Device-IP'] = detectedClientIp
-      }
 
       if (mfaPending) {
         // Backup code verification step
@@ -71,8 +56,7 @@ export function LoginPage() {
           headers,
           body: JSON.stringify({
             mfa_token: mfaPending.token,
-            code: mfaCode.trim(),
-            client_ip: detectedClientIp || undefined
+            code: mfaCode.trim()
           })
         })
         if (!res.ok) {
@@ -92,8 +76,7 @@ export function LoginPage() {
         headers,
         body: JSON.stringify({
           username: usernameInput,
-          password: passwordInput,
-          client_ip: detectedClientIp || undefined
+          password: passwordInput
         })
       })
       if (!res.ok) {
@@ -109,8 +92,8 @@ export function LoginPage() {
       }
       login(data.token, data.refresh, data.role, usernameInput, undefined, data.is_authorized_for_tools, data.authorized_tools)
       navigate('/')
-    } catch (err: any) {
-      setErrorMsg(err.message)
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message)
     } finally {
       setLoading(false)
     }
