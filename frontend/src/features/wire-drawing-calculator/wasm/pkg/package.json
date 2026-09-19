@@ -1,0 +1,19 @@
+{
+  "name": "wasm-drawing-engine",
+  "type": "module",
+  "collaborators": [
+    "DMS-O2 Engineering Team"
+  ],
+  "description": "High-performance WebAssembly FEA, thermal advection, and wire drawing mechanics engine for DMS-O2.",
+  "version": "0.1.0",
+  "files": [
+    "wasm_drawing_engine_bg.wasm",
+    "wasm_drawing_engine.js",
+    "wasm_drawing_engine.d.ts"
+  ],
+  "main": "wasm_drawing_engine.js",
+  "types": "wasm_drawing_engine.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
