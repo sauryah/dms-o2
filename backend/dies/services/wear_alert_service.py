@@ -9,8 +9,14 @@ class WearAlertService:
     @staticmethod
     def get_or_create_default_tolerance(die_type):
         """
-        Retrieves tolerance configuration or initializes default values.
+        Retrieves tolerance configuration or initializes default values, cached in Redis/memory.
         """
+        from django.core.cache import cache
+        cache_key = f"die_tolerance_{die_type}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         defaults = {
             'max_wear_mm': Decimal('0.050') if die_type == 'ROUND' else Decimal('0.100'),
             'warning_percentage': 70,
@@ -20,7 +26,9 @@ class WearAlertService:
             die_type=die_type,
             defaults=defaults
         )
+        cache.set(cache_key, tolerance, 3600)
         return tolerance
+
 
     @staticmethod
     def check_wear_alerts(die):
