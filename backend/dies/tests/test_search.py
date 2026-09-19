@@ -1,6 +1,8 @@
 import time
+from unittest.mock import patch
 from django.test import TransactionTestCase
 from django.urls import reverse
+
 from dies.models import Die, RoundDie
 from machines.models import Rack
 from search.meili import client as meili_client, INDEX_NAME
@@ -236,4 +238,37 @@ class MeilisearchTests(TransactionTestCase):
         self.assertFalse(OutboxTask.objects.filter(pk=old_processed.pk).exists())
         self.assertTrue(OutboxTask.objects.filter(pk=recent_processed.pk).exists())
         self.assertTrue(OutboxTask.objects.filter(pk=unprocessed.pk).exists())
+
+    @patch('dms.events.broadcast_event')
+    @patch('search.tasks.meili_client')
+    def test_process_outbox_batch_coalesced_event(self, mock_meili, mock_broadcast):
+        from dies.models import OutboxTask
+        from search.tasks import process_outbox_task
+        from dies.contracts import DIE_UPDATE_EVENT, DIE_BULK_IMPORT_ACTION
+        from unittest.mock import MagicMock
+
+        mock_task = MagicMock()
+        mock_task.task_uid = 'test-batch-task'
+        mock_meili.index.return_value.add_documents.return_value = mock_task
+
+        # Create two dies in the DB so select_related finds them
+        die_1 = Die.objects.create(die_id="BATCH-001", die_type="ROUND", casing="6x3")
+        die_2 = Die.objects.create(die_id="BATCH-002", die_type="ROUND", casing="6x3")
+
+        # Reset mock calls triggered by Die.objects.create signals
+        mock_broadcast.reset_mock()
+
+        # Create two valid outbox tasks
+        OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_1.id})
+        OutboxTask.objects.create(task_type='SYNC_DIE', payload={'die_id': die_2.id})
+
+        process_outbox_task()
+
+        # Check that broadcast_event was called with coalesced bulk action
+        mock_broadcast.assert_called_once_with(
+            DIE_UPDATE_EVENT,
+            {'action': DIE_BULK_IMPORT_ACTION, 'count': 2}
+        )
+
+
 
