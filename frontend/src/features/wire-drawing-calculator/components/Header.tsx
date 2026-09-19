@@ -6,7 +6,7 @@ interface HeaderProps {
   toggleDark?: () => void;
 }
 
-export default function Header({ dark, toggleDark }: HeaderProps) {
+export default function Header({ dark: _dark, toggleDark }: HeaderProps) {
   const { theme, toggleTheme, canChangeTheme } = useTheme();
   const isLight = theme === 'light';
 
