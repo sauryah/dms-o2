@@ -36,9 +36,9 @@ type EventManager struct {
 func NewEventManager() *EventManager {
 	return &EventManager{
 		clients:    make(map[Client]bool),
-		register:   make(chan Client, 64),
-		unregister: make(chan Client, 64),
-		broadcast:  make(chan string, 256),
+		register:   make(chan Client, 256),
+		unregister: make(chan Client, 256),
+		broadcast:  make(chan string, 512),
 		history:    make([]Event, 0, 500),
 		nextID:     1,
 	}
@@ -79,14 +79,22 @@ func (m *EventManager) Start() {
 				select {
 				case client <- event:
 				default:
-					slog.Warn("SSE Client buffer full or blocked, unregistering client.")
+					slog.Warn("SSE Client buffer full or blocked, queuing client for removal.")
 					staleClients = append(staleClients, client)
 				}
 			}
 			m.mu.RUnlock()
 
-			for _, c := range staleClients {
-				m.unregister <- c
+			if len(staleClients) > 0 {
+				m.mu.Lock()
+				for _, c := range staleClients {
+					if _, ok := m.clients[c]; ok {
+						delete(m.clients, c)
+						close(c)
+						slog.Info("SSE Client unregistered due to slow consumption", "total_active", len(m.clients))
+					}
+				}
+				m.mu.Unlock()
 			}
 		}
 	}
@@ -97,7 +105,11 @@ func (m *EventManager) Register(c Client) {
 }
 
 func (m *EventManager) Unregister(c Client) {
-	m.unregister <- c
+	select {
+	case m.unregister <- c:
+	default:
+		slog.Warn("EventManager unregister channel full, dropping unregister request")
+	}
 }
 
 func (m *EventManager) Broadcast(msg string) {
@@ -126,8 +138,58 @@ func (m *EventManager) ActiveClientCount() int {
 	return len(m.clients)
 }
 
+// Deduplicator suppresses duplicate event payloads within a sliding time window.
+type Deduplicator struct {
+	mu     sync.Mutex
+	seen   map[string]time.Time
+	window time.Duration
+}
+
+// NewDeduplicator creates a new Deduplicator with the specified time window.
+func NewDeduplicator(window time.Duration) *Deduplicator {
+	return &Deduplicator{
+		seen:   make(map[string]time.Time),
+		window: window,
+	}
+}
+
+// ShouldProcess returns true if the payload has not been processed within the sliding window.
+func (d *Deduplicator) ShouldProcess(payload string) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	now := time.Now()
+	if lastSeen, ok := d.seen[payload]; ok {
+		if now.Sub(lastSeen) < d.window {
+			return false
+		}
+	}
+
+	if len(d.seen) > 1000 {
+		for k, t := range d.seen {
+			if now.Sub(t) > d.window*2 {
+				delete(d.seen, k)
+			}
+		}
+	}
+
+	d.seen[payload] = now
+	return true
+}
+
 func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *EventManager, onNotify func()) {
 	connStr := cfg.PostgresConnStr()
+	dedup := NewDeduplicator(2 * time.Second)
+
+	processEvent := func(source, payload string) {
+		if !dedup.ShouldProcess(payload) {
+			slog.Debug("Duplicate event suppressed", "source", source, "payload", payload)
+			return
+		}
+		slog.Info("Processing event", "source", source, "payload", payload)
+		onNotify()
+		manager.Broadcast(payload)
+	}
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
@@ -142,7 +204,7 @@ func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *Ev
 		return
 	}
 
-	// If Redis is enabled, subscribe to the distributed Pub/Sub channel
+	// If Redis is enabled, subscribe to the distributed Pub/Sub channel for external broadcasts
 	if redisCache != nil && redisCache.Enabled() {
 		go func() {
 			ctx := context.Background()
@@ -157,9 +219,8 @@ func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *Ev
 				if msg == nil {
 					continue
 				}
-				slog.Info("Received distributed event from Redis Pub/Sub", "channel", msg.Channel, "payload", msg.Payload)
-				onNotify()
-				manager.Broadcast(msg.Payload)
+				slog.Info("Received distributed event from Redis Pub/Sub", "channel", msg.Channel)
+				processEvent("redis", msg.Payload)
 			}
 		}()
 	}
@@ -175,20 +236,8 @@ func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *Ev
 				if n == nil {
 					continue
 				}
-				slog.Info("Received DB event from PostgreSQL", "event", n.Extra)
-				if redisCache != nil && redisCache.Enabled() {
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					pubErr := redisCache.Publish(ctx, RedisEventChannel, n.Extra)
-					cancel()
-					if pubErr != nil {
-						slog.Warn("Failed to publish event to Redis Pub/Sub, broadcasting locally", "error", pubErr)
-						onNotify()
-						manager.Broadcast(n.Extra)
-					}
-				} else {
-					onNotify()
-					manager.Broadcast(n.Extra)
-				}
+				slog.Info("Received DB event from PostgreSQL", "channel", n.Channel)
+				processEvent("postgres", n.Extra)
 			case <-ticker.C:
 				go func() {
 					err := listener.Ping()
