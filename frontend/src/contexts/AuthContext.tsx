@@ -37,7 +37,7 @@ interface AuthContextValue {
   resetRefreshFailures: () => void
 }
 
-const AuthContext = createContext<AuthContextValue>(null as any)
+const AuthContext = createContext<AuthContextValue>({} as AuthContextValue)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshFailuresRef = React.useRef(0)
