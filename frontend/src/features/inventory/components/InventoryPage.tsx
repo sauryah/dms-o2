@@ -10,7 +10,7 @@ import {
   Map,
   Compass
 } from 'lucide-react'
-import { MachineSidebarTree } from './MachineSidebarTree'
+import { MachineSidebarTree, SetTreeItem } from './MachineSidebarTree'
 import { CreateDieModal } from './CreateDieModal'
 import { FilterPanel } from './FilterPanel'
 import { PageHeader } from '../../../components/ui/PageHeader'
@@ -23,6 +23,7 @@ import { SearchView, MachineView, SetView, UnassignedView } from './InventorySub
 import { useApi } from '../../../hooks/useApi'
 import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../../../contexts/ToastContext'
+import { Die } from '../../../types'
 
 export function InventoryPage() {
   const {
@@ -122,7 +123,7 @@ export function InventoryPage() {
   const currentViewDies = useMemo(() => {
     if (activeView === 'search') return dies || []
     if (activeView === 'machine') {
-      return selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
+      return selectedMachine?.sets.reduce((acc: Die[], s: SetTreeItem) => [...acc, ...(s.dies || [])], []) || []
     }
     if (activeView === 'set') return selectedSetData?.set.dies || []
     if (activeView === 'unassigned') return activeDiesList || []
@@ -131,7 +132,7 @@ export function InventoryPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const ids = currentViewDies.map((d: any) => String(d.die_id))
+      const ids = currentViewDies.map((d: Die) => String(d.die_id))
       setSelectedDieIds(new Set(ids))
     } else {
       setSelectedDieIds(new Set())
@@ -164,9 +165,10 @@ export function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       showToast(`Successfully updated status of ${count} dies to "${bulkStatus}".`, "success")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      showToast(`Error updating status: ${err.message}`, "error")
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      showToast(`Error updating status: ${msg}`, "error")
     } finally {
       setIsUpdating(false)
     }
@@ -191,9 +193,10 @@ export function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
       showToast(`Successfully updated location of ${count} dies to "${bulkLocation}".`, "success")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      showToast(`Error updating locations: ${err.message}`, "error")
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      showToast(`Error updating locations: ${msg}`, "error")
     } finally {
       setIsUpdating(false)
     }
@@ -376,9 +379,9 @@ export function InventoryPage() {
         canCreate={canCreate}
         activeDragType={activeDragType}
         setActiveDragType={setActiveDragType}
-        onReallocateDie={(dieId, setId) => reallocateDieMutation.mutate({ dieId, setId })}
-        onReallocateSet={(setId, machineId) => reallocateSetMutation.mutate({ setId, machineId })}
-        onReorderSets={(machineId, orderedSetIds) => reorderSetsMutation.mutate({ machineId, orderedSetIds })}
+        onReallocateDie={(dieId, setId) => reallocateDieMutation.mutate({ dieId, setId: setId !== null ? Number(setId) : null })}
+        onReallocateSet={(setId, machineId) => reallocateSetMutation.mutate({ setId: Number(setId), machineId: machineId !== null ? Number(machineId) : null })}
+        onReorderSets={(machineId, orderedSetIds) => reorderSetsMutation.mutate({ machineId: Number(machineId), orderedSetIds: orderedSetIds.map(Number) })}
       />
 
       {/* RIGHT CONTENT WORKSPACE */}
@@ -522,9 +525,9 @@ export function InventoryPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setViewMode('rack' as any)}
+                    onClick={() => setViewMode('rack')}
                     className={`px-2.5 py-1 rounded-sm text-[10px] uppercase tracking-wider transition-colors flex items-center space-x-1 font-mono ${
-                      viewMode === ('rack' as any) 
+                      viewMode === 'rack' 
                         ? 'bg-[#141414] text-blue-400 border border-blue-500/40' 
                         : 'text-[#6b7280] hover:text-[#e4e4e4]'
                     }`}
