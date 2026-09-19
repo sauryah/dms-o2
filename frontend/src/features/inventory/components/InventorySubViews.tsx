@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
+import type { NavigateFunction } from 'react-router-dom'
 import { Search, Database, Cpu, Layers, Activity, Sliders, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { isDieActive } from '../../../utils/dieHelpers'
 import { RackLayoutGrid } from './RackLayoutGrid'
@@ -6,25 +7,27 @@ import { DieStats } from '../../dashboard/components/DieStats'
 import { DataTable, Column } from '../../../components/ui/DataTable'
 import { DieCard } from '../../../components/ui/DieCard'
 import { StatusBadge } from '../../../components/ui/StatusBadge'
+import { Die } from '../../../types'
+import { SetTreeItem, MachineTreeItem } from './MachineSidebarTree'
 
 interface ViewProps {
   viewMode: 'list' | 'grid' | 'rack'
-  activeDiesList: any[]
+  activeDiesList: Die[]
   canCreate: boolean
-  navigate: any
-  moveDieLocationMutation: any
-  handleDragStartDie?: (id: string) => void
-  handleDragEndDie?: () => void
+  navigate: NavigateFunction
+  moveDieLocationMutation: { mutate: (vars: { dieId: string; rack?: number | null; shelf?: number | null }) => void }
   selectedDieIds?: Set<string>
   onSelectId?: (id: string, checked: boolean) => void
   onSelectAll?: (checked: boolean) => void
+  handleDragStartDie?: (id: string) => void
+  handleDragEndDie?: () => void
 }
 
-const getInventoryColumns = (navigate: any): Column[] => [
+const getInventoryColumns = (navigate: NavigateFunction): Column<Die>[] => [
   {
     key: 'die_type',
     label: 'Type',
-    render: (row: any) => (
+    render: (row) => (
       <span className="px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded bg-[var(--color-surface-2)] text-[var(--color-text)] border border-[var(--color-border)] tracking-wider">
         {row.die_type}
       </span>
@@ -34,13 +37,13 @@ const getInventoryColumns = (navigate: any): Column[] => [
     key: 'current_size',
     label: 'Size/Dimensions',
     sortable: true,
-    render: (row: any) => {
+    render: (row) => {
       const isRound = row.die_type === 'ROUND'
       return (
         <span className="font-mono text-xs font-bold text-[var(--color-text)] tabular-nums">
           {isRound
-            ? `Ø ${parseFloat(row.current_size || 0).toFixed(3)} mm`
-            : `${parseFloat(row.current_width || 0).toFixed(3)} × ${parseFloat(row.current_thickness || 0).toFixed(3)} mm`}
+            ? `Ø ${parseFloat(String(row.current_size || 0)).toFixed(3)} mm`
+            : `${parseFloat(String(row.current_width || 0)).toFixed(3)} × ${parseFloat(String(row.current_thickness || 0)).toFixed(3)} mm`}
         </span>
       )
     },
@@ -49,37 +52,37 @@ const getInventoryColumns = (navigate: any): Column[] => [
     key: 'die_id',
     label: 'ID',
     sortable: true,
-    render: (row: any) => (
+    render: (row) => (
       <span className="font-mono text-[var(--color-text)] font-bold">{row.die_id}</span>
     ),
   },
   {
     key: 'casing',
     label: 'Casing',
-    render: (row: any) => (
+    render: (row) => (
       <span className="font-mono text-[var(--color-muted)]">{row.casing || '—'}</span>
     ),
   },
   {
     key: 'location',
     label: 'Location',
-    render: (row: any) => {
+    render: (row) => {
       const loc =
-        row.rack_name && row.shelf ? `${row.rack_name} - S${row.shelf}` : row.location || '—'
+        row.rack_name && row.shelf ? `${row.rack_name} - S${row.shelf}` : (row as unknown as { location?: string }).location || '—'
       return <span className="text-[var(--color-text)] font-mono">{loc}</span>
     },
   },
   {
     key: 'set_name',
     label: 'Set',
-    render: (row: any) => (
-      <span className="text-[var(--color-muted)] font-mono">{row.set_name || '—'}</span>
+    render: (row) => (
+      <span className="text-[var(--color-muted)] font-mono">{row.set_name || row.current_set_name || '—'}</span>
     ),
   },
   {
     key: 'machine_name',
     label: 'Machine',
-    render: (row: any) => (
+    render: (row) => (
       <span className="text-[var(--color-muted)] font-mono">{row.machine_name || '—'}</span>
     ),
   },
@@ -87,12 +90,12 @@ const getInventoryColumns = (navigate: any): Column[] => [
     key: 'status',
     label: 'Status',
     sortable: true,
-    render: (row: any) => <StatusBadge status={row.status} />,
+    render: (row) => <StatusBadge status={row.status} />,
   },
   {
     key: 'actions',
     label: 'Actions',
-    render: (row: any) => (
+    render: (row) => (
       <button
         onClick={(e) => {
           e.stopPropagation()
@@ -108,7 +111,7 @@ const getInventoryColumns = (navigate: any): Column[] => [
 
 // 1. SEARCH RESULTS VIEW
 interface SearchViewProps extends ViewProps {
-  dies: any[]
+  dies: Die[]
   totalCount: number
   sortField: string
   sortOrder: string
@@ -128,8 +131,6 @@ export function SearchView({
   sortField,
   sortOrder,
   handleSort,
-  handleDragStartDie,
-  handleDragEndDie,
   moveDieLocationMutation,
   page,
   setPage,
@@ -279,9 +280,9 @@ export function SearchView({
 
 // 2. MACHINE DETAILS VIEW
 interface MachineViewProps extends ViewProps {
-  selectedMachine: any
-  rawMachine: any
-  setSelectedNode: (node: any) => void
+  selectedMachine: MachineTreeItem | null
+  rawMachine: { name?: string } | null
+  setSelectedNode: (node: { type: string; id?: string | number; machineId?: string | number } | null) => void
 }
 
 export function MachineView({
@@ -298,7 +299,9 @@ export function MachineView({
   onSelectAll
 }: MachineViewProps) {
   const columns = getInventoryColumns(navigate)
-  const machineDies = selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
+  const machineDies = useMemo(() => {
+    return selectedMachine?.sets.reduce((acc: Die[], s) => [...acc, ...(s.dies || [])], []) || []
+  }, [selectedMachine])
 
   const [localPage, setLocalPage] = useState(1)
   const localPageSize = 25
@@ -322,7 +325,7 @@ export function MachineView({
             </div>
             <h2 className="text-sm md:text-base font-medium text-[#e4e4e4] uppercase tracking-[0.05em]">{selectedMachine.name}</h2>
             <span className="inline-block px-2 py-0.5 text-[10px] font-mono uppercase border border-[#2a2a2a] text-[#6b7280] bg-[#0f0f0f] rounded-sm mt-1.5">
-              {selectedMachine.category_name || 'Standard Category'}
+              Standard Category
             </span>
           </div>
 
@@ -347,9 +350,10 @@ export function MachineView({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {selectedMachine.sets.map((set: any) => {
-                    const sTotal = set.dies.length
-                    const sActive = set.dies.filter(isDieActive).length
+                  {selectedMachine.sets.map((set) => {
+                    const setDiesList = set.dies || []
+                    const sTotal = setDiesList.length
+                    const sActive = setDiesList.filter(isDieActive).length
                     const sInactive = sTotal - sActive
                     return (
                       <div
@@ -466,8 +470,14 @@ export function MachineView({
 
 // 3. SET DETAILS VIEW
 interface SetViewProps extends ViewProps {
-  selectedSetData: any
-  rawSetData: any
+  selectedSetData: {
+    machine?: { id?: string | number; name?: string }
+    set: SetTreeItem
+  } | null
+  rawSetData: {
+    machine?: { id?: string | number; name?: string }
+    set?: { id?: string | number; name?: string }
+  } | null
 }
 
 export function SetView({
@@ -477,15 +487,15 @@ export function SetView({
   activeDiesList,
   canCreate,
   navigate,
-  handleDragStartDie,
-  handleDragEndDie,
   moveDieLocationMutation,
   selectedDieIds,
   onSelectId,
   onSelectAll
 }: SetViewProps) {
   const columns = getInventoryColumns(navigate)
-  const setDies = selectedSetData?.set.dies || []
+  const setDies = useMemo(() => {
+    return selectedSetData?.set.dies || []
+  }, [selectedSetData])
 
   const [sizeSort, setSizeSort] = useState<'none' | 'asc' | 'desc'>('none')
   const [localPage, setLocalPage] = useState(1)
@@ -495,17 +505,17 @@ export function SetView({
     setLocalPage(1)
   }, [selectedSetData, sizeSort])
 
-  const getDieSize = (die: any) => {
+  const getDieSize = (die: Die) => {
     if (die.die_type === 'ROUND') {
-      return parseFloat(die.current_size) || parseFloat(die.punched_size) || 0
+      return parseFloat(String(die.current_size || 0)) || parseFloat(String(die.punched_size || 0)) || 0
     } else {
-      return parseFloat(die.current_width) || parseFloat(die.punched_width) || 0
+      return parseFloat(String(die.current_width || 0)) || parseFloat(String(die.punched_width || 0)) || 0
     }
   }
 
   const sortedSetDies = useMemo(() => {
     if (sizeSort === 'none') return setDies
-    return [...setDies].sort((a: any, b: any) => {
+    return [...setDies].sort((a, b) => {
       const sizeA = getDieSize(a)
       const sizeB = getDieSize(b)
       return sizeSort === 'desc' ? sizeB - sizeA : sizeA - sizeB
@@ -650,7 +660,7 @@ export function SetView({
             {viewMode === 'grid' ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-fadeIn">
-                  {paginatedSetDies.map((die: any) => (
+                  {paginatedSetDies.map((die) => (
                     <DieCard 
                       key={die.die_id} 
                       die={die} 
@@ -704,7 +714,7 @@ export function SetView({
 
 // 4. UNASSIGNED STANDALONE DIES VIEW
 interface UnassignedViewProps extends ViewProps {
-  unassignedDies: any[]
+  unassignedDies: Die[]
   totalCount: number
   page: number
   setPage: React.Dispatch<React.SetStateAction<number>>
@@ -717,8 +727,6 @@ export function UnassignedView({
   activeDiesList,
   canCreate,
   navigate,
-  handleDragStartDie,
-  handleDragEndDie,
   moveDieLocationMutation,
   totalCount,
   page,
