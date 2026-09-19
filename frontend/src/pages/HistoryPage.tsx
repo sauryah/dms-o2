@@ -5,7 +5,7 @@ import { useDebounce } from '../hooks/useDebounce'
 import { Search, User, Filter, ArrowLeft, ArrowRight, Download, Layers, Activity } from 'lucide-react'
 
 interface HistoryItem {
-  id: string
+  id: string | number
   entity_type: string
   entity_id: number
   entity_name: string
@@ -16,7 +16,24 @@ interface HistoryItem {
   changed_by_username: string
   timestamp: string
   ip_address: string
-  note: string
+  note?: string
+}
+
+interface DieHistoryItem {
+  id: string | number
+  die_id: string
+  field_name: string
+  old_value: string
+  new_value: string
+  changed_by_username: string
+  timestamp: string
+  ip_address: string
+  note?: string
+}
+
+interface HistoryApiResponse<T> {
+  results: T[]
+  count: number
 }
 
 interface GroupedTransaction {
@@ -65,14 +82,14 @@ function groupHistoryItems(items: HistoryItem[]): GroupedTransaction[] {
       }
     } else {
       groups.push({
-        key: item.id,
+        key: String(item.id),
         changed_by_username: item.changed_by_username,
         timestamp: item.timestamp,
         ip_address: item.ip_address,
         entity_type: item.entity_type,
         entity_name: item.entity_name,
         action: item.action,
-        note: item.note,
+        note: item.note || '',
         changes: item.field_name
           ? [
               {
@@ -296,12 +313,12 @@ export function HistoryPage() {
       params.append('page_size', '10000')
 
       if (activeTab === 'timeline') {
-        const res = await request(`/api/history/unified/?${params.toString()}`, { keepMetadata: true })
+        const res = await request<HistoryApiResponse<HistoryItem>>(`/api/history/unified/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
         let csvContent =
           'Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n'
-        allResults.forEach((h: any) => {
+        allResults.forEach((h: HistoryItem) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const entityType = h.entity_type ?? ''
           const entityId = h.entity_id ?? ''
@@ -319,11 +336,11 @@ export function HistoryPage() {
         triggerCSVDownload(csvContent, `dms_unified_history_${Date.now()}.csv`)
       } else if (activeTab === 'dies') {
         if (debouncedDieId) params.append('die_id', debouncedDieId)
-        const res = await request(`/api/history/?${params.toString()}`, { keepMetadata: true })
+        const res = await request<HistoryApiResponse<DieHistoryItem>>(`/api/history/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
         let csvContent = 'Timestamp,Die ID,Field Changed,Old Value,New Value,Changed By,IP Address,Note\n'
-        allResults.forEach((h: any) => {
+        allResults.forEach((h: DieHistoryItem) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const dieId = h.die_id ?? ''
           const fieldName = h.field_name ?? ''
@@ -341,12 +358,12 @@ export function HistoryPage() {
         if (entityTypeInput) params.append('entity_type', entityTypeInput)
         if (actionInput) params.append('action', actionInput)
 
-        const res = await request(`/api/history/machines/?${params.toString()}`, { keepMetadata: true })
+        const res = await request<HistoryApiResponse<HistoryItem>>(`/api/history/machines/?${params.toString()}`, { keepMetadata: true })
         const allResults = res?.results || []
 
         let csvContent =
           'Timestamp,Entity Type,Entity ID,Entity Name,Action,Field Changed,Old Value,New Value,Changed By,IP Address\n'
-        allResults.forEach((h: any) => {
+        allResults.forEach((h: HistoryItem) => {
           const timestamp = h.timestamp ? new Date(h.timestamp).toLocaleString() : ''
           const entityType = h.entity_type ?? ''
           const entityId = h.entity_id ?? ''
@@ -768,7 +785,7 @@ export function HistoryPage() {
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border)] text-[var(--color-text)]">
                     {activeTab === 'dies'
-                      ? currentList.map((log: any) => (
+                      ? (currentList as DieHistoryItem[]).map((log: DieHistoryItem) => (
                           <tr key={log.id} className="hover:bg-[var(--color-surface-2)] transition">
                             <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)] tabular-nums">
                               {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
@@ -809,7 +826,7 @@ export function HistoryPage() {
                             </td>
                           </tr>
                         ))
-                      : currentList.map((log: any) => (
+                      : (currentList as HistoryItem[]).map((log: HistoryItem) => (
                           <tr key={log.id} className="hover:bg-[var(--color-surface-2)] transition">
                             <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)] tabular-nums">
                               {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
