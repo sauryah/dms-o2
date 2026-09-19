@@ -10,6 +10,31 @@ import { RoundDieCard } from './RoundDieCard'
 import { FlatDieCard } from './FlatDieCard'
 import { Skeleton, CardSkeleton } from '../../../components/Skeleton'
 import { EmptyState } from '../../../components/EmptyState'
+import { Die } from '../../../types'
+
+export interface DonutSegment {
+  statusKey: string
+  count: number
+  pct: string
+  strokeDasharray: string
+  strokeDashoffset: number
+  color: string
+}
+
+export interface StatusHistoryRecord {
+  id?: number | string
+  die_id: string
+  timestamp: string
+  field_name?: string
+  old_value?: string | null
+  new_value?: string | null
+  changed_by_username?: string
+}
+
+export interface MaintenanceDie extends Die {
+  durationMs: number
+  durationStr: string
+}
 
 interface StatusDistributionChartProps {
   stats: Record<string, number>;
@@ -17,7 +42,7 @@ interface StatusDistributionChartProps {
 
 function StatusDistributionChart({ stats }: StatusDistributionChartProps) {
   const total = Object.values(stats).reduce((sum, val) => sum + val, 0)
-  const [hoveredSegment, setHoveredSegment] = useState<any>(null)
+  const [hoveredSegment, setHoveredSegment] = useState<DonutSegment | null>(null)
   const [isAnimated, setIsAnimated] = useState(false)
 
   useEffect(() => {
@@ -202,7 +227,7 @@ export function DashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const [trendBaseline, setTrendBaseline] = useState<any>(null)
+  const [trendBaseline, setTrendBaseline] = useState<Record<string, number> | null>(null)
 
   // Fetch overall statistics
   const { data: statsData, isLoading: isStatsLoading } = useStatsQuery()
@@ -414,7 +439,7 @@ export function DashboardPage() {
                       </div>
                     ) : (
                       <>
-                        {searchDies.slice(0, 6).map((die: any, index: number) => {
+                        {searchDies.slice(0, 6).map((die: Die, index: number) => {
                           const sizeStr = die.die_type === 'ROUND' 
                             ? `${die.current_size || '—'} mm` 
                             : `${die.current_width || '—'} × ${die.current_thickness || '—'} mm`
@@ -629,7 +654,7 @@ export function DashboardPage() {
                 <span className="uppercase text-[10px]">SORT:</span>
                 <select
                   value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value as any)}
+                  onChange={(e) => setSortOption(e.target.value as 'default' | 'size_asc' | 'size_desc')}
                   className="bg-transparent text-[#e4e4e4] font-mono focus:outline-none cursor-pointer uppercase text-xs"
                 >
                   <option value="default" className="bg-[#0f0f0f] text-[#e4e4e4]">RELEVANCE</option>
@@ -672,7 +697,7 @@ export function DashboardPage() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchDies?.map((die: any) => 
+                {searchDies?.map((die: Die) => 
                   die.die_type === 'ROUND' ? (
                     <RoundDieCard 
                       key={die.die_id} 
@@ -736,13 +761,13 @@ function MaintenanceQueue() {
   const navigate = useNavigate()
 
   // Fetch all dies
-  const { data: diesList, isLoading: isDiesLoading } = useQuery<any>({
+  const { data: diesList, isLoading: isDiesLoading } = useQuery<Die[]>({
     queryKey: ['dashboardDiesList'],
     queryFn: () => request('/api/go/search?limit=10000')
   })
 
   // Fetch history of status changes
-  const { data: historyData, isLoading: isHistoryLoading } = useQuery<any>({
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery<StatusHistoryRecord[]>({
     queryKey: ['statusHistoryList'],
     queryFn: () => request('/api/history/dashboard/?field=status&page_size=100')
   })
@@ -752,15 +777,15 @@ function MaintenanceQueue() {
     const rawDies = Array.isArray(diesList) ? diesList : []
     
     // Filter dies in CLEANING, POLISHING, MAINTENANCE
-    const filtered = rawDies.filter((d: any) => 
+    const filtered = rawDies.filter((d: Die) => 
       ['CLEANING', 'POLISHING', 'MAINTENANCE'].includes(d.status)
     )
 
     const historyItems = Array.isArray(historyData) ? historyData : []
 
-    return filtered.map((d: any) => {
+    return filtered.map((d: Die): MaintenanceDie => {
       // Find latest status transition for this die in history
-      const match = historyItems.find((h: any) => 
+      const match = historyItems.find((h: StatusHistoryRecord) => 
         h.die_id === d.die_id && 
         h.new_value === d.status
       )
@@ -789,7 +814,7 @@ function MaintenanceQueue() {
         durationMs,
         durationStr,
       }
-    }).sort((a: any, b: any) => b.durationMs - a.durationMs)
+    }).sort((a: MaintenanceDie, b: MaintenanceDie) => b.durationMs - a.durationMs)
   }, [diesList, historyData])
 
   if (isDiesLoading || isHistoryLoading) {
@@ -826,7 +851,7 @@ function MaintenanceQueue() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a1a]">
-                {maintenanceList.slice(0, 5).map((die: any) => (
+                {maintenanceList.slice(0, 5).map((die: MaintenanceDie) => (
                   <tr
                     key={die.die_id}
                     role="button"
@@ -869,7 +894,7 @@ function RecentActivityFeed() {
   const { request } = useApi()
   const navigate = useNavigate()
 
-  const { data: historyData, isLoading } = useQuery<any>({
+  const { data: historyData, isLoading } = useQuery<StatusHistoryRecord[]>({
     queryKey: ['dashboardRecentHistoryList'],
     queryFn: () => request('/api/history/dashboard/?page_size=10')
   })
@@ -888,7 +913,7 @@ function RecentActivityFeed() {
     return 'Just now'
   }
 
-  const getDotColor = (item: any) => {
+  const getDotColor = (item: StatusHistoryRecord) => {
     const val = (item.new_value || item.field_name || '').toUpperCase()
     if (val.includes('AVAIL') || val.includes('OK')) return '#10b981'
     if (val.includes('RUN') || val.includes('PROD')) return '#0090ff'
@@ -919,7 +944,7 @@ function RecentActivityFeed() {
               No recent activity logged.
             </div>
           ) : (
-            historyItems.slice(0, 5).map((item: any) => (
+            historyItems.slice(0, 5).map((item: StatusHistoryRecord) => (
               <div
                 key={item.id}
                 role="button"
