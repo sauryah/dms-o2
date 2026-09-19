@@ -1,5 +1,26 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-19 Multi-Language Architecture — Phase 1: Rust/WebAssembly High-Resolution FEA & Math Engine
+*   **Wasm Drawing Engine (`wasm-drawing-engine/`)**:
+    *   Scaffolded standalone Rust crate configured with `cdylib` and `rlib` targets.
+    *   Implemented `materials.rs` defining constitutive flow and physical properties (density, specific heat, thermal conductivity, strength coefficient $K$, hardening exponent $n$, friction $\mu$) for Copper (Cu-ETP), High-Carbon Steel (AISI 1070), Aluminum (Al 1350), and Cartridge Brass (CuZn30).
+    *   Implemented `physics.rs` solving Ludwik-Hollomon flow stress ($\sigma_{\text{flow}} = \frac{K \epsilon^n}{n+1}$), Avitzur redundant work factor ($\phi$), Siebel drawing stress ($\sigma_d$), drawing force ($F$), power ($P$ in kW), Taylor-Quinney adiabatic thermal conversion, contact friction layer temperature, and Avitzur central burst defect criterion ($\Delta = \frac{\alpha}{\sqrt{r}}$).
+    *   Implemented `fea_mesh.rs` discretizing 3D coordinates $(x, y, z)$ across the 4-zone die assembly (Bell, Cone, Bearing, Relief) and calculating von Mises stress tensors and thermal fields into a cache-aligned flat buffer (7 floats/node).
+    *   Implemented `lib.rs` with `DrawingEngine` exposing zero-copy linear memory pointers (`get_mesh_buffer_ptr`, `get_mesh_buffer_len`) for direct browser consumption.
+*   **Dockerized Build Toolchain**:
+    *   Created `wasm-drawing-engine/Dockerfile` multi-stage builder (`rust:alpine` + `wasm-pack 0.13.1` + `wasm32-unknown-unknown`).
+    *   Created automated cross-platform scripts `scripts/build-wasm.ps1` and `scripts/build-wasm.sh` compiling with `wasm-opt` into `frontend/src/features/wire-drawing-calculator/wasm/pkg`.
+*   **Frontend Integration**:
+    *   Built `WasmBridge.ts` providing typed interfaces and universal loader (supporting both Vite browser fetch via `?url` and Vitest test loader).
+    *   Built `useWasmFeaSolver.ts` React hook for component consumption.
+    *   Integrated live WASM badge and real-time Wasm Power (kW) telemetry into `StressHeatmap3D.tsx`.
+*   **Verification & Test Suites**:
+    *   Wasm Unit Tests: 4 tests passed in `WasmBridge.test.ts`.
+    *   Frontend Unit Tests: 22 test files, 58/58 tests green (`npm test`).
+    *   TypeScript: 0 type errors (`npx tsc --noEmit`).
+    *   Production Bundle: Vite built clean in 7.67s with 59.47 kB Wasm binary asset.
+    *   Backend Tests: 204 Django tests green (`python manage.py test`), all 8 Go API packages green (`go test ./...`).
+
 ### 2026-09-19 Autonomous Frontend Zero-Warning ESLint & Strict TypeScript Type Hardening
 *   **Total Debt Elimination**:
     *   Eliminated all 381 ESLint warnings and TypeScript typecheck errors across all 38 frontend files, achieving the verified **0 errors, 0 warnings** quality standard under `npm run lint` (`eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives`) and `npx tsc --noEmit`.
