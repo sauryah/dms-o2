@@ -3,10 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Cpu, Plus } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Machine, Category } from '../../types'
 
 interface MachinesTabProps {
-  machines: any[] | undefined
-  categories: any[] | undefined
+  machines: Machine[] | undefined
+  categories: Category[] | undefined
   isMachsLoading: boolean
   isWritable: boolean
 }
@@ -18,19 +19,19 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [machName, setMachName] = useState('')
-  const [machCat, setMachCat] = useState<any>('')
-  const [editingMach, setEditingMach] = useState<any>(null)
-  const [machineToDelete, setMachineToDelete] = useState<any>(null)
+  const [machCat, setMachCat] = useState<number | string>('')
+  const [editingMach, setEditingMach] = useState<Machine | null>(null)
+  const [machineToDelete, setMachineToDelete] = useState<Machine | null>(null)
 
   const createMachine = useMutation({
-    mutationFn: (data: any) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: { name: string; category?: number | string | null }) => request('/api/machines/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
     }
   })
 
   const updateMachine = useMutation({
-    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/machines/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: number; data: { name: string; category?: number | string | null } }) => request(`/api/machines/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       setMachName('')
@@ -40,13 +41,13 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
   })
 
   const deleteMachine = useMutation({
-    mutationFn: (id: any) => request(`/api/machines/${id}/`, { method: 'DELETE' }),
+    mutationFn: (id: number) => request(`/api/machines/${id}/`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['machines'] })
   })
 
   const filteredMachines = useMemo(() => {
     if (!machines) return []
-    return machines.filter((mach: any) => {
+    return machines.filter((mach) => {
       const matchesSearch = mach.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             (mach.category_name && mach.category_name.toLowerCase().includes(searchQuery.toLowerCase()))
       const matchesCategory = filterCategory ? String(mach.category) === String(filterCategory) : true
@@ -57,10 +58,10 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
   const handleMachSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (editingMach) {
-      const payload = { name: machName.trim(), category: machCat }
+      const payload = { name: machName.trim(), category: machCat || null }
       updateMachine.mutate({ id: editingMach.id, data: payload })
     } else {
-      const payloadCategory = machCat
+      const payloadCategory = machCat || null
       const names = machName.split(/[\n,]+/).map(n => n.trim()).filter(Boolean)
       try {
         for (const name of names) {
@@ -98,7 +99,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
               className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-1.5 text-xs text-[#e4e4e4] focus:outline-none focus:border-blue-500 uppercase font-mono cursor-pointer"
             >
               <option value="">ALL CATEGORIES</option>
-              {categories.map((cat: any) => (
+              {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
@@ -111,7 +112,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
           <p className="text-[#6b7280] text-xs py-4 text-center">No matching machines found.</p>
         ) : (
           <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1">
-            {filteredMachines.map((mach: any) => (
+            {filteredMachines.map((mach) => (
               <div key={mach.id} className="bg-[#0a0a0a] flex justify-between items-center p-2.5 rounded-sm border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#141414] transition-colors font-mono">
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-[#141414] text-emerald-400 rounded-sm border border-[#2a2a2a]">
@@ -119,13 +120,13 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
                   </div>
                   <div>
                     <span className="font-bold text-[#e4e4e4] text-xs uppercase block">{mach.name}</span>
-                    <span className="text-[10px] text-[#6b7280] uppercase">CATEGORY: <span className="text-[#e4e4e4] font-medium">{mach.category_name}</span></span>
+                    <span className="text-[10px] text-[#6b7280] uppercase">CATEGORY: <span className="text-[#e4e4e4] font-medium">{mach.category_name || '—'}</span></span>
                   </div>
                 </div>
                 {isWritable && (
                   <div className="flex space-x-1">
                     <button 
-                      onClick={() => { setEditingMach(mach); setMachName(mach.name); setMachCat(mach.category); }}
+                      onClick={() => { setEditingMach(mach); setMachName(mach.name); setMachCat(mach.category || ''); }}
                       className="p-1 text-[#6b7280] hover:text-blue-400 hover:bg-[#1f1f1f] rounded-sm transition cursor-pointer"
                       title="Edit Machine"
                     >
@@ -187,7 +188,7 @@ export function MachinesTab({ machines, categories, isMachsLoading, isWritable }
                 className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2.5 text-xs text-[#e4e4e4] focus:border-blue-500 focus:outline-none uppercase font-mono cursor-pointer"
               >
                 <option value="">— SELECT CATEGORY —</option>
-                {categories?.map((cat: any) => (
+                {categories?.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
