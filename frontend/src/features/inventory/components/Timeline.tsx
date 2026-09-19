@@ -58,7 +58,6 @@ export function Timeline({ history }: TimelineProps) {
             // Determine action details based on field name
             let IconComponent = HelpCircle
             let iconColor = 'text-[#6b7280]'
-            let bgLightColor = 'bg-[#141414]'
             let borderColor = 'border-[#2a2a2a]'
             let actionTitle = `UPDATED ${hist.field_name.toUpperCase()}`
             
@@ -66,19 +65,16 @@ export function Timeline({ history }: TimelineProps) {
               actionTitle = 'STATUS TRANSITIONED'
               IconComponent = RefreshCw
               iconColor = 'text-emerald-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-emerald-500/30'
             } else if (hist.field_name === 'location') {
               actionTitle = 'RELOCATED ASSET'
               IconComponent = MapPin
               iconColor = 'text-blue-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-blue-500/30'
             } else if (hist.field_name === 'current_set_id') {
               actionTitle = 'REALLOCATED SET'
               IconComponent = Layers
               iconColor = 'text-purple-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-purple-500/30'
             } else if (
               hist.field_name === 'current_size' || 
@@ -89,19 +85,16 @@ export function Timeline({ history }: TimelineProps) {
               actionTitle = 'WEAR CALIBRATED'
               IconComponent = Activity
               iconColor = 'text-amber-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-amber-500/30'
             } else if (hist.field_name === 'die_id') {
               actionTitle = 'DIE ID ALTERED'
               IconComponent = Key
               iconColor = 'text-red-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-red-500/30'
             } else if (hist.field_name === 'casing') {
               actionTitle = 'CASING MODIFIED'
               IconComponent = Settings
               iconColor = 'text-blue-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-blue-500/30'
             } else if (
               hist.field_name === 'punched_size' ||
@@ -111,13 +104,11 @@ export function Timeline({ history }: TimelineProps) {
               actionTitle = 'BASE DIMENSION MODIFIED'
               IconComponent = Settings
               iconColor = 'text-purple-400'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-purple-500/30'
             } else if (hist.field_name === 'remarks') {
               actionTitle = 'REMARKS LOGGED'
               IconComponent = FileText
               iconColor = 'text-[#6b7280]'
-              bgLightColor = 'bg-[#141414]'
               borderColor = 'border-[#2a2a2a]'
             }
 
