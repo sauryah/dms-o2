@@ -3,6 +3,7 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -66,10 +67,19 @@ func (l *ipLimiter) Allow(ip string) bool {
 
 func getIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+		parts := strings.Split(xff, ",")
+		for _, part := range parts {
+			trimmed := strings.TrimSpace(part)
+			if parsed := net.ParseIP(trimmed); parsed != nil {
+				return parsed.String()
+			}
+		}
 	}
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
+		if parsed := net.ParseIP(r.RemoteAddr); parsed != nil {
+			return parsed.String()
+		}
 		return r.RemoteAddr
 	}
 	return ip
