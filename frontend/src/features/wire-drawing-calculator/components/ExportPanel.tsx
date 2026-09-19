@@ -2,7 +2,8 @@ import { motion } from 'framer-motion';
 import { FileSpreadsheet, FileText, FileDown, Copy, Printer } from 'lucide-react';
 import type { PassData, Statistics } from '../types';
 import { exportCSV, exportExcel, exportPDF, copyResultsToClipboard } from '../utils/export';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../../../contexts';
+
 
 interface ExportPanelProps {
   passes: PassData[];
@@ -11,10 +12,13 @@ interface ExportPanelProps {
 }
 
 export default function ExportPanel({ passes, stats, dies }: ExportPanelProps) {
+  const { showToast } = useToast();
+
   const handleCopy = async () => {
     await copyResultsToClipboard(passes, stats);
-    toast.success('Copied to clipboard');
+    showToast('Copied to clipboard', 'success');
   };
+
 
   return (
     <motion.div
