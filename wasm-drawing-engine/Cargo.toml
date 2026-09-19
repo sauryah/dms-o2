@@ -1,0 +1,23 @@
+[package]
+name = "wasm-drawing-engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["DMS-O2 Engineering Team"]
+description = "High-performance WebAssembly FEA, thermal advection, and wire drawing mechanics engine for DMS-O2."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2.100"
+js-sys = "0.3.77"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
