@@ -7,6 +7,34 @@ import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { parseUserAgent } from '../../utils/parseUserAgent'
 
+export interface UserRecord {
+  id: number
+  username: string
+  email: string
+  first_name?: string
+  last_name?: string
+  role: string
+  is_active: boolean
+  is_authorized_for_tools?: boolean
+  authorized_tools?: string[]
+  is_mfa_enabled?: boolean
+  last_login?: string | null
+  date_joined?: string
+}
+
+export interface UserFormData {
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  role: string
+  is_active: boolean
+  is_authorized_for_tools: boolean
+  authorized_tools: string[]
+  password?: string
+  current_password?: string
+}
+
 export function UserManager() {
   const { request } = useApi()
   const { showToast } = useToast()
@@ -15,7 +43,7 @@ export function UserManager() {
 
   // UI States
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<any>(null)
+  const [editingUser, setEditingUser] = useState<UserRecord | null>(null)
   const [expandedUserLogs, setExpandedUserLogs] = useState<string | null>(null)
   
   // Filters State
@@ -47,10 +75,10 @@ export function UserManager() {
   const [authorizedToolsInput, setAuthorizedToolsInput] = useState<string[]>([])
   
   const [formError, setFormError] = useState<string | null>(null)
-  const [userToDelete, setUserToDelete] = useState<any>(null)
+  const [userToDelete, setUserToDelete] = useState<UserRecord | null>(null)
 
   // Fetch Users
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<{ results: UserRecord[]; count: number }>({
     queryKey: ['usersListAdmin', page, searchQuery, roleFilter, statusFilter],
     queryFn: () => {
       const params = new URLSearchParams()
@@ -75,9 +103,9 @@ export function UserManager() {
 
   // Create User Mutation
   const createUserMutation = useMutation({
-    mutationFn: (data: any) => request('/api/users/', {
+    mutationFn: (userData: Partial<UserFormData>) => request('/api/users/', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(userData)
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usersListAdmin'] })
@@ -91,7 +119,7 @@ export function UserManager() {
 
   // Update User Mutation
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/users/${id}/`, {
+    mutationFn: ({ id, data }: { id: number, data: Partial<UserFormData> }) => request(`/api/users/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
@@ -107,7 +135,7 @@ export function UserManager() {
 
   // Delete User Mutation
   const deleteUserMutation = useMutation({
-    mutationFn: (id: any) => request(`/api/users/${id}/`, {
+    mutationFn: (id: number) => request(`/api/users/${id}/`, {
       method: 'DELETE'
     }),
     onSuccess: () => {
@@ -121,7 +149,7 @@ export function UserManager() {
 
   // Toggle Active Status Mutation
   const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: any, is_active: boolean }) => request(`/api/users/${id}/`, {
+    mutationFn: ({ id, is_active }: { id: number, is_active: boolean }) => request(`/api/users/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify({ is_active })
     }),
@@ -173,7 +201,7 @@ export function UserManager() {
     setIsFormOpen(true)
   }
 
-  const openEditForm = (user: any) => {
+  const openEditForm = (user: UserRecord) => {
     setEditingUser(user)
     setUsernameInput(user.username)
     setPasswordInput('')
@@ -199,7 +227,7 @@ export function UserManager() {
     e.preventDefault()
     setFormError(null)
 
-    const payload: any = {
+    const payload: Partial<UserFormData> = {
       username: usernameInput,
       email: emailInput,
       first_name: firstNameInput,
@@ -228,7 +256,7 @@ export function UserManager() {
     }
   }
 
-  const handleToggleActive = (user: any) => {
+  const handleToggleActive = (user: UserRecord) => {
     if (user.username === currentUsername) {
       showToast('You cannot deactivate your own account.', 'error')
       return
@@ -236,7 +264,7 @@ export function UserManager() {
     toggleActiveMutation.mutate({ id: user.id, is_active: !user.is_active })
   }
 
-  const handleDeleteUser = (user: any) => {
+  const handleDeleteUser = (user: UserRecord) => {
     if (user.username === currentUsername) {
       showToast('You cannot delete your own account.', 'error')
       return
@@ -267,8 +295,9 @@ export function UserManager() {
       a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       window.URL.revokeObjectURL(url)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to export users', 'error')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to export users'
+      showToast(msg, 'error')
     }
   }
 
@@ -286,7 +315,7 @@ export function UserManager() {
       setSelectedUsers(new Set())
     } else {
       const newSet = new Set<number>()
-      filteredUsers.forEach((u: any) => {
+      filteredUsers.forEach((u: UserRecord) => {
         if (u.username !== currentUsername) newSet.add(u.id)
       })
       setSelectedUsers(newSet)
@@ -455,7 +484,7 @@ export function UserManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
-                {filteredUsers.map((user: any) => {
+                {filteredUsers.map((user: UserRecord) => {
                   const isSelf = user.username === currentUsername
                   
                   return (
@@ -752,7 +781,7 @@ export function UserManager() {
                 <select 
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
-                  disabled={editingUser && (editingUser.role === 'ROOT' || editingUser.username === currentUsername)}
+                  disabled={Boolean(editingUser && (editingUser.role === 'ROOT' || editingUser.username === currentUsername))}
                   className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 disabled:opacity-50 rounded-sm px-2.5 py-1.5 text-xs text-[#e4e4e4] focus:outline-none uppercase font-mono cursor-pointer"
                 >
                   {roleInput === 'ROOT' && (
@@ -786,7 +815,7 @@ export function UserManager() {
                   <input 
                     type="checkbox"
                     checked={isActiveInput}
-                    disabled={editingUser && editingUser.username === currentUsername}
+                    disabled={Boolean(editingUser && editingUser.username === currentUsername)}
                     onChange={(e) => setIsActiveInput(e.target.checked)}
                     className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                   />
@@ -1017,8 +1046,8 @@ function UserActivityLogSection({ username }: { username: string }) {
       </div>
 
       <div className="space-y-1.5 max-h-[250px] overflow-y-auto pr-1">
-        {results.map((log: any) => {
-          const client = parseUserAgent(log.device)
+        {results.map((log: { id: number | string; action: string; timestamp: string; ip_address?: string | null; device?: string | null }) => {
+          const client = parseUserAgent(log.device || '')
           
           return (
             <div key={log.id} className="flex justify-between items-start gap-2 p-2 bg-[#141414] border border-[#1a1a1a] rounded-sm">
