@@ -10,7 +10,7 @@ import (
 
 func TestBuildQueryPostgresDirectly(t *testing.T) {
 	// Test empty parameters
-	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
+	query, args := BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", "", 10, 0)
 	if !strings.Contains(query, "SELECT") {
 		t.Errorf("expected SELECT query, got: %s", query)
 	}
@@ -19,7 +19,7 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 	}
 
 	// Test filters
-	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", 10, 0)
+	query, args = BuildQueryPostgresDirectly("die-101", "ROUND", "AVAILABLE", "Steel", "1.5", "5.0", "", "", "", "", "", "", "", "", 10, 0)
 
 	if !strings.Contains(query, "ILIKE $1") {
 		t.Errorf("expected search query parameter placeholder $1, got: %s", query)
@@ -43,10 +43,19 @@ func TestBuildQueryPostgresDirectly(t *testing.T) {
 	if len(args) != 6 {
 		t.Errorf("expected 6 args, got %d", len(args))
 	}
+
+	// Test location filter
+	query, args = BuildQueryPostgresDirectly("", "", "", "", "", "", "", "", "", "", "", "", "", "Rack A", 10, 0)
+	if !strings.Contains(query, "rk.name ILIKE $1") {
+		t.Errorf("expected location filter placeholder, got: %s", query)
+	}
+	if len(args) != 1 || args[0] != "%Rack A%" {
+		t.Errorf("expected arg %%Rack A%%, got: %v", args)
+	}
 }
 
 func TestBuildQueryPostgresDirectlyCount(t *testing.T) {
-	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "10.0", "50.0", "1.0", "5.0", "", "", "")
+	query, args := BuildQueryPostgresDirectlyCount("", "FLAT", "RUNNING", "", "", "", "10.0", "50.0", "1.0", "5.0", "", "", "", "")
 	if !strings.Contains(query, "COUNT(*)") {
 		t.Errorf("expected COUNT query, got: %s", query)
 	}
@@ -73,6 +82,7 @@ func TestBuildQueryPostgresDirectlyCount(t *testing.T) {
 		t.Errorf("expected 6 args, got %d", len(args))
 	}
 }
+
 
 func TestPostgresDB_Integration(t *testing.T) {
 	cfg := &config.Config{
