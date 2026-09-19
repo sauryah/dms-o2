@@ -154,3 +154,31 @@ func TestBroadcastQueueFull(t *testing.T) {
 		m.Broadcast("test")
 	}
 }
+
+func TestDeduplicator(t *testing.T) {
+	dedup := NewDeduplicator(50 * time.Millisecond)
+
+	// First occurrence should process
+	if !dedup.ShouldProcess("event-1") {
+		t.Error("Expected first occurrence of event-1 to be processed")
+	}
+
+	// Immediate duplicate within window should be suppressed
+	if dedup.ShouldProcess("event-1") {
+		t.Error("Expected duplicate event-1 within window to be suppressed")
+	}
+
+	// Different event should process
+	if !dedup.ShouldProcess("event-2") {
+		t.Error("Expected event-2 to be processed")
+	}
+
+	// Wait for window to expire
+	time.Sleep(60 * time.Millisecond)
+
+	// After window expiration, event-1 should process again
+	if !dedup.ShouldProcess("event-1") {
+		t.Error("Expected event-1 to be processed after window expiry")
+	}
+}
+
