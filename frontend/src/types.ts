@@ -5,6 +5,7 @@ export interface Die {
   die_type: DieType;
   casing: string;
   status: DieStatus;
+  rack?: number | null;
   rack_id?: number | null;
   rack_name?: string;
   shelf?: number | null;
@@ -28,17 +29,27 @@ export interface Die {
   radius?: string | number;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Set {
   id: number;
   name: string;
   machine: number | null;
   machine_name?: string;
+  category_name?: string;
+  die_count?: number;
   dies: Die[];
 }
 
 export interface Machine {
   id: number;
   name: string;
+  category?: number | null;
   category_name?: string;
   sets: Set[];
   totalDies: number;
