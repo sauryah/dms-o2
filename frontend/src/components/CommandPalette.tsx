@@ -2,8 +2,18 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
-import { DIE_STATUSES } from '../contracts/dieContracts'
+import { DIE_STATUSES, type DieStatus } from '../contracts/dieContracts'
+import type { Die } from '../types'
 import { Search, Compass, Settings, CornerDownLeft, Command, HelpCircle, Terminal, Palette, Sun } from 'lucide-react'
+
+const CATEGORIES = ['Navigation', 'Search Results', 'Status Updates', 'System & Theme'] as const
+const CATEGORY_LABELS: Record<typeof CATEGORIES[number], string> = {
+  'Navigation': '01 NAVIGATION',
+  'Search Results': '02 SEARCH RESULTS',
+  'Status Updates': '03 STATUS UPDATES',
+  'System & Theme': '04 SYSTEM & THEME'
+}
+const VALID_STATUSES = DIE_STATUSES
 
 interface CommandPaletteProps {
   isOpen: boolean
@@ -21,13 +31,13 @@ interface PaletteAction {
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const { role, token } = useAuth()
-  const { theme, setTheme, canChangeTheme } = useTheme()
+  const { setTheme, canChangeTheme } = useTheme()
   const { request } = useApi()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<Die[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -57,7 +67,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       clearTimeout(timeout)
       controller.abort()
     }
-  }, [query, isOpen, token])
+  }, [query, isOpen, token, request])
 
   // Build the list of static navigation commands
   const navigationCommands = useMemo<PaletteAction[]>(() => {
@@ -146,7 +156,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [role, navigate, onClose])
 
   const canChangeStatus = role === 'ROOT' || role === 'ADMIN' || role === 'OPERATOR'
-  const validStatuses = DIE_STATUSES
 
   // Compile final actions list
   const actions = useMemo<PaletteAction[]>(() => {
@@ -159,7 +168,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       const targetDieId = statusMatch[1].toUpperCase()
       const targetStatus = statusMatch[2].toUpperCase()
       
-      if (validStatuses.includes(targetStatus as any)) {
+      if (VALID_STATUSES.includes(targetStatus as DieStatus)) {
         list.push({
           id: `status-direct-${targetDieId}-${targetStatus}`,
           title: `SET DIE ${targetDieId} TO ${targetStatus}`,
@@ -183,7 +192,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     }
 
     // 2. Add API Search Results
-    searchResults.forEach((die: any) => {
+    searchResults.forEach((die: Die) => {
       // Navigation result
       list.push({
         id: `search-die-${die.die_id}`,
@@ -196,7 +205,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
       // Only show per-die status change suggestions when user types "status:" trigger
       if (canChangeStatus && /status\s*:/i.test(query)) {
-        validStatuses.forEach(st => {
+        VALID_STATUSES.forEach(st => {
           if (st !== die.status) {
             list.push({
               id: `status-${die.die_id}-${st}`,
@@ -332,23 +341,16 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [activeIndex])
 
   // Group actions by category
-  const categories = ['Navigation', 'Search Results', 'Status Updates', 'System & Theme'] as const
-  const categoryLabels = {
-    'Navigation': '01 NAVIGATION',
-    'Search Results': '02 SEARCH RESULTS',
-    'Status Updates': '03 STATUS UPDATES',
-    'System & Theme': '04 SYSTEM & THEME'
-  }
-  const groupedActions = categories.reduce((acc, cat) => {
+  const groupedActions = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = actions.filter(a => a.category === cat)
     return acc
-  }, {} as Record<string, PaletteAction[]>)
+  }, {} as Record<typeof CATEGORIES[number], PaletteAction[]>)
 
   // Compute stable per-category offset so each action gets a deterministic flat index
   const categoryOffsets = useMemo(() => {
     const offsets: Record<string, number> = {}
     let counter = 0
-    for (const cat of categories) {
+    for (const cat of CATEGORIES) {
       offsets[cat] = counter
       counter += groupedActions[cat].length
     }
@@ -357,7 +359,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   if (!isOpen) return null
 
-  const renderedCategories = categories.map(cat => {
+  const renderedCategories = CATEGORIES.map(cat => {
     const catActions = groupedActions[cat]
     if (catActions.length === 0) return null
     const catOffset = categoryOffsets[cat]
@@ -365,7 +367,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     return (
       <div key={cat} className="space-y-1 pb-2" role="group" aria-label={cat}>
         <h4 className="text-[10px] font-medium font-mono tracking-widest text-[#6b7280] uppercase px-3 pt-2">
-          {categoryLabels[cat]}
+          {CATEGORY_LABELS[cat]}
         </h4>
         <div className="space-y-0.5">
           {catActions.map((action, localIdx) => {
