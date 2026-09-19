@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
-interface NotificationItem {
+export interface NotificationItem {
   id: string
   title: string
   message: string
@@ -16,7 +16,7 @@ interface NotificationContextValue {
   markAllAsRead: () => void
 }
 
-const NotificationContext = createContext<NotificationContextValue>(null as any)
+const NotificationContext = createContext<NotificationContextValue>({} as NotificationContextValue)
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
