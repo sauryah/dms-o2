@@ -1,9 +1,18 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun, RefreshCw, Copy, Download, Printer, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { KeyRound, ArrowLeft, Check, Eye, EyeOff, Sliders, Database, Shield, Palette, Terminal, Lock, Sun, RefreshCw, Copy, Download, ShieldAlert } from 'lucide-react'
 import { useAuth, useTheme, useToast } from '../contexts'
 import { useApi } from '../hooks/useApi'
 import { BackupManager } from './users/BackupManager'
+
+interface ToleranceConfig {
+  id?: number | string
+  die_type: 'ROUND' | 'FLAT'
+  max_wear_mm: string | number
+  warning_percentage: number | string
+  critical_percentage: number | string
+  [key: string]: unknown
+}
 
 export function SettingsPage() {
   const { request } = useApi()
@@ -36,7 +45,7 @@ export function SettingsPage() {
   const [mfaSuccess, setMfaSuccess] = useState('')
   const [copiedCodes, setCopiedCodes] = useState(false)
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const data = await request('/api/v1/auth/me/')
       if (data) {
@@ -47,11 +56,11 @@ export function SettingsPage() {
     } catch {
       // silent
     }
-  }
+  }, [request])
 
   useEffect(() => {
     fetchUserProfile()
-  }, [])
+  }, [fetchUserProfile])
 
   const handleStartGenerateCodes = () => {
     setMfaError('')
@@ -81,8 +90,9 @@ export function SettingsPage() {
       setGeneratePassword('')
       setMfaSuccess('New backup codes generated successfully.')
       showToast('10 Backup codes generated', 'success')
-    } catch (err: any) {
-      setMfaError(err.message || 'Failed to generate backup codes.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate backup codes.'
+      setMfaError(msg)
     } finally {
       setIsLoadingMfa(false)
     }
@@ -151,38 +161,39 @@ export function SettingsPage() {
       setDisablePassword('')
       setMfaSuccess('Backup codes authentication has been disabled.')
       showToast('Backup codes disabled', 'info')
-    } catch (err: any) {
-      setMfaError(err.message || 'Failed to disable backup codes.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to disable backup codes.'
+      setMfaError(msg)
     } finally {
       setIsLoadingMfa(false)
     }
   }
 
   // Die Tolerances config state
-  const [tolerances, setTolerances] = useState<any[]>([])
+  const [tolerances, setTolerances] = useState<ToleranceConfig[]>([])
   const [isLoadingTolerances, setIsLoadingTolerances] = useState(false)
   const [isSubmittingTolerances, setIsSubmittingTolerances] = useState(false)
   const [tolError, setTolError] = useState('')
   const [tolSuccess, setTolSuccess] = useState('')
 
-  const fetchTolerances = async () => {
+  const fetchTolerances = useCallback(async () => {
     setIsLoadingTolerances(true)
     setTolError('')
     try {
       const data = await request('/api/v1/tolerances/')
       setTolerances(data.results || [])
-    } catch (err: any) {
+    } catch (_err: unknown) {
       setTolError('Failed to load tolerance settings.')
     } finally {
       setIsLoadingTolerances(false)
     }
-  }
+  }, [request])
 
   useEffect(() => {
     if (role === 'ADMIN' || role === 'ROOT') {
       fetchTolerances()
     }
-  }, [role])
+  }, [role, fetchTolerances])
 
   useEffect(() => {
     if (!tolSuccess && !tolError) return
@@ -194,7 +205,7 @@ export function SettingsPage() {
   }, [tolSuccess, tolError])
 
   const getToleranceField = (type: 'ROUND' | 'FLAT', field: 'max_wear_mm' | 'warning_percentage' | 'critical_percentage') => {
-    const existing = tolerances.find((t: any) => t.die_type === type)
+    const existing = tolerances.find((t: ToleranceConfig) => t.die_type === type)
     if (existing) {
       return existing[field]
     }
@@ -205,15 +216,15 @@ export function SettingsPage() {
     return 90
   }
 
-  const handleToleranceChange = (type: 'ROUND' | 'FLAT', field: string, value: any) => {
-    setTolerances((prev: any[]) => {
-      const existingIdx = prev.findIndex((t: any) => t.die_type === type)
+  const handleToleranceChange = (type: 'ROUND' | 'FLAT', field: string, value: unknown) => {
+    setTolerances((prev: ToleranceConfig[]) => {
+      const existingIdx = prev.findIndex((t: ToleranceConfig) => t.die_type === type)
       if (existingIdx !== -1) {
         const updated = [...prev]
         updated[existingIdx] = { ...updated[existingIdx], [field]: value }
         return updated
       } else {
-        const newItem = {
+        const newItem: ToleranceConfig = {
           die_type: type,
           max_wear_mm: type === 'ROUND' ? '0.050' : '0.100',
           warning_percentage: 70,
@@ -232,25 +243,25 @@ export function SettingsPage() {
     setIsSubmittingTolerances(true)
 
     try {
-      const roundTol = tolerances.find((t: any) => t.die_type === 'ROUND') || {
+      const roundTol = tolerances.find((t: ToleranceConfig) => t.die_type === 'ROUND') || {
         die_type: 'ROUND',
         max_wear_mm: '0.050',
         warning_percentage: 70,
         critical_percentage: 90
       }
-      const flatTol = tolerances.find((t: any) => t.die_type === 'FLAT') || {
+      const flatTol = tolerances.find((t: ToleranceConfig) => t.die_type === 'FLAT') || {
         die_type: 'FLAT',
         max_wear_mm: '0.100',
         warning_percentage: 70,
         critical_percentage: 90
       }
 
-      const saveItem = async (item: any) => {
+      const saveItem = async (item: ToleranceConfig) => {
         const payload = {
           die_type: item.die_type,
           max_wear_mm: item.max_wear_mm,
-          warning_percentage: parseInt(item.warning_percentage),
-          critical_percentage: parseInt(item.critical_percentage)
+          warning_percentage: parseInt(String(item.warning_percentage), 10),
+          critical_percentage: parseInt(String(item.critical_percentage), 10)
         }
         if (item.id) {
           return await request(`/api/v1/tolerances/${item.id}/`, {
@@ -269,8 +280,9 @@ export function SettingsPage() {
       const resFlat = await saveItem(flatTol)
       setTolerances([resRound, resFlat])
       setTolSuccess('Tolerance configurations saved successfully.')
-    } catch (err: any) {
-      setTolError(err.message || 'Failed to save tolerance settings.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to save tolerance settings.'
+      setTolError(msg)
     } finally {
       setIsSubmittingTolerances(false)
     }
@@ -312,8 +324,9 @@ export function SettingsPage() {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err: any) {
-      setError(err.message || 'Failed to change password.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to change password.'
+      setError(msg)
     } finally {
       setIsSubmitting(false)
     }
