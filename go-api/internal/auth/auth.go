@@ -20,7 +20,17 @@ type ContextKey string
 const UserContextKey ContextKey = "user_id"
 const RoleContextKey ContextKey = "user_role"
 
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+	Transport: &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 20,
+		IdleConnTimeout:     90 * time.Second,
+	},
+}
+
 func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) http.Handler {
+
 	secretKey := []byte(cfg.DjangoSecretKey)
 
 	return func(next http.Handler) http.Handler {
@@ -100,10 +110,8 @@ func AuthMiddleware(cfg *config.Config, cache *cache.Cache) func(http.Handler) h
 			req.Header.Set("Authorization", "Bearer "+tokenStr)
 			req.Header.Set("X-Internal-Key", cfg.InternalAPISecret)
 
-			client := &http.Client{
-				Timeout: 5 * time.Second,
-			}
-			resp, err := client.Do(req)
+			resp, err := httpClient.Do(req)
+
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
