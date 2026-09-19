@@ -4,6 +4,25 @@ import { RefreshCw, Search, Clock, ShieldAlert, LogOut, Info, Monitor, Smartphon
 import { useApi } from '../../hooks/useApi'
 import { parseUserAgent } from '../../utils/parseUserAgent'
 
+export interface RawAuditLog {
+  id: number | string
+  username: string
+  action: string
+  timestamp: string
+  ip_address?: string | null
+  device?: string | null
+}
+
+export interface GroupedSession {
+  id: number | string
+  username: string
+  login_time: string | null
+  logout_time: string | null
+  status: string
+  ip_address?: string | null
+  device?: string | null
+}
+
 export function SessionAuditLogs() {
   const { request } = useApi()
   const [page, setPage] = useState(1)
@@ -12,7 +31,7 @@ export function SessionAuditLogs() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<{ results: RawAuditLog[]; count: number }>({
     queryKey: ['sessionActivityLogs', page, usernameSearch, actionFilter, dateFrom, dateTo],
     queryFn: () => {
       let url = `/api/activity-logs/?page=${page}`
@@ -65,13 +84,13 @@ export function SessionAuditLogs() {
   }
 
   // Helper to group flat logs into unified user sessions
-  const groupLogsIntoSessions = (rawLogs: any[]) => {
+  const groupLogsIntoSessions = (rawLogs: RawAuditLog[]): GroupedSession[] => {
     const sortedLogs = [...rawLogs].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    const sessions: any[] = [];
-    const openSessionsByUser: { [username: string]: any } = {};
+    const sessions: GroupedSession[] = [];
+    const openSessionsByUser: { [username: string]: GroupedSession } = {};
 
     sortedLogs.forEach((log) => {
       const user = log.username;
@@ -135,8 +154,8 @@ export function SessionAuditLogs() {
     });
 
     return sessions.sort((a, b) => {
-      const timeA = new Date(a.logout_time || a.login_time).getTime();
-      const timeB = new Date(b.logout_time || b.login_time).getTime();
+      const timeA = new Date(a.logout_time || a.login_time || 0).getTime();
+      const timeB = new Date(b.logout_time || b.login_time || 0).getTime();
       return timeB - timeA;
     });
   };
@@ -218,13 +237,13 @@ export function SessionAuditLogs() {
   const handleExportCSV = () => {
     if (groupedSessions.length === 0) return
     const headers = ['Username', 'Status', 'Session Start', 'Session End', 'Duration', 'IP Address', 'Device Environment']
-    const rows = groupedSessions.map((session: any) => {
+    const rows = groupedSessions.map((session: GroupedSession) => {
       const loginStr = session.login_time ? new Date(session.login_time).toLocaleString().replace(/"/g, '""') : '—'
       const logoutStr = session.status === 'ACTIVE' 
         ? 'Active Now' 
         : (session.logout_time ? new Date(session.logout_time).toLocaleString().replace(/"/g, '""') : '—')
       const duration = getDuration ? getDuration(session.login_time, session.logout_time, session.status) : '—'
-      const client = parseUserAgent ? parseUserAgent(session.device) : { label: 'Unknown' }
+      const client = parseUserAgent ? parseUserAgent(session.device || '') : { label: 'Unknown' }
       
       const usernameSafe = (session.username || '').replace(/"/g, '""')
       const statusSafe = (session.status || '').replace(/"/g, '""')
@@ -342,7 +361,7 @@ export function SessionAuditLogs() {
         <div className="text-center py-8 bg-[#0f0f0f] border border-red-500/30 rounded-sm p-6 max-w-xl mx-auto font-mono">
           <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-2" />
           <h3 className="text-xs font-bold uppercase text-[#e4e4e4] mb-1">Query Failure</h3>
-          <p className="text-red-400 font-mono text-xs">{(error as any).message}</p>
+          <p className="text-red-400 font-mono text-xs">{error instanceof Error ? error.message : 'Unknown query failure'}</p>
         </div>
       ) : groupedSessions.length === 0 ? (
         <div className="text-center py-12 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm p-6 max-w-md mx-auto select-none font-mono">
@@ -373,13 +392,13 @@ export function SessionAuditLogs() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a1a] text-[#e4e4e4]">
-                {groupedSessions.map((session: any) => {
+                {groupedSessions.map((session: GroupedSession) => {
                   const loginStr = session.login_time ? new Date(session.login_time).toLocaleString() : '—'
                   const logoutStr = session.status === 'ACTIVE' 
                     ? 'ACTIVE' 
                     : (session.logout_time ? new Date(session.logout_time).toLocaleString() : '—')
                   const duration = getDuration(session.login_time, session.logout_time, session.status)
-                  const client = parseUserAgent(session.device)
+                  const client = parseUserAgent(session.device || '')
 
                   return (
                     <tr key={session.id} className="hover:bg-[#141414] transition-colors">
