@@ -10,7 +10,7 @@ interface ToastContextValue {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void
 }
 
-const ToastContext = createContext<ToastContextValue>(null as any)
+const ToastContext = createContext<ToastContextValue>({} as ToastContextValue)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
