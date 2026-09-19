@@ -62,4 +62,5 @@ celerybeat-schedule
 celerybeat-schedule.db
 celerybeat-schedule*
 
-
+# Rust build artifacts
+wasm-drawing-engine/target/
