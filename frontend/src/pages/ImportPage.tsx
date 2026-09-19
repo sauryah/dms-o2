@@ -6,6 +6,30 @@ import { useApi } from '../hooks/useApi'
 import { PageHeader } from '../components/ui/PageHeader'
 import { DataTable } from '../components/ui/DataTable'
 
+export interface ImportErrorItem {
+  row?: number | string
+  die_id?: string
+  field?: string
+  error?: string
+}
+
+export interface ImportResultData {
+  created: number
+  updated: number
+  skipped: number
+  errors: ImportErrorItem[]
+}
+
+export interface ImportStatusResponse {
+  status: 'idle' | 'importing' | 'ready' | 'error'
+  progress: number
+  total: number
+  filename: string
+  dry_run: boolean
+  message?: string
+  result?: ImportResultData
+}
+
 export function ImportPage() {
   const navigate = useNavigate()
   const { request } = useApi()
@@ -17,36 +41,18 @@ export function ImportPage() {
     text: string
   } | null>(null)
 
-  const [importStatus, setImportStatus] = useState<{
-    status: 'idle' | 'importing' | 'ready' | 'error'
-    progress: number
-    total: number
-    filename: string
-    dry_run: boolean
-    message?: string
-    result?: any
-  } | null>(null)
+  const [importStatus, setImportStatus] = useState<ImportStatusResponse | null>(null)
 
   const progress = importStatus?.status === 'importing'
 
   // Import results state
-  const [importResult, setImportResult] = useState<{
-    created: number
-    updated: number
-    skipped: number
-    errors: any[]
-  } | null>(null)
+  const [importResult, setImportResult] = useState<ImportResultData | null>(null)
 
   // Dry-run preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [dryRunResult, setDryRunResult] = useState<{
-    created: number
-    updated: number
-    skipped: number
-    errors: any[]
-  } | null>(null)
+  const [dryRunResult, setDryRunResult] = useState<ImportResultData | null>(null)
 
-  const checkStatus = async (onMount = false) => {
+  const checkStatus = useCallback(async (onMount = false) => {
     try {
       const status = await request('/api/go/import-status')
       if (status.status === 'importing') {
@@ -56,22 +62,22 @@ export function ImportPage() {
           const result = status.result
           if (status.dry_run) {
             setDryRunResult({
-              created: result.created,
-              updated: result.updated,
-              skipped: result.skipped,
-              errors: result.errors || []
+              created: result?.created || 0,
+              updated: result?.updated || 0,
+              skipped: result?.skipped || 0,
+              errors: result?.errors || []
             })
             setShowPreviewModal(true)
           } else {
             setImportResult({
-              created: result.created,
-              updated: result.updated,
-              skipped: result.skipped,
-              errors: result.errors || []
+              created: result?.created || 0,
+              updated: result?.updated || 0,
+              skipped: result?.skipped || 0,
+              errors: result?.errors || []
             })
             setStatusMsg({
               type: 'success',
-              text: `Import complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
+              text: `Import complete: ${result?.created || 0} created, ${result?.updated || 0} updated, ${result?.skipped || 0} skipped.`
             })
           }
         }
@@ -90,17 +96,17 @@ export function ImportPage() {
     } catch (err) {
       console.error('Failed to fetch import status', err)
     }
-  }
+  }, [request])
 
   useEffect(() => {
     checkStatus(true)
-  }, [])
+  }, [checkStatus])
 
   useEffect(() => {
     if (importStatus?.status !== 'importing') return
     const interval = setInterval(() => checkStatus(false), 1000)
     return () => clearInterval(interval)
-  }, [importStatus?.status])
+  }, [importStatus?.status, checkStatus])
 
   const closeModal = useCallback(() => {
     setShowPreviewModal(false)
@@ -138,10 +144,11 @@ export function ImportPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Template download failed.'
       setStatusMsg({
         type: 'error',
-        text: err.message || 'Template download failed.'
+        text: msg
       })
     }
   }
@@ -212,10 +219,11 @@ export function ImportPage() {
         method: 'POST',
         body: formData
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Import failed.'
       setStatusMsg({
         type: 'error',
-        text: err.message || 'Import failed.'
+        text: msg
       })
       setImportStatus(null)
     }
@@ -250,10 +258,10 @@ export function ImportPage() {
   ]
 
   const errorColumns = [
-    { key: 'row', label: 'Row #', render: (row: any) => <span className="font-mono text-[#e4e4e4] font-bold">{row.row}</span> },
-    { key: 'die_id', label: 'Die ID', render: (row: any) => <span className="font-mono text-blue-400 font-bold">{row.die_id ?? 'N/A'}</span> },
-    { key: 'field', label: 'Field', render: (row: any) => <span className="text-[#6b7280] uppercase">{row.field ?? 'General'}</span> },
-    { key: 'error', label: 'Error Message', render: (row: any) => <span className="text-red-400 whitespace-normal font-mono text-xs block max-w-md">{row.error}</span> }
+    { key: 'row', label: 'Row #', render: (row: ImportErrorItem) => <span className="font-mono text-[#e4e4e4] font-bold">{row.row}</span> },
+    { key: 'die_id', label: 'Die ID', render: (row: ImportErrorItem) => <span className="font-mono text-blue-400 font-bold">{row.die_id ?? 'N/A'}</span> },
+    { key: 'field', label: 'Field', render: (row: ImportErrorItem) => <span className="text-[#6b7280] uppercase">{row.field ?? 'General'}</span> },
+    { key: 'error', label: 'Error Message', render: (row: ImportErrorItem) => <span className="text-red-400 whitespace-normal font-mono text-xs block max-w-md">{row.error}</span> }
   ]
 
   const headerActions = (
