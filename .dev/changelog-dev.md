@@ -1,5 +1,60 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-19 Autonomous Frontend Zero-Warning ESLint & Strict TypeScript Type Hardening
+*   **Total Debt Elimination**:
+    *   Eliminated all 381 ESLint warnings and TypeScript typecheck errors across all 38 frontend files, achieving the verified **0 errors, 0 warnings** quality standard under `npm run lint` (`eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives`) and `npx tsc --noEmit`.
+*   **Key Architectural & Type Refactors**:
+    *   `DataTable.tsx`: Broadened generic constraint from `T extends Record<string, unknown>` to `T extends object = object`, restoring type safety for all TypeScript table interfaces without requiring arbitrary index signatures.
+    *   `DieCard.tsx`: Typed `die` prop using `Omit<Partial<Die>, 'die_type' | 'status'> & { die_id: string; die_type: string; status: string; location?: string }` to support flexible card projections while preserving strict status and type checking. Coerced size parses with `parseFloat(String(...))`.
+    *   `CommandPalette.tsx`: Moved `CATEGORIES`, `CATEGORY_LABELS`, and `VALID_STATUSES` to module scope to eliminate `react-hooks/exhaustive-deps` warnings; strictly typed search results as `Die[]` and target statuses as `DieStatus`.
+    *   `WireDrawingCalculatorPage.tsx` & `DieSeriesGeneratorPage.tsx`: Defined explicit `WireDrawingApiResponse` interface, eliminating all `as any` casts across passes, statistics, and consistency models.
+    *   `HistoryPage.tsx`: Defined `DieHistoryItem` and generic `HistoryApiResponse<T>` interfaces; typed CSV download and table transformations without `any`.
+    *   `StressHeatmap3D.tsx`: Added missing `epsilon` to animation render `useEffect` dependency array; pruned dead state variables `hoverInfoA` and `hoverInfoB`.
+    *   `useApi.ts`: Defined `RequestOptions` interface; wrapped `refreshAccessToken` in `useCallback` with explicit dependencies; typed headers and response payloads cleanly.
+    *   `RackLayoutGrid.tsx` & `types.ts`: Added `rack?: number | null` to canonical `Die` interface and eliminated duplicate local interface declarations.
+    *   `DieDetailPage.tsx`: Handled TanStack Query v5 `setQueryData` updaters with `Updater<TData, TData>` function callbacks and typed query keys as `QueryKey`.
+    *   `UserManager.tsx`, `ActiveSessionsList.tsx`, `BackupManager.tsx`: Added missing optional model properties (`is_mfa_enabled`, `last_seen`, `size_kb`) and guarded all runtime invocations.
+*   **Verification & Regression Testing**:
+    *   ESLint: 0 errors, 0 warnings (`npm --prefix frontend run lint`).
+    *   TypeScript: 0 errors (`npx tsc --noEmit`).
+    *   Frontend Unit Tests: 21 test files, 54/54 tests passed (`npm test`).
+    *   Production Bundle: Vite build succeeded with 0 errors in 9.28s (`npm --prefix frontend run build`).
+    *   Backend Test Suites: 204/204 Django unit tests passed in Docker; 8/8 Go packages passed in Docker container.
+    *   AST Knowledge Graph: Synchronized via `graphify update .` (2,983 nodes, 5,184 edges, 256 communities).
+
+### 2026-09-19 Autonomous Multi-Tier Production-Grade Engineering Overhaul
+*   **Security Ingress & IP Resolution Hardening (GOAL SEC-001)**:
+    *   Eliminated external third-party network call to `api64.ipify.org` and stripped untrusted `X-Client-Device-IP` client-side header spoofing across `frontend/src/pages/LoginPage.tsx` and `frontend/src/hooks/useApi.ts`.
+    *   Hardened IP extraction in `backend/users/views/auth.py` and `backend/users/tests/test_auth.py` to securely parse IP from trusted proxy headers (`HTTP_CF_CONNECTING_IP`, untrusted leftmost `HTTP_X_FORWARDED_FOR`, `HTTP_X_REAL_IP`, or `REMOTE_ADDR`).
+    *   Fixed Go reverse-proxy rate limiting in `go-api/internal/middleware/rate_limit.go` (`ClientIP(r)`) and verified via `rate_limit_test.go`.
+*   **Distributed Event Multi-Casting & SSE Deadlock Prevention (GOAL DIST-001)**:
+    *   Eliminated $O(N^2)$ Redis Pub/Sub amplification loop in `go-api/internal/events/events.go` by removing redundant `redisCache.Publish` on Postgres `LISTEN` notification (Postgres natively multicasts to all running Go API instances).
+    *   Implemented thread-safe sliding-window event deduplicator (`Deduplicator`, 2-second window) in `events.go` preventing duplicate broadcasts.
+    *   Fixed self-deadlock hazard in `EventManager.Start()` during slow client removal (now removes and closes client channels directly within lock instead of pushing to its own `m.unregister` channel). Made `EventManager.Unregister` non-blocking (`select { case m.unregister <- c: default: }`).
+    *   Added unit tests (`TestDeduplicator`) in `go-api/internal/events/events_test.go`.
+*   **Reliability: Outbox Task Concurrency & Bulk Event Coalescing (GOAL REL-001)**:
+    *   Enforced row-level locking with `select_for_update(skip_locked=True)` and strict `[:250]` batch slicing inside `transaction.atomic()` in `backend/search/tasks.py:process_outbox_task` to prevent race conditions during concurrent Celery workers.
+    *   Coalesced post-sync notifications into a single bulk event (`DIE_BULK_IMPORT_ACTION` or `DIE_DELETE_ACTION` with `count`) when batch size $> 1$.
+    *   Added unit tests (`test_process_outbox_batch_coalesced_event`) in `backend/dies/tests/test_search.py`.
+*   **Database & Query Optimization (GOAL PERF-001 & PERF-002)**:
+    *   Removed expensive `.prefetch_related('history')` from default `DieViewSet.queryset` in `backend/dies/views.py`, reserving history prefetching strictly for individual die `retrieve` calls.
+    *   Added default `ordering = ['die_type']` to `DieTolerance.Meta` and `ordering = ['die_id']` to `Die.Meta` in `backend/dies/models.py`, eliminating Django REST Framework `UnorderedObjectListWarning`.
+    *   Implemented 1-hour Redis/memory caching in `backend/dies/services/wear_alert_service.py:get_or_create_default_tolerance` with automatic invalidation hooks in `DieTolerance.save()` and `delete()`.
+*   **Cache Invalidation & Memory Leak Prevention (GOAL PERF-003)**:
+    *   Replaced non-scalable Redis Set tracking (`cached_searches`) and blocking batch `DEL` loops with an $O(1)$ atomic generation counter `search_cache_gen` in `go-api/internal/cache/cache.go`. Key resolution routes `search:<key>` to `search:<gen>:<key>`, achieving instant invalidation.
+    *   Introduced package-level pooled `httpClient` in `go-api/internal/auth/auth.go` (`MaxIdleConns: 100`, `MaxIdleConnsPerHost: 20`, `IdleConnTimeout: 90s`), eliminating per-request socket leaks.
+    *   Configured HTTP `WriteTimeout: 30 * time.Second` in `go-api/cmd/server/main.go` and cleared deadline via `http.NewResponseController(w).SetWriteDeadline(time.Time{})` for SSE streaming in `go-api/internal/handlers/handlers.go`.
+*   **Frontend Design System, Location Search & Code Hygiene (GOAL FE-001, FE-002 & FE-003)**:
+    *   Supported `location` / `rack` filter in Go search proxy (`buildWhereClauses`, `BuildQueryPostgresDirectly`, `QueryPostgresDirectly` in `go-api/internal/database/database.go` and `HandleSearch` in `go-api/internal/handlers/handlers.go`).
+    *   Updated `frontend/src/features/inventory/hooks/useInventoryState.ts` to pass `debouncedLocationQuery` to backend, eliminating broken client-side post-pagination slicing.
+    *   Replaced hardcoded CSS hex colors in `frontend/src/App.tsx` with CSS variables (`var(--color-bg)`, `var(--color-text)`).
+    *   Replaced `react-hot-toast` with unified `useToast()` in `frontend/src/features/wire-drawing-calculator/components/SaveLoad.tsx` and `ExportPanel.tsx`, removing leftover `<Toaster />` JSX from `WireDrawingCalculatorPage.tsx`.
+    *   Removed unused `framer-motion` imports in `UsersPage.tsx` and typed `lazyWithRetry.ts` cleanly without explicit `any`.
+*   **CI/CD Pipeline Automation**:
+    *   Updated `.github/workflows/deploy.yml` with `pull_request: branches: [main]` trigger, added automated frontend production build (`npm run build`) verification in CI test job, and gated SSH deployment strictly to `push` events on `main`.
+*   **Affected Modules**: `backend/search`, `backend/dies`, `backend/users`, `go-api/events`, `go-api/cache`, `go-api/auth`, `go-api/handlers`, `go-api/database`, `frontend`, `.github/workflows`
+*   **Testing Performed**: Full regression pass: 204/204 Django unit tests passed in Docker (55.5s); 8/8 Go packages passed unit tests in Docker; 21/21 Vitest test suites (54/54 tests) passed; ESLint 0 errors; Vite production build completed cleanly in 13.3s.
+
 ### 2026-09-10 Full-System Architectural, Performance & Observability Enhancements
 *   **Frontend Modernization & Router Future-Proofing**:
     *   Enabled React Router v7 future flags (`v7_startTransition: true` and `v7_relativeSplatPath: true`) in `frontend/src/App.tsx`, `InventoryPage.test.tsx`, and `PageHeader.test.tsx`, eliminating all deprecation warnings.
