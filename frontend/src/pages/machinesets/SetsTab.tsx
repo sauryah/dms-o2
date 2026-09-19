@@ -3,10 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Edit, Trash2, Layers, Plus } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Set as DieSet, Machine } from '../../types'
 
 interface SetsTabProps {
-  sets: any[] | undefined
-  machines: any[] | undefined
+  sets: DieSet[] | undefined
+  machines: Machine[] | undefined
   isSetsLoading: boolean
   isWritable: boolean
 }
@@ -18,12 +19,12 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMachine, setFilterMachine] = useState('')
   const [nameSet, setNameSet] = useState('')
-  const [machineSet, setMachineSet] = useState<any>('')
-  const [editingSet, setEditingSet] = useState<any>(null)
-  const [setToDelete, setSetToDelete] = useState<any>(null)
+  const [machineSet, setMachineSet] = useState<number | string>('')
+  const [editingSet, setEditingSet] = useState<DieSet | null>(null)
+  const [setToDelete, setSetToDelete] = useState<DieSet | null>(null)
 
   const createSet = useMutation({
-    mutationFn: (data: any) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: { name: string; machine?: number | string | null }) => request('/api/sets/', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sets'] })
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
@@ -32,7 +33,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
   })
 
   const updateSet = useMutation({
-    mutationFn: ({ id, data }: { id: any, data: any }) => request(`/api/sets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({ id, data }: { id: number; data: { name: string; machine?: number | string | null } }) => request(`/api/sets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sets'] })
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
@@ -44,7 +45,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
   })
 
   const deleteSet = useMutation({
-    mutationFn: (id: any) => request(`/api/sets/${id}/`, { method: 'DELETE' }),
+    mutationFn: (id: number) => request(`/api/sets/${id}/`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sets'] })
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
@@ -54,7 +55,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
 
   const filteredSets = useMemo(() => {
     if (!sets) return []
-    return sets.filter((s: any) => {
+    return sets.filter((s) => {
       const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             (s.machine_name && s.machine_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
                             (s.category_name && s.category_name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -66,10 +67,10 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
   const handleSetSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (editingSet) {
-      const payload = { name: nameSet.trim(), machine: machineSet }
+      const payload = { name: nameSet.trim(), machine: machineSet || null }
       updateSet.mutate({ id: editingSet.id, data: payload })
     } else {
-      const payloadMachine = machineSet
+      const payloadMachine = machineSet || null
       const names = nameSet.split(/[\n,]+/).map(n => n.trim()).filter(Boolean)
       try {
         for (const name of names) {
@@ -107,7 +108,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
               className="bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm px-3 py-1.5 text-xs text-[#e4e4e4] focus:outline-none focus:border-blue-500 uppercase font-mono max-w-xs cursor-pointer"
             >
               <option value="">ALL MACHINES</option>
-              {machines.map((mach: any) => (
+              {machines.map((mach) => (
                 <option key={mach.id} value={mach.id}>{mach.name}</option>
               ))}
             </select>
@@ -120,7 +121,7 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
           <p className="text-[#6b7280] text-xs py-4 text-center">No matching tool sets found.</p>
         ) : (
           <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1">
-            {filteredSets.map((s: any) => (
+            {filteredSets.map((s) => (
               <div key={s.id} className="bg-[#0a0a0a] flex justify-between items-center p-2.5 rounded-sm border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#141414] transition-colors font-mono">
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-[#141414] text-purple-400 rounded-sm border border-[#2a2a2a]">
@@ -129,14 +130,14 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
                   <div>
                     <span className="font-bold text-[#e4e4e4] text-xs uppercase block">{s.name}</span>
                     <span className="text-[10px] text-[#6b7280] uppercase">
-                      MACHINE: <span className="text-[#e4e4e4] font-medium">{s.machine_name}</span> <span className="text-[#404040]">({s.category_name})</span>
+                      MACHINE: <span className="text-[#e4e4e4] font-medium">{s.machine_name || '—'}</span> {s.category_name && <span className="text-[#404040]">({s.category_name})</span>}
                     </span>
                   </div>
                 </div>
                 {isWritable && (
                   <div className="flex space-x-1">
                     <button 
-                      onClick={() => { setEditingSet(s); setNameSet(s.name); setMachineSet(s.machine); }}
+                      onClick={() => { setEditingSet(s); setNameSet(s.name); setMachineSet(s.machine || ''); }}
                       className="p-1 text-[#6b7280] hover:text-blue-400 hover:bg-[#1f1f1f] rounded-sm transition cursor-pointer"
                       title="Edit Set"
                     >
@@ -198,8 +199,8 @@ export function SetsTab({ sets, machines, isSetsLoading, isWritable }: SetsTabPr
                 className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-sm py-1.5 px-2.5 text-xs text-[#e4e4e4] focus:border-blue-500 focus:outline-none uppercase font-mono cursor-pointer"
               >
                 <option value="">— SELECT MACHINE —</option>
-                {machines?.map((mach: any) => (
-                  <option key={mach.id} value={mach.id}>{mach.name} ({mach.category_name})</option>
+                {machines?.map((mach) => (
+                  <option key={mach.id} value={mach.id}>{mach.name} {mach.category_name ? `(${mach.category_name})` : ''}</option>
                 ))}
               </select>
             </div>
