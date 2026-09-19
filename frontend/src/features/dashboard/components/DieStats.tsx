@@ -1,11 +1,12 @@
 import React from 'react'
 import { Info } from 'lucide-react'
 import { isDieActive } from '../../../utils/dieHelpers'
+import type { Die } from '../../../types'
 
 interface DieStatsProps {
   totalSets: number
   totalDies: number
-  dies: any[]
+  dies: Die[]
 }
 
 export function DieStats({
