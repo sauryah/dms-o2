@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -7,7 +7,8 @@ import { useApi } from '../../../hooks/useApi'
 import { useDebounce } from '../../../hooks/useDebounce'
 import { useToast } from '../../../contexts/ToastContext'
 import { useInventoryMutations } from './useInventoryMutations'
-import { MachineSidebarTreeRef } from '../components/MachineSidebarTree'
+import { MachineSidebarTreeRef, MachineTreeItem, SetTreeItem } from '../components/MachineSidebarTree'
+import { Die, Set as DieSet, Machine } from '../../../types'
 
 export function useInventoryState() {
   const { request } = useApi()
@@ -35,8 +36,9 @@ export function useInventoryState() {
   const [thickMin, setThickMin] = useState(searchParams.get('thick_min') || '')
   const [thickMax, setThickMax] = useState(searchParams.get('thick_max') || '')
   const [locationQuery, setLocationQuery] = useState('')
+  const debouncedLocationQuery = useDebounce(locationQuery, 300)
 
-  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: any; machineId?: any } | null>(() => {
+  const [selectedNode, setSelectedNode] = useState<{ type: string; id?: string | number; machineId?: string | number } | null>(() => {
     const active = !!(
       searchParams.get('q') || 
       searchParams.get('die_type') || 
@@ -75,7 +77,7 @@ export function useInventoryState() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, locationQuery, selectedNode?.type, selectedNode?.id])
+  }, [debouncedQ, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, debouncedLocationQuery, selectedNode?.type, selectedNode?.id])
 
 
   const [sortField, setSortField] = useState<string>('relevance')
@@ -91,13 +93,13 @@ export function useInventoryState() {
   }
 
   // Fetch list of sets for the dropdown
-  const { data: setsList } = useQuery({
+  const { data: setsList } = useQuery<DieSet[]>({
     queryKey: ['setsDropdownList'],
     queryFn: () => request('/api/sets/')
   })
 
   // Fetch list of machines
-  const { data: machinesList } = useQuery({
+  const { data: machinesList } = useQuery<Machine[]>({
     queryKey: ['machinesList'],
     queryFn: () => request('/api/machines/')
   })
@@ -105,10 +107,11 @@ export function useInventoryState() {
   const [createError, setCreateError] = useState<string | null>(null)
 
   // React Query Fetcher
-  const { data: searchData, isLoading, error } = useQuery({
+  const { data: searchData, isLoading, error } = useQuery<{ results?: Die[]; total?: number }>({
     queryKey: [
       'dies',
       debouncedQ,
+      debouncedLocationQuery,
       dieType,
       statusVal,
       casing,
@@ -128,6 +131,7 @@ export function useInventoryState() {
       const params = new URLSearchParams()
       
       if (debouncedQ) params.append('q', debouncedQ)
+      if (debouncedLocationQuery) params.append('location', debouncedLocationQuery)
       if (dieType) params.append('die_type', dieType)
       if (statusVal) params.append('status', statusVal)
       if (casing) params.append('casing', casing)
@@ -171,25 +175,19 @@ export function useInventoryState() {
       const count = searchData.results?.length ?? 0
       announce(`Search results updated. Showing ${count} matching dies.`)
     }
-  }, [searchData])
+  }, [searchData, announce])
 
   const rawDies = searchData?.results || []
+  const filteredRawDies = rawDies
 
-  const filteredRawDies = useMemo(() => {
-    if (!locationQuery) return rawDies
-    return rawDies.filter((die: any) => {
-      const loc = (die.rack_name && die.shelf ? `${die.rack_name} - Shelf ${die.shelf}` : die.location || '').toLowerCase()
-      return loc.includes(locationQuery.toLowerCase())
-    })
-  }, [rawDies, locationQuery])
 
   const sortedDies = useMemo(() => {
     if (sortField === 'relevance') {
       return filteredRawDies
     }
     return [...filteredRawDies].sort((a, b) => {
-      let valA = a[sortField] || ''
-      let valB = b[sortField] || ''
+      let valA: string | number = (a as unknown as Record<string, string | number>)[sortField] || ''
+      let valB: string | number = (b as unknown as Record<string, string | number>)[sortField] || ''
       
       if (sortField === 'category') {
         valA = a.die_type || ''
@@ -197,16 +195,16 @@ export function useInventoryState() {
       }
       
       if (sortField === 'current_size') {
-        valA = a.die_type === 'ROUND' ? parseFloat(a.current_size || 0) : parseFloat(a.current_width || 0)
-        valB = b.die_type === 'ROUND' ? parseFloat(b.current_size || 0) : parseFloat(b.current_width || 0)
+        valA = a.die_type === 'ROUND' ? parseFloat(String(a.current_size || 0)) : parseFloat(String(a.current_width || 0))
+        valB = b.die_type === 'ROUND' ? parseFloat(String(b.current_size || 0)) : parseFloat(String(b.current_width || 0))
       }
       
-      if (typeof valA === 'string') {
+      if (typeof valA === 'string' && typeof valB === 'string') {
         return sortOrder === 'asc' 
           ? valA.localeCompare(valB)
           : valB.localeCompare(valA)
       } else {
-        return sortOrder === 'asc' ? valA - valB : valB - valA
+        return sortOrder === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA)
       }
     })
   }, [filteredRawDies, sortField, sortOrder])
@@ -226,7 +224,7 @@ export function useInventoryState() {
 
   const [activeDragType, setActiveDragType] = useState<string | null>(null)
 
-  const handleDragStartDie = (id: string) => {
+  const handleDragStartDie = (_id: string) => {
     setActiveDragType('die')
   }
 
@@ -234,12 +232,10 @@ export function useInventoryState() {
     setActiveDragType(null)
   }
 
-  const handleCreateSubmit = (payload: any) => {
+  const handleCreateSubmit = (payload: Record<string, unknown>) => {
     setCreateError(null)
     createDieMutation.mutate(payload)
   }
-
-  // Removed duplicate state declarations (moved to top of hook)
 
   const prevSearchActive = useRef(isSearchActive)
 
@@ -253,10 +249,10 @@ export function useInventoryState() {
   }, [isSearchActive])
 
   const { unassignedDies, machinesWithData, unassignedCount } = useMemo(() => {
-    const diesBySet: Record<string | number, any[]> = {}
-    const unassignedDies: any[] = []
+    const diesBySet: Record<string | number, Die[]> = {}
+    const unassignedDies: Die[] = []
     
-    dies?.forEach((die: any) => {
+    dies?.forEach((die: Die) => {
       if (die.current_set) {
         if (!diesBySet[die.current_set]) {
           diesBySet[die.current_set] = []
@@ -267,8 +263,8 @@ export function useInventoryState() {
       }
     })
 
-    const setsByMachine: Record<string | number, any[]> = {}
-    setsList?.forEach((set: any) => {
+    const setsByMachine: Record<string | number, (DieSet & { die_count?: number })[]> = {}
+    setsList?.forEach((set) => {
       if (set.machine) {
         if (!setsByMachine[set.machine]) {
           setsByMachine[set.machine] = []
@@ -277,25 +273,28 @@ export function useInventoryState() {
       }
     })
 
-    const machinesWithData = (machinesList || []).map((machine: any) => {
+    const machinesWithData: MachineTreeItem[] = (machinesList || []).map((machine) => {
       const setsForMachine = setsByMachine[machine.id] || []
-      const machineSets = setsForMachine.map((set: any) => {
+      const machineSets: SetTreeItem[] = setsForMachine.map((set) => {
         const setDies = diesBySet[set.id] || []
         return {
-          ...set,
+          id: set.id,
+          name: set.name,
+          machine: set.machine,
           dies: setDies,
-          die_count: set.die_count || 0
+          die_count: set.die_count || setDies.length || 0
         }
       })
 
       return {
-        ...machine,
+        id: machine.id,
+        name: machine.name,
         sets: machineSets,
-        totalDies: machineSets.reduce((sum: number, s: any) => sum + (s.die_count || 0), 0)
+        totalDies: machineSets.reduce((sum: number, s) => sum + (s.die_count || 0), 0)
       }
     })
 
-    const totalAssignedCount = (setsList || []).reduce((sum: number, s: any) => sum + (s.die_count || 0), 0)
+    const totalAssignedCount = (setsList || []).reduce((sum: number, s: DieSet & { die_count?: number }) => sum + (s.die_count || 0), 0)
     const unassignedCount = Math.max(0, totalCount - totalAssignedCount)
 
     return { unassignedDies, machinesWithData, unassignedCount }
@@ -323,7 +322,7 @@ export function useInventoryState() {
 
   const selectedMachine = useMemo(() => {
     if (selectedNode?.type === 'machine') {
-      return machinesWithData.find((m: any) => m.id === selectedNode.id)
+      return machinesWithData.find((m) => m.id === selectedNode.id) || null
     }
     return null
   }, [selectedNode, machinesWithData])
@@ -331,7 +330,7 @@ export function useInventoryState() {
   const selectedSetData = useMemo(() => {
     if (selectedNode?.type === 'set') {
       for (const m of machinesWithData) {
-        const s = m.sets.find((set: any) => set.id === selectedNode.id)
+        const s = m.sets.find((set) => set.id === selectedNode.id)
         if (s) {
           return { set: s, machine: m }
         }
@@ -342,16 +341,16 @@ export function useInventoryState() {
 
   const rawMachine = useMemo(() => {
     if (selectedNode?.type === 'machine') {
-      return (machinesList || []).find((m: any) => m.id === selectedNode.id)
+      return (machinesList || []).find((m) => m.id === selectedNode.id) || null
     }
     return null
   }, [selectedNode, machinesList])
 
   const rawSetData = useMemo(() => {
     if (selectedNode?.type === 'set') {
-      const s = (setsList || []).find((set: any) => set.id === selectedNode.id)
+      const s = (setsList || []).find((set) => set.id === selectedNode.id)
       if (s) {
-        const m = (machinesList || []).find((mach: any) => mach.id === s.machine)
+        const m = (machinesList || []).find((mach) => mach.id === s.machine)
         return { set: s, machine: m }
       }
     }
@@ -360,7 +359,7 @@ export function useInventoryState() {
 
   const activeDiesList = useMemo(() => {
     if (activeView === 'search') return dies || []
-    if (activeView === 'machine') return selectedMachine?.sets.reduce((acc: any[], s: any) => [...acc, ...s.dies], []) || []
+    if (activeView === 'machine') return selectedMachine?.sets.reduce((acc: Die[], s) => [...acc, ...(s.dies || [])], []) || []
     if (activeView === 'set') return selectedSetData?.set.dies || []
     if (activeView === 'unassigned') return unassignedDies || []
     return []
@@ -401,7 +400,7 @@ export function useInventoryState() {
       'Remarks'
     ]
 
-    const rows = listToExport.map((die: any) => {
+    const rows = listToExport.map((die: Die) => {
       const isRound = die.die_type === 'ROUND'
       return [
         die.die_id || '',
@@ -423,7 +422,7 @@ export function useInventoryState() {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row: any) => row.join(','))
+      ...rows.map((row) => row.join(','))
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -520,5 +519,4 @@ export function useInventoryState() {
     pageSize,
     setPageSize
   }
-
 }
