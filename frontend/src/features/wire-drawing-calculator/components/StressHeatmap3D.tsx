@@ -1711,7 +1711,7 @@ const SingleDieCanvas = React.memo(function SingleDieCanvas({
     isCentralBurstRisk, sigmaD, maxStress, bearingLen, reliefLen,
     xConeStart, xConeEnd, xBearEnd, xExit, xEntrance, xBellStart, xReliefEnd,
     xCasingFront, xCasingBack, casingChamfer, rNibOuter, rDieCasingOuter,
-    coneLength, rIn, rOut, cameraRef, canvasRef
+    coneLength, rIn, rOut, epsilon, cameraRef, canvasRef
   ]);
 
   return (
@@ -1782,8 +1782,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   // Hover Telemetry States
   const [trainHoverInfo, setTrainHoverInfo] = useState<TrainHoverInfo | null>(null);
   const [singleHoverInfo, setSingleHoverInfo] = useState<HoverInfo | null>(null);
-  const [hoverInfoA, setHoverInfoA] = useState<HoverInfo | null>(null);
-  const [hoverInfoB, setHoverInfoB] = useState<HoverInfo | null>(null);
 
   // Outer Wrapper Ref
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -2723,7 +2721,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   dieNibMaterial={dieNibMaterial}
                   showDimensions={false}
                   canvasRef={canvasRefA}
-                  onHover={setHoverInfoA}
+                  onHover={() => {}}
                 />
               </div>
 
@@ -2744,7 +2742,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
                   dieNibMaterial={dieNibMaterial}
                   showDimensions={false}
                   canvasRef={canvasRefB}
-                  onHover={setHoverInfoB}
+                  onHover={() => {}}
                 />
               </div>
             </div>
