@@ -3,18 +3,18 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Skeleton } from './Skeleton'
 import { EmptyState } from './EmptyState'
 
-export interface Column {
+export interface Column<T = object> {
   key: string
   label: string
   sortable?: boolean
-  render?: (row: any) => React.ReactNode
+  render?: (row: T) => React.ReactNode
   isNumeric?: boolean
 }
 
-export interface DataTableProps {
-  columns: Column[]
-  rows: any[]
-  onRowClick?: (row: any) => void
+export interface DataTableProps<T = object> {
+  columns: Column<T>[]
+  rows: T[]
+  onRowClick?: (row: T) => void
   loading?: boolean
   emptyMessage?: string
   sortField?: string
@@ -26,7 +26,7 @@ export interface DataTableProps {
   onSelectAll?: (checked: boolean) => void
 }
 
-export function DataTable({
+export function DataTable<T extends object = object>({
   columns,
   rows,
   onRowClick,
@@ -38,14 +38,14 @@ export function DataTable({
   selectedIds,
   onSelectId,
   onSelectAll
-}: DataTableProps) {
-  const handleHeaderClick = (col: Column) => {
+}: DataTableProps<T>) {
+  const handleHeaderClick = (col: Column<T>) => {
     if (col.sortable && onSort) {
       onSort(col.key)
     }
   }
 
-  const renderSortIcon = (col: Column) => {
+  const renderSortIcon = (col: Column<T>) => {
     if (!col.sortable) return null
     if (sortField !== col.key) {
       return <ArrowUpDown className="ml-1.5 h-3 w-3 opacity-40 shrink-0" />
@@ -65,7 +65,7 @@ export function DataTable({
                 <th className="py-2.5 px-3 w-10 text-center align-middle">
                   <input
                     type="checkbox"
-                    checked={rows.length > 0 && rows.every(row => selectedIds.has(String(row.die_id || row.id)))}
+                    checked={rows.length > 0 && rows.every(row => selectedIds.has(String((row as Record<string, unknown>).die_id || (row as Record<string, unknown>).id)))}
                     onChange={(e) => onSelectAll(e.target.checked)}
                     className="h-3.5 w-3.5 rounded-none border-[#2a2a2a] bg-[#0f0f0f] text-blue-500 focus:ring-0 cursor-pointer"
                   />
@@ -116,11 +116,12 @@ export function DataTable({
             ) : (
               // Normal rows
               rows.map((row, rIdx) => {
-                const rowId = String(row.die_id || row.id)
+                const rowObj = row as Record<string, unknown>
+                const rowId = String(rowObj.die_id || rowObj.id)
                 const isSelected = selectedIds?.has(rowId) ?? false
                 return (
                   <tr
-                    key={row.id || row.die_id || rIdx}
+                    key={String(rowObj.id || rowObj.die_id || rIdx)}
                     onClick={() => onRowClick && onRowClick(row)}
                     className={`group transition-colors duration-100 ${
                       onRowClick ? 'cursor-pointer hover:bg-[#1a1a1a]' : ''
@@ -140,7 +141,7 @@ export function DataTable({
                       </td>
                     )}
                     {columns.map((col) => {
-                      const val = row[col.key]
+                      const val = rowObj[col.key]
                       const isNumericVal = typeof val === 'number' || col.isNumeric || col.key.includes('size') || col.key.includes('width') || col.key.includes('thickness') || col.key.includes('id') || col.key.includes('count')
                       return (
                         <td 
@@ -149,7 +150,7 @@ export function DataTable({
                             isNumericVal ? 'font-mono tracking-tight' : 'font-mono'
                           }`}
                         >
-                          {col.render ? col.render(row) : (val ?? '—')}
+                          {col.render ? col.render(row) : ((val as React.ReactNode) ?? '—')}
                         </td>
                       )
                     })}
