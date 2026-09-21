@@ -2160,6 +2160,20 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     setUiZoom(Number(cameraRef.current.zoom.toFixed(2)));
   };
 
+  const hasPasses = Boolean(passes && passes.length > 0);
+  const activePassSingle = passes && passes.length > 0 ? (passes[selectedPassIdx] || passes[0]) : undefined;
+  const din = activePassSingle?.fromDie ?? 3.0;
+  const dout = activePassSingle?.toDie ?? 2.5;
+
+  const { physics: wasmPhysics, isWasmReady } = useWasmFeaSolver({
+    dInMm: din,
+    dOutMm: dout,
+    approachAngle2AlphaDeg: approachAngle2Alpha,
+    bearingLengthLbRatioPct: bearingLengthLbRatio,
+    materialStr: wireMaterial,
+    enabled: Boolean(hasPasses && activeViewMode === 'single'),
+  });
+
   if (!passes || passes.length === 0) {
     return (
       <div className="wdc-panel bg-[#050913]/90 border border-slate-900 rounded-xl p-12 text-center">
@@ -2169,7 +2183,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     );
   }
 
-  const activePassSingle = passes[selectedPassIdx] || passes[0];
   const activePassA = passes[comparePassIdxA] || passes[0];
   const activePassB = passes[comparePassIdxB] || passes[0];
 
@@ -2180,8 +2193,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     return `${sign}${delta.toFixed(3)}`;
   };
 
-  const din = activePassSingle?.fromDie ?? 3.0;
-  const dout = activePassSingle?.toDie ?? 2.5;
   const areaRed = activePassSingle?.areaReduction ?? 0;
   const rFrac = Math.max(0.01, Math.min(0.9, areaRed / 100));
   const alphaRadHalf = ((approachAngle2Alpha / 2) * Math.PI) / 180;
@@ -2194,15 +2205,6 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const sigmaD = sigmaFlow * phi * epsilon * (1 + FRICTION_COEFFICIENT_MU / Math.tan(Math.max(alphaRadHalf, 0.01)));
   const deltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
   const forceN = computeDrawingForce(activePassSingle, approachAngle2Alpha);
-
-  const { physics: wasmPhysics, isWasmReady } = useWasmFeaSolver({
-    dInMm: din,
-    dOutMm: dout,
-    approachAngle2AlphaDeg: approachAngle2Alpha,
-    bearingLengthLbRatioPct: bearingLengthLbRatio,
-    materialStr: wireMaterial,
-    enabled: activeViewMode === 'single',
-  });
 
   return (
     <motion.div
