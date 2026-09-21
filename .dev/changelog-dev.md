@@ -1,5 +1,29 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-21 Multi-Language Architecture — Phase 2: C/C++ Industrial Edge Telemetry Gateway
+*   **Edge Gateway Daemon (`services/edge-gateway/`)**:
+    *   Scaffolded production-grade C99 service linking with `libmodbus` (Modbus TCP/RTU), `hiredis` (Redis client), and `cJSON`.
+    *   Implemented `config.h` / `config.c` parsing environment variables (`PLC_HOST`, `PLC_PORT`, `REDIS_HOST`, `REDIS_PORT`, `MACHINE_ID`, `POLL_INTERVAL_MS`).
+    *   Implemented `modbus_client.h` / `modbus_client.c` with robust dynamic IPv4 resolution (`getaddrinfo` + `inet_ntop`) and socket reconnection lifecycle to query 5 core drawing registers: line drawing speed (`m/min`), capstan tension (`N`), die sump lubricant temperature (`°C`), laser exit diameter (`mm`), and motor power load (`kW`).
+    *   Implemented `redis_publisher.h` / `redis_publisher.c` formatting compact, low-overhead JSON payloads (`MACHINE_TELEMETRY`) and publishing to distributed Redis channel `dms:events:broadcast`.
+    *   Implemented unbuffered telemetry logging loop and signal traps (`SIGINT`, `SIGTERM`) in `main.c`.
+    *   Built mock industrial Modbus TCP server simulator (`mock/plc_simulator.c`) modeling smooth physics dynamics and wire drawing fluctuations.
+*   **Containerization & Cross-Platform Tooling**:
+    *   Authored multi-stage `Dockerfile` based on Alpine Linux 3.20 producing ultra-compact 3.7MB runtime container running under unprivileged user `dmsuser` (UID 1001).
+    *   Created `scripts/build-edge-gateway.ps1` and `scripts/build-edge-gateway.sh` automation scripts.
+*   **Pipeline & Go API Integration**:
+    *   Hardened Go event listener (`go-api/internal/events/events.go`) so that high-frequency `MACHINE_TELEMETRY` stream packets broadcast directly over Server-Sent Events (SSE) without triggering PostgreSQL search query cache invalidations.
+*   **Frontend Telemetry Ingestion & UI Visualization**:
+    *   Updated `useRealtimeSync.ts` to capture `MACHINE_TELEMETRY` packets from authenticated SSE and broadcast `machine-telemetry` CustomEvent without polling.
+    *   Created custom hook `frontend/src/features/machines/hooks/useMachineTelemetry.ts` with streaming state, rolling 30-sample history buffers, and heartbeat timeout detection.
+    *   Created `LiveTelemetryPanel.tsx` with dynamic machine selector, streaming beacon, 5 industrial metric cards, and responsive SVG trend sparklines.
+    *   Integrated Live Telemetry tab into `MachineSetsPage.tsx`.
+*   **Quality Assurance & Regression Testing**:
+    *   Unit Tests: 4/4 Vitest tests passed green in `useMachineTelemetry.test.tsx` (62/62 total tests passing across 23 test suites).
+    *   Lint & Types: 0 errors, 0 warnings under `npm run lint` and `npx tsc --noEmit`.
+    *   Production Bundle: Vite build passed cleanly in 29.7s.
+    *   Go Unit Tests: All 8 Go API packages passed green (Docker).
+
 ### 2026-09-19 Multi-Language Architecture — Phase 1: Rust/WebAssembly High-Resolution FEA & Math Engine
 *   **Wasm Drawing Engine (`wasm-drawing-engine/`)**:
     *   Scaffolded standalone Rust crate configured with `cdylib` and `rlib` targets.
