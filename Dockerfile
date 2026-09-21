@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && install -d /etc/apt/keyrings \
     && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-18 libpq-dev gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
@@ -60,6 +60,7 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Copy configurations
 COPY nginx-monolith.conf /etc/nginx/sites-available/default
 COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY entrypoint.sh /entrypoint.sh
 # Create non-root user and prepare runtime directories
 RUN groupadd -r dmsuser && useradd -r -g dmsuser -d /app -s /bin/bash dmsuser \
     && mkdir -p /var/log/supervisor /var/run /app/staticfiles /backups /var/lib/nginx /var/log/nginx \
