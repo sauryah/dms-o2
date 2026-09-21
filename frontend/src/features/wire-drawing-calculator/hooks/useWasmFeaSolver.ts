@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   computeFeaMeshWasm,
   computePassPhysicsWasm,
@@ -67,7 +67,7 @@ export function useWasmFeaSolver({
     };
   }, []);
 
-  const runCalculation = async () => {
+  const runCalculation = useCallback(async () => {
     if (!enabled || dInMm <= dOutMm || dOutMm <= 0) {
       return;
     }
@@ -115,14 +115,7 @@ export function useWasmFeaSolver({
         setIsLoading(false);
       }
     }
-  };
-
-  useEffect(() => {
-    if (isWasmReady && enabled) {
-      runCalculation();
-    }
   }, [
-    isWasmReady,
     enabled,
     dInMm,
     dOutMm,
@@ -136,6 +129,12 @@ export function useWasmFeaSolver({
     numRadialRings,
     numAngularSegments,
   ]);
+
+  useEffect(() => {
+    if (isWasmReady && enabled) {
+      runCalculation();
+    }
+  }, [isWasmReady, enabled, runCalculation]);
 
   return {
     isWasmReady,
