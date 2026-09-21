@@ -1,5 +1,23 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-21 Multi-Language Architecture — Phase 3: Julia Offline Metallurgical Modeling & Tool-Life Analytics
+*   **Julia Analytics Microservice (`services/metallurgy-analytics/`)**:
+    *   Configured Julia 1.10 runtime manifest (`Project.toml`) utilizing standard libraries (`Statistics`, `LinearAlgebra`, `Printf`) with zero heavy external package dependencies.
+    *   Implemented zero-dependency pure Julia JSON parser and serializer (`src/json_utils.jl`) providing fast, low-overhead string-to-dictionary and dictionary-to-string conversions for offline CLI and container execution.
+    *   Implemented Archard tool wear progression ($W(t) = a \cdot t^b$) using log-linear least squares regression (`src/archard_wear.jl`), computing $R^2$, RMSE ($\mu\text{m}$), wear regime classification (Run-in Polish, Steady-State Abrasive, Accelerating Wear), and forecasting remaining tonnage to tolerance limit.
+    *   Implemented Johnson-Cook high-strain-rate viscoplastic flow stress modeling (`src/johnson_cook.jl`) calibrated for 4 wire drawing metals (Copper Cu-ETP, High-Carbon Steel AISI 1070, Aluminum Al 1350, Brass CuZn30), computing strain-rate hardening, thermal softening, and adiabatic temperature rise.
+    *   Implemented 2-parameter Weibull reliability estimation (`src/weibull_reliability.jl`) via Benard's median rank regression, solving $\beta$ shape, $\eta$ scale, $B_{10}$ life, $B_{50}$ median life, MTTC, and failure mechanism classification.
+    *   Built modular dispatcher (`src/MetallurgyAnalytics.jl`) and CLI daemon (`src/cli.jl`) supporting file paths and standard stream piping.
+*   **Containerization & Cross-Platform Tooling**:
+    *   Authored production `Dockerfile` based on `julia:1.10-alpine` running as unprivileged user `dmsuser` (UID 1001).
+    *   Created `scripts/build-metallurgy-analytics.ps1` and `scripts/build-metallurgy-analytics.sh` automation scripts.
+    *   Built Docker image `dms-metallurgy-analytics:latest`.
+*   **Django Backend Integration & Quality Assurance**:
+    *   Implemented `backend/dies/services/metallurgy_service.py` (`MetallurgyService`) wrapping Julia/Docker CLI invocation with high-precision analytical Python mathematical fallback.
+    *   Added Django unit tests `backend/dies/tests/test_metallurgy_service.py` (6/6 tests green).
+    *   Fixed frontend TypeScript typing in `LiveTelemetryPanel.tsx` (`MachineTelemetryData` sparkline keying) and `StressHeatmap3D.tsx` (`activePassCurrent` null-safety after non-empty guard).
+    *   Full test suite verification: 48/48 Julia tests green, 21/21 Django service tests green, 8/8 Go API packages green, 62/62 Vitest tests green, 0 ESLint errors/warnings, 0 TypeScript compiler errors, and Vite production bundle clean in 24.14s.
+
 ### 2026-09-21 Multi-Language Architecture — Phase 2: C/C++ Industrial Edge Telemetry Gateway
 *   **Edge Gateway Daemon (`services/edge-gateway/`)**:
     *   Scaffolded production-grade C99 service linking with `libmodbus` (Modbus TCP/RTU), `hiredis` (Redis client), and `cJSON`.
