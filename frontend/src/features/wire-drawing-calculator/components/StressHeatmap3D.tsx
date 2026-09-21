@@ -2185,6 +2185,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
 
   const activePassA = passes[comparePassIdxA] || passes[0];
   const activePassB = passes[comparePassIdxB] || passes[0];
+  const activePassCurrent = passes[selectedPassIdx] || passes[0];
 
   const calculateDelta = (vA: number, vB: number) => {
     const delta = vB - vA;
@@ -2193,7 +2194,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
     return `${sign}${delta.toFixed(3)}`;
   };
 
-  const areaRed = activePassSingle?.areaReduction ?? 0;
+  const areaRed = activePassCurrent.areaReduction ?? 0;
   const rFrac = Math.max(0.01, Math.min(0.9, areaRed / 100));
   const alphaRadHalf = ((approachAngle2Alpha / 2) * Math.PI) / 180;
 
@@ -2204,7 +2205,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
   const phi = 0.88 + 0.12 * ((alphaRadHalf * 2) / rFrac) * (1 - rFrac);
   const sigmaD = sigmaFlow * phi * epsilon * (1 + FRICTION_COEFFICIENT_MU / Math.tan(Math.max(alphaRadHalf, 0.01)));
   const deltaT = (sigmaD * epsilon) / (8960 * 385) * 1e6;
-  const forceN = computeDrawingForce(activePassSingle, approachAngle2Alpha);
+  const forceN = computeDrawingForce(activePassCurrent, approachAngle2Alpha);
 
   return (
     <motion.div
@@ -2674,7 +2675,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           {activeViewMode === 'single' && (
             <div className="w-full relative h-full flex flex-col justify-between">
               <SingleDieCanvas
-                pass={activePassSingle}
+                pass={activePassCurrent}
                 approachAngle2Alpha={approachAngle2Alpha}
                 bearingLengthLbRatio={bearingLengthLbRatio}
                 sliceAngleDeg={sliceAngleDeg}
@@ -2891,7 +2892,7 @@ export default function StressHeatmap3D({ passes }: StressHeatmap3DProps) {
           <div className="flex justify-between items-center pb-3 border-b border-slate-900">
             <h4 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider m-0 font-heading flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-purple-400" />
-              <span>Pass #{activePassSingle.pass} Telemetry</span>
+              <span>Pass #{activePassCurrent.pass} Telemetry</span>
             </h4>
             <div className="flex items-center gap-1.5">
               {isWasmReady && (
