@@ -4,6 +4,47 @@ All notable changes to the DMS project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-21
+
+### Polyglot Multi-Language Architecture (DMS-O2)
+- **Rust / WebAssembly FEA Engine (`wasm-drawing-engine/`)**:
+  - Implemented standalone client-side 3D volumetric finite element solver calculating von Mises stress tensors, Ludwik-Hollomon flow stress, Avitzur redundant work factor $\phi$, and adiabatic friction thermal fields.
+  - Zero-copy linear memory buffer exports (`get_mesh_buffer_ptr`) delivering instant `Float32Array` views to Vite/React without main thread blocking.
+  - Automated Docker builder toolchain (`scripts/build-wasm.ps1`, `scripts/build-wasm.sh`).
+- **C99 Industrial Edge Gateway (`services/edge-gateway/`)**:
+  - Low-footprint, deterministic 3.7MB runtime daemon connecting directly to shop-floor drawing bench PLCs and laser gauges via Modbus TCP.
+  - Formats high-frequency `MACHINE_TELEMETRY` JSON packets and streams to distributed Redis Pub/Sub (`dms:events:broadcast`).
+  - Standalone mock PLC physics simulator (`mock/plc_simulator.c`) and Docker automation scripts (`scripts/build-edge-gateway.ps1`, `scripts/build-edge-gateway.sh`).
+- **Julia 1.10 Metallurgy Analytics Microservice (`services/metallurgy-analytics/`)**:
+  - Zero-dependency pure Julia JSON parser and serializer (`src/json_utils.jl`) for offline microservice execution.
+  - Archard tool wear power-law regression ($W(t) = a \cdot t^b$) with wear regime classification and remaining tonnage limit forecasting (`src/archard_wear.jl`).
+  - Johnson-Cook viscoplastic flow stress modeling with strain-rate sensitivity and thermal softening across Copper (Cu-ETP), High-Carbon Steel (AISI 1070), Aluminum (Al 1350), and Brass (CuZn30) (`src/johnson_cook.jl`).
+  - 2-parameter Weibull reliability estimation using Benard's median rank regression, solving $\beta$ shape, $\eta$ scale, $B_{10}$ tool life, and MTTC (`src/weibull_reliability.jl`).
+  - Standard I/O CLI daemon (`src/cli.jl`) and Alpine Docker container running under non-root user `dmsuser` UID 1001.
+  - Python/Django service wrapper (`MetallurgyService`) with seamless high-precision analytical fallback.
+
+### Real-Time Telemetry & Monitoring
+- **Live Machine Telemetry Dashboard**:
+  - Built `LiveTelemetryPanel.tsx` with dynamic machine switcher, streaming status beacon, 5 industrial metric cards, and responsive SVG trend sparklines.
+  - Created `useMachineTelemetry.ts` hook maintaining rolling 30-sample history buffers and heartbeat timeout detection.
+  - Hardened Go SSE listener (`go-api/internal/events/events.go`) to broadcast telemetry events without triggering search cache invalidations.
+
+### 3D CAD Drawing Workbench & Engineering Overhaul
+- **High-Performance 3D Workbench**:
+  - Decoupled 60–120 FPS camera render loop with precomputed trigonometric LUTs and unified 3D depth sorting.
+  - Interactive 4-zone internal bore geometry (Bell entrance, Reduction cone $2\alpha$, Sizing bearing $L_B$, Back relief $2\beta$) with 3D contour glow bands and floating callout markers.
+  - False-color thermal infrared FEA heatmap visualizing adiabatic temperature rise ($\Delta T = \frac{\sigma_d \cdot \epsilon}{\rho \cdot c_p}$) across die bore walls.
+  - 1-Click ISO/DIN compliant Technical Data Sheet (TDS) PDF export with embedded high-resolution 3D CAD canvas snapshots.
+- **Security & Infrastructure Modernization**:
+  - Single-use SHA-256 hashed MFA recovery backup codes (`UserBackupCode`) with CLI emergency unlock (`reset_mfa`).
+  - Enforced unprivileged `USER dmsuser` (UID 1001) across all container processes.
+  - Eliminated Redis Pub/Sub amplification loop and introduced atomic generation counter for $O(1)$ search cache invalidation.
+- **Code Quality Standard**:
+  - Achieved verified **0 errors, 0 warnings** under `npm run lint` (`eslint`) and strict `tsc --noEmit`.
+  - All test suites green across Julia (48/48), Django (21/21), Go (8/8 packages), and Vitest (62/62).
+
+---
+
 ## [1.9.4] - 2026-08-08
 
 ### Die Set Planner Tool & Industrial Parsing Engine
