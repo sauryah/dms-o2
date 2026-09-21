@@ -4,6 +4,10 @@
 *   **Version Tagging & SemVer Alignment**:
     *   Bumped project version from `1.9.3` to `2.0.0` in `frontend/package.json` and `frontend/package-lock.json`.
     *   Authored comprehensive release notes in `CHANGELOG.md` covering the complete delivery of the Multi-Language Architecture (Rust/Wasm FEA, C Edge Gateway, Julia Metallurgy Analytics), live machine telemetry streaming, and CAD 3D Workbench.
+*   **CI/CD Docker Multi-Arch Build Hardening**:
+    *   Resolved `pg_config executable not found` failure during multi-arch GitHub Actions build by installing `libpq-dev`, `gcc`, and `python3-dev` in root `Dockerfile`.
+    *   Switched `psycopg2` to `psycopg2-binary==2.9.12` in `backend/requirements.txt` to provide pre-compiled wheels across `linux/amd64` and `linux/arm64`.
+    *   Restored missing `COPY entrypoint.sh /entrypoint.sh` in root `Dockerfile` to prevent dos2unix missing file error.
 
 ### 2026-09-21 Multi-Language Architecture — Phase 3: Julia Offline Metallurgical Modeling & Tool-Life Analytics
 *   **Julia Analytics Microservice (`services/metallurgy-analytics/`)**:
