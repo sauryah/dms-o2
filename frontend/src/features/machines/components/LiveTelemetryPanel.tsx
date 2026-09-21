@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Activity, Gauge, Zap, Thermometer, Disc, Radio, AlertCircle } from 'lucide-react'
-import { useMachineTelemetry } from '../hooks/useMachineTelemetry'
+import { useMachineTelemetry, MachineTelemetryData } from '../hooks/useMachineTelemetry'
 import { Machine } from '../../../types'
 
 interface LiveTelemetryPanelProps {
@@ -16,7 +16,7 @@ export function LiveTelemetryPanel({ machines }: LiveTelemetryPanelProps) {
   const { targetState, isStreaming, latest, history } = useMachineTelemetry(selectedMachine)
 
   // Sparkline helper
-  const renderSparkline = (dataKey: keyof typeof latest, strokeColor: string) => {
+  const renderSparkline = (dataKey: keyof MachineTelemetryData, strokeColor: string) => {
     if (!history || history.length < 2) {
       return (
         <div className="h-8 flex items-center justify-center text-[10px] text-[var(--color-muted)] italic">
