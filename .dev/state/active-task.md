@@ -7,22 +7,27 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Multi-Language Architecture — Phase 1: Rust/WebAssembly High-Resolution FEA & Math Engine
+**Task:** Multi-Language Architecture — Phase 2: C/C++ Industrial Edge Telemetry Gateway
 **Status:** Complete
-**Started:** 2026-09-19
-**Completed:** 2026-09-19
+**Started:** 2026-09-21
+**Completed:** 2026-09-21
 **Confidence:** 100%
 
 ## Task Description
-Implemented the Rust WebAssembly (Wasm) calculation and FEA discretization engine (`wasm-drawing-engine`):
-1. **Scaffolded Rust Crate**: Created `wasm-drawing-engine/` with `Cargo.toml`, multi-stage Dockerfile builder, and modules for material constitutive properties, drawing mechanics, thermal advection, and 3D FEA mesh discretization.
-2. **Physics & Constitutive Mechanics**: Implemented Ludwik-Hollomon work hardening ($\sigma_{\text{flow}} = \frac{K \epsilon^n}{n+1}$), Avitzur redundant work factor ($\phi$), Siebel drawing stress, Taylor-Quinney adiabatic heat generation, and Avitzur central burst defect criteria.
-3. **Nodal 3D FEA Discretization**: Discretized the 4-zone die bore (Bell, Cone, Bearing, Relief) into 3D coordinates $(x, y, z)$ with full von Mises stress tensor fields and temperature distribution.
-4. **Zero-Copy Flat Memory Buffers**: Exposed typed memory views (`Float32Array`) directly into Wasm linear memory via `DrawingEngine`.
-5. **Dockerized Build Pipeline**: Created automated scripts (`scripts/build-wasm.ps1`, `scripts/build-wasm.sh`) compiling the crate with `wasm-pack 0.13.1` and `wasm-opt`.
-6. **Frontend Integration & Verification**: Built typed bridge (`WasmBridge.ts`) and React hook (`useWasmFeaSolver.ts`) integrated into `StressHeatmap3D.tsx` with live WASM badge and power telemetry. Verified 58/58 Vitest tests, `tsc --noEmit` 0 errors, clean Vite production build, 204 Django tests green, and Go tests green.
-Executed autonomous frontend debt elimination across the entire DMS-O2 repository, achieving **0 errors, 0 warnings** under `npm run lint` and `npx tsc --noEmit`:
-1. **DataTable Type Safety**: Broadened generic constraint from `T extends Record<string, unknown>` to `T extends object = object`, restoring type compatibility for typed TypeScript interfaces without index signature workarounds.
+Implemented the deterministic, low-footprint C/C++ Industrial Edge Gateway service (`services/edge-gateway/`):
+1. **Scaffold Service & Build Config**: Created `CMakeLists.txt` (C99, `libmodbus`, `hiredis`, `cJSON`) and multi-stage `Dockerfile` (3.7MB runtime image running as `dmsuser` UID 1001).
+2. **Modbus Client**: Connects to drawing bench PLCs/gauges, dynamic IPv4 address resolution, socket retry management, and registers decoding (line speed, tension, die sump temperature, laser wire diameter, motor power).
+3. **Redis Publisher**: Serializes compact telemetry JSON payloads and streams to Redis Pub/Sub (`dms:events:broadcast`).
+4. **Mock PLC Simulator**: Standalone Modbus TCP server (`mock/plc_simulator.c`) simulating physical drawing operations and telemetry fluctuations.
+5. **Cross-Platform Build Tooling**: Automated `scripts/build-edge-gateway.ps1` and `scripts/build-edge-gateway.sh`.
+6. **Go SSE Broadcast Pipeline**: Hardened `go-api/internal/events/events.go` to forward `MACHINE_TELEMETRY` events to SSE clients without triggering PostgreSQL query cache invalidation.
+7. **Frontend Ingestion & Visualization**:
+   - `useRealtimeSync.ts`: Dispatches `machine-telemetry` CustomEvents.
+   - `useMachineTelemetry.ts`: State management, rolling 30-sample history buffers, and heartbeat timeout detection.
+   - `useMachineTelemetry.test.tsx`: 4 unit tests (100% green).
+   - `LiveTelemetryPanel.tsx`: Live telemetry dashboard with streaming beacon, metric cards, and SVG sparklines.
+   - `MachineSetsPage.tsx`: Live Telemetry tab.
+8. **Verification**: Full test suite pass (62/62 Vitest tests green, 0 ESLint errors/warnings, 0 TypeScript errors, Vite production build clean, all 8 Go API packages green).
 2. **DieCard Projections**: Typed `die` prop using `Omit<Partial<Die>, 'die_type' | 'status'> & { die_id: string; die_type: string; status: string; location?: string }` and coerced dimension parsing.
 3. **Hook Dependencies & Scope**: Fixed `react-hooks/exhaustive-deps` warnings in `CommandPalette.tsx`, `useApi.ts`, `StressHeatmap3D.tsx`, and `App.tsx`.
 4. **Interface Contracts**: Added clean TypeScript interfaces for wire drawing API responses (`WireDrawingApiResponse`), die audit history (`DieHistoryItem`, `HistoryApiResponse`), and tolerance configs.
