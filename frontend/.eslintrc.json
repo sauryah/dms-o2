@@ -1,5 +1,5 @@
 {
-  "ignorePatterns": ["dist", "build", "node_modules", "coverage"],
+  "ignorePatterns": ["dist", "build", "node_modules", "coverage", "**/wasm/pkg/**"],
   "env": {
     "browser": true,
     "es2021": true
