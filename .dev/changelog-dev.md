@@ -1,5 +1,10 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-21 Milestone Release v2.0.0 (Polyglot Industrial DMS-O2 Platform)
+*   **Version Tagging & SemVer Alignment**:
+    *   Bumped project version from `1.9.3` to `2.0.0` in `frontend/package.json` and `frontend/package-lock.json`.
+    *   Authored comprehensive release notes in `CHANGELOG.md` covering the complete delivery of the Multi-Language Architecture (Rust/Wasm FEA, C Edge Gateway, Julia Metallurgy Analytics), live machine telemetry streaming, and CAD 3D Workbench.
+
 ### 2026-09-21 Multi-Language Architecture — Phase 3: Julia Offline Metallurgical Modeling & Tool-Life Analytics
 *   **Julia Analytics Microservice (`services/metallurgy-analytics/`)**:
     *   Configured Julia 1.10 runtime manifest (`Project.toml`) utilizing standard libraries (`Statistics`, `LinearAlgebra`, `Printf`) with zero heavy external package dependencies.
