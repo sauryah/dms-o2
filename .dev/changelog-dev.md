@@ -1,5 +1,35 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-23 Full-Stack Platform Modernization & Hardening (All 6 Pillars)
+*   **Core Backend Hardening & Metallurgy REST API**:
+    *   Eliminated DRF `min_value` Decimal type warnings by replacing float literals (`0.001`) with explicit `Decimal("0.001")` across `RoundDie`, `FlatDie`, `MachineDieStock`, and `DieInventoryRecountItem` models in `backend/dies/models.py`.
+    *   Created and applied migration `0017_alter_dieinventoryrecountitem_die_size_and_more.py`.
+    *   Implemented input validation serializers `ArchardWearInputSerializer`, `JohnsonCookInputSerializer`, and `WeibullReliabilityInputSerializer` in `backend/dies/serializers.py`.
+    *   Exposed REST API endpoints in `backend/dies/views_metallurgy.py` mapped to `/api/v1/metallurgy/wear/`, `/api/v1/metallurgy/flow-stress/`, `/api/v1/metallurgy/reliability/`, and `/api/v1/metallurgy/materials/`.
+    *   Added Django test suite `backend/dies/tests/test_metallurgy_views.py` (8/8 tests green).
+*   **Frontend `TOOL-03` Metallurgy & Tool Reliability Workbench**:
+    *   Built interactive metallurgical engineering suite in `frontend/src/features/metallurgy-workbench/pages/MetallurgyWorkbenchPage.tsx` with dynamic Archard power-law regression curves, Johnson-Cook viscoplastic flow stress modeling with thermal softening, and Weibull $B_{10}$ lifetime forecasting.
+    *   Registered `TOOL-03` in `frontend/src/pages/ToolsPage.tsx`, `/metallurgy-workbench` route in `App.tsx`, and user permission toggles in `AuthContext.tsx` and `UserManager.tsx`.
+*   **Industrial Edge Gateway & Orchestration**:
+    *   Added Modbus RTU serial device support (`PLC_MODE`, `PLC_SERIAL_DEVICE`, `PLC_BAUD`, `PLC_PARITY`, `PLC_DATA_BITS`, `PLC_STOP_BITS`) to `services/edge-gateway/` (`config.h`, `config.c`, `modbus_client.h`, `modbus_client.c`).
+    *   Implemented exponential backoff with full jitter (500ms base to 30s cap) and 60-second periodic heartbeat logging in `services/edge-gateway/src/main.c`.
+    *   Added `edge-gateway` and `metallurgy-analytics` profiles to root `docker-compose.yml`.
+*   **Frontend UI/UX, Focus Trapping & Accessibility Hardening**:
+    *   Authored WAI-ARIA compliant `useFocusTrap` hook (`frontend/src/hooks/useFocusTrap.ts`) and integrated into `Drawer.tsx`.
+    *   Integrated unsaved changes guard (`isDirty` + `ConfirmDialog`) in `DieDetailPage.tsx`.
+    *   Added unit tests in `useFocusTrap.test.tsx` (3/3 tests green).
+*   **Observability & Distributed Tracing**:
+    *   Implemented W3C `traceparent` generator and parser (`frontend/src/utils/tracing.ts`) with unit tests (`tracing.test.ts`, 7/7 green).
+    *   Injected `traceparent` headers into outgoing requests in `frontend/src/hooks/useApi.ts`.
+    *   Created Go W3C tracing middleware (`go-api/internal/middleware/tracing.go`, unit tests 100% green).
+    *   Injected `trace_id` into Go server request logging (`slog`) and enhanced `HandleMetrics` in `handlers.go` with Go runtime gauges (`dms_go_goroutines`, `dms_go_memstats_alloc_bytes`, `dms_go_memstats_sys_bytes`, `dms_go_memstats_num_gc`).
+*   **Polyglot CI/CD Pipeline & Security Automation**:
+    *   Updated `.github/workflows/deploy.yml` with Rust test step (`cargo test --manifest-path wasm-drawing-engine/Cargo.toml`), C Edge Gateway build verification, Julia test execution (`test/runtests.jl`), and Trivy filesystem/container vulnerability scanner.
+    *   Fixed defect risk threshold in `wasm-drawing-engine/src/physics.rs` for Avitzur central burst criterion to pass 5/5 Rust tests.
+*   **Verification & Knowledge Graph**:
+    *   Full polyglot verification: 218/218 Django tests OK, 65/65 Vitest frontend tests OK, all Go API packages OK, 48/48 Julia assertions OK, 5/5 Rust tests OK.
+    *   Executed `graphify update .`, maintaining 3,313 nodes, 5,712 edges, 307 communities.
+
 ### 2026-09-21 Milestone Release v2.0.0 (Polyglot Industrial DMS-O2 Platform)
 *   **Version Tagging & SemVer Alignment**:
     *   Bumped project version from `1.9.3` to `2.0.0` in `frontend/package.json` and `frontend/package-lock.json`.
