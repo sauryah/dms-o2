@@ -95,11 +95,13 @@ func main() {
 		start := time.Now()
 		recorder := &statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		mux.ServeHTTP(recorder, r)
-		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", recorder.status, "duration", time.Since(start))
+		traceID := middleware.GetTraceID(r.Context())
+		slog.Info("HTTP request", "remote_addr", r.RemoteAddr, "method", r.Method, "url", r.URL.String(), "status", recorder.status, "duration", time.Since(start), "trace_id", traceID)
 	})
 
-	// Apply rate limiting, security headers, and request size limits
-	rateLimitedMux := middleware.RateLimit(loggingMux, 5.0, 20.0)
+	// Apply tracing, rate limiting, security headers, and request size limits
+	tracedMux := middleware.Tracing(loggingMux)
+	rateLimitedMux := middleware.RateLimit(tracedMux, 5.0, 20.0)
 	secureMux := middleware.SecurityHeaders(rateLimitedMux)
 	limitedMux := middleware.MaxBytesReader(secureMux, 10<<20)
 
