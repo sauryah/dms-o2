@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.postgres.indexes import GinIndex
 from django.core.validators import MinValueValidator
@@ -33,8 +34,8 @@ class Die(models.Model):
 
 class RoundDie(models.Model):
     die           = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='rounddie')
-    punched_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
-    current_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    punched_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    current_size  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
 
     class Meta:
         indexes = [models.Index(fields=['current_size'])]
@@ -44,11 +45,11 @@ class RoundDie(models.Model):
 
 class FlatDie(models.Model):
     die                = models.OneToOneField(Die, on_delete=models.CASCADE, related_name='flatdie')
-    punched_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
-    current_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
-    punched_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
-    current_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
-    radius             = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    punched_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    current_width      = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    punched_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    current_thickness  = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    radius             = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
 
     class Meta:
         indexes = [models.Index(fields=['current_width', 'current_thickness'])]
@@ -179,7 +180,7 @@ class EnamelMachine(models.Model):
 
 class MachineDieStock(models.Model):
     enamel_machine = models.ForeignKey(EnamelMachine, on_delete=models.CASCADE, related_name='die_stocks')
-    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
     quantity = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -208,7 +209,7 @@ class DieInventoryRecount(models.Model):
 
 class DieInventoryRecountItem(models.Model):
     recount = models.ForeignKey(DieInventoryRecount, on_delete=models.CASCADE, related_name='items')
-    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(0.001)])
+    die_size = models.DecimalField(max_digits=7, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
     quantity = models.PositiveIntegerField()
     previous_quantity = models.PositiveIntegerField(null=True, blank=True)
 
