@@ -4,8 +4,14 @@
 #include <stdbool.h>
 
 typedef struct {
+    char plc_mode[16];       // "TCP" (default) or "RTU"
     char plc_host[128];
     int plc_port;
+    char serial_device[128]; // e.g. "/dev/ttyUSB0"
+    int baud_rate;           // e.g. 19200
+    char parity;             // 'E' (even), 'N' (none), 'O' (odd)
+    int data_bits;           // 8
+    int stop_bits;           // 1
     char redis_host[128];
     int redis_port;
     char redis_channel[128];
