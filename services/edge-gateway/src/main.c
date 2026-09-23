@@ -9,6 +9,10 @@
 #include "modbus_client.h"
 #include "redis_publisher.h"
 
+#define BACKOFF_BASE_MS   500
+#define BACKOFF_MAX_MS    30000
+#define HEARTBEAT_SECS    60
+
 static volatile sig_atomic_t g_running = 1;
 
 static void handle_signal(int sig) {
@@ -23,12 +27,23 @@ static void sleep_ms(int ms) {
     nanosleep(&ts, NULL);
 }
 
+static int calculate_jittered_backoff(int current_backoff_ms) {
+    // Randomized jitter between 0 and 250 ms
+    int jitter = rand() % 250;
+    int next = (int)(current_backoff_ms * 1.5) + jitter;
+    if (next > BACKOFF_MAX_MS) {
+        next = BACKOFF_MAX_MS;
+    }
+    return next;
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    srand((unsigned int)time(NULL));
 
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
@@ -42,7 +57,7 @@ int main(int argc, char **argv) {
     config_load_env(&config);
     config_print(&config);
 
-    modbus_client_t *modbus = modbus_client_create(config.plc_host, config.plc_port, config.modbus_slave_id);
+    modbus_client_t *modbus = modbus_client_create_from_config(&config);
     if (!modbus) {
         fprintf(stderr, "[FATAL] Unable to initialize Modbus client context\n");
         return 1;
@@ -58,23 +73,31 @@ int main(int argc, char **argv) {
     printf("[GATEWAY] Ingestion loop starting (poll interval: %d ms)...\n", config.poll_interval_ms);
 
     unsigned long packet_count = 0;
+    int modbus_backoff_ms = BACKOFF_BASE_MS;
+    int redis_backoff_ms = BACKOFF_BASE_MS;
+    time_t last_heartbeat = time(NULL);
+
     while (g_running) {
-        // Ensure Modbus connection
+        // Ensure Modbus connection with exponential backoff & jitter
         if (!modbus->is_connected) {
             if (!modbus_client_connect(modbus)) {
-                printf("[GATEWAY] Retrying PLC connection in 2 seconds...\n");
-                sleep_ms(2000);
+                printf("[GATEWAY] Modbus retry in %d ms (exponential backoff)...\n", modbus_backoff_ms);
+                sleep_ms(modbus_backoff_ms);
+                modbus_backoff_ms = calculate_jittered_backoff(modbus_backoff_ms);
                 continue;
             }
+            modbus_backoff_ms = BACKOFF_BASE_MS; // Reset on success
         }
 
-        // Ensure Redis connection
+        // Ensure Redis connection with exponential backoff & jitter
         if (!redis->is_connected) {
             if (!redis_publisher_connect(redis)) {
-                printf("[GATEWAY] Retrying Redis connection in 2 seconds...\n");
-                sleep_ms(2000);
+                printf("[GATEWAY] Redis retry in %d ms (exponential backoff)...\n", redis_backoff_ms);
+                sleep_ms(redis_backoff_ms);
+                redis_backoff_ms = calculate_jittered_backoff(redis_backoff_ms);
                 continue;
             }
+            redis_backoff_ms = BACKOFF_BASE_MS; // Reset on success
         }
 
         machine_telemetry_t data;
@@ -89,6 +112,14 @@ int main(int argc, char **argv) {
             } else {
                 fprintf(stderr, "[GATEWAY] Failed to publish telemetry to Redis\n");
             }
+        }
+
+        // Periodic heartbeat logging
+        time_t now = time(NULL);
+        if (now - last_heartbeat >= HEARTBEAT_SECS) {
+            printf("[HEARTBEAT] Gateway healthy. Telemetry streamed: %lu packets. Machine: %s\n",
+                   packet_count, config.machine_id);
+            last_heartbeat = now;
         }
 
         sleep_ms(config.poll_interval_ms);
