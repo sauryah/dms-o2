@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useId } from 'react'
+import React, { useRef, useId } from 'react'
 import { X } from 'lucide-react'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 export interface DrawerProps {
   open: boolean
@@ -10,69 +11,13 @@ export interface DrawerProps {
 
 export function Drawer({ open, onClose, title, children }: DrawerProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
-  const previousFocusRef = useRef<HTMLElement | null>(null)
   const titleId = useId()
 
-  useEffect(() => {
-    if (!open) return
-
-    // Remember what had focus before opening
-    previousFocusRef.current = document.activeElement as HTMLElement
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-
-      if (e.key === 'Tab') {
-        const dialog = dialogRef.current
-        if (!dialog) return
-
-        const focusables = dialog.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )
-        if (focusables.length === 0) return
-
-        const firstEl = focusables[0]
-        const lastEl = focusables[focusables.length - 1]
-
-        const isActiveInside = Array.from(focusables).includes(document.activeElement as HTMLElement)
-        if (!isActiveInside) {
-          firstEl.focus()
-          e.preventDefault()
-          return
-        }
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstEl) {
-            lastEl.focus()
-            e.preventDefault()
-          }
-        } else {
-          if (document.activeElement === lastEl) {
-            firstEl.focus()
-            e.preventDefault()
-          }
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-
-    // Auto-focus the close button (first focusable in header)
-    const focusTimer = setTimeout(() => {
-      const closeBtn = dialogRef.current?.querySelector<HTMLElement>('button[aria-label="Close panel"]')
-      closeBtn?.focus()
-    }, 50)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      clearTimeout(focusTimer)
-      // Restore focus to the element that was focused before opening
-      previousFocusRef.current?.focus()
-    }
-  }, [open, onClose])
+  useFocusTrap(dialogRef, {
+    enabled: open,
+    onEscape: onClose,
+    returnFocus: true,
+  })
 
   if (!open) return null
 
@@ -87,10 +32,11 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
       {/* Drawer Panel */}
       <div
         ref={dialogRef}
-        className="relative w-full max-w-[480px] h-full bg-[#0f0f0f] border-l border-[#2a2a2a] flex flex-col z-10 transition-transform duration-150 ease-out transform translate-x-0 font-mono"
+        className="relative w-full max-w-[480px] h-full bg-[#0f0f0f] border-l border-[#2a2a2a] flex flex-col z-10 transition-transform duration-150 ease-out transform translate-x-0 font-mono outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
       >
         {/* Drawer Header */}
         <div className="p-3.5 border-b border-[#2a2a2a] flex items-center justify-between bg-[#0a0a0a]">
