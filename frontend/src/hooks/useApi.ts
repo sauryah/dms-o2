@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { createTraceparent } from '../utils/tracing'
 
 export class ApiError extends Error {
   type: 'network' | 'timeout' | 'http_4xx' | 'http_5xx' | 'unauthorized' | 'aborted' | 'unknown';
@@ -96,6 +97,9 @@ export const useApi = () => {
       headers['Content-Type'] = 'application/json'
     }
     headers['X-Requested-With'] = 'XMLHttpRequest'
+    if (!headers['traceparent']) {
+      headers['traceparent'] = createTraceparent().traceparent
+    }
     if (tokenRef.current) {
       headers['Authorization'] = `Bearer ${tokenRef.current}`
     }
