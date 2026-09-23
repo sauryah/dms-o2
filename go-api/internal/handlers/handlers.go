@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,7 +309,27 @@ func (h *Handler) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	poolStats := h.db.GetPoolStats()
 	activeClients := h.eventManager.ActiveClientCount()
 
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	goroutines := runtime.NumGoroutine()
+
 	var b strings.Builder
+	b.WriteString("# HELP dms_go_goroutines Number of goroutines currently executing\n")
+	b.WriteString("# TYPE dms_go_goroutines gauge\n")
+	fmt.Fprintf(&b, "dms_go_goroutines %d\n", goroutines)
+
+	b.WriteString("# HELP dms_go_memstats_alloc_bytes Bytes allocated and not yet freed\n")
+	b.WriteString("# TYPE dms_go_memstats_alloc_bytes gauge\n")
+	fmt.Fprintf(&b, "dms_go_memstats_alloc_bytes %d\n", memStats.Alloc)
+
+	b.WriteString("# HELP dms_go_memstats_sys_bytes Total bytes of memory obtained from the OS\n")
+	b.WriteString("# TYPE dms_go_memstats_sys_bytes gauge\n")
+	fmt.Fprintf(&b, "dms_go_memstats_sys_bytes %d\n", memStats.Sys)
+
+	b.WriteString("# HELP dms_go_memstats_num_gc Completed GC cycles\n")
+	b.WriteString("# TYPE dms_go_memstats_num_gc counter\n")
+	fmt.Fprintf(&b, "dms_go_memstats_num_gc %d\n", memStats.NumGC)
+
 	b.WriteString("# HELP dms_go_db_open_connections Current open connections to PostgreSQL\n")
 	b.WriteString("# TYPE dms_go_db_open_connections gauge\n")
 	fmt.Fprintf(&b, "dms_go_db_open_connections %d\n", poolStats.OpenConnections)
