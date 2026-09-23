@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Calculator, ArrowRight, Zap, Lock, Layers } from 'lucide-react'
+import { Calculator, ArrowRight, Zap, Lock, Layers, Flame } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ToolsPage() {
@@ -34,6 +34,22 @@ export function ToolsPage() {
         'Custom elongation percentage per pass',
         'Live preview with statistics',
         'Send series directly to calculator',
+      ],
+    },
+    {
+      id: 'metallurgy-workbench',
+      code: 'TOOL-03',
+      title: 'Metallurgy & Tool Reliability Workbench',
+      description:
+        'Archard tool wear regression, Johnson-Cook viscoplastic dynamic flow stress, and Weibull life-expectancy forecasting.',
+      icon: Flame,
+      path: '/metallurgy-workbench',
+      ctaLabel: 'Launch Solver',
+      features: [
+        'Archard power-law wear progression',
+        'Wear regime detection & tonnage limit',
+        'Johnson-Cook flow stress & adiabatic rise',
+        'Weibull B10 safe replacement threshold',
       ],
     },
   ]
