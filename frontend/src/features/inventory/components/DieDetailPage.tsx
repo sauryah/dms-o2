@@ -252,12 +252,61 @@ export function DieDetailPage() {
   const [newRadius, setNewRadius] = useState('')
   const [recutNote, setRecutNote] = useState('')
   const [recutError, setRecutError] = useState<string | null>(null)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   // Query details
   const { data: die, isLoading, error } = useQuery<DieDetailRecord>({
     queryKey: ['die', id],
     queryFn: () => request(`/api/dies/${id}/`),
   })
+
+  const isDirty = React.useMemo(() => {
+    if (!die) return false
+    return (
+      casingVal !== (die.casing || '') ||
+      statusVal !== (die.status || 'AVAILABLE') ||
+      rack !== (die.rack ? String(die.rack) : '') ||
+      shelf !== (die.shelf ? String(die.shelf) : '') ||
+      remarks !== (die.remarks || '') ||
+      currentSetId !== (die.current_set ? String(die.current_set) : '') ||
+      currentSize !== (die.current_size || '') ||
+      currentWidth !== (die.current_width || '') ||
+      currentThickness !== (die.current_thickness || '') ||
+      punchedSize !== (die.punched_size || '') ||
+      punchedWidth !== (die.punched_width || '') ||
+      punchedThickness !== (die.punched_thickness || '') ||
+      radiusVal !== (die.radius || '')
+    )
+  }, [die, casingVal, statusVal, rack, shelf, remarks, currentSetId, currentSize, currentWidth, currentThickness, punchedSize, punchedWidth, punchedThickness, radiusVal])
+
+  const handleCloseEditDrawer = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true)
+    } else {
+      setIsEditing(false)
+    }
+  }
+
+  const handleConfirmDiscard = () => {
+    if (die) {
+      setCasingVal(die.casing || '')
+      setStatusVal(die.status || 'AVAILABLE')
+      setRack(die.rack ? String(die.rack) : '')
+      setShelf(die.shelf ? String(die.shelf) : '')
+      setRemarks(die.remarks || '')
+      setCurrentSetId(die.current_set ? String(die.current_set) : '')
+      setCurrentSize(die.current_size || '')
+      setCurrentWidth(die.current_width || '')
+      setCurrentThickness(die.current_thickness || '')
+      setPunchedSize(die.punched_size || '')
+      setPunchedWidth(die.punched_width || '')
+      setPunchedThickness(die.punched_thickness || '')
+      setRadiusVal(die.radius || '')
+    }
+    setShowDiscardConfirm(false)
+    setIsEditing(false)
+  }
+
 
   // Populate recut defaults when modal is opened or die changes
   useEffect(() => {
@@ -780,7 +829,7 @@ export function DieDetailPage() {
       </div>
 
       {/* Slide-out Edit Form Drawer */}
-      <Drawer open={isEditing} onClose={() => setIsEditing(false)} title={`CONFIGURE DIE: ${die.die_id}`}>
+      <Drawer open={isEditing} onClose={handleCloseEditDrawer} title={`CONFIGURE DIE: ${die.die_id}`}>
         <form onSubmit={handleSave} className="space-y-4 pb-20 pr-1 pl-1 font-mono">
           <div>
             <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wider mb-1">DIE ID</label>
@@ -938,7 +987,7 @@ export function DieDetailPage() {
           <div className="flex justify-end space-x-2 pt-4 border-t border-[#1a1a1a]">
             <button 
               type="button"
-              onClick={() => setIsEditing(false)}
+              onClick={handleCloseEditDrawer}
               className="bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] px-3 py-1 rounded-sm uppercase text-xs font-mono cursor-pointer"
             >
               Cancel
@@ -953,6 +1002,18 @@ export function DieDetailPage() {
           </div>
         </form>
       </Drawer>
+
+      {/* Discard Unsaved Changes Confirmation Dialogue */}
+      <ConfirmDialog
+        open={showDiscardConfirm}
+        title="Discard Unsaved Changes?"
+        message="You have unsaved changes in this die configuration. Are you sure you want to discard them?"
+        confirmLabel="Discard Changes"
+        cancelLabel="Keep Editing"
+        danger={true}
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
 
       {/* Confirm Action Dialogue */}
       <ConfirmDialog
