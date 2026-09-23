@@ -94,9 +94,9 @@ pub fn evaluate_central_burst(alpha_deg_half: f64, r_fraction: f64) -> (f64, Def
     let alpha_rad = alpha_deg_half.to_radians();
     let delta = alpha_rad / r_safe.sqrt();
 
-    let risk = if delta > 2.8 || alpha_deg_half > 20.0 {
+    let risk = if delta > 2.5 || alpha_deg_half >= 20.0 {
         DefectRisk::CriticalBurstRisk
-    } else if delta > 1.8 || alpha_deg_half > 15.0 {
+    } else if delta > 1.5 || alpha_deg_half >= 15.0 {
         DefectRisk::Warning
     } else {
         DefectRisk::Safe
