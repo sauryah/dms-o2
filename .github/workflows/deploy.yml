@@ -68,6 +68,25 @@ jobs:
           cd go-api
           go test -v ./...
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run Wasm Drawing Engine tests
+        run: cargo test --manifest-path wasm-drawing-engine/Cargo.toml
+
+      - name: Build C Edge Gateway
+        run: |
+          sudo apt-get update && sudo apt-get install -y libmodbus-dev libhiredis-dev libcjson-dev cmake gcc
+          cd services/edge-gateway
+          cmake -B build -S .
+          cmake --build build
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+      - name: Run Julia Metallurgy Analytics tests
+        run: julia services/metallurgy-analytics/test/runtests.jl
+
   security:
     runs-on: ubuntu-latest
     steps:
@@ -103,6 +122,16 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           cd go-api && govulncheck ./... || true
+
+      - name: Run Trivy container & filesystem vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          format: 'table'
+          exit-code: '0'
+
 
   deploy:
     needs: [test, security]
