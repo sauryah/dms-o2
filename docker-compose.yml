@@ -366,45 +366,6 @@ services:
       frontend:
         condition: service_started
 
-  edge-gateway:
-    image: dms-o2-edge-gateway:latest
-    build:
-      context: ./services/edge-gateway
-      dockerfile: Dockerfile
-    profiles: ["telemetry", "full"]
-    restart: unless-stopped
-    environment:
-      - PLC_MODE=TCP
-      - PLC_HOST=plc-simulator
-      - PLC_PORT=1502
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_CHANNEL=dms:events:broadcast
-      - MACHINE_ID=EN-01
-      - POLL_INTERVAL_MS=500
-    depends_on:
-      redis:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 64m
-          cpus: '0.25'
-
-  metallurgy-analytics:
-    image: dms-metallurgy-analytics:latest
-    build:
-      context: ./services/metallurgy-analytics
-      dockerfile: Dockerfile
-    profiles: ["analytics", "full"]
-    restart: "no"
-    deploy:
-      resources:
-        limits:
-          memory: 512m
-          cpus: '1.0'
-
 volumes:
   postgres_data:
   meili_data:
