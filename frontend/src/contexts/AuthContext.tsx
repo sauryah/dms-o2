@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (authTools !== undefined) {
       setAuthorizedTools(authTools)
     } else {
-      setAuthorizedTools(userRole === 'ROOT' ? ['wire-drawing-calculator', 'die-series-generator', 'metallurgy-workbench'] : [])
+      setAuthorizedTools(userRole === 'ROOT' ? ['wire-drawing-calculator', 'die-series-generator'] : [])
     }
   }
 
