@@ -48,14 +48,14 @@ This specification governs the UI components, color systems, typography tokens, 
 
 ### Typography specs
 
-*   **Heading Font**: `Fira Code` (for codes, numeric sizes, and parameters)
-*   **Body Font**: `Fira Sans` (for remarks, labels, and text descriptions)
+*   **Heading Font**: `Plus Jakarta Sans` / `Inter` (with monospace fallback `ui-monospace`)
+*   **Body Font**: `Inter` / `Plus Jakarta Sans`
 *   **Design Mood**: Data-dense, analytical, precise, technical
-*   **Google Fonts Link**: [Fira Code & Fira Sans Family Selection](https://fonts.google.com/share?selection.family=Fira+Code:wght@400;500;600;700%7CFira+Sans:wght@300;400;500;600;700)
+*   **Typography Delivery**: 100% Self-Hosted & Localized (No external font requests)
 
 #### Stylesheet Import
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+@import './fonts.css';
 ```
 
 ---
