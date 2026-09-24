@@ -1,5 +1,19 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-24 Service Worker SSE Stream & Realtime Auth Loop Resolution
+*   **Service Worker Interception & Streaming Fix (`frontend/public/sw.js`)**:
+    *   Bypassed ServiceWorker fetch interception for all Server-Sent Events (`/api/events*`, `text/event-stream`), preventing `response.clone()` crashes and EventSource reconnection loops.
+    *   Bypassed ServiceWorker for sensitive authentication routes (`/api/v1/auth/*`, `/api/auth/*`) and backup streams.
+    *   Added Content-Type defensive check inside API response cloning handler to reject event streams from CacheStorage.
+    *   Bumped static cache to `dms-static-v3` and API cache to `dms-api-v2` for immediate client activation.
+*   **Nginx Service Worker Cache Control (`frontend/nginx.conf`)**:
+    *   Configured explicit `location = /sw.js` with `no-cache, no-store, must-revalidate` and `expires 0` headers, ensuring browsers immediately fetch worker updates.
+*   **Realtime Sync & Auth Session Reconnection Loop Fix (`frontend/src/hooks/useRealtimeSync.ts`, `frontend/src/contexts/AuthContext.tsx`)**:
+    *   Halted reconnect retry loops in `useRealtimeSync.ts` upon receiving 401 Unauthorized or `type === 'unauthorized'` on ticket requests.
+    *   Reset consecutive failure counters on EventSource `onopen`.
+    *   Added 401 status detection in `AuthContext.tsx` `refetchPermissions` to trigger `logout()` and clear expired credentials from `localStorage`.
+    *   Added comprehensive unit tests in `frontend/src/hooks/__tests__/useRealtimeSync.test.tsx` verifying token presence guards and 401 halt logic (74/74 Vitest tests passing).
+
 ### 2026-09-23 Full-Stack Platform Modernization & Hardening (All 6 Pillars)
 *   **Core Backend Hardening & Metallurgy REST API**:
     *   Eliminated DRF `min_value` Decimal type warnings by replacing float literals (`0.001`) with explicit `Decimal("0.001")` across `RoundDie`, `FlatDie`, `MachineDieStock`, and `DieInventoryRecountItem` models in `backend/dies/models.py`.
