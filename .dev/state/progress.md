@@ -245,6 +245,19 @@ Track implementation status across all phases.
 - **Full-Stack Platform Modernization & Hardening (All 6 Pillars):** 100% complete
 - **Service Worker SSE Stream & Realtime Auth Loop Resolution:** 100% complete
 - **Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench):** 100% complete
+- **Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge:** 100% complete
+
+### Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge (2026-09-24) ✅
+**Status:** Complete  
+**Date:** 2026-09-24  
+
+**Completed:**
+- **Self-Hosted Local Fonts**: Replaced all external Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`) with 100% self-hosted WOFF2 binaries in `frontend/public/fonts/` for Inter (400-700) and Plus Jakarta Sans (500-800) across Latin, Latin-ext, Cyrillic, Greek, and Vietnamese ranges. Generated `frontend/public/fonts/fonts.css` and bundled module `frontend/src/fonts.css`.
+- **Zero Third-Party Requests**: Purged all external `preconnect` and font stylesheet tags from `frontend/index.html`. Updated `frontend/src/index.css` to import local fonts.
+- **ServiceWorker Font Caching**: Enhanced `frontend/public/sw.js` with `.woff2` and `.woff` offline caching rules and bumped static cache to `dms-static-v4`.
+- **Third-Party Tracker Elimination**: Removed Sentry SDK integration and `captureException` from `ErrorBoundary.tsx` and `main.tsx`. Deleted `frontend/src/utils/sentry.ts`. Removed Sentry configuration and external DNS IP (`8.8.8.8`) in `backend/dms/settings.py`. Removed `sentry-sdk==2.66.1` dependency from `backend/requirements.txt`.
+- **Design System Alignment**: Updated `design-system/die-management-system/MASTER.md` to reflect self-hosted typography.
+- **Verification**: Zero external network requests to Google Fonts or third-party tracking services. All 70 Vitest tests green, TypeScript typecheck clean (0 errors), Vite production build clean, 101/101 Django tests green, Docker frontend container verified serving fonts with HTTP 200 and 1-year immutable caching.
 
 ### Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench) (2026-09-24) ✅
 **Status:** Complete  
