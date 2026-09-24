@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -188,7 +187,7 @@ func StartEventListener(cfg *config.Config, redisCache *cache.Cache, manager *Ev
 			return
 		}
 		slog.Info("Processing event", "source", source, "payload", payload)
-		if source == "postgres" || (source == "redis" && !strings.Contains(payload, "MACHINE_TELEMETRY")) {
+		if source == "postgres" || source == "redis" {
 			onNotify()
 		}
 		manager.Broadcast(payload)
