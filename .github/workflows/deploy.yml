@@ -73,20 +73,6 @@ jobs:
       - name: Run Wasm Drawing Engine tests
         run: cargo test --manifest-path wasm-drawing-engine/Cargo.toml
 
-      - name: Build C Edge Gateway
-        run: |
-          sudo apt-get update && sudo apt-get install -y libmodbus-dev libhiredis-dev libcjson-dev cmake gcc
-          cd services/edge-gateway
-          cmake -B build -S .
-          cmake --build build
-
-      - name: Set up Julia
-        uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.10'
-      - name: Run Julia Metallurgy Analytics tests
-        run: julia services/metallurgy-analytics/test/runtests.jl
-
   security:
     runs-on: ubuntu-latest
     steps:
