@@ -1,5 +1,5 @@
-const CACHE_NAME = 'dms-static-v2';
-const API_CACHE_NAME = 'dms-api-v1';
+const CACHE_NAME = 'dms-static-v3';
+const API_CACHE_NAME = 'dms-api-v2';
 
 const STATIC_ASSETS = [
   '/manifest.json'
@@ -33,14 +33,23 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET' ||
-      url.pathname.includes('@vite') ||
-      url.pathname.includes('/api/auth/login') ||
-      url.pathname.includes('/api/v1/auth/login') ||
-      url.pathname.includes('/api/auth/logout') ||
-      url.pathname.includes('/api/v1/auth/logout') ||
-      url.pathname.includes('/api/backups') ||
-      url.pathname.includes('/api/v1/backups')) {
+  // Exclude requests that should never be intercepted or handled by ServiceWorker:
+  // - Non-GET requests (POST, PUT, DELETE, etc.)
+  // - Vite dev server internals (@vite, @fs, etc.)
+  // - Real-time Server-Sent Events (/api/events/ or text/event-stream)
+  // - Authentication & session endpoints (/api/v1/auth/*, /api/auth/*)
+  // - Database backups & restore binary streams (/api/v1/backups/*, /api/backups/*)
+  if (
+    request.method !== 'GET' ||
+    url.pathname.includes('@vite') ||
+    url.pathname.startsWith('/api/events') ||
+    url.pathname.includes('/events/') ||
+    request.headers.get('Accept')?.includes('text/event-stream') ||
+    url.pathname.startsWith('/api/auth') ||
+    url.pathname.startsWith('/api/v1/auth') ||
+    url.pathname.startsWith('/api/backups') ||
+    url.pathname.startsWith('/api/v1/backups')
+  ) {
     return;
   }
 
@@ -49,10 +58,13 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(API_CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
+            const contentType = response.headers.get('Content-Type') || '';
+            if (!contentType.includes('text/event-stream')) {
+              const responseClone = response.clone();
+              caches.open(API_CACHE_NAME).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
           }
           return response;
         })
