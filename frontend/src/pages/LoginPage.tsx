@@ -3,6 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { AlertCircle, RefreshCw, Globe, Shield, KeyRound, ArrowLeft } from 'lucide-react'
 
+function extractErrorMessage(errData: unknown, fallback: string): string {
+  if (!errData || typeof errData !== 'object') return fallback
+  const d = errData as Record<string, unknown>
+  if (typeof d.detail === 'string' && d.detail.trim()) {
+    return d.detail.trim()
+  }
+  if (d.error) {
+    if (typeof d.error === 'string' && d.error.trim()) {
+      return d.error.trim()
+    }
+    if (typeof d.error === 'object' && d.error !== null) {
+      const errObj = d.error as Record<string, unknown>
+      if (typeof errObj.message === 'string' && errObj.message.trim()) {
+        return errObj.message.trim()
+      }
+      if (typeof errObj.code === 'string' && errObj.code.trim()) {
+        return errObj.code.trim()
+      }
+    }
+  }
+  if (Array.isArray(d.non_field_errors) && d.non_field_errors.length > 0) {
+    return String(d.non_field_errors[0])
+  }
+  if (typeof d.message === 'string' && d.message.trim()) {
+    return d.message.trim()
+  }
+  return fallback
+}
+
 export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -61,7 +90,7 @@ export function LoginPage() {
         })
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}))
-          const msg = errData.detail || 'Invalid or previously used backup code'
+          const msg = extractErrorMessage(errData, 'Invalid or previously used backup code')
           throw new Error(msg)
         }
         const data = await res.json()
@@ -81,7 +110,7 @@ export function LoginPage() {
       })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        const msg = errData.detail || (Array.isArray(errData.non_field_errors) ? errData.non_field_errors[0] : null) || errData.error || 'Invalid username or password'
+        const msg = extractErrorMessage(errData, 'Invalid username or password')
         throw new Error(msg)
       }
       const data = await res.json()
