@@ -17,7 +17,7 @@ ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', ca
 import socket
 try:
     _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    _s.connect(("8.8.8.8", 80))
+    _s.connect(("10.255.255.255", 1))
     _lan_ip = _s.getsockname()[0]
     _s.close()
     if _lan_ip and _lan_ip not in ALLOWED_HOSTS:
@@ -321,22 +321,6 @@ if not DEBUG:
         raise ImproperlyConfigured("Insecure ROOT_PASSWORD detected in production! Must be at least 12 characters.")
     if not ROOT_USERNAME or ROOT_USERNAME in ('auto:run_setup_to_generate',):
         raise ImproperlyConfigured("ROOT_USERNAME must be configured in production!")
-
-# Sentry Integration
-SENTRY_DSN = config('SENTRY_DSN', default=None)
-if SENTRY_DSN:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.django import DjangoIntegration
-        sentry_sdk.init(
-            dsn=SENTRY_DSN,
-            integrations=[DjangoIntegration()],
-            traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float),
-            send_default_pii=True
-        )
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Failed to initialize Sentry: {e}")
 
 # OpenTelemetry Tracing Setup
 OTEL_EXPORTER_OTLP_ENDPOINT = config('OTEL_EXPORTER_OTLP_ENDPOINT', default=None)
