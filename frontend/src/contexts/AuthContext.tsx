@@ -68,6 +68,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   })
 
+  const logout = React.useCallback(() => {
+    refreshFailuresRef.current = 0
+    const activeToken = localStorage.getItem('dms_token') || token
+    if (activeToken) {
+      fetch('/api/v1/auth/logout/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${activeToken}`,
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      }).catch(err => console.error('Failed to notify backend logout:', err))
+    }
+    clearAuthStorage()
+    setToken(null)
+    setRefreshToken(null)
+    setRole(null)
+    setUsername(null)
+    setUserId(null)
+    setIsAuthorizedForTools(false)
+    setAuthorizedTools([])
+  }, [token])
+
   const refetchPermissions = React.useCallback(async () => {
     const activeToken = localStorage.getItem('dms_token') || token
     if (!activeToken) return
@@ -78,6 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'X-Requested-With': 'XMLHttpRequest',
         },
       })
+      if (res && res.status === 401) {
+        logout()
+        return
+      }
       if (res && res.ok && typeof res.json === 'function') {
         const data = await res.json()
         if (data.role) setRole(data.role)
@@ -91,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn('Failed to live-sync user permissions:', err)
     }
-  }, [token])
+  }, [token, logout])
 
   useEffect(() => {
     if (!token) return
@@ -170,28 +196,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setAuthorizedTools(userRole === 'ROOT' ? ['wire-drawing-calculator', 'die-series-generator', 'metallurgy-workbench'] : [])
     }
-  }
-
-  const logout = () => {
-    refreshFailuresRef.current = 0
-    if (token) {
-      fetch('/api/v1/auth/logout/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest',
-        }
-      }).catch(err => console.error('Failed to notify backend logout:', err))
-    }
-    setToken(null)
-    setRefreshToken(null)
-    setRole(null)
-    setUsername(null)
-    setUserId(null)
-    setIsAuthorizedForTools(false)
-    setAuthorizedTools([])
-    localStorage.removeItem('dms_authorized_for_tools')
-    localStorage.removeItem('dms_authorized_tools')
   }
 
   const handleRefreshFailure = () => {
