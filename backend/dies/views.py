@@ -522,9 +522,3 @@ class DieInventoryRecountViewSet(viewsets.ModelViewSet):
         return Response({"detail": "Recount sheet submitted and stock levels updated successfully."})
 
 
-from .views_metallurgy import (
-    MetallurgyWearView,
-    MetallurgyFlowStressView,
-    MetallurgyReliabilityView,
-    MetallurgyMaterialsView,
-)
