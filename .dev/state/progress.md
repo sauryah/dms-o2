@@ -243,6 +243,18 @@ Track implementation status across all phases.
 - **Multi-Language Architecture — Phase 3 (Julia Metallurgy Analytics):** 100% complete
 - **Milestone Release (v2.0.0):** 100% complete
 - **Full-Stack Platform Modernization & Hardening (All 6 Pillars):** 100% complete
+- **Service Worker SSE Stream & Realtime Auth Loop Resolution:** 100% complete
+
+### Service Worker SSE Stream & Realtime Auth Loop Resolution (2026-09-24) ✅
+**Status:** Complete  
+**Date:** 2026-09-24  
+
+**Completed:**
+- **Service Worker Bypass (`frontend/public/sw.js`)**: Excluded Server-Sent Events (`/api/events*`, `text/event-stream`), auth endpoints (`/api/v1/auth/*`, `/api/auth/*`), and backups from Service Worker fetch interception to eliminate streaming clone crashes. Bumped cache versions to `dms-static-v3` and `dms-api-v2`.
+- **Nginx Cache-Control Headers (`frontend/nginx.conf`)**: Bound explicit `location = /sw.js` with `no-cache, no-store, must-revalidate` and `expires 0` so browser HTTP caches never serve stale worker scripts.
+- **SSE Reconnect Storm Suppression (`frontend/src/hooks/useRealtimeSync.ts`)**: Halted reconnection attempts immediately upon 401 unauthorized or cancellation, and reset failure counts on connection open.
+- **Session Expiry Synchronization (`frontend/src/contexts/AuthContext.tsx`)**: Wired `logout()` upon 401 response from `/api/v1/auth/me/` in `refetchPermissions` to clear invalid tokens and avoid infinite polling loops.
+- **Test Coverage**: Added `frontend/src/hooks/__tests__/useRealtimeSync.test.tsx` (74/74 Vitest tests passing, 0 TypeScript errors).
 
 ### Full-Stack Platform Modernization & Hardening (2026-09-23) ✅
 **Status:** Complete
