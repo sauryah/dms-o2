@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Folder, Cpu, Layers, Radio } from 'lucide-react'
+import { Folder, Cpu, Layers } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useApi } from '../hooks/useApi'
 import { Skeleton } from '../components/ui/Skeleton'
 import { CategoriesTab } from './machinesets/CategoriesTab'
 import { MachinesTab } from './machinesets/MachinesTab'
 import { SetsTab } from './machinesets/SetsTab'
-import { LiveTelemetryPanel } from '../features/machines/components/LiveTelemetryPanel'
 
 export function MachineSetsPage() {
   const { request } = useApi()
   const { role } = useAuth()
-  const [activeTab, setActiveTab] = useState<'categories' | 'machines' | 'sets' | 'telemetry'>('categories')
+  const [activeTab, setActiveTab] = useState<'categories' | 'machines' | 'sets'>('categories')
 
   // Queries
   const { data: categories, isLoading: isCatsLoading } = useQuery({
@@ -149,20 +148,6 @@ export function MachineSetsPage() {
             {sets?.length || 0}
           </span>
         </button>
-        <button
-          onClick={() => setActiveTab('telemetry')}
-          className={`px-3.5 py-1.5 text-xs uppercase font-mono font-bold rounded-xl transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'telemetry'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
-          }`}
-        >
-          <Radio className="h-3.5 w-3.5 text-cyan-400" />
-          <span>Live Telemetry</span>
-          <span className="px-1.5 py-0.2 text-[10px] font-mono rounded bg-emerald-500/20 text-emerald-400 font-bold uppercase">
-            Live
-          </span>
-        </button>
       </div>
 
       {/* Tab Contents */}
@@ -189,9 +174,6 @@ export function MachineSetsPage() {
             isSetsLoading={isSetsLoading}
             isWritable={isWritable}
           />
-        )}
-        {activeTab === 'telemetry' && (
-          <LiveTelemetryPanel machines={machines} />
         )}
       </div>
     </div>
