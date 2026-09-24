@@ -1,5 +1,27 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-24 Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge
+*   **Self-Hosted Local Fonts Migration**:
+    *   Downloaded official production WOFF2 font binaries for Inter (weights 400, 500, 600, 700) and Plus Jakarta Sans (weights 500, 600, 700, 800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese unicode subsets into `frontend/public/fonts/`.
+    *   Created standalone stylesheet `frontend/public/fonts/fonts.css` and React bundle module `frontend/src/fonts.css` mapping local `@font-face` definitions to `/fonts/*.woff2`.
+    *   Imported `./fonts.css` into `frontend/src/index.css`.
+    *   Purged all external `preconnect` and stylesheet `<link>` tags pointing to `fonts.googleapis.com` and `fonts.gstatic.com` from `frontend/index.html`.
+    *   Updated `design-system/die-management-system/MASTER.md` documentation to specify 100% self-hosted font delivery.
+    *   Enhanced `frontend/public/sw.js` with `.woff2` and `.woff` offline caching support and bumped static cache to `dms-static-v4`.
+*   **Third-Party Tracker Elimination**:
+    *   Removed Sentry exception capture from `frontend/src/components/ErrorBoundary.tsx` and initialization call from `frontend/src/main.tsx`.
+    *   Deleted unused `frontend/src/utils/sentry.ts`.
+    *   Removed Sentry SDK configuration block from `backend/dms/settings.py`.
+    *   Replaced external Google DNS IP (`8.8.8.8`) in LAN IP auto-detection socket connect with RFC 1918 broadcast address (`10.255.255.255`), ensuring zero external IP contacts.
+    *   Removed `sentry-sdk==2.66.1` dependency from `backend/requirements.txt`.
+*   **System Verification & Audit**:
+    *   Full grep audit confirms 0 references to `fonts.googleapis.com` or `fonts.gstatic.com` across the codebase.
+    *   All 70 Vitest tests passing green.
+    *   Frontend TypeScript check (`tsc --noEmit`) passes with 0 errors.
+    *   Production Vite bundle builds cleanly in 7.5s.
+    *   All 101 Django `dies` tests pass green in Docker.
+    *   Nginx static asset delivery verified returning HTTP 200 with `Cache-Control: public, max-age=31536000, immutable` for `/fonts/*.woff2`.
+
 ### 2026-09-24 Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench)
 *   **Live Telemetry Decommissioning**:
     *   Deleted C99 Edge Gateway service daemon (`services/edge-gateway/`: `main.c`, `modbus_client.*`, `redis_publisher.*`, `config.*`, `mock/plc_simulator.c`, `CMakeLists.txt`, `Dockerfile`) and automation build scripts (`scripts/build-edge-gateway.*`).
