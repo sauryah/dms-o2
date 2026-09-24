@@ -1,5 +1,29 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-24 Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench)
+*   **Live Telemetry Decommissioning**:
+    *   Deleted C99 Edge Gateway service daemon (`services/edge-gateway/`: `main.c`, `modbus_client.*`, `redis_publisher.*`, `config.*`, `mock/plc_simulator.c`, `CMakeLists.txt`, `Dockerfile`) and automation build scripts (`scripts/build-edge-gateway.*`).
+    *   Removed `edge-gateway` service definition and `telemetry` profile from `docker-compose.yml`.
+    *   Removed `MACHINE_TELEMETRY` handling in `go-api/internal/events/events.go` and `frontend/src/hooks/useRealtimeSync.ts`.
+    *   Removed "Live Telemetry" tab, state, and dashboard panel from `frontend/src/pages/MachineSetsPage.tsx`.
+    *   Deleted `frontend/src/features/machines/components/LiveTelemetryPanel.tsx`, `hooks/useMachineTelemetry.ts`, and test suite.
+*   **Tool 3 (Metallurgy Workbench & Julia Analytics) Decommissioning**:
+    *   Deleted Julia 1.10 analytics microservice (`services/metallurgy-analytics/`: `Project.toml`, `Dockerfile`, `src/`, `test/`) and automation build scripts (`scripts/build-metallurgy-analytics.*`).
+    *   Removed `metallurgy-analytics` service definition from `docker-compose.yml`.
+    *   Removed Django REST metallurgy endpoints (`api/v1/metallurgy/*`, legacy fallbacks) in `backend/dms/urls.py`.
+    *   Removed metallurgy views in `backend/dies/views_metallurgy.py` and import in `backend/dies/views.py`.
+    *   Removed input validation serializers (`ArchardWearInputSerializer`, `JohnsonCookInputSerializer`, `WeibullReliabilityInputSerializer`) in `backend/dies/serializers.py`.
+    *   Removed service layer in `backend/dies/services/metallurgy_service.py` and tests (`test_metallurgy_views.py`, `test_metallurgy_service.py`).
+    *   Deleted React workbench page `frontend/src/features/metallurgy-workbench/pages/MetallurgyWorkbenchPage.tsx`.
+    *   Removed `/metallurgy-workbench` route from `frontend/src/App.tsx`, tool card from `frontend/src/pages/ToolsPage.tsx`, root user default tools in `frontend/src/contexts/AuthContext.tsx`, and permission checkbox in `frontend/src/pages/users/UserManager.tsx`.
+*   **CI/CD Pipeline Streamlining**:
+    *   Removed C Edge Gateway build and Julia test execution steps from `.github/workflows/deploy.yml`.
+*   **System Verification**:
+    *   Frontend tests: 70/70 Vitest tests green.
+    *   Backend tests: 101/101 `dies` Django tests green.
+    *   Production frontend bundle built cleanly in 12.6s.
+    *   All 10 core containers healthy.
+
 ### 2026-09-24 Service Worker SSE Stream & Realtime Auth Loop Resolution
 *   **Service Worker Interception & Streaming Fix (`frontend/public/sw.js`)**:
     *   Bypassed ServiceWorker fetch interception for all Server-Sent Events (`/api/events*`, `text/event-stream`), preventing `response.clone()` crashes and EventSource reconnection loops.
