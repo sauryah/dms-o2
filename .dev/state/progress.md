@@ -244,6 +244,18 @@ Track implementation status across all phases.
 - **Milestone Release (v2.0.0):** 100% complete
 - **Full-Stack Platform Modernization & Hardening (All 6 Pillars):** 100% complete
 - **Service Worker SSE Stream & Realtime Auth Loop Resolution:** 100% complete
+- **Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench):** 100% complete
+
+### Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench) (2026-09-24) ✅
+**Status:** Complete  
+**Date:** 2026-09-24  
+
+**Completed:**
+- **Live Telemetry Decommissioning**: Removed C Edge Gateway daemon (`services/edge-gateway/`), PLC simulator, build scripts, compose profile, Go SSE filter exceptions, and the Live Telemetry UI tab/panel (`LiveTelemetryPanel.tsx`, `useMachineTelemetry.ts`).
+- **Tool 3 Decommissioning (`TOOL-03`)**: Removed Julia 1.10 analytics microservice (`services/metallurgy-analytics/`), Django REST metallurgy endpoints (`/api/v1/metallurgy/*`), serializers, service layer, tests, and the React frontend workbench (`MetallurgyWorkbenchPage.tsx`).
+- **Toolbox Streamlining**: Focused the platform purely on `TOOL-01` (Wire Drawing 3D Workbench with Rust/Wasm FEA) and `TOOL-02` (Die Series Generator), with cleaned navigation and root user permissions.
+- **CI/CD Pipeline Streamlining**: Removed C and Julia build and test steps from GitHub Actions `.github/workflows/deploy.yml`.
+- **Zero Regressions**: All 70/70 Vitest tests green, all 204/204 Django tests green, clean Vite bundle build in 12.6s, all 10 core containers healthy.
 
 ### Service Worker SSE Stream & Realtime Auth Loop Resolution (2026-09-24) ✅
 **Status:** Complete  
