@@ -946,26 +946,6 @@ export function UserManager() {
                       </label>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between p-2 bg-[#141414] border border-[#2a2a2a] rounded-sm">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="tool-metallurgy-workbench"
-                        checked={authorizedToolsInput.includes('metallurgy-workbench')}
-                        onChange={() => {
-                          const isChecked = authorizedToolsInput.includes('metallurgy-workbench');
-                          setAuthorizedToolsInput(prev =>
-                            isChecked ? prev.filter(id => id !== 'metallurgy-workbench') : [...prev, 'metallurgy-workbench']
-                          );
-                        }}
-                        className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-orange-500 cursor-pointer"
-                      />
-                      <label htmlFor="tool-metallurgy-workbench" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
-                        Metallurgy & Tool Reliability Workbench
-                      </label>
-                    </div>
-                  </div>
                 </div>
               )}
 
