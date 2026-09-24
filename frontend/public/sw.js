@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dms-static-v3';
+const CACHE_NAME = 'dms-static-v4';
 const API_CACHE_NAME = 'dms-api-v2';
 
 const STATIC_ASSETS = [
@@ -109,7 +109,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(request).then((response) => {
-        if (response.status === 200 && (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.png'))) {
+        if (response.status === 200 && (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.png') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.woff'))) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseClone);
