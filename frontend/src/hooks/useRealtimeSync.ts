@@ -42,7 +42,7 @@ export function useRealtimeSync(options: {
     const MAX_RECONNECT_ATTEMPTS = 5
 
     const scheduleReconnect = () => {
-      if (!isCancelled && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
+      if (!isCancelled && token && consecutiveFailures < MAX_RECONNECT_ATTEMPTS) {
         const baseDelay = Math.min(1000 * Math.pow(2, consecutiveFailures), 30000)
         const jitter = Math.random() * 1000
         const delay = baseDelay + jitter
@@ -55,7 +55,7 @@ export function useRealtimeSync(options: {
     }
 
     const connectSSE = async () => {
-      if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS) return
+      if (consecutiveFailures >= MAX_RECONNECT_ATTEMPTS || isCancelled) return
 
       try {
         const res = await request('/api/auth/sse-ticket/', { method: 'POST' })
@@ -72,6 +72,7 @@ export function useRealtimeSync(options: {
         eventSource = new EventSource(`/api/events/?ticket=${encodeURIComponent(ticket)}`)
 
         eventSource.onopen = () => {
+          consecutiveFailures = 0
           window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'connected' } }))
         }
 
@@ -176,6 +177,7 @@ export function useRealtimeSync(options: {
         }
 
         eventSource.onerror = () => {
+          if (isCancelled) return
           consecutiveFailures++
           window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'reconnecting' } }))
           if (consecutiveFailures === 1) {
@@ -187,7 +189,14 @@ export function useRealtimeSync(options: {
           }
           scheduleReconnect()
         }
-      } catch (e) {
+      } catch (e: unknown) {
+        if (isCancelled) return
+        const err = e as { status?: number; type?: string }
+        if (err?.status === 401 || err?.type === 'unauthorized') {
+          console.warn('SSE ticket request unauthorized (401). Suspending realtime updates.')
+          window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'disconnected' } }))
+          return
+        }
         consecutiveFailures++
         window.dispatchEvent(new CustomEvent('sse-status', { detail: { status: 'disconnected' } }))
         console.warn('Failed to establish SSE ticket connection:', e)
