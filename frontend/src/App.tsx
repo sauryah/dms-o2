@@ -23,7 +23,6 @@ const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m =
 const ToolsPage = lazyWithRetry(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
 const WireDrawingCalculatorPage = lazyWithRetry(() => import('./pages/WireDrawingCalculatorPage').then(m => ({ default: m.WireDrawingCalculatorPage })))
 const DieSeriesGeneratorPage = lazyWithRetry(() => import('./pages/DieSeriesGeneratorPage').then(m => ({ default: m.DieSeriesGeneratorPage })))
-const MetallurgyWorkbenchPage = lazyWithRetry(() => import('./features/metallurgy-workbench/pages/MetallurgyWorkbenchPage').then(m => ({ default: m.MetallurgyWorkbenchPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -224,13 +223,6 @@ function AppContent() {
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="die-series-generator">
                   <DieSeriesGeneratorPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/metallurgy-workbench" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth toolId="metallurgy-workbench">
-                  <MetallurgyWorkbenchPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
