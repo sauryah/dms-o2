@@ -7,42 +7,40 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench) + SSE Auth Fix
+**Task:** Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge
 **Status:** Complete
 **Started:** 2026-09-24
 **Completed:** 2026-09-24
 **Confidence:** 100%
 
 ## Task Description
-Executed comprehensive decommissioning of Live Telemetry and Tool 3 (Metallurgy Workbench & Julia Analytics) and resolved Service Worker SSE stream issues:
-1. **Service Worker & SSE Auth Loop Resolution**:
-   - Bypassed `/api/events*`, `text/event-stream`, and `/api/v1/auth/*` in `frontend/public/sw.js` to eliminate streaming clone crashes. Bumped cache versions to `dms-static-v3` and `dms-api-v2`.
-   - Bound explicit `location = /sw.js` with `no-cache, no-store, must-revalidate` in `frontend/nginx.conf`.
-   - Prevented SSE reconnect storms on 401 in `useRealtimeSync.ts` and wired automatic logout on 401 in `AuthContext.tsx`.
-   - Added unit test suite `frontend/src/hooks/__tests__/useRealtimeSync.test.tsx`.
-2. **Decommissioning Live Telemetry**:
-   - Removed Live Telemetry UI tab and state from `MachineSetsPage.tsx`. Deleted `LiveTelemetryPanel.tsx`, `useMachineTelemetry.ts`, and test files.
-   - Removed `MACHINE_TELEMETRY` SSE dispatch and filtering in `useRealtimeSync.ts` and `go-api/internal/events/events.go`.
-   - Removed C edge gateway daemon (`services/edge-gateway/`), simulator, build scripts, and compose profile.
-3. **Decommissioning Tool 3 (`TOOL-03` Metallurgy Workbench & Julia Analytics)**:
-   - Deleted `MetallurgyWorkbenchPage.tsx`, removed `/metallurgy-workbench` route from `App.tsx`, card from `ToolsPage.tsx`, permissions from `AuthContext.tsx` and `UserManager.tsx`.
-   - Deleted metallurgy views, serializers, service layer, and tests in `backend/dies/`.
-   - Removed Julia analytics microservice (`services/metallurgy-analytics/`), build scripts, and compose service.
-   - Cleaned CI/CD workflow `.github/workflows/deploy.yml` removing C and Julia build/test steps.
-4. **Verification**:
-   - All 70 Vitest tests green, all 204 Django tests green, clean Vite production build.
-   - All 10 core containers healthy. Codebase graph updated via `graphify update .`.
+Executed comprehensive privacy hardening and eliminated all unnecessary third-party requests and trackers across the stack:
+1. **Self-Hosted Local Fonts**:
+   - Downloaded official WOFF2 binaries for Inter (weights 400-700) and Plus Jakarta Sans (weights 500-800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese subsets into `frontend/public/fonts/`.
+   - Created localized stylesheet `frontend/public/fonts/fonts.css` and src bundler integration module `frontend/src/fonts.css`.
+   - Imported `./fonts.css` directly in `frontend/src/index.css`.
+   - Removed external `preconnect` and stylesheet links to `fonts.googleapis.com` and `fonts.gstatic.com` from `frontend/index.html`.
+   - Updated `design-system/die-management-system/MASTER.md` typography documentation to reference self-hosted fonts.
+   - Updated ServiceWorker `frontend/public/sw.js` to cache `.woff2` and `.woff` assets and bumped cache version to `dms-static-v4`.
+2. **Third-Party Tracker Purge**:
+   - Removed Sentry integration from `frontend/src/components/ErrorBoundary.tsx` and `frontend/src/main.tsx`.
+   - Deleted unused `frontend/src/utils/sentry.ts`.
+   - Removed Sentry integration and external IP resolution (`8.8.8.8`) from `backend/dms/settings.py` (replaced with RFC 1918 private address `10.255.255.255`).
+   - Removed `sentry-sdk==2.66.1` dependency from `backend/requirements.txt`.
+3. **Verification**:
+   - Zero occurrences of `fonts.googleapis.com` or `fonts.gstatic.com` across the codebase.
+   - All 70 Vitest tests green, TypeScript typecheck clean (0 errors), production Vite build successful.
+   - All 101 Django tests green. Docker frontend container rebuilt and verified serving fonts locally with HTTP 200 and 1-year immutable caching.
 
 ## Completed
-1. Service Worker SSE stream & auth loop resolution — 100% complete.
-2. Live Telemetry decommissioning across UI, SSE, and edge gateway — 100% complete.
-3. Tool 3 (`TOOL-03`) metallurgy workbench & Julia analytics decommissioning — 100% complete.
-4. CI/CD and Docker compose cleanup — 100% complete.
-5. All 46 file changes committed individually with `--no-gpg-sign`.
+1. 100% self-hosted typography replacing Google Fonts — 100% complete.
+2. Complete removal of Sentry and external tracking dependencies — 100% complete.
+3. Verification of 0 external font/tracking network requests — 100% complete.
+4. All files committed individually with `--no-gpg-sign`.
 
 ## Next Steps
-- Push commits to remote origin if required.
-- Continue normal operation of DMS-O2 core inventory and tools (Tool 1 & Tool 2).
+- Maintain strict CSP and self-hosted privacy standards.
+- Push commits to remote origin if requested.
 
 ## Blockers
-- None. System is fully operational and healthy.
+- None. System is fully air-gapped ready and privacy friendly.
