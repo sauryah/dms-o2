@@ -82,11 +82,6 @@ export function useRealtimeSync(options: {
           try {
             const payload = JSON.parse(event.data)
 
-            if (payload.type === 'MACHINE_TELEMETRY') {
-              window.dispatchEvent(new CustomEvent('machine-telemetry', { detail: payload }))
-              return
-            }
-
             const signature = `${payload.type}-${payload.data?.id || payload.data?.filename || ''}-${payload.data?.action || ''}`
             if (recentEvents.current.has(signature)) return
             recentEvents.current.add(signature)
