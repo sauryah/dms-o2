@@ -7,55 +7,42 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Full-Stack DMS-O2 Platform Enhancement & Hardening (All 6 Pillars Complete)
+**Task:** Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench) + SSE Auth Fix
 **Status:** Complete
-**Started:** 2026-09-23
-**Completed:** 2026-09-23
+**Started:** 2026-09-24
+**Completed:** 2026-09-24
 **Confidence:** 100%
 
 ## Task Description
-Executed comprehensive end-to-end modernization and hardening across all tiers of the DMS-O2 stack:
-1. **Phase 1: Core Backend Hardening & Metallurgy REST API**:
-   - Replaced all float literals (`0.001`) with explicit `Decimal("0.001")` across `RoundDie`, `FlatDie`, `MachineDieStock`, and `DieInventoryRecountItem` models in `backend/dies/models.py`.
-   - Created and applied database migration `0017_alter_dieinventoryrecountitem_die_size_and_more.py` cleanly to eliminate DRF `min_value` Decimal type warnings.
-   - Authored input/output validation serializers (`ArchardWearInputSerializer`, `JohnsonCookInputSerializer`, `WeibullReliabilityInputSerializer`) in `backend/dies/serializers.py`.
-   - Created `backend/dies/views_metallurgy.py` exposing REST endpoints `/api/v1/metallurgy/wear/`, `/api/v1/metallurgy/flow-stress/`, `/api/v1/metallurgy/reliability/`, and `/api/v1/metallurgy/materials/`.
-   - Added Django test suite `backend/dies/tests/test_metallurgy_views.py` (8/8 tests passed green).
-2. **Phase 2: Frontend `TOOL-03` Metallurgy & Tool Reliability Workbench**:
-   - Built interactive metallurgical engineering suite `frontend/src/features/metallurgy-workbench/pages/MetallurgyWorkbenchPage.tsx` providing Archard wear power-law regression curves, Johnson-Cook dynamic flow stress & adiabatic heating modeling, and Weibull $B_{10}$ lifetime forecasting.
-   - Registered `TOOL-03` in `frontend/src/pages/ToolsPage.tsx`, `/metallurgy-workbench` route in `frontend/src/App.tsx`, and user permission toggles in `AuthContext.tsx` and `UserManager.tsx`.
-3. **Phase 3: Industrial Edge Gateway & Docker Compose Orchestration**:
-   - Added Modbus RTU serial device support (`PLC_MODE`, `PLC_SERIAL_DEVICE`, `PLC_BAUD`, `PLC_PARITY`, `PLC_DATA_BITS`, `PLC_STOP_BITS`) to `services/edge-gateway/` (`config.h`, `config.c`, `modbus_client.h`, `modbus_client.c`).
-   - Implemented exponential backoff with full jitter and 60-second periodic heartbeat logging in `services/edge-gateway/src/main.c`.
-   - Added `edge-gateway` and `metallurgy-analytics` microservice profiles to root `docker-compose.yml`.
-4. **Phase 4: Frontend UI/UX, Focus Trapping & Accessibility Hardening**:
-   - Created WAI-ARIA compliant `useFocusTrap` hook (`frontend/src/hooks/useFocusTrap.ts`) with Tab/Shift+Tab focus cycling and Escape listener.
-   - Integrated `useFocusTrap` into `frontend/src/components/ui/Drawer.tsx`.
-   - Added unsaved changes guard (`isDirty` + `ConfirmDialog`) to `DieDetailPage.tsx`.
-   - Wrote unit tests for `useFocusTrap` (`frontend/src/hooks/__tests__/useFocusTrap.test.tsx`), passing 3/3 tests.
-5. **Phase 5: Observability & Distributed Tracing**:
-   - Implemented W3C `traceparent` generator and parser (`frontend/src/utils/tracing.ts`), tested with 7/7 unit tests (`tracing.test.ts`).
-   - Injected `traceparent` headers into outgoing requests in `frontend/src/hooks/useApi.ts`.
-   - Created Go W3C tracing middleware (`go-api/internal/middleware/tracing.go`), tested with 100% coverage (`tracing_test.go`).
-   - Connected `trace_id` to Go server request logging (`slog`) in `go-api/cmd/server/main.go`.
-   - Enhanced `HandleMetrics` in `go-api/internal/handlers/handlers.go` to export standard Go runtime gauges (`dms_go_goroutines`, `dms_go_memstats_alloc_bytes`, `dms_go_memstats_sys_bytes`, `dms_go_memstats_num_gc`).
-6. **Phase 6: Polyglot CI/CD Pipeline & Security Automation**:
-   - Updated `.github/workflows/deploy.yml` with Rust test step (`cargo test --manifest-path wasm-drawing-engine/Cargo.toml`), C Edge Gateway build verification, Julia test execution (`test/runtests.jl`), and Trivy filesystem/container vulnerability scanner.
-   - Fixed defect risk threshold in `wasm-drawing-engine/src/physics.rs` for Avitzur central burst criterion to pass 5/5 Rust tests.
-7. **Phase 7: Full Verification & Graphify Update**:
-   - Full test run: 218/218 Django tests OK, 65/65 Vitest frontend tests OK, all Go API packages OK, 48/48 Julia assertions OK, 5/5 Rust tests OK.
-   - Updated codebase knowledge graph (`graphify update .`), tracking 3,313 nodes, 5,712 edges, 307 communities.
+Executed comprehensive decommissioning of Live Telemetry and Tool 3 (Metallurgy Workbench & Julia Analytics) and resolved Service Worker SSE stream issues:
+1. **Service Worker & SSE Auth Loop Resolution**:
+   - Bypassed `/api/events*`, `text/event-stream`, and `/api/v1/auth/*` in `frontend/public/sw.js` to eliminate streaming clone crashes. Bumped cache versions to `dms-static-v3` and `dms-api-v2`.
+   - Bound explicit `location = /sw.js` with `no-cache, no-store, must-revalidate` in `frontend/nginx.conf`.
+   - Prevented SSE reconnect storms on 401 in `useRealtimeSync.ts` and wired automatic logout on 401 in `AuthContext.tsx`.
+   - Added unit test suite `frontend/src/hooks/__tests__/useRealtimeSync.test.tsx`.
+2. **Decommissioning Live Telemetry**:
+   - Removed Live Telemetry UI tab and state from `MachineSetsPage.tsx`. Deleted `LiveTelemetryPanel.tsx`, `useMachineTelemetry.ts`, and test files.
+   - Removed `MACHINE_TELEMETRY` SSE dispatch and filtering in `useRealtimeSync.ts` and `go-api/internal/events/events.go`.
+   - Removed C edge gateway daemon (`services/edge-gateway/`), simulator, build scripts, and compose profile.
+3. **Decommissioning Tool 3 (`TOOL-03` Metallurgy Workbench & Julia Analytics)**:
+   - Deleted `MetallurgyWorkbenchPage.tsx`, removed `/metallurgy-workbench` route from `App.tsx`, card from `ToolsPage.tsx`, permissions from `AuthContext.tsx` and `UserManager.tsx`.
+   - Deleted metallurgy views, serializers, service layer, and tests in `backend/dies/`.
+   - Removed Julia analytics microservice (`services/metallurgy-analytics/`), build scripts, and compose service.
+   - Cleaned CI/CD workflow `.github/workflows/deploy.yml` removing C and Julia build/test steps.
+4. **Verification**:
+   - All 70 Vitest tests green, all 204 Django tests green, clean Vite production build.
+   - All 10 core containers healthy. Codebase graph updated via `graphify update .`.
 
 ## Completed
-1. Core Backend Hardening & Metallurgy REST API — 100% complete.
-2. Frontend `TOOL-03` Metallurgy & Tool Reliability Workbench — 100% complete.
-3. Industrial Edge Gateway & Compose Orchestration — 100% complete.
-4. Frontend UI/UX, Focus Trapping & Accessibility Hardening — 100% complete.
-5. Observability & Distributed Tracing — 100% complete.
-6. Polyglot CI/CD Pipeline & Security Automation — 100% complete.
+1. Service Worker SSE stream & auth loop resolution — 100% complete.
+2. Live Telemetry decommissioning across UI, SSE, and edge gateway — 100% complete.
+3. Tool 3 (`TOOL-03`) metallurgy workbench & Julia analytics decommissioning — 100% complete.
+4. CI/CD and Docker compose cleanup — 100% complete.
+5. All 46 file changes committed individually with `--no-gpg-sign`.
 
 ## Next Steps
-- Maintain polyglot test coverage and zero-regression policy across all stacks.
+- Push commits to remote origin if required.
+- Continue normal operation of DMS-O2 core inventory and tools (Tool 1 & Tool 2).
 
 ## Blockers
-- None. All test suites pass cleanly.
+- None. System is fully operational and healthy.
