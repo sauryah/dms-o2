@@ -7,9 +7,7 @@ from users.permissions import IsRootOnly, IsAdminOrRoot
 from dies.views import (
     DieViewSet, ImportDiesView, ImportTemplateView, ImportLogsView,
     DieToleranceViewSet, WearAlertViewSet, MachineDieStockViewSet,
-    DieInventoryRecountViewSet, EnamelMachineViewSet,
-    MetallurgyWearView, MetallurgyFlowStressView,
-    MetallurgyReliabilityView, MetallurgyMaterialsView
+    DieInventoryRecountViewSet, EnamelMachineViewSet
 )
 from users.views import (
     LoginView, LogoutView, UserViewSet, UserActivityLogViewSet, UserSessionViewSet,
@@ -80,12 +78,6 @@ urlpatterns = [
     path('api/v1/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
     path('api/v1/history/dashboard/', DashboardHistoryListView.as_view(), name='dashboard-history'),
     path('api/v1/history/unified/', UnifiedHistoryListView.as_view(), name='unified-history'),
-    
-    # Metallurgy Analytics Endpoints (v1)
-    path('api/v1/metallurgy/wear/', MetallurgyWearView.as_view(), name='metallurgy-wear'),
-    path('api/v1/metallurgy/flow-stress/', MetallurgyFlowStressView.as_view(), name='metallurgy-flow-stress'),
-    path('api/v1/metallurgy/reliability/', MetallurgyReliabilityView.as_view(), name='metallurgy-reliability'),
-    path('api/v1/metallurgy/materials/', MetallurgyMaterialsView.as_view(), name='metallurgy-materials'),
 
     # Legacy fallbacks (used by frontend and e2e tests)
     path('api/auth/login/', LoginView.as_view()),
@@ -116,11 +108,6 @@ urlpatterns = [
     path('api/history/machines/', MachineHistoryListView.as_view()),
     path('api/history/dashboard/', DashboardHistoryListView.as_view()),
     path('api/history/unified/', UnifiedHistoryListView.as_view()),
-    
-    path('api/metallurgy/wear/', MetallurgyWearView.as_view()),
-    path('api/metallurgy/flow-stress/', MetallurgyFlowStressView.as_view()),
-    path('api/metallurgy/reliability/', MetallurgyReliabilityView.as_view()),
-    path('api/metallurgy/materials/', MetallurgyMaterialsView.as_view()),
 
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/v1/', include(router.urls)),
