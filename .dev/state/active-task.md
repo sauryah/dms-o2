@@ -7,13 +7,20 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge
+**Task:** LAN Accessibility, Resilient Routing & WSL2 Stability Overhaul
 **Status:** Complete
-**Started:** 2026-09-24
-**Completed:** 2026-09-24
+**Started:** 2026-09-26
+**Completed:** 2026-09-26
 **Confidence:** 100%
 
 ## Task Description
+Executed comprehensive stability and multi-device LAN access overhaul:
+1. **WSL2 Stability & Healthcheck Throttling (Loop 1)**: Relaxed all 10 container healthchecks to 15s/30s/60s intervals and node-localized Celery worker checks, eliminating WSL2 containerd PID exhaustion.
+2. **Dynamic RFC 1918 Private Subnet Matching (Loop 2)**: Added `PrivateNetworkHostMatcher` to `settings.py` so DHCP address changes do not trigger `400 Bad Request`.
+3. **Multi-SAN Local TLS Certificates (Loop 3)**: Re-issued certificates covering active IP, `toolroom.local`, `dms.local`, and localhost.
+4. **Friendly Hostname & mDNS (Loop 4)**: Validated native Windows mDNS name resolution for `https://toolroom.local`.
+5. **Operational Diagnostics (Loop 5)**: Created `scripts/network-doctor.ps1` for 1-click audit and recovery.
+6. **Full-Stack Verification**: 200/200 Django tests pass, 70/70 Vitest tests pass, 0 TypeScript errors, 10/10 containers healthy.
 Executed comprehensive privacy hardening and eliminated all unnecessary third-party requests and trackers across the stack:
 1. **Self-Hosted Local Fonts**:
    - Downloaded official WOFF2 binaries for Inter (weights 400-700) and Plus Jakarta Sans (weights 500-800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese subsets into `frontend/public/fonts/`.

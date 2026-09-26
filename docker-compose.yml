@@ -35,9 +35,9 @@ services:
       - ./backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -88,12 +88,11 @@ services:
         condition: service_completed_successfully
     stop_grace_period: 2m
     healthcheck:
-
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
-      interval: 5s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -142,11 +141,11 @@ services:
         condition: service_healthy
     stop_grace_period: 2m
     healthcheck:
-      test: ["CMD-SHELL", "celery -A dms inspect ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "celery -A dms inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 20s
     deploy:
       resources:
         limits:
@@ -175,11 +174,11 @@ services:
         condition: service_healthy
     stop_grace_period: 5m
     healthcheck:
-      test: ["CMD-SHELL", "celery -A dms inspect ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "celery -A dms inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 20s
     deploy:
       resources:
         limits:
@@ -206,10 +205,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid && kill -0 $$(cat /tmp/celerybeat.pid) 2>/dev/null || exit 1"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     stop_grace_period: 30s
     deploy:
       resources:
@@ -255,10 +254,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/go/health"]
-      interval: 5s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -290,9 +289,9 @@ services:
       - meili_data:/meili_data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -310,9 +309,9 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping 2>/dev/null | grep -q PONG || redis-cli -a \"$${REDIS_PASSWORD}\" ping 2>/dev/null | grep -q PONG"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   frontend:
     image: dms-o2-frontend:latest
@@ -322,10 +321,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80"]
-      interval: 15s
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
     depends_on:
       django:
         condition: service_healthy
@@ -351,10 +350,10 @@ services:
       - ./certs:/certs:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "http://127.0.0.1:80"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
     logging:
       driver: json-file
       options:

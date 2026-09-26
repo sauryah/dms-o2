@@ -1,5 +1,29 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-09-26 LAN Accessibility, Resilient Routing & WSL2 Stability Overhaul
+*   **WSL2 Stability & Healthcheck Throttling (Loop 1)**:
+    *   Relaxed aggressive healthcheck polling intervals in `docker-compose.yml`: `db`, `redis`, and `meilisearch` from 3s to 15s; `django` and `go-api` from 5s to 15s; `worker` and `heavy-worker` from 10s to 30s; `beat` from 30s to 60s; `frontend` and `traefik` from 10s/15s to 30s.
+    *   Localized Celery worker healthcheck from cluster broadcast `celery inspect ping` to node-scoped `celery inspect ping -d celery@$$HOSTNAME`, preventing worker messaging stampedes.
+    *   Reduces daily background `runc exec` process forks by >85%, eliminating WSL2 containerd PID exhaustion and `procReady not received` container creation crashes.
+*   **Dynamic RFC 1918 Private Subnet Matching & DHCP Resilience (Loop 2)**:
+    *   Implemented `PrivateNetworkHostMatcher` (subclassing `str`) in `backend/dms/settings.py` overriding `lower()` and equality logic to dynamically match any RFC 1918 private IPv4/IPv6 address and `.local` hostnames when `DJANGO_ALLOW_PRIVATE_IPS=True`.
+    *   Preserves strict external domain blocking (untrusted domains return HTTP 400) while eliminating false `400 Bad Request` upon local DHCP IP reallocations.
+    *   Updated `.env` `DJANGO_ALLOWED_HOSTS` with `toolroom.local` and `dms.local`.
+*   **Multi-SAN Local TLS Generation & Client Trust (Loop 3)**:
+    *   Updated `scripts/generate_openssl_certs.ps1` SAN extensions to include `localhost`, `toolroom`, `toolroom.local`, `dms.local`, `*.local`, `127.0.0.1`, and host LAN IP.
+    *   Regenerated `certs/cert.pem` and `certs/key.pem` and reloaded Traefik.
+*   **mDNS Friendly Hostname Routing (Loop 4)**:
+    *   Validated Windows native mDNS name resolution for `toolroom.local` on port 5353 UDP.
+    *   Verified live HTTPS endpoints responding with HTTP 200 via `https://toolroom.local/` and `https://toolroom.local/api/v1/health/`.
+*   **Operational Diagnostics & Self-Healing Utility (Loop 5)**:
+    *   Created `scripts/network-doctor.ps1` providing automated audits across host network adapters, firewall inbound rules (ports 80 & 443), mDNS resolution, all 10 Docker container health statuses, and live HTTP/HTTPS probes.
+    *   Added 1-key interactive recovery menu for container restarts, full WSL2 resets, certificate regeneration, and firewall setup.
+*   **System Verification & Audit**:
+    *   All 10 Docker containers active and healthy.
+    *   `scripts/network-doctor.ps1` audit passes with 100% green status.
+    *   200 Django unit tests green across `dies`, `machines`, and `users`.
+    *   70 Vitest frontend tests green; TypeScript typecheck (`tsc --noEmit`) passes with 0 errors.
+
 ### 2026-09-24 Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge
 *   **Self-Hosted Local Fonts Migration**:
     *   Downloaded official production WOFF2 font binaries for Inter (weights 400, 500, 600, 700) and Plus Jakarta Sans (weights 500, 600, 700, 800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese unicode subsets into `frontend/public/fonts/`.

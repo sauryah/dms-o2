@@ -11,19 +11,35 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-development-se
 
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+import ipaddress
 
-# Auto-detect LAN IP so other devices on the network can access without manual ALLOWED_HOSTS config
-import socket
-try:
-    _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    _s.connect(("10.255.255.255", 1))
-    _lan_ip = _s.getsockname()[0]
-    _s.close()
-    if _lan_ip and _lan_ip not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS = list(ALLOWED_HOSTS) + [_lan_ip]
-except Exception:
-    pass
+DJANGO_ALLOW_PRIVATE_IPS = config('DJANGO_ALLOW_PRIVATE_IPS', default=True, cast=bool)
+
+class PrivateNetworkHostMatcher(str):
+    """Matches any RFC 1918 private IPv4/IPv6 address or .local hostname."""
+    def __new__(cls):
+        return super().__new__(cls, '__private_network_matcher__')
+
+    def lower(self):
+        return self
+
+    def __getitem__(self, idx):
+        return '_'
+
+    def __eq__(self, other):
+        if not isinstance(other, str) or not other:
+            return False
+        hostname = other.split(':')[0].strip().lower()
+        if hostname.endswith('.local') or hostname in ('toolroom', 'localhost', 'django'):
+            return True
+        try:
+            return ipaddress.ip_address(hostname).is_private
+        except ValueError:
+            return False
+
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+if DJANGO_ALLOW_PRIVATE_IPS:
+    ALLOWED_HOSTS = list(ALLOWED_HOSTS) + [PrivateNetworkHostMatcher()]
 
 # Application definition
 

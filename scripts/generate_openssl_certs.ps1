@@ -55,6 +55,10 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = localhost
+DNS.2 = toolroom
+DNS.3 = toolroom.local
+DNS.4 = dms.local
+DNS.5 = *.local
 IP.1 = 127.0.0.1
 IP.2 = $certsLanIp
 IP.3 = ::1
