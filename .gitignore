@@ -64,3 +64,5 @@ celerybeat-schedule*
 
 # Rust build artifacts
 wasm-drawing-engine/target/
+
+DMS-Client-Setup.exe
