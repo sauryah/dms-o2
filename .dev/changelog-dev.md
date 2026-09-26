@@ -18,6 +18,7 @@
 *   **Operational Diagnostics & Self-Healing Utility (Loop 5)**:
     *   Created `scripts/network-doctor.ps1` providing automated audits across host network adapters, firewall inbound rules (ports 80 & 443), mDNS resolution, all 10 Docker container health statuses, and live HTTP/HTTPS probes.
     *   Added 1-key interactive recovery menu for container restarts, full WSL2 resets, certificate regeneration, and firewall setup.
+    *   Created `scripts/autostart.ps1`, `scripts/install-autostart.ps1`, and `scripts/uninstall-autostart.ps1` providing silent Windows startup execution on boot via VBScript launcher in `shell:startup`, with automated Docker engine detection, container startup, and health logging.
 *   **System Verification & Audit**:
     *   All 10 Docker containers active and healthy.
     *   `scripts/network-doctor.ps1` audit passes with 100% green status.
