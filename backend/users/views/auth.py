@@ -110,7 +110,11 @@ def get_client_ip(request):
 
 
 class LoginRateThrottle(AnonRateThrottle):
-    rate = '5/minute'
+    scope = 'login'
+    rate = '15/minute'
+
+    def get_ident(self, request):
+        return get_client_ip(request)
 
     def allow_request(self, request, view):
         if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):

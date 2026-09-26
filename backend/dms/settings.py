@@ -175,13 +175,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
     'EXCEPTION_HANDLER': 'dms.exceptions.custom_exception_handler',
+    'NUM_PROXIES': 1,
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '10000/hour',
+        'anon': config('THROTTLE_ANON_RATE', default='2000/hour'),
+        'user': config('THROTTLE_USER_RATE', default='10000/hour'),
+        'login': '15/minute',
     }
 }
 
