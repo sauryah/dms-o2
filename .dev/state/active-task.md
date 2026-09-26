@@ -19,8 +19,11 @@ Executed comprehensive stability and multi-device LAN access overhaul:
 2. **Dynamic RFC 1918 Private Subnet Matching (Loop 2)**: Added `PrivateNetworkHostMatcher` to `settings.py` so DHCP address changes do not trigger `400 Bad Request`.
 3. **Multi-SAN Local TLS Certificates (Loop 3)**: Re-issued certificates covering active IP, `toolroom.local`, `dms.local`, and localhost.
 4. **Friendly Hostname & mDNS (Loop 4)**: Validated native Windows mDNS name resolution for `https://toolroom.local`.
-5. **Operational Diagnostics (Loop 5)**: Created `scripts/network-doctor.ps1` for 1-click audit and recovery.
-6. **Full-Stack Verification**: 200/200 Django tests pass, 70/70 Vitest tests pass, 0 TypeScript errors, 10/10 containers healthy.
+5. **Operational Diagnostics & Autostart (Loop 5)**: Created `scripts/network-doctor.ps1` for 1-click audit and recovery, and `scripts/install-autostart.ps1` for silent startup on boot.
+6. **Reverse-Proxy IP Attribution & Login Throttle Isolation (Loop 6)**: Configured `NUM_PROXIES = 1` and isolated `LoginRateThrottle` to resolve "Request was throttled" on login.
+7. **Standalone Native Client Setup Tool (Loop 7)**: Built native C# executable `DMS-Client-Setup.exe` automating root CA installation, browser enterprise policy, and desktop shortcut.
+8. **Documentation & Operational Runbook**: Updated `README.md` and dev docs.
+9. **Full-Stack Verification**: 200/200 Django tests pass, 70/70 Vitest tests pass, 0 TypeScript errors, 10/10 containers healthy.
 Executed comprehensive privacy hardening and eliminated all unnecessary third-party requests and trackers across the stack:
 1. **Self-Hosted Local Fonts**:
    - Downloaded official WOFF2 binaries for Inter (weights 400-700) and Plus Jakarta Sans (weights 500-800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese subsets into `frontend/public/fonts/`.

@@ -19,6 +19,14 @@
     *   Created `scripts/network-doctor.ps1` providing automated audits across host network adapters, firewall inbound rules (ports 80 & 443), mDNS resolution, all 10 Docker container health statuses, and live HTTP/HTTPS probes.
     *   Added 1-key interactive recovery menu for container restarts, full WSL2 resets, certificate regeneration, and firewall setup.
     *   Created `scripts/autostart.ps1`, `scripts/install-autostart.ps1`, and `scripts/uninstall-autostart.ps1` providing silent Windows startup execution on boot via VBScript launcher in `shell:startup`, with automated Docker engine detection, container startup, and health logging.
+*   **Reverse-Proxy IP Attribution & Login Throttle Isolation (Loop 6)**:
+    *   Configured `NUM_PROXIES = 1` in `backend/dms/settings.py` so Django REST Framework accurately reads client IP addresses from `X-Forwarded-For` behind Traefik reverse proxy.
+    *   Isolated `LoginRateThrottle` in `backend/users/views/auth.py` with dedicated `scope = 'login'`, `rate = '15/minute'`, and `get_ident = get_client_ip(request)`.
+    *   Increased general anonymous rate limit from `100/day` to `2000/hour`, resolving "Request was throttled" false positives on the login screen.
+*   **Standalone Native Client Setup Tool (Loop 7)**:
+    *   Created lightweight standalone C# WinForms installer (`scripts/client-setup/Program.cs`, `scripts/build-client-exe.ps1`) compiled using Windows built-in `csc.exe` (`DMS-Client-Setup.exe`).
+    *   Embeds `rootCA.cer` and server address `toolroom.local` (`192.168.10.240`).
+    *   Performs automated 1-click client configuration: root CA installation into Windows Trusted Root store, Enterprise Roots policy registry configuration for Chrome/Firefox/Edge, `hosts` file mDNS backup entry, and desktop shortcut creation.
 *   **System Verification & Audit**:
     *   All 10 Docker containers active and healthy.
     *   `scripts/network-doctor.ps1` audit passes with 100% green status.
