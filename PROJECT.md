@@ -174,7 +174,7 @@ graph TD
 - Added `docker-compose.ghcr.yml` for quick, source-free deployment.
 - Established comprehensive legal, branding, and safety policies: `LICENSE-COMMERCIAL.md`, `COPYRIGHT.md`, and `TRADEMARK.md`.
 - Refactored `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, and `CONTRIBUTING.md` to enterprise open-source standards.
-- Corrected all placeholder contacts to `sauryah@zohomail.in`.
+- Corrected all placeholder contacts to `sauryah@protonmail.com`.
 - Resolved all `markdownlint` warnings across the repository documents.
 
 ### 2026-07-10 · refactor: decompose InventoryPage and implement security audit recommendations (v1.4.0)

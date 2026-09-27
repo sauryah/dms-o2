@@ -35,5 +35,5 @@ If your organization requires guaranteed uptime, SLAs, or hands-on assistance, c
 
 ### Contact Information
 For commercial support inquiries, custom SLAs, or consulting quotes:
-* **Email:** sauryah@zohomail.in
+* **Email:** sauryah@protonmail.com
 * **Commercial Details:** Review our [Commercial Licensing Guide](LICENSE-COMMERCIAL.md) for more details.
