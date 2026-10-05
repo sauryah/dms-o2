@@ -327,3 +327,19 @@ class UserManagementTests(APITestCase):
             UserActivityLog.objects.filter(action='USER_DELETED').count(),
             initial_count + 1
         )
+
+    def test_role_change_evicts_active_sessions(self):
+        target = User.objects.create_user(
+            username='role_change_user', password='password123', role='ADMIN'
+        )
+        UserSession.objects.create(
+            user=target, token_hash='dummy_token_hash_1', ip_address='127.0.0.1'
+        )
+        self.assertEqual(UserSession.objects.filter(user=target).count(), 1)
+
+        # Demote user from ADMIN to REGULAR
+        target.role = 'REGULAR'
+        target.save()
+
+        # Verify active sessions were evicted
+        self.assertEqual(UserSession.objects.filter(user=target).count(), 0)
