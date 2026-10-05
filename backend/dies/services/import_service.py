@@ -102,7 +102,7 @@ class ImportService:
         return None
 
     @staticmethod
-    def _process_row(row_data: Dict[str, Any], sets_by_id: Dict[int, Set], sets_by_name: Dict[str, List[Set]]) -> Tuple[int, bool]:
+    def _process_row(row_data: Dict[str, Any], sets_by_id: Dict[int, Set], sets_by_name: Dict[str, List[Set]], racks_by_name: Optional[Dict[str, Any]] = None) -> Tuple[int, bool]:
         """Processes a single row, validates and creates/updates the die. Returns (die_id, is_created)."""
         die_id = ValidationService.validate_die_id(row_data.get('die_id'))
 
@@ -123,10 +123,16 @@ class ImportService:
         if rack_val:
             from machines.models import Rack
             rack_name = str(rack_val).strip()
-            try:
-                rack = Rack.objects.get(name__iexact=rack_name)
-            except Rack.DoesNotExist:
-                raise ValueError(f"Rack '{rack_name}' does not exist")
+            rack_name_lower = rack_name.lower()
+            if racks_by_name is not None:
+                rack = racks_by_name.get(rack_name_lower)
+                if not rack:
+                    raise ValueError(f"Rack '{rack_name}' does not exist")
+            else:
+                try:
+                    rack = Rack.objects.get(name__iexact=rack_name)
+                except Rack.DoesNotExist:
+                    raise ValueError(f"Rack '{rack_name}' does not exist")
         
         if shelf_val is not None:
             try:
@@ -210,7 +216,7 @@ class ImportService:
                     'errors': [{'row': 0, 'error': f"Failed to parse file: {str(e)}"}]
                 }
 
-            # Pre-cache all Sets to eliminate N+1 database reads
+            # Pre-cache all Sets and Racks to eliminate N+1 database reads
             all_sets = list(Set.objects.select_related('machine').all())
             sets_by_id = {s.id: s for s in all_sets}
             
@@ -222,11 +228,14 @@ class ImportService:
                     sets_by_name[name_lower] = []
                 sets_by_name[name_lower].append(s)
 
+            from machines.models import Rack
+            racks_by_name = {r.name.lower(): r for r in Rack.objects.all()}
+
             total_rows = len(rows)
             for idx, (line_num, row_data) in enumerate(rows):
                 try:
                     with transaction.atomic():
-                        die_id, is_created = ImportService._process_row(row_data, sets_by_id, sets_by_name)
+                        die_id, is_created = ImportService._process_row(row_data, sets_by_id, sets_by_name, racks_by_name)
                         if is_created:
                             created += 1
                         else:
