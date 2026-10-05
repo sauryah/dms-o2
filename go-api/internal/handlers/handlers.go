@@ -615,43 +615,37 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 		slog.Info("Numeric query detected, using Postgres direct query", "query", params.Q, "numStr", qNumStr)
 		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Location, params.Limit, params.Offset)
 		if err != nil {
-
 			slog.Error("Postgres direct query for numeric search failed", "error", err)
 			return nil, 0, err
 		}
-		// Still run scoreDie filtering/sorting on Postgres results
-		var filtered []database.DieRepresentation
-		var scores []int
-		for _, die := range postgresDies {
-			score := scoreDie(die, params.Q)
-			if score <= 50 {
-				continue
+
+		totalCount, countErr := h.db.QueryPostgresDirectlyCount(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Location)
+		if countErr != nil {
+			slog.Warn("Failed to count Postgres numeric query matches", "error", countErr)
+			totalCount = len(postgresDies)
+			if params.Offset > 0 {
+				totalCount = params.Offset + len(postgresDies)
 			}
-			filtered = append(filtered, die)
-			scores = append(scores, score)
 		}
+
+		// Sort page results by scoreDie relevance
 		type scoredDie struct {
 			die   database.DieRepresentation
 			score int
 		}
-		scored := make([]scoredDie, len(filtered))
-		for i, die := range filtered {
-			scored[i] = scoredDie{die: die, score: scores[i]}
+		scored := make([]scoredDie, len(postgresDies))
+		for i, die := range postgresDies {
+			scored[i] = scoredDie{die: die, score: scoreDie(die, params.Q)}
 		}
 		sort.SliceStable(scored, func(i, j int) bool {
 			return scored[i].score > scored[j].score
 		})
+		results := make([]database.DieRepresentation, len(scored))
 		for i := range scored {
-			filtered[i] = scored[i].die
+			results[i] = scored[i].die
 		}
-		totalCount := len(filtered)
-		if params.Offset > 0 {
-			totalCount = params.Offset + len(filtered)
-		}
-		if len(filtered) > params.Limit {
-			filtered = filtered[:params.Limit]
-		}
-		return filtered, totalCount, nil
+
+		return results, totalCount, nil
 	}
 
 	var filters []string
