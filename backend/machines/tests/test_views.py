@@ -20,6 +20,10 @@ class MachinesAPITests(APITestCase):
         self.rack = Rack.objects.create(name='Rack A', row_count=5, column_count=5)
 
     # --- Category ViewSet Tests ---
+    def test_list_categories_unauthenticated_fails(self):
+        response = self.client.get('/api/v1/categories/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_list_categories_authenticated(self):
         self.client.force_authenticate(user=self.regular_user)
         response = self.client.get('/api/v1/categories/')
@@ -45,6 +49,10 @@ class MachinesAPITests(APITestCase):
         self.assertIn('active machines', response.data['detail'])
 
     # --- Machine ViewSet Tests ---
+    def test_list_machines_unauthenticated_fails(self):
+        response = self.client.get('/api/v1/machines/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_list_machines(self):
         self.client.force_authenticate(user=self.regular_user)
         response = self.client.get('/api/v1/machines/')
@@ -68,6 +76,10 @@ class MachinesAPITests(APITestCase):
         self.assertIn('active die sets', response.data['detail'])
 
     # --- Set ViewSet Tests ---
+    def test_list_sets_unauthenticated_fails(self):
+        response = self.client.get('/api/v1/sets/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_list_sets(self):
         self.client.force_authenticate(user=self.regular_user)
         response = self.client.get('/api/v1/sets/')
