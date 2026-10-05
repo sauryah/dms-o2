@@ -140,10 +140,10 @@ class NewEndpointsTests(APITestCase):
     def test_import_template_endpoint(self):
         url = reverse('import-template')
         
-        # Unauthenticated: allowed by design (IsAdminOrRoot permits GET safe method)
+        # Unauthenticated: rejected (requires authentication)
         self.client.credentials()
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
         # ADMIN success
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
@@ -181,10 +181,10 @@ class NewEndpointsTests(APITestCase):
     def test_import_logs_endpoint(self):
         url = reverse('import-logs')
         
-        # Unauthenticated: allowed by design (IsAdminOrRoot permits GET safe method)
+        # Unauthenticated: rejected (requires authentication)
         self.client.credentials()
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
         # ADMIN success
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
