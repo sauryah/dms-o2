@@ -2,16 +2,16 @@ from rest_framework import permissions
 
 class IsAdminOrRoot(permissions.BasePermission):
     """
-    Permission check: unauthenticated users can view (SAFE_METHODS),
+    Permission check: authenticated users can view (SAFE_METHODS),
     but only ROOT or ADMIN users can write.
     """
     def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
         if request.method in permissions.SAFE_METHODS:
             return True
         return (
-            request.user and
-            request.user.is_authenticated and
-            (request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser)
+            request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser
         )
 
 class IsRootOnly(permissions.BasePermission):
@@ -43,11 +43,11 @@ class IsAdminOrRootOrOperatorRelocate(permissions.BasePermission):
     - OPERATOR can only PATCH (partial_update) location, rack, and shelf fields.
     """
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-            
         if not (request.user and request.user.is_authenticated):
             return False
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
             
         if request.user.role in ['ADMIN', 'ROOT'] or request.user.is_superuser:
             return True
@@ -59,6 +59,9 @@ class IsAdminOrRootOrOperatorRelocate(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
+        if not (request.user and request.user.is_authenticated):
+            return False
+
         if request.method in permissions.SAFE_METHODS:
             return True
             
