@@ -24,6 +24,7 @@ class DieAPITests(APITestCase):
             user=self.root_user,
             token_hash=token_hash
         )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.root_token}')
 
         self.rack_a = Rack.objects.create(name="Rack A", row_count=4, column_count=3)
         self.rack_b = Rack.objects.create(name="Rack B", row_count=4, column_count=3)
@@ -59,6 +60,12 @@ class DieAPITests(APITestCase):
             current_thickness=Decimal("15.000"),
             radius=Decimal("1.000")
         )
+
+    def test_list_dies_unauthenticated_fails(self):
+        self.client.credentials()
+        url = reverse('die-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_dies(self):
         url = reverse('die-list')
@@ -112,6 +119,7 @@ class DieAPITests(APITestCase):
 
     def test_post_without_auth(self):
         url = reverse('die-list')
+        self.client.credentials()
         response = self.client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
