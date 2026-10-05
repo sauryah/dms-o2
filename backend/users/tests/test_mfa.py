@@ -162,3 +162,17 @@ class BackupCodesTests(TestCase):
         })
         self.assertEqual(direct_login_res.status_code, status.HTTP_200_OK)
         self.assertFalse(direct_login_res.data.get('mfa_required', False))
+
+    def test_depleted_backup_codes_blocks_login(self):
+        # Enable MFA but mark all codes as used (or no unused codes)
+        self.user.is_mfa_enabled = True
+        self.user.save()
+        self.assertEqual(self.user.backup_codes.filter(is_used=False).count(), 0)
+
+        # Attempt to login -> must be denied with 403 Forbidden
+        res = self.client.post(reverse('login'), {
+            'username': self.user.username,
+            'password': self.password,
+        })
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('depleted', res.data.get('detail', ''))
