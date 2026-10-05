@@ -11,6 +11,8 @@ def evict_sessions_on_security_changes(sender, instance, **kwargs):
     Automatically terminates active user sessions if:
     1. The user account is deactivated (is_active goes from True to False).
     2. The user's password is changed.
+    3. The user's role is changed (e.g. demotion/promotion).
+    4. The user's tool authorizations are modified.
     """
     if not instance.pk:
         return  # New user registration, no active sessions to evict
@@ -20,13 +22,19 @@ def evict_sessions_on_security_changes(sender, instance, **kwargs):
     except User.DoesNotExist:
         return
 
-    # Check if user was deactivated or password was changed
+    # Check if user was deactivated, password was changed, or role/permissions were modified
     deactivated = old_user.is_active and not instance.is_active
     password_changed = old_user.password != instance.password
+    role_changed = old_user.role != instance.role
+    tools_changed = (
+        old_user.is_authorized_for_tools != instance.is_authorized_for_tools or
+        old_user.authorized_tools != instance.authorized_tools
+    )
 
-    if deactivated or password_changed:
-        # Delete active session to immediately evict the user
-        UserSession.objects.filter(user=instance).delete()
+    if deactivated or password_changed or role_changed or tools_changed:
+        # Delete active sessions to immediately evict the user and invalidate privileges
+        for session in UserSession.objects.filter(user=instance):
+            session.delete()
 
 
 @receiver(post_delete, sender=UserSession)
