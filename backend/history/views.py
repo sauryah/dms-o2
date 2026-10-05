@@ -181,8 +181,9 @@ class DashboardHistoryListView(APIView):
         except ValueError:
             limit = 10
 
-        # Construct cache key based on query parameters
-        cache_key = f"dashboard_history_{field}_{limit}"
+        # Construct versioned cache key based on query parameters
+        version = cache.get_or_set("dashboard_history_version", 1)
+        cache_key = f"dashboard_history_v{version}_{field}_{limit}"
         
         cached_data = cache.get(cache_key)
         if cached_data is not None:
