@@ -4,9 +4,20 @@ from dies.models import Die, RoundDie, FlatDie
 from machines.models import Rack
 from django.db import connection
 from decimal import Decimal
+from users.models import User, UserSession
+from rest_framework_simplejwt.tokens import AccessToken
+import hashlib
 
 class QueryCountTests(APITestCase):
     def setUp(self):
+        self.user = User.objects.create_user(
+            username='query_user', password='password123', email='query@dms.local', role='ADMIN'
+        )
+        token = str(AccessToken.for_user(self.user))
+        token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+        UserSession.objects.create(user=self.user, token_hash=token_hash)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
         self.rack_a = Rack.objects.create(name="Rack A", row_count=4, column_count=3)
         self.rack_b = Rack.objects.create(name="Rack B", row_count=4, column_count=3)
         for i in range(25):
