@@ -89,5 +89,9 @@ from django.core.cache import cache
 @receiver(post_save, sender=DieHistory)
 @receiver(post_delete, sender=DieHistory)
 def clear_dashboard_history_cache(sender, instance, **kwargs):
+    try:
+        cache.incr("dashboard_history_version")
+    except Exception:
+        cache.set("dashboard_history_version", 1)
     cache.delete("dashboard_history_status_cache")
     cache.delete("dashboard_history_recent_cache")
