@@ -143,12 +143,24 @@ class AuthTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_endpoint_authorization_regular_public(self):
-        # Unauthenticated GET /api/dies/ → 200 (public)
+        # Unauthenticated GET /api/dies/ → 401 (Authentication required)
         self.client.credentials()
+        response = self.client.get(self.dies_list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Authenticated REGULAR GET /api/dies/ → 200
+        res = self.client.post(self.login_url, {
+            'username': 'regular_test',
+            'password': 'regular_password_123'
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        reg_token = res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {reg_token}')
         response = self.client.get(self.dies_list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Unauthenticated POST /api/dies/ → 401
+        self.client.credentials()
         response = self.client.post(self.dies_list_url, {
             'die_id': 'R-TEST-99',
             'die_type': 'ROUND',
