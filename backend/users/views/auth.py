@@ -68,14 +68,16 @@ def is_docker_internal_ip(ip_str: str) -> bool:
 def get_client_ip(request):
     """
     Extracts the real client IP address from incoming request headers.
-    Prioritizes headers in standard reverse-proxy order:
-    1. HTTP_CF_CONNECTING_IP (Cloudflare)
-    2. HTTP_X_FORWARDED_FOR (Chain: client, proxy1, proxy2...)
-       - Returns the leftmost originating client IP address (skipping Docker bridge internal hops)
+    Prioritizes headers in standard secure reverse-proxy order:
+    1. HTTP_CF_CONNECTING_IP (Only trusted if USE_CLOUDFLARE_PROXY is enabled in settings)
+    2. HTTP_X_FORWARDED_FOR:
+       - Inspects the chain from rightmost (downstream proxy) to leftmost (client).
+       - Bypasses internal Docker bridge hops (172.16.0.0/12) to retrieve the authentic client IP
+         that connected to the ingress proxy, preventing client-side spoofing.
     3. HTTP_X_REAL_IP (Nginx / Ingress / Traefik)
     4. REMOTE_ADDR (Direct connection fallback)
 
-    If the only available IP is a Docker internal gateway/bridge (e.g. 172.18.0.1, 172.19.0.1),
+    If all available addresses are Docker internal bridge IPs (e.g. 172.18.0.1, 172.19.0.1),
     the request originated from the Docker host machine itself, so it resolves to '127.0.0.1'.
     """
     if not request:
@@ -86,11 +88,11 @@ def get_client_ip(request):
     if cf_ip and cf_ip.strip() and not is_docker_internal_ip(cf_ip):
         return cf_ip.strip()
 
-    # 2. X-Forwarded-For chain (inspect from leftmost client to right)
+    # 2. X-Forwarded-For chain (inspect from rightmost trusted hop backwards to prevent spoofing)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for and x_forwarded_for.strip():
         ips = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
-        for ip in ips:
+        for ip in reversed(ips):
             if not is_docker_internal_ip(ip):
                 return ip
 
@@ -284,21 +286,27 @@ class LoginView(APIView):
             except Exception:
                 pass
 
-        # If user has backup codes MFA enabled and has unused codes, require backup code verification
-        unused_codes_count = user.backup_codes.filter(is_used=False).count()
-        if user.is_mfa_enabled and unused_codes_count > 0:
-            mfa_payload = {
-                "user_id": user.id,
-                "username": user.username,
-                "stage": "backup_code_pending"
-            }
-            mfa_token = signing.dumps(mfa_payload, salt="dms-mfa-login")
-            return Response({
-                "mfa_required": True,
-                "mfa_token": mfa_token,
-                "username": user.username,
-                "remaining_codes": unused_codes_count,
-            }, status=status.HTTP_200_OK)
+        # If user has backup codes MFA enabled, require backup code verification or block if depleted
+        if user.is_mfa_enabled:
+            unused_codes_count = user.backup_codes.filter(is_used=False).count()
+            if unused_codes_count > 0:
+                mfa_payload = {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "stage": "backup_code_pending"
+                }
+                mfa_token = signing.dumps(mfa_payload, salt="dms-mfa-login")
+                return Response({
+                    "mfa_required": True,
+                    "mfa_token": mfa_token,
+                    "username": user.username,
+                    "remaining_codes": unused_codes_count,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"detail": "Two-factor authentication is enabled, but all backup codes have been depleted. Please contact a system administrator to reset your MFA."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         return issue_user_login_tokens(user, request)
 
