@@ -231,6 +231,24 @@ def serialize_die_list_fast(dies_queryset):
     """
     data = []
     for die in dies_queryset:
+        active_alerts = []
+        if hasattr(die, '_prefetched_objects_cache') and 'wear_alerts' in die._prefetched_objects_cache:
+            alerts = [a for a in die._prefetched_objects_cache['wear_alerts'] if not a.is_resolved]
+        elif hasattr(die, 'wear_alerts'):
+            alerts = die.wear_alerts.filter(is_resolved=False)
+        else:
+            alerts = []
+
+        for a in alerts:
+            active_alerts.append({
+                'id': a.id,
+                'alert_level': a.alert_level,
+                'message': a.message,
+                'is_resolved': a.is_resolved,
+                'created_at': a.created_at.isoformat() if hasattr(a.created_at, 'isoformat') else str(a.created_at),
+                'resolved_at': a.resolved_at.isoformat() if (a.resolved_at and hasattr(a.resolved_at, 'isoformat')) else (str(a.resolved_at) if a.resolved_at else None)
+            })
+
         rep = {
             'die_id': die.die_id,
             'die_type': die.die_type,
@@ -244,6 +262,8 @@ def serialize_die_list_fast(dies_queryset):
             'rack_name': die.rack.name if die.rack else '',
             'shelf': die.shelf_number,
             'shelf_number': die.shelf_number,
+            'active_alerts': active_alerts,
+            'version': getattr(die, 'version', 1),
         }
         if die.die_type == 'ROUND':
             rd = getattr(die, 'rounddie', None)
