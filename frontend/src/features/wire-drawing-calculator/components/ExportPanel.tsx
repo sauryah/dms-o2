@@ -9,16 +9,16 @@ interface ExportPanelProps {
   passes: PassData[];
   stats: Statistics;
   dies: number[];
+  onOpenPrintPreview?: () => void;
 }
 
-export default function ExportPanel({ passes, stats, dies }: ExportPanelProps) {
+export default function ExportPanel({ passes, stats, dies, onOpenPrintPreview }: ExportPanelProps) {
   const { showToast } = useToast();
 
   const handleCopy = async () => {
     await copyResultsToClipboard(passes, stats);
     showToast('Copied to clipboard', 'success');
   };
-
 
   return (
     <motion.div
@@ -41,8 +41,18 @@ export default function ExportPanel({ passes, stats, dies }: ExportPanelProps) {
         <button onClick={handleCopy} className="wdc-btn wdc-btn-ghost text-xs">
           <Copy className="w-3.5 h-3.5" /> Copy
         </button>
-        <button onClick={() => window.print()} className="wdc-btn wdc-btn-ghost text-xs">
-          <Printer className="w-3.5 h-3.5" /> Print
+        <button
+          onClick={() => {
+            if (onOpenPrintPreview) {
+              onOpenPrintPreview();
+            } else {
+              window.print();
+            }
+          }}
+          className="wdc-btn wdc-btn-ghost text-xs font-semibold"
+          title="Open Technical Data Sheet Print Preview"
+        >
+          <Printer className="w-3.5 h-3.5 text-blue-400" /> Print TDS Report
         </button>
       </div>
     </motion.div>
