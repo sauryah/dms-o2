@@ -9,6 +9,7 @@ import { useToast } from '../../../contexts/ToastContext'
 import { useInventoryMutations } from './useInventoryMutations'
 import { MachineSidebarTreeRef, MachineTreeItem, SetTreeItem } from '../components/MachineSidebarTree'
 import { Die, Set as DieSet, Machine } from '../../../types'
+import { compareDiesBySize } from '../../../utils/dieHelpers'
 
 export function useInventoryState() {
   const { request } = useApi()
@@ -276,7 +277,8 @@ export function useInventoryState() {
     const machinesWithData: MachineTreeItem[] = (machinesList || []).map((machine) => {
       const setsForMachine = setsByMachine[machine.id] || []
       const machineSets: SetTreeItem[] = setsForMachine.map((set) => {
-        const setDies = diesBySet[set.id] || []
+        const rawDies = diesBySet[set.id] || []
+        const setDies = [...rawDies].sort((a, b) => compareDiesBySize(a, b, 'desc'))
         return {
           id: set.id,
           name: set.name,
