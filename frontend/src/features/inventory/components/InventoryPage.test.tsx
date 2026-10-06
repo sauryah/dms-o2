@@ -34,9 +34,13 @@ vi.mock('../../../contexts/NotificationContext', () => ({
 vi.mock('../../../hooks/useDebounce', () => ({
   useDebounce: <T,>(value: T) => value,
 }))
-vi.mock('../../../utils/dieHelpers', () => ({
-  isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
-}))
+vi.mock('../../../utils/dieHelpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/dieHelpers')>()
+  return {
+    ...actual,
+    isDieActive: (die: { status: string }) => ['AVAILABLE', 'RUNNING'].includes(die.status)
+  }
+})
 
 const createTestQueryClient = () =>
   new QueryClient({
