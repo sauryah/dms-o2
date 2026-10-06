@@ -1,7 +1,7 @@
 # React Frontend SPA (frontend.md)
 
 ## Purpose
-High-density manufacturing telemetry dashboard, CAD vector blueprint renderer, 3D von Mises stress heatmap, Sachs' slab theory deformation simulator, visual rack relocation grid, Wire Drawing Elongation Calculator, die series generator, pass optimizer, and spreadsheet import interfaces.
+High-density manufacturing telemetry dashboard, CAD vector blueprint renderer, 3D von Mises stress heatmap, Sachs' slab theory deformation simulator, Rust/Wasm high-resolution FEA workbench, ISO/DIN Technical Data Sheet (TDS) vector reporting engine, visual rack relocation grid, Wire Drawing Elongation Calculator, die series generator, and spreadsheet import interfaces.
 
 ---
 
@@ -12,7 +12,7 @@ The application supports two global visual modes managed via `ThemeContext.tsx` 
 - **Dark Terminal / Bloomberg-Tape** (`data-theme="terminal"`, default):
   - **Canvas & Surfaces**: `#0a0a0a` (canvas), `#0f0f0f` (surfaces/cards), `#141414` (elevated/sidebar/hover).
   - **Borders & Dividers**: 1px flat solid `#1a1a1a` (subtle) / `#2a2a2a` (visible active).
-  - **Typography**: Pure monospace stack (`ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`), uppercase section labels (`01`, `02`, `03...`), tabular numeric figures (`font-variant-numeric: tabular-nums`).
+  - **Typography**: 100% air-gapped self-hosted local fonts (`Inter` and `Plus Jakarta Sans` WOFF2) alongside pure monospace stack (`ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`), uppercase section labels (`01`, `02`, `03...`), tabular numeric figures (`font-variant-numeric: tabular-nums`).
   - **Status Accents**: Emerald `#10b981` (Available/Up), Blue `#3b82f6` (Running/Info), Amber `#f59e0b` (Maintenance/Warning), Purple `#8b5cf6` (Polishing), Orange `#f97316` (Damaged), Red `#ef4444` (Scrapped/Down), Gray `#6b7280` (Missing/Muted).
 - **Classic Slate / Industrial Modern** (`data-theme="classic"`):
   - **Canvas & Surfaces**: Deep navy `#0B1220` (canvas), `#0F172A` (surfaces/cards), `#1E293B` (elevated).
@@ -34,16 +34,23 @@ The application supports two global visual modes managed via `ThemeContext.tsx` 
 - **State Management**: `useInventoryState.ts` for inventory selection, tree navigation, search filters; `@tanstack/react-query` for API query caching.
 - **Resilience**: `lazyWithRetry.ts` for dynamic chunk recovery on new deployments; `ErrorBoundary.tsx` update fallback.
 - **3D Heatmap**: `StressHeatmap3D.tsx` (WebGL von Mises stress visualization, particle flow streams, cutaway slice plane, 3D chevron defect overlay).
+- **Rust/WebAssembly FEA Solver**: `wasm_drawing_engine` compiled with `wasm-pack` and bridged via `useWasmFeaSolver.ts` / `WasmBridge.ts` for client-side sub-millisecond 2D axisymmetric elastoplastic simulation.
+- **TDS Vector Print Engine**: `WireDrawingPrintReport.tsx`, `PrintSchematicPipeline.tsx`, `PrintPassChart.tsx`, and `PrintPreviewModal.tsx` providing ISO/DIN-compliant vector printouts with drafting pipelines and elongation/area-reduction pass curves.
+- **Inventory Set Series Auto-Sorting**: Set detail views automatically order assigned dies in descending sequence (big to small) via `compareDiesBySize` and `getDieSize` in `dieHelpers.ts`.
 - **Theory Workbench**: `TheoryPanel.tsx` (CAD die inspector SVG, math deformation simulator force equations).
-- **Die Set Planner**: `DieSetPlannerPage.tsx` (paste inventory + series, call go-api `/api/go/tools/calculate/die-set`, render set count, bottleneck/minimum-variants, remaining inventory).
 - **Permissions**: `UserManager.tsx` (indented sub-feature permissions tree) & `AuthContext.tsx` (live background permission auto-sync).
+- **MFA Recovery**: `BackupCodesModal.tsx` allowing users to view, generate, and copy hashed single-use recovery codes.
+- **Rollup Code-Splitting**: Manual vendor chunk isolation in `vite.config.ts` (`vendor-core`, `vendor-ui`, `vendor-charts`, `vendor-three`, `vendor-icons`).
 
 ---
 
 ## Important Files
 - [App.tsx](file:///frontend/src/App.tsx): Application router and shell layout with provider hierarchy (`AuthProvider` ➔ `ThemeProvider` ➔ `ToastProvider` ➔ `NotificationProvider` ➔ `AnnouncementProvider`).
 - [ThemeContext.tsx](file:///frontend/src/contexts/ThemeContext.tsx): Dual-theme state, persistence, and ROOT access control.
-- [index.css](file:///frontend/src/index.css): Theme design tokens, CSS variables, CAD blueprint filters, and `.theme-classic` overrides.
+- [index.css](file:///frontend/src/index.css): Theme design tokens, CSS variables, CAD blueprint filters, `@font-face` definitions, and print rules.
+- [WireDrawingPrintReport.tsx](file:///frontend/src/features/wire-drawing-calculator/components/WireDrawingPrintReport.tsx): Technical Data Sheet engineering report template for drafting pipeline and charts.
+- [useWasmFeaSolver.ts](file:///frontend/src/features/wire-drawing-calculator/hooks/useWasmFeaSolver.ts): Hook interfacing React with the WebAssembly drawing solver.
+- [dieHelpers.ts](file:///frontend/src/utils/dieHelpers.ts): Die sizing normalization and big-to-small descending series comparison logic.
 - [Navbar.tsx](file:///frontend/src/components/Navbar.tsx): Top header with ROOT quick-toggle theme switcher.
 - [SettingsPage.tsx](file:///frontend/src/pages/SettingsPage.tsx): System Appearance settings tab with live preview cards.
 - [CommandPalette.tsx](file:///frontend/src/components/CommandPalette.tsx): Global `Ctrl+K` command palette with ROOT theme actions.
