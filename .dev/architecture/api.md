@@ -19,10 +19,10 @@ Complete catalog of all API endpoints across Django and Go services.
 | `POST` | `/api/v1/auth/keep-alive/` | Authenticated | Touches and extends current session activity timestamp |
 | `POST` | `/api/v1/auth/refresh/` | Authenticated | Issues updated access token using HTTPOnly refresh cookie |
 | `POST` | `/api/v1/auth/sse-ticket/` | Authenticated | Exchanges active JWT for single-use ticket to establish SSE stream |
-| `POST` | `/api/v1/auth/mfa/setup/` | Authenticated | Generates fresh TOTP secret, provisioning URI, and base64 QR code image |
-| `POST` | `/api/v1/auth/mfa/enable/` | Authenticated | Confirms 6-digit TOTP code and activates two-factor authentication |
-| `POST` | `/api/v1/auth/mfa/disable/` | Authenticated | Disables 2FA with current password and valid 6-digit TOTP code |
-| `POST` | `/api/v1/auth/mfa/verify/` | Public (Rate Limited) | Verifies 6-digit TOTP challenge during login to issue full JWT session tokens |
+| `POST` | `/api/v1/auth/backup-codes/generate/` | Authenticated | Generates 10 single-use SHA-256 hashed recovery backup codes |
+| `POST` | `/api/v1/auth/backup-codes/verify/` | Public (Login) | Verifies a single-use backup code challenge during login |
+| `POST` | `/api/v1/auth/backup-codes/disable/` | Authenticated | Disables backup code MFA with current password verification |
+| `GET` | `/api/v1/auth/backup-codes/status/` | Authenticated | Returns 2FA activation status and remaining single-use code count |
 
 ### User Administration & Permissions (Django Gunicorn)
 
@@ -31,8 +31,9 @@ Complete catalog of all API endpoints across Django and Go services.
 | `GET/POST` | `/api/v1/users/` | Root | List/create user accounts |
 | `GET/PATCH/DELETE` | `/api/v1/users/{id}/` | Root | Read/update/deactivate user account |
 | `GET` | `/api/v1/users/{id}/tools_permissions/` | Root | Fetch tool permission hierarchy tree for user |
-| `POST` | `/api/v1/users/{id}/toggle_permission/` | Root | Toggle specific sub-feature tool key (`3d-stress-heatmap`, `engineering-theory`, `die-wear`, etc.) |
+| `POST` | `/api/v1/users/{id}/toggle_permission/` | Root | Toggle specific sub-feature tool key (`wire-drawing-calculator`, `die-series-generator`, `3d-model`, `theory-docs`) |
 | `GET` | `/api/v1/active-sessions/` | Root | View active user sessions and devices |
+| `POST` | `/api/v1/active-sessions/bulk/` | Root | Terminate selected active sessions and evict Redis tokens |
 | `GET` | `/api/v1/activity-logs/` | Root | View user audit log history (login, failed login, logout, eviction) |
 
 ### Dies & Inventory Management (Django Gunicorn)
@@ -50,10 +51,19 @@ Complete catalog of all API endpoints across Django and Go services.
 
 | Method | Route | Access | Purpose / Details |
 | :--- | :--- | :--- | :--- |
-| `GET/POST` | `/api/v1/categories/` | Public / Admin | List or create machine categories |
-| `GET/POST` | `/api/v1/machines/` | Public / Admin | List or create machines |
-| `GET/POST` | `/api/v1/sets/` | Public / Admin | List or create tool sets |
+| `GET/POST` | `/api/v1/categories/` | Authenticated / Admin | List or create machine categories |
+| `GET/POST` | `/api/v1/machines/` | Authenticated / Admin | List or create machines |
+| `GET/POST` | `/api/v1/sets/` | Authenticated / Admin | List or create tool sets |
 | `GET/POST/PATCH/DELETE` | `/api/v1/racks/` | Authenticated / Admin | Manage physical storage racks (grid rows x columns) |
+
+### Machine Die Stock & Recount Audits (Django Gunicorn)
+
+| Method | Route | Access | Purpose / Details |
+| :--- | :--- | :--- | :--- |
+| `GET/POST` | `/api/v1/enamel-machines/` | Authenticated / Admin | List or register enamel machines |
+| `GET/POST` | `/api/v1/machine-die-stock/` | Authenticated / Admin | Track drawing dies allocated per machine |
+| `GET/POST` | `/api/v1/inventory-recounts/` | Authenticated / Admin | Manage monthly physical recount audit sheets |
+| `POST` | `/api/v1/inventory-recounts/{id}/submit/` | Admin / Root | Atomically commits recount audit sheet tallies into live stock |
 
 ### Wear Tolerances & Alerts (Django Gunicorn)
 
@@ -66,7 +76,7 @@ Complete catalog of all API endpoints across Django and Go services.
 
 | Method | Route | Access | Purpose / Details |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/import/` | Admin / Root | Upload CSV/Excel spreadsheet for idempotent die import |
+| `POST` | `/api/v1/import/` | Admin / Root | Upload CSV/Excel spreadsheet for idempotent die import (with rack pre-caching) |
 | `GET` | `/api/v1/import/template/` | Admin / Root | Download standard Excel template for bulk imports |
 | `GET` | `/api/v1/import/logs/` | Admin / Root | View past bulk import execution logs and row validation errors |
 
@@ -89,13 +99,17 @@ Complete catalog of all API endpoints across Django and Go services.
 | Method | Route | Access | Purpose / Details |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/go/health` | Public | Go microservice health check endpoint |
-| `GET` | `/api/go/search` | Authenticated | Sub-millisecond fuzzy search with Redis cache and Meilisearch query proxy |
+| `GET` | `/api/go/liveness` | Public | Go microservice liveness probe |
+| `GET` | `/api/go/readiness` | Public | Go microservice readiness probe |
+| `GET` | `/api/go/search` | Authenticated | Sub-millisecond fuzzy search with Redis O(1) generation cache and Meilisearch query proxy |
 | `GET` | `/api/go/stats` | Authenticated | Real-time aggregate count metrics (total dies, available, running, scrapped) |
 | `GET` | `/api/go/db-stats` | Authenticated | Exposes active PostgreSQL database connection pool telemetry (open, in-use, idle, wait stats) |
-| `GET` | `/api/events/` | Ticket Authorized | Server-Sent Events (SSE) stream for real-time inventory updates |
+| `GET` | `/api/go/metrics` | Public / Monitor | Go runtime Prometheus memory, goroutine, and connection pool metrics exporter |
+| `GET` | `/api/events/` | Ticket Authorized | Server-Sent Events (SSE) stream for real-time inventory updates multiplexed via Redis Pub/Sub |
 | `GET` | `/api/go/index-status` | Authenticated | Meilisearch indexing status and document count |
 | `GET` | `/api/go/import-status` | Authenticated | Real-time status of ongoing bulk import tasks |
-| `POST` | `/api/go/tools/calculate/die-set` | Authenticated | Calculate maximum complete die sets from pasted inventory + series, identify bottlenecks, missing dies, and remaining stock. Body: `{"inventory_text": "...", "series_text": "...", "target_sets": 10}` (raw pasted text; `target_sets` optional). When `target_sets` exceeds current capacity the response includes a `procurement` list (which die sizes to buy and how many) plus `target_sets`. The Go engine is the authoritative parser/validator: it line-parses the inventory (lone quantity-less dies become zero-quantity stock with a warning, duplicates aggregated), parses the series, then computes. `422` problem-details on parse/validation errors |
+| `POST` | `/api/go/tools/calculate/wire-drawing` | Authenticated | High-speed mathematical calculations for wire drawing pass reductions, area calculations, elongations, and drawing ratios |
+| `POST` | `/api/go/tools/calculate/die-series` | Authenticated | Automated die series progression generator based on starting diameter, target finish diameter, and target reduction percentages |
 
 ## Authentication Flow
 1. Client sends credentials to `/api/v1/auth/login/`
