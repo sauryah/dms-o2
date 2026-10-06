@@ -8,7 +8,7 @@ This document details the observability architecture for the DMS-O2 platform, co
 
 Prometheus pulls metrics from the Go API, Gunicorn Django backend, Celery workers, and system processes.
 
-### 1. Go Search API Metrics (Exported on `:8080/metrics`)
+### 1. Go Search API Metrics (Exported on `GET /api/go/metrics`)
 *   `go_search_requests_total{method, status}`: Counter of all search request cycles.
 *   `go_search_duration_seconds{method}`: Summary/histogram of API response latencies.
 *   `go_redis_conn_active`: Gauge of active Redis pool connections.
@@ -74,17 +74,21 @@ To track requests crossing from the React frontend through Traefik, the Go API, 
 
 ---
 
-## 🚨 Sentry Configuration & Alert Rules
+## 🚨 Air-Gapped Alerting & Health Probes
 
-*   **Integration**: Integrated inside Django `settings.py` with custom transaction sampling rates (`traces_sample_rate = 0.1` in production, `1.0` in staging).
-*   **Alerting Thresholds**:
-    *   Trigger high-priority pager alerts on:
-        *   Outbox HMACS signature verification failures (`OutboxTask payload integrity hash mismatch!`).
-        *   Go API connection failures to Redis or Postgres.
+External tracking services (such as Sentry SDK) have been completely purged from the codebase to guarantee 100% air-gap compliance and zero data egress on private plant networks.
+
+*   **Local Health Probes**:
+    *   Django probes: `GET /api/health/`, `GET /api/health/detailed/`, `GET /api/health/liveness/`, `GET /api/health/readiness/`.
+    *   Go probes: `GET /api/go/health`, `GET /api/go/liveness`, `GET /api/go/readiness`.
+*   **Critical Operational Alert Thresholds (Prometheus / Alertmanager)**:
+    *   *High-Priority Alert*:
+        *   Outbox HMAC signature verification failures (`OutboxTask payload integrity hash mismatch!`).
+        *   Go API connection failures to Redis or PostgreSQL.
         *   Database locks taking longer than **5.0 seconds** to resolve.
-    *   Trigger Slack warnings on:
-        *   Any API request returning HTTP 5xx.
-        *   Search index synchronization failures.
+    *   *Warning Alert*:
+        *   Any API route returning HTTP 5xx.
+        *   Search index synchronization failures or backlog growth.
 
 ---
 
