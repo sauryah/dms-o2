@@ -293,6 +293,17 @@ Track implementation status across all phases.
 - **CI/CD Pipeline Streamlining**: Removed C and Julia build and test steps from GitHub Actions `.github/workflows/deploy.yml`.
 - **Zero Regressions**: All 70/70 Vitest tests green, all 204/204 Django tests green, clean Vite bundle build in 12.6s, all 10 core containers healthy.
 
+### Application-Wide Print & PDF Layout Standardization (2026-10-06) ✅
+**Status:** Complete  
+**Date:** 2026-10-06  
+
+**Completed:**
+- **Print Header Component (`frontend/src/components/PrintHeader.tsx`)**: Built industrial print header featuring DMS logo with layer glyph, dynamic navigation tabs (`DASHBOARD`, `INVENTORY`, `MACHINES`, `AUDIT LOG`, `TOOLS`, `BULK IMPORT`, `USERS`) reflecting active route via `useLocation()`, live emerald status badge, live authenticated username and uppercase role attribution, and logout badge.
+- **Print Footer Component (`frontend/src/components/PrintFooter.tsx`)**: Built print footer featuring `DMS / DIE MANAGEMENT SYSTEM / v{APP_VERSION}`, `ENGINEERING: SAHIL & ANTIGRAVITY`, and `© SYSINFO` badge.
+- **Multi-Page Repeating Table Frame Architecture (`frontend/src/index.css`)**: Implemented W3C table frame layout (`.dms-print-frame` with `thead` as `table-header-group` and `tfoot` as `table-footer-group`) ensuring automatic multi-page repeating headers and footers across page splits in Chromium/WebKit print engines without content overlap. Configured `display: contents` in screen mode to maintain zero layout boxes and 100% responsive DOM transparency.
+- **Layout Integration (`frontend/src/App.tsx`)**: Wrapped application routing tree inside `.dms-print-frame` with `PrintHeader` and `PrintFooter`. Configured interactive screen navigation and footer elements to hide automatically in print media.
+- **Full Verification**: All 92 Vitest unit and integration tests passing; TypeScript and production Vite build passing with 0 errors; live headless Edge print emulation and PDF generation verified on multi-page routes (Dashboard, Inventory, Audit Log).
+
 ### Service Worker SSE Stream & Realtime Auth Loop Resolution (2026-09-24) ✅
 **Status:** Complete  
 **Date:** 2026-09-24  
