@@ -10,6 +10,13 @@ interface PrintPreviewModalProps {
   stats: Statistics | null;
   dies: number[];
   consistency?: ConsistencyData | null;
+  workOrder?: string;
+  onWorkOrderChange?: (val: string) => void;
+  machineName?: string;
+  onMachineNameChange?: (val: string) => void;
+  notes?: string;
+  onNotesChange?: (val: string) => void;
+  operator?: string;
 }
 
 export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
@@ -19,12 +26,27 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   stats,
   dies,
   consistency,
+  workOrder: externalWorkOrder,
+  onWorkOrderChange,
+  machineName: externalMachineName,
+  onMachineNameChange,
+  notes: externalNotes,
+  onNotesChange,
+  operator,
 }) => {
-  const [workOrder, setWorkOrder] = useState('WDC-JOB-2026-001');
-  const [machineName, setMachineName] = useState('Multi-Wire Drawing Line 01');
-  const [notes, setNotes] = useState(
+  const [internalWorkOrder, setInternalWorkOrder] = useState('WDC-JOB-2026-001');
+  const [internalMachineName, setInternalMachineName] = useState('Multi-Wire Drawing Line 01');
+  const [internalNotes, setInternalNotes] = useState(
     'Production drafting schedule verified within standard elongation tolerances. No central burst defect risk detected.'
   );
+
+  const workOrder = externalWorkOrder ?? internalWorkOrder;
+  const setWorkOrder = onWorkOrderChange ?? setInternalWorkOrder;
+  const machineName = externalMachineName ?? internalMachineName;
+  const setMachineName = onMachineNameChange ?? setInternalMachineName;
+  const notes = externalNotes ?? internalNotes;
+  const setNotes = onNotesChange ?? setInternalNotes;
+
   const [showConfig, setShowConfig] = useState(false);
 
   if (!isOpen) return null;
@@ -117,6 +139,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
               workOrder={workOrder}
               machineName={machineName}
               notes={notes}
+              operator={operator}
             />
           </div>
         </div>
