@@ -14,6 +14,8 @@ import DieSuggester from '../features/wire-drawing-calculator/components/DieSugg
 import ComparePanel from '../features/wire-drawing-calculator/components/ComparePanel';
 import { useAuth } from '../contexts/AuthContext';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
+import WireDrawingPrintReport from '../features/wire-drawing-calculator/components/WireDrawingPrintReport';
+import PrintPreviewModal from '../features/wire-drawing-calculator/components/PrintPreviewModal';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 // Skeleton loading fallbacks
@@ -97,6 +99,7 @@ export function WireDrawingCalculatorPage() {
   const { role, authorizedTools = [], refetchPermissions } = useAuth();
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Sync latest permissions on page load
@@ -196,88 +199,96 @@ export function WireDrawingCalculatorPage() {
   }, [undo, redo]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono">
-      <div className="max-w-[1400px] mx-auto space-y-6" ref={printRef}>
-        <Header />
+    <>
+      <div className="min-h-[calc(100vh-64px)] bg-[#0a0a0a] text-[#e4e4e4] py-6 px-4 sm:px-6 lg:px-8 font-mono print:hidden">
+        <div className="max-w-[1400px] mx-auto space-y-6" ref={printRef}>
+          <Header />
 
-        <InputPanel onParse={handleParse} currentDies={dies} />
+          <InputPanel onParse={handleParse} currentDies={dies} />
 
-        {passes.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <ResultsTable
-                  passes={passes}
-                  dies={dies}
-                  onDiesChange={handleDiesChange}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  onUndo={undo}
-                  onRedo={redo}
-                  selectedPassIdx={selectedPassIdx}
-                  onSelectPass={setSelectedPassIdx}
-                />
-              </div>
-              <div className="lg:col-span-1">
-                {(() => {
-                  const selectedPass = selectedPassIdx !== null && selectedPassIdx < passes.length ? passes[selectedPassIdx] : null;
-                  const simulatedDie = selectedPass ? {
-                    die_type: 'ROUND',
-                    die_id: `PASS-${selectedPass.pass}`,
-                    punched_size: selectedPass.toDie.toString(),
-                    current_size: selectedPass.toDie.toString(),
-                    inlet_size: selectedPass.fromDie.toString(),
-                    status: 'RUNNING',
-                    casing: 'Standard Carbide'
-                  } : null;
+          {passes.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <ResultsTable
+                    passes={passes}
+                    dies={dies}
+                    onDiesChange={handleDiesChange}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    onUndo={undo}
+                    onRedo={redo}
+                    selectedPassIdx={selectedPassIdx}
+                    onSelectPass={setSelectedPassIdx}
+                  />
+                </div>
+                <div className="lg:col-span-1">
+                  {(() => {
+                    const selectedPass = selectedPassIdx !== null && selectedPassIdx < passes.length ? passes[selectedPassIdx] : null;
+                    const simulatedDie = selectedPass ? {
+                      die_type: 'ROUND',
+                      die_id: `PASS-${selectedPass.pass}`,
+                      punched_size: selectedPass.toDie.toString(),
+                      current_size: selectedPass.toDie.toString(),
+                      inlet_size: selectedPass.fromDie.toString(),
+                      status: 'RUNNING',
+                      casing: 'Standard Carbide'
+                    } : null;
 
-                  return simulatedDie ? (
-                    <div className="space-y-3 font-mono">
-                      <div className="flex items-center gap-1.5 border-b border-[#1a1a1a] pb-1.5">
-                        <span className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">Pass CAD Visualizer</span>
+                    return simulatedDie ? (
+                      <div className="space-y-3 font-mono">
+                        <div className="flex items-center gap-1.5 border-b border-[#1a1a1a] pb-1.5">
+                          <span className="text-xs font-bold text-[#e4e4e4] uppercase tracking-wider">Pass CAD Visualizer</span>
+                        </div>
+                        <Suspense fallback={<BlueprintSkeleton />}>
+                          <DieBlueprint 
+                            die={simulatedDie}
+                            activeHighlight={null}
+                            onHoverDim={() => {}}
+                          />
+                        </Suspense>
+                        <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-3 rounded-sm text-xs space-y-1">
+                          <h4 className="font-bold text-[#e4e4e4] uppercase tracking-wider text-[10px]">Pass #{selectedPass?.pass} Telemetry</h4>
+                          <p className="text-[#6b7280] leading-normal text-[11px]">
+                            Visualizing draft geometry. Click any row in the results table to select that draft.
+                          </p>
+                        </div>
                       </div>
-                      <Suspense fallback={<BlueprintSkeleton />}>
-                        <DieBlueprint 
-                          die={simulatedDie}
-                          activeHighlight={null}
-                          onHoverDim={() => {}}
-                        />
-                      </Suspense>
-                      <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-3 rounded-sm text-xs space-y-1">
-                        <h4 className="font-bold text-[#e4e4e4] uppercase tracking-wider text-[10px]">Pass #{selectedPass?.pass} Telemetry</h4>
-                        <p className="text-[#6b7280] leading-normal text-[11px]">
-                          Visualizing draft geometry. Click any row in the results table to select that draft.
-                        </p>
+                    ) : (
+                      <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-6 rounded-sm text-[#6b7280] text-xs text-center flex items-center justify-center h-[240px]">
+                        Select a pass row in the results table to activate CAD simulation.
                       </div>
-                    </div>
-                  ) : (
-                    <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-6 rounded-sm text-[#6b7280] text-xs text-center flex items-center justify-center h-[240px]">
-                      Select a pass row in the results table to activate CAD simulation.
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
 
-            <DieProgression dies={dies} onDiesChange={handleDiesChange} />
+              <DieProgression dies={dies} onDiesChange={handleDiesChange} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Suspense fallback={<ChartSkeleton />}>
-                <ElongationChart passes={passes} />
-              </Suspense>
-              <Suspense fallback={<ChartSkeleton />}>
-                <AreaReductionChart passes={passes} />
-              </Suspense>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {stats && <StatisticsPanel stats={stats} />}
-              <div className="space-y-4">
-                {consistency && <PassConsistency consistency={consistency} />}
-                {stats && <ExportPanel passes={passes} stats={stats} dies={dies} />}
-                <SaveLoad dies={dies} onLoad={setDies} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Suspense fallback={<ChartSkeleton />}>
+                  <ElongationChart passes={passes} />
+                </Suspense>
+                <Suspense fallback={<ChartSkeleton />}>
+                  <AreaReductionChart passes={passes} />
+                </Suspense>
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {stats && <StatisticsPanel stats={stats} />}
+                <div className="space-y-4">
+                  {consistency && <PassConsistency consistency={consistency} />}
+                  {stats && (
+                    <ExportPanel
+                      passes={passes}
+                      stats={stats}
+                      dies={dies}
+                      onOpenPrintPreview={() => setIsPrintModalOpen(true)}
+                    />
+                  )}
+                  <SaveLoad dies={dies} onLoad={setDies} />
+                </div>
+              </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <TargetChecker passes={passes} />
@@ -303,5 +314,26 @@ export function WireDrawingCalculatorPage() {
         )}
       </div>
     </div>
-  );
+
+    {/* Dedicated Technical Data Sheet Document (Hidden on screen, rendered exclusively during printing / Save as PDF) */}
+    <div className="hidden print:block w-full bg-white text-slate-900">
+      <WireDrawingPrintReport
+        passes={passes}
+        stats={stats}
+        dies={dies}
+        consistency={consistency}
+      />
+    </div>
+
+    {/* Interactive Print Preview Modal */}
+    <PrintPreviewModal
+      isOpen={isPrintModalOpen}
+      onClose={() => setIsPrintModalOpen(false)}
+      passes={passes}
+      stats={stats}
+      dies={dies}
+      consistency={consistency}
+    />
+  </>
+);
 }
