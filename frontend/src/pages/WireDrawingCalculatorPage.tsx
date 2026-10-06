@@ -96,10 +96,16 @@ interface WireDrawingApiResponse {
 }
 
 export function WireDrawingCalculatorPage() {
-  const { role, authorizedTools = [], refetchPermissions } = useAuth();
+  const { role, username, authorizedTools = [], refetchPermissions } = useAuth();
+  const operator = username ? `${username.toUpperCase()} / ${role || 'OPERATOR'}` : 'TOOL ROOM / ADMIN';
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [workOrder, setWorkOrder] = useState('WDC-JOB-2026-001');
+  const [machineName, setMachineName] = useState('Multi-Wire Drawing Line 01');
+  const [notes, setNotes] = useState(
+    'Production drafting schedule verified within standard elongation tolerances. No central burst defect risk detected.'
+  );
   const printRef = useRef<HTMLDivElement>(null);
 
   // Sync latest permissions on page load
@@ -322,6 +328,10 @@ export function WireDrawingCalculatorPage() {
         stats={stats}
         dies={dies}
         consistency={consistency}
+        workOrder={workOrder}
+        machineName={machineName}
+        notes={notes}
+        operator={operator}
       />
     </div>
 
@@ -333,6 +343,13 @@ export function WireDrawingCalculatorPage() {
       stats={stats}
       dies={dies}
       consistency={consistency}
+      workOrder={workOrder}
+      onWorkOrderChange={setWorkOrder}
+      machineName={machineName}
+      onMachineNameChange={setMachineName}
+      notes={notes}
+      onNotesChange={setNotes}
+      operator={operator}
     />
   </>
 );
