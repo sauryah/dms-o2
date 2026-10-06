@@ -18,7 +18,11 @@ erDiagram
     Die ||--o{ DieHistory : "audits"
     Die ||--o{ MaintenanceLog : "logs"
     Die ||--o{ WearAlert : "alerts"
+    EnamelMachine ||--o{ MachineDieStock : "allocates"
+    EnamelMachine ||--o{ DieInventoryRecount : "audits"
+    DieInventoryRecount ||--o{ DieInventoryRecountItem : "records"
     User ||--o{ UserSession : "has many"
+    User ||--o{ UserBackupCode : "has many"
     User ||--o{ UserActivityLog : "tracks"
 ```
 
@@ -114,7 +118,9 @@ CREATE TABLE history_diehistory (
     old_value TEXT NOT NULL,
     new_value TEXT NOT NULL,
     ip_address INET,
-    note TEXT NOT NULL DEFAULT ''
+    note TEXT NOT NULL DEFAULT '',
+    prev_hash VARCHAR(64) NOT NULL DEFAULT '',
+    hash VARCHAR(64) NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_diehistory_changed_by ON history_diehistory(changed_by_id);
@@ -135,7 +141,72 @@ CREATE TABLE history_machinehistory (
     new_value TEXT,
     changed_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    ip_address INET
+    ip_address INET,
+    prev_hash VARCHAR(64) NOT NULL DEFAULT '',
+    hash VARCHAR(64) NOT NULL DEFAULT ''
+);
+```
+
+### EnamelMachine & Live Machine Stock (`dies_enamelmachine`, `dies_machinediestock`)
+```sql
+CREATE TABLE dies_enamelmachine (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE dies_machinediestock (
+    id SERIAL PRIMARY KEY,
+    enamel_machine_id INTEGER NOT NULL REFERENCES dies_enamelmachine(id) ON DELETE CASCADE,
+    die_size NUMERIC(7,3) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT dies_machinediestock_machine_size_key UNIQUE (enamel_machine_id, die_size)
+);
+```
+
+### Monthly Recount Audits (`dies_dieinventoryrecount`, `dies_dieinventoryrecountitem`)
+```sql
+CREATE TABLE dies_dieinventoryrecount (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    enamel_machine_id INTEGER NOT NULL REFERENCES dies_enamelmachine(id) ON DELETE CASCADE,
+    recount_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'SUBMITTED'))
+);
+
+CREATE TABLE dies_dieinventoryrecountitem (
+    id SERIAL PRIMARY KEY,
+    recount_id INTEGER NOT NULL REFERENCES dies_dieinventoryrecount(id) ON DELETE CASCADE,
+    die_size NUMERIC(7,3) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    previous_quantity INTEGER NOT NULL DEFAULT 0 CHECK (previous_quantity >= 0)
+);
+```
+
+### User & Single-Use Backup Codes (`users_user`, `users_userbackupcode`)
+```sql
+CREATE TABLE users_user (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(150) NOT NULL UNIQUE,
+    email VARCHAR(254) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'OPERATOR' CHECK (role IN ('ROOT', 'ADMIN', 'OPERATOR', 'VIEWER')),
+    is_authorized_for_tools BOOLEAN NOT NULL DEFAULT FALSE,
+    authorized_tools JSONB NOT NULL DEFAULT '[]',
+    is_mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    date_joined TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE users_userbackupcode (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
+    code_hash VARCHAR(64) NOT NULL,
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    used_at TIMESTAMPTZ
 );
 ```
 
@@ -151,8 +222,6 @@ CREATE TABLE dies_wearalert (
     resolved_at TIMESTAMPTZ
 );
 ```
-
-
 
 ### OutboxTask
 ```sql
