@@ -121,12 +121,12 @@ graph TD
 | Workspace | Primary Purpose | Key Capabilities |
 | :--- | :--- | :--- |
 | **Die Tracking Dashboard** | Real-time plant telemetry & status cards | KPI stats with glow borders, search bar with autocomplete, status donut breakdown, maintenance queue |
-| **Die Inventory** | Master registry for round & flat dies | Filter by status/casing/machine, CAD vector blueprint sync, 2D/3D visual inspection |
+| **Die Inventory** | Master registry for round & flat dies | Filter by status/casing/machine, automatic set series sorting (largest to smallest), CAD vector blueprint sync |
 | **Machine Sets** | Machine allocations & rack placement | Drag-and-drop storage rack map, set configuration, operational active/inactive ratio |
-| **Die Set Planner** | Engineering capacity & procurement | Preset series calculators, bottleneck deficit analysis, recount sheets, Excel/CSV audit import |
-| **Engineering Suite** | Wire drawing & sizing physics engine | Siebel's force formula, elongation analysis, 3D von Mises stress heatmap, PDF/Excel export |
-| **Audit History** | Immutable field-level change ledger | Trigger-backed change history, timestamps, operator identity, exportable audit trail |
-| **Settings & Security** | System administration & access control | System theme switcher, 2FA setup, wear tolerance alert limits, database backup/restore |
+| **Wire Drawing Workbench** | Engineering calculations & 3D FEA | Rust/Wasm volumetric FEA solver, von Mises stress heatmap, bore geometry inspector, ISO/DIN TDS vector printout |
+| **Die Series Generator** | Drafting schedule synthesis | Target elongation / area reduction sequence generation, custom drafting ratios, CSV export |
+| **Audit History** | Immutable field-level change ledger | Trigger-backed change history with cryptographic hash chaining, operator identity, exportable audit trail |
+| **Settings & Security** | System administration & access control | System theme switcher, single-use backup codes MFA, wear tolerance alert limits, database backup/restore |
 
 ---
 
@@ -134,25 +134,27 @@ graph TD
 
 * **Triple System Themes**: Real-time instant switching between **Classic Slate** (vibrant industrial midnight UI with glowing KPI status cards), **Dark Terminal** (high-density Bloomberg monospace), and **Precision Light** (clean high-contrast daylight mode).
 * **Precision Die Modeling**: Custom tracking templates for round dies (casing, current size, original size) and flat dies (width, thickness, corner radius). Supports statuses: `AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE`.
-* **Modular Die Set Planner & Capacity Engine**: Multi-source stock ingestion (DMS database, live enamel machines, monthly audit recount sheets), bottleneck deficit analytics, series capacity planning, and target set procurement forecasting with 5-decimal precision.
-* **Enamel Machine Tracking & Monthly Recount Audit Sheets**: Machine die allocation ledger and spreadsheet-grade monthly physical inventory audit sheets with Excel/CSV drag-and-drop import and discrepancy reports.
-* **Single-Use Backup Codes Authentication**: Cryptographically hashed (SHA-256) one-time recovery codes for secondary sign-in security without requiring mobile authenticator apps.
-* **Real-Time Live SSE Event Distribution**: Redis Pub/Sub multiplexing PostgreSQL `LISTEN/NOTIFY` events across multi-container instances with automatic local fallback.
+* **Automatic Set Series Sorting**: Dies assigned to sets are automatically organized and displayed in continuous series order from largest diameter to smallest across inventory set detail views.
+* **Wire Drawing 3D Workbench & Rust/Wasm FEA**: Client-side high-resolution 3D volumetric finite element solver calculating von Mises stress tensors, Ludwik-Hollomon flow stress, Avitzur redundant work factor $\phi$, Taylor-Quinney adiabatic thermal rise, and Avitzur central burst defect predictions.
+* **Technical Data Sheet (TDS) & Drafting Schedule Printout**: Formal ISO/DIN compliant printable reporting system with multi-row vector schematic deformation pipelines, pass-by-pass dimensional tables (AVG, RANGE, TOTAL footers), pure vector SVG pass graphs (Elongation and Area Reduction with mean lines and tolerance bands), and print preview modal.
+* **100% Self-Hosted Typography & Zero Third-Party Tracking**: Inter and Plus Jakarta Sans fonts served exclusively via local WOFF2 binaries. Zero external requests to Google Fonts or third-party tracking services (Sentry completely removed).
+* **Single-Use Backup Codes Authentication**: Cryptographically hashed (SHA-256) one-time recovery codes for secondary sign-in security without requiring mobile authenticator apps, plus `reset_mfa` CLI emergency recovery.
+* **Real-Time Live SSE Event Distribution**: Redis Pub/Sub multiplexing PostgreSQL `LISTEN/NOTIFY` events across multi-container instances with single-use ticket authentication.
 * **Interactive CAD Highlighting**: Bidirectional vector sync between table dimensions and blueprint SVG nodes.
 * **Visual Storage Rack Map**: Drag-and-drop grid interface for physical warehouse rack management.
-* **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis caching, PostgreSQL range queries, and Meilisearch.
+* **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis $O(1)$ generation-counter caching, PostgreSQL range queries, and Meilisearch.
 * **Granular Role-Based Access Control (RBAC)**:
-  * *Unauthenticated / Operator*: Read-only search, metrics, and inventory browsing.
+  * *Unauthenticated*: Redirected to login; safe and mutating APIs require authentication.
+  * *Operator*: Read-only search, metrics, inventory browsing, and physical rack/shelf relocation.
   * *Admin*: Full CRUD on dies, machines, and sets, plus bulk spreadsheet imports.
-  * *Root*: User administration, database backup/restore, and system configuration.
-* **Immutable Auditing**: Database triggers and Django signals capture all modifications to die status, location, and dimensions.
-* **Session Management**: Single active session enforcement with immediate revocation on new sign-in.
-* **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system.
+  * *Root*: User administration, tool permission toggles, database backup/restore, and system theme switching.
+* **Session Management**: Single active session enforcement with immediate revocation and automatic cache eviction upon role or permission changes.
+* **Sheet-to-Database Import**: Validation-backed, idempotent CSV/Excel import system with rack pre-caching.
 * **3D Stress Analysis**: WebGL von Mises stress heatmaps with angle/bearing sliders, cutaway planes, crack defect overlays, and snapshot export.
 * **Engineering Workbench**: CAD geometry inspector, deformation simulator, Siebel's force calculations, and trade-off comparison matrices.
 * **Granular Tool Permissions**: Per-user feature toggles with real-time background auth sync.
 * **Frontend Resilience**: Automatic chunk load error recovery and update fallback handling.
-* **Engineering Calculators**: Sizing & elongation calculator, wire drawing calculator with interactive results, and PDF/Excel/CSV exports.
+* **Engineering Tooling**: Wire Drawing 3D Workbench with Rust/Wasm FEA, Die Series Generator, and ISO/DIN Technical Data Sheet PDF/Excel/CSV exports.
 
 ---
 
