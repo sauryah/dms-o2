@@ -13,15 +13,22 @@
 - Validation prevents assignment to non-existent layout spots.
 - API endpoints updated to use rack_id/shelf_number filters.
 
-## Phase 3: Wear Alert Automation & ML (Partial - Alert Engine Done)
+## Phase 3: Wear Alert Automation & Physical Auditing (Completed)
 - DieTolerance and WearAlert models implemented with configurable thresholds.
-- Background validation on die post-save signals.
+- Background validation on die post-save signals and Celery Beat checks.
 - Wear alerts exposed via API (`/api/v1/tolerances/`, `/api/v1/wear-alerts/`).
-- Daily wear check task via Celery Beat (`check_all_wear_alerts_task`).
-- **Remaining**: Predictive ML models forecasting tool remaining lifetime.
+- Enamel Machine Stock allocation and monthly physical recount reconciliation sheets (`DieInventoryRecount`).
+- **Decommissioned**: Predictive ML linear regression wear forecasting was formally decommissioned in favor of deterministic threshold alerting and physical recount verification.
 
-## Additional Completed Work
-- **v1.9.2**: 3D Stress Heatmap, Theory Panel, granular permissions tree, live auth sync.
-- **v1.9.3**: Die Inventory redesign (multi-view, wizard, filters, slide-out drawer).
-- **SWR Caching**: Stale-while-revalidate for `/api/go/stats` endpoint.
-- **Code Splitting**: Lazy-loaded charting, 3D viewer, CAD blueprint components.
+## Phase 4: High-Performance Engine & Air-Gapped Operations (Completed)
+- **v2.0.0**:
+  - Rust / WebAssembly High-Resolution FEA Solver (`wasm-drawing-engine`) with sub-millisecond client simulation.
+  - Single-use hashed backup recovery codes MFA (`UserBackupCode`) with session eviction on role modifications.
+  - Cryptographic tamper-evident hash chaining on `DieHistory` and `MachineHistory`.
+  - Atomic $O(1)$ search cache invalidation via Redis generation counter (`search_cache_gen`).
+- **v2.1.0**:
+  - Technical Data Sheet (TDS) ISO/DIN vector print reporting engine (`WireDrawingPrintReport.tsx`) with drafting schematic pipelines and area-reduction/elongation pass curves.
+  - Automatic descending series sorting in set detail views (big size to small size).
+  - 100% self-hosted typography (`Inter` & `Plus Jakarta Sans` local WOFF2) and full telemetry de-Sentrying.
+  - Factory LAN zero-configuration deployment (`toolroom.local`, `DMS-Client-Setup.exe`, dynamic private subnet matcher).
+
