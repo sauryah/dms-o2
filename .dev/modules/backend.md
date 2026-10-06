@@ -50,12 +50,11 @@ backend/
 - `die_id`: Unique string identifier
 - `die_type`: Enum ('ROUND', 'FLAT')
 - `casing`: Dimensions envelope string (e.g. `25x10`)
-- `status`: Enum (`AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`)
+- `status`: Enum (`AVAILABLE`, `RUNNING`, `CLEANING`, `POLISHING`, `DAMAGED`, `SCRAPPED`, `MISSING`, `MAINTENANCE`)
 - `rack`: Foreign key to Rack (nullable)
 - `shelf_number`: Positive small int (nullable)
 - `current_set`: Foreign key to Set (nullable)
 - `remarks`: Maintenance notes text
-- `predicted_remaining_days`: Calculated lifetime integer
 - `version`: Optimistic locking integer
 
 ### RoundDie
@@ -78,23 +77,64 @@ backend/
 - `new_value`: Text new value
 - `ip_address`: Client IP address
 - `note`: Change context note
+- `prev_hash`: SHA-256 hash of preceding history record
+- `hash`: SHA-256 hash of current history record (tamper-evident chain)
+
+### MachineHistory
+- `entity_type`: Enum ('MACHINE', 'SET', 'CATEGORY', 'RACK')
+- `entity_id`: Integer primary key of target entity
+- `entity_name`: String label of target entity
+- `action`: Enum ('CREATED', 'UPDATED', 'DELETED')
+- `field_name`: String field modified
+- `old_value`: Text old value
+- `new_value`: Text new value
+- `changed_by`: Foreign key to User (nullable)
+- `timestamp`: DateTime
+- `ip_address`: Client IP address
+- `prev_hash`: SHA-256 hash of preceding machine history record
+- `hash`: SHA-256 hash of current machine history record
+
+### EnamelMachine & MachineDieStock
+- `EnamelMachine`: Unique name and description representing active enameling lines
+- `MachineDieStock`: Die size (Decimal 7,3) and quantity counter allocated to an enamel machine
+
+### DieInventoryRecount & DieInventoryRecountItem
+- `DieInventoryRecount`: Machine-specific physical inventory audit header (Status: `DRAFT`, `SUBMITTED`)
+- `DieInventoryRecountItem`: Line-item die size, counted quantity, and previous recorded quantity
+
+### UserBackupCode
+- `user`: Foreign key to User
+- `code_hash`: PBKDF2 SHA-256 hash of 8-character single-use code
+- `is_used`: Boolean redemption indicator
+- `used_at`: Timestamp of usage
+- `created_at`: Timestamp of generation
 
 
 ## Key Views
 
-### Authentication
-- `POST /api/v1/auth/login/`: User login (sets HTTPOnly cookies + returns JWT)
+### Authentication & MFA
+- `POST /api/v1/auth/login/`: User login (sets HTTPOnly cookies + returns JWT; prompts for MFA if enabled)
 - `POST /api/v1/auth/logout/`: User logout
 - `POST /api/v1/auth/refresh/`: Token refresh
 - `POST /api/v1/auth/keep-alive/`: Extend session
 - `POST /api/v1/auth/sse-ticket/`: Get SSE connection ticket
 - `GET /api/v1/auth/me/`: Current user profile
 - `POST /api/v1/auth/change-password/`: Change password
+- `POST /api/v1/auth/backup-codes/generate/`: Generate fresh set of single-use backup recovery codes
+- `POST /api/v1/auth/backup-codes/verify/`: Validate and consume a single-use backup code
+- `GET /api/v1/auth/backup-codes/status/`: Query count of active/remaining backup codes
 
-### Dies
+### Dies & Enamel Machine Inventory
 - `GET /api/v1/dies/`: List dies (with type/status/size filters)
 - `POST /api/v1/dies/{die_id}/recut/`: Recut die
 - `GET/POST /api/v1/dies/{die_id}/maintenance_logs/`: Maintenance log
+- `GET /api/v1/dies/enamel-machines/`: List enamel machines
+- `GET /api/v1/dies/machine-stock/`: Machine-allocated die stock quantities
+- `GET/POST /api/v1/dies/inventory-recounts/`: Physical recount audit sheets
+- `POST /api/v1/dies/inventory-recounts/{id}/submit/`: Submit and reconcile recount with stock
+
+### User Management
+- `POST /api/v1/users/terminate-sessions/`: Bulk terminate active sessions on permission/role change
 
 ### Backups
 - `GET/POST /api/v1/backups/`: List / create backups
@@ -105,9 +145,10 @@ backend/
 1. Validate input dimensions
 2. Lock die record (select_for_update)
 3. Update current dimensions
-4. Create DieHistory record
+4. Create DieHistory record with cryptographic hash chain
 5. Broadcast sync and SSE updates
-6. Return updated die
+6. Invalidate dashboard and search caches
+7. Return updated die
 
 ### Wear Alert Detection
 1. Check die dimensions against thresholds
@@ -115,11 +156,15 @@ backend/
 3. Send notification if critical
 4. Log alert creation
 
-### Predicted Remaining Days
-1. Calculate wear rate from history
-2. Project remaining useful life
-3. Update die.predicted_remaining_days
-4. Cache for dashboard performance
+### Physical Recount Reconciliation
+1. Operator records physical floor counts per enamel machine in `DRAFT` state
+2. Verification and submission triggers atomic update of `MachineDieStock`
+3. Audit variance is locked into `DieInventoryRecountItem` with user attribution
+
+### Cryptographic Audit Chaining
+1. Every write to `DieHistory` or `MachineHistory` reads the latest record's `hash`
+2. Computes SHA-256 of payload concatenated with `prev_hash`
+3. Ensures tamper-evident chronology of all physical die modifications
 
 ## Background Tasks
 
@@ -132,8 +177,7 @@ backend/
 ### Scheduled Tasks
 - Daily backup creation
 - Hourly wear alert checks
-- Weekly prediction updates
-- Monthly report generation
+- Periodic Meilisearch index synchronization
 
 ## Testing
 
