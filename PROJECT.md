@@ -61,9 +61,14 @@ graph TD
 
 | System Role | Permissions & Permitted Actions | Interface Restrictions |
 | :--- | :--- | :--- |
-| **Unauthenticated**| Search toolings, view metrics, browse sets. | Read-Only. Forms and action buttons are disabled. |
-| **Admin** | Register new dies, edit location/status/remarks, trigger bulk spreadsheet imports. | CRUD on dies, Sets, and Machines. Locked out of user administration. |
-| **Root** | Create/deactivate Admin user accounts, manage backups, restore system states. | Full administrative access. Single superuser account created via shell seeder. |
+| **Unauthenticated** | Redirected to `/login`. Safe and mutating API routes require authentication (return HTTP 401). | Full lockout. Cannot browse inventory or access tool features without credentials. |
+| **Viewer** | Read-only browsing of inventory, dashboard telemetry, and machines. | Read-Only. Mutation forms, die creation, and administrative tabs are disabled. |
+| **Operator** | Read-only search, metrics, inventory browsing, plus physical rack/shelf relocation. | Relocation only. Locked out of die creation, machine edits, user administration, and backups. |
+| **Admin** | Register new dies, edit location/status/remarks, trigger bulk spreadsheet imports, CRUD on Sets & Machines. | Full asset management. Locked out of user administration, theme toggles, and database backup restoration. |
+| **Root** | Create/deactivate user accounts, assign roles, toggle tool permissions, manage backups, restore system states, switch system visual themes. | Full administrative access. Single superuser account created via shell seeder. |
+
+### Granular Tool Permissions
+Access to specialized engineering tools (`wire-drawing-calculator`, `die-series-generator`) and sub-features (`3d-model`, `theory-docs`) is independently controlled via `User.is_authorized_for_tools` and `User.authorized_tools` string arrays, synchronized in real time without requiring session re-login.
 
 ---
 
@@ -121,6 +126,48 @@ graph TD
 ---
 
 ## 8. Chronological Changelog
+
+### 2026-10-06 · feat: Wire Drawing Calculator Technical Data Sheet (TDS) printout & vector charts
+- Implemented formal ISO/DIN Technical Data Sheet printable report (`WireDrawingPrintReport.tsx`) featuring header reference block, high-level process KPIs, and full sequence pills.
+- Developed multi-row vector schematic drafting pipeline (`PrintSchematicPipeline.tsx`) with deformation tapers and inter-pass $-\Delta A (\%)$ and $+E (\%)$ callout badges.
+- Developed pure vector SVG pass graphs (`PrintPassChart.tsx`) for Elongation per pass (%) and Area Reduction per pass (%) with mean lines and process tolerance bands.
+- Built interactive Print Preview Modal (`PrintPreviewModal.tsx`) with customizable Work Order, Machine Line, and Shopfloor Notes fields.
+- Added `@media print` styling in `index.css` isolating print container and stripping navigation, canvases, and controls.
+- Generated standalone printable HTML report (`wire-drawing-tds-report.html`) and pre-rendered vector PDF (`wire-drawing-tds-report.pdf`).
+
+### 2026-10-05 · feat: inventory set view automatic series sorting (largest to smallest)
+- Added `parseDieDimension`, `getDieSize`, and `compareDiesBySize` helper utilities in `frontend/src/utils/dieHelpers.ts`.
+- Integrated automatic descending size pre-sorting in `useInventoryState.ts` and set detail views, ensuring dies assigned to any machine set are continuously presented in series order from largest size to smallest.
+- Added comprehensive unit tests in `dieHelpers.test.ts`.
+
+### 2026-09-28 · feat: security hardening, session eviction, and accurate search pagination
+- Enforced authentication requirement on safe methods for `IsAdminOrRoot` and `IsAdminOrRootOrOperatorRelocate` (unauthenticated returns HTTP 401).
+- Enforced session eviction and Redis auth cache invalidation upon user role or tool permission alterations.
+- Blocked sign-in attempts using depleted backup codes with HTTP 403 Forbidden.
+- Configured Rollup `manualChunks` vendor splitting (`three`, `recharts`, `lucide-react`, `framer-motion`) in `vite.config.ts`.
+- Fixed search pagination total count for numeric queries by querying PostgreSQL directly.
+- Pre-cached rack instances during bulk spreadsheet imports to eliminate N+1 queries.
+
+### 2026-09-26 · feat: LAN accessibility, resilient routing, WSL2 stability & client setup tool
+- Relaxed Docker healthcheck intervals and localized Celery worker checks, eliminating WSL2 containerd PID exhaustion.
+- Implemented `PrivateNetworkHostMatcher` in `settings.py` for dynamic RFC 1918 private subnet matching across DHCP address changes.
+- Generated multi-SAN TLS certificates covering LAN IP, `localhost`, `toolroom.local`, `dms.local`, and `*.local`.
+- Built native C# standalone workstation setup tool `DMS-Client-Setup.exe` automating root CA installation, browser enterprise policy, and desktop shortcut creation.
+- Created `scripts/network-doctor.ps1` for automated LAN diagnostics and `scripts/install-autostart.ps1` for silent boot autostart.
+- Configured `NUM_PROXIES = 1` and isolated `LoginRateThrottle` to resolve reverse-proxy IP collision issues.
+
+### 2026-09-24 · feat: privacy hardening, 100% self-hosted fonts & tracker elimination
+- Migrated all typography to 100% self-hosted WOFF2 binaries (`frontend/public/fonts/`) for Inter and Plus Jakarta Sans.
+- Purged all external Google Fonts preconnect/stylesheet links and third-party tracker dependencies (Sentry SDK completely removed).
+- Updated ServiceWorker `sw.js` with offline WOFF2 font caching rules (`dms-static-v4`).
+- Bypassed ServiceWorker fetch interception for SSE event streams and authentication routes, resolving event cloning errors.
+
+### 2026-09-21 · feat: Polyglot Rust / WebAssembly High-Resolution FEA Solver (v2.0.0)
+- Implemented client-side 3D volumetric finite element solver in Rust (`wasm-drawing-engine/`) computing von Mises stress tensors, Ludwik-Hollomon flow stress, Avitzur redundant work factor, and adiabatic thermal rise.
+- Streamlined core toolbox to focus purely on `TOOL-01` (Wire Drawing 3D Workbench with Rust/Wasm FEA) and `TOOL-02` (Die Series Generator).
+- Replaced TOTP 2FA with Single-Use Backup Codes (`UserBackupCode`) with SHA-256 hashed storage and emergency CLI reset (`reset_mfa`).
+- Enforced non-root user `USER dmsuser` across all container processes.
+- Implemented atomic generation counter `search_cache_gen` for $O(1)$ search cache invalidation in Go API.
 
 ### 2026-07-17 · feat: 10 infrastructure improvements — HTTPS, health checks, gzip, log rotation, Makefile, pre-commit hooks
 - **HTTPS/TLS**: Configured Traefik to serve TLS using mkcert-generated certificates. HTTP→HTTPS redirect on port 80→443. Added `dynamic.yml` for TLS store, `traefik.yml` for static config, and `certs/` volume mount across all compose files.
