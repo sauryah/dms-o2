@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 import { Search, Database, Cpu, Layers, Activity, Sliders, ChevronRight, ArrowUpDown } from 'lucide-react'
-import { isDieActive } from '../../../utils/dieHelpers'
+import { isDieActive, compareDiesBySize } from '../../../utils/dieHelpers'
 import { RackLayoutGrid } from './RackLayoutGrid'
 import { DieStats } from '../../dashboard/components/DieStats'
 import { DataTable, Column } from '../../../components/ui/DataTable'
@@ -497,29 +497,23 @@ export function SetView({
     return selectedSetData?.set.dies || []
   }, [selectedSetData])
 
-  const [sizeSort, setSizeSort] = useState<'none' | 'asc' | 'desc'>('none')
+  const [sizeSort, setSizeSort] = useState<'desc' | 'asc' | 'none'>('desc')
   const [localPage, setLocalPage] = useState(1)
   const localPageSize = 25
 
+  // Default to descending size sort (big size to small in series) whenever a set is opened or switched
+  useEffect(() => {
+    setSizeSort('desc')
+    setLocalPage(1)
+  }, [selectedSetData?.set.id])
+
   useEffect(() => {
     setLocalPage(1)
-  }, [selectedSetData, sizeSort])
-
-  const getDieSize = (die: Die) => {
-    if (die.die_type === 'ROUND') {
-      return parseFloat(String(die.current_size || 0)) || parseFloat(String(die.punched_size || 0)) || 0
-    } else {
-      return parseFloat(String(die.current_width || 0)) || parseFloat(String(die.punched_width || 0)) || 0
-    }
-  }
+  }, [sizeSort])
 
   const sortedSetDies = useMemo(() => {
     if (sizeSort === 'none') return setDies
-    return [...setDies].sort((a, b) => {
-      const sizeA = getDieSize(a)
-      const sizeB = getDieSize(b)
-      return sizeSort === 'desc' ? sizeB - sizeA : sizeA - sizeB
-    })
+    return [...setDies].sort((a, b) => compareDiesBySize(a, b, sizeSort))
   }, [setDies, sizeSort])
 
   const paginatedSetDies = useMemo(() => {
@@ -642,16 +636,17 @@ export function SetView({
                 <button
                   onClick={() => {
                     setSizeSort(prev => {
-                      if (prev === 'none') return 'desc'
                       if (prev === 'desc') return 'asc'
-                      return 'none'
+                      if (prev === 'asc') return 'none'
+                      return 'desc'
                     })
                   }}
                   className="flex items-center gap-1 px-2.5 py-1 bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-[#6b7280] hover:text-[#e4e4e4] rounded-sm text-[10px] font-mono uppercase tracking-wider transition cursor-pointer"
+                  title="Toggle size series ordering"
                 >
                   <ArrowUpDown className="h-3 w-3 text-blue-500" />
                   <span>
-                    SORT: {sizeSort === 'none' ? 'DEFAULT' : sizeSort === 'desc' ? 'SIZE: DESC' : 'SIZE: ASC'}
+                    SORT: {sizeSort === 'desc' ? 'SIZE: DESC (BIG → SMALL)' : sizeSort === 'asc' ? 'SIZE: ASC (SMALL → BIG)' : 'DEFAULT'}
                   </span>
                 </button>
               )}
