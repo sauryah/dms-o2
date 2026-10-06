@@ -7,6 +7,8 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { CommandPalette } from './components/CommandPalette'
 import { SessionTimeoutManager } from './components/SessionTimeoutManager'
 import { Footer } from './components/Footer'
+import { PrintHeader } from './components/PrintHeader'
+import { PrintFooter } from './components/PrintFooter'
 import { AuthProvider, ThemeProvider, ToastProvider, NotificationProvider, AnnouncementProvider, useAuth, useToast, useNotifications, useAnnouncer } from './contexts'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
 import { lazyWithRetry } from './utils/lazyWithRetry'
@@ -153,88 +155,110 @@ function AppContent() {
         )}
         <SessionTimeoutManager />
         <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={
-              <ErrorBoundary>
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/inventory" element={
-              <ErrorBoundary>
-                <ProtectedRoute>
-                  <InventoryPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/dies/*" element={
-              <ErrorBoundary>
-                <ProtectedRoute>
-                  <DieDetailPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/machines" element={
-              <ErrorBoundary>
-                <ProtectedRoute>
-                  <MachineSetsPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/import" element={
-              <ErrorBoundary>
-                <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
-                  <ImportPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/users" element={
-              <ErrorBoundary>
-                <ProtectedRoute allowedRoles={['ROOT']}>
-                  <UsersPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/history" element={
-              <ErrorBoundary>
-                <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
-                  <HistoryPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/settings" element={
-              <ErrorBoundary>
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/wire-drawing-calculator" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
-                  <WireDrawingCalculatorPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/die-series-generator" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth toolId="die-series-generator">
-                  <DieSeriesGeneratorPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-            <Route path="/tools" element={
-              <ErrorBoundary>
-                <ProtectedRoute requireToolAuth>
-                  <ToolsPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            } />
-          </Routes>
-        </Suspense>
+        <table className="dms-print-frame">
+          <thead>
+            <tr>
+              <td>
+                <PrintHeader />
+              </td>
+            </tr>
+          </thead>
+          <tfoot>
+            <tr>
+              <td>
+                <PrintFooter />
+              </td>
+            </tr>
+          </tfoot>
+          <tbody>
+            <tr>
+              <td>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <DashboardPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/inventory" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <InventoryPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/dies/*" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <DieDetailPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/machines" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <MachineSetsPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/import" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
+                          <ImportPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/users" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute allowedRoles={['ROOT']}>
+                          <UsersPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/history" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute allowedRoles={['ADMIN', 'ROOT']}>
+                          <HistoryPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/settings" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute>
+                          <SettingsPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/wire-drawing-calculator" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
+                          <WireDrawingCalculatorPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/die-series-generator" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute requireToolAuth toolId="die-series-generator">
+                          <DieSeriesGeneratorPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                    <Route path="/tools" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute requireToolAuth>
+                          <ToolsPage />
+                        </ProtectedRoute>
+                      </ErrorBoundary>
+                    } />
+                  </Routes>
+                </Suspense>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <Footer />
     </div>
