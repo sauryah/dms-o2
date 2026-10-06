@@ -7,50 +7,52 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** LAN Accessibility, Resilient Routing & WSL2 Stability Overhaul
+**Task:** Full-Stack Codebase Audit & Documentation Synchronization (v2.1.0)
 **Status:** Complete
-**Started:** 2026-09-26
-**Completed:** 2026-09-26
+**Started:** 2026-10-06
+**Completed:** 2026-10-06
 **Confidence:** 100%
 
 ## Task Description
-Executed comprehensive stability and multi-device LAN access overhaul:
-1. **WSL2 Stability & Healthcheck Throttling (Loop 1)**: Relaxed all 10 container healthchecks to 15s/30s/60s intervals and node-localized Celery worker checks, eliminating WSL2 containerd PID exhaustion.
-2. **Dynamic RFC 1918 Private Subnet Matching (Loop 2)**: Added `PrivateNetworkHostMatcher` to `settings.py` so DHCP address changes do not trigger `400 Bad Request`.
-3. **Multi-SAN Local TLS Certificates (Loop 3)**: Re-issued certificates covering active IP, `toolroom.local`, `dms.local`, and localhost.
-4. **Friendly Hostname & mDNS (Loop 4)**: Validated native Windows mDNS name resolution for `https://toolroom.local`.
-5. **Operational Diagnostics & Autostart (Loop 5)**: Created `scripts/network-doctor.ps1` for 1-click audit and recovery, and `scripts/install-autostart.ps1` for silent startup on boot.
-6. **Reverse-Proxy IP Attribution & Login Throttle Isolation (Loop 6)**: Configured `NUM_PROXIES = 1` and isolated `LoginRateThrottle` to resolve "Request was throttled" on login.
-7. **Standalone Native Client Setup Tool (Loop 7)**: Built native C# executable `DMS-Client-Setup.exe` automating root CA installation, browser enterprise policy, and desktop shortcut.
-8. **Documentation & Operational Runbook**: Updated `README.md` and dev docs.
-9. **Full-Stack Verification**: 200/200 Django tests pass, 70/70 Vitest tests pass, 0 TypeScript errors, 10/10 containers healthy.
-Executed comprehensive privacy hardening and eliminated all unnecessary third-party requests and trackers across the stack:
-1. **Self-Hosted Local Fonts**:
-   - Downloaded official WOFF2 binaries for Inter (weights 400-700) and Plus Jakarta Sans (weights 500-800) covering Latin, Latin-ext, Cyrillic, Greek, and Vietnamese subsets into `frontend/public/fonts/`.
-   - Created localized stylesheet `frontend/public/fonts/fonts.css` and src bundler integration module `frontend/src/fonts.css`.
-   - Imported `./fonts.css` directly in `frontend/src/index.css`.
-   - Removed external `preconnect` and stylesheet links to `fonts.googleapis.com` and `fonts.gstatic.com` from `frontend/index.html`.
-   - Updated `design-system/die-management-system/MASTER.md` typography documentation to reference self-hosted fonts.
-   - Updated ServiceWorker `frontend/public/sw.js` to cache `.woff2` and `.woff` assets and bumped cache version to `dms-static-v4`.
-2. **Third-Party Tracker Purge**:
-   - Removed Sentry integration from `frontend/src/components/ErrorBoundary.tsx` and `frontend/src/main.tsx`.
-   - Deleted unused `frontend/src/utils/sentry.ts`.
-   - Removed Sentry integration and external IP resolution (`8.8.8.8`) from `backend/dms/settings.py` (replaced with RFC 1918 private address `10.255.255.255`).
-   - Removed `sentry-sdk==2.66.1` dependency from `backend/requirements.txt`.
-3. **Verification**:
-   - Zero occurrences of `fonts.googleapis.com` or `fonts.gstatic.com` across the codebase.
-   - All 70 Vitest tests green, TypeScript typecheck clean (0 errors), production Vite build successful.
-   - All 101 Django tests green. Docker frontend container rebuilt and verified serving fonts locally with HTTP 200 and 1-year immutable caching.
+Executed exhaustive audit of all project documentation against the active codebase implementation:
+1. **Root Documentation (`README.md`, `PROJECT.md`, `CHANGELOG.md`)**:
+   - Replaced obsolete tools (Die Set Planner, Sizing Calculator, Pass Optimizer, wear prediction) with current active tool suite.
+   - Documented Wire Drawing 3D Workbench with Rust/Wasm high-resolution FEA engine (`wasm-drawing-engine`).
+   - Documented Technical Data Sheet (TDS) vector reporting engine (`WireDrawingPrintReport.tsx`) with drafting pipelines and pass curves.
+   - Documented automatic descending series sorting in set detail views (big to small).
+   - Documented single-use recovery backup codes MFA (`UserBackupCode`), session eviction on role modifications, and reverse proxy IP attribution.
+   - Documented 100% self-hosted local typography (zero Google Fonts, zero Sentry) and LAN deployment tooling (`DMS-Client-Setup.exe`).
+   - Added release `[2.1.0] - 2026-10-06` to changelog.
+2. **Architecture & Upgrade Docs (`docs/ARCHITECTURE.md`, `wiki/Upgrade-Guide.md`)**:
+   - Aligned endpoint permission matrices (safe method auth enforcement returning 401).
+   - Added Go calculation tools (`/wire-drawing`, `/die-series`).
+   - Replaced old Redis pattern invalidation with $O(1)$ atomic generation counter `search_cache_gen`.
+   - Updated upgrade guide to v2.1.0 target with backup codes migration and font asset cache bumping (`dms-static-v4`).
+3. **Architecture Specifications (`.dev/architecture/*`)**:
+   - `api.md`: Added backup codes MFA routes, recount audit sheets, machine stock endpoints, Go calculation tools, and `/api/go/metrics`.
+   - `database.md`: Added `EnamelMachine`, `MachineDieStock`, `DieInventoryRecount`, `DieInventoryRecountItem`, `UserBackupCode`, and cryptographic hash chaining (`prev_hash`, `hash`) on `DieHistory`/`MachineHistory`.
+   - `security.md`: Replaced TOTP with Single-Use Backup Codes, documented role-change session eviction, reverse proxy IP resolution (`NUM_PROXIES = 1`), and depleted code login blocking (403).
+   - `decisions.md`: Documented ADR 8 through ADR 13.
+   - `observability.md`: Documented `/api/go/metrics`, Prometheus alerts, and air-gapped local health probes.
+4. **Module Documentation (`.dev/modules/*`)**:
+   - `backend.md`: Updated `Die` model (`MAINTENANCE` status, removed wear prediction), added enamel/recount/backup models and recount reconciliation flow.
+   - `dies.md`: Documented `EnamelMachine`, `MachineDieStock`, `DieInventoryRecount`, and bulk import pre-caching.
+   - `frontend.md`: Removed decommissioned tools, documented Rust/Wasm FEA solver, TDS vector print engine, set series auto-sorting, and Rollup `manualChunks`.
+   - `go-api.md`: Corrected file paths, removed `dieset/` parser references, documented calculation tools and $O(1)$ generation caching.
+   - `users.md`: Documented `UserBackupCode`, session eviction, safe method auth, and `reset_mfa` CLI command.
+   - `history.md`: Documented cryptographic SHA-256 hash chaining and atomic dashboard cache invalidation.
+5. **Business Roadmap (`.dev/business/roadmap.md`)**:
+   - Noted formal decommissioning of predictive ML wear forecasting in favor of deterministic threshold alerts and physical recount verification.
+   - Recorded completion of Phase 4 and releases v2.0.0 & v2.1.0.
 
 ## Completed
-1. 100% self-hosted typography replacing Google Fonts — 100% complete.
-2. Complete removal of Sentry and external tracking dependencies — 100% complete.
-3. Verification of 0 external font/tracking network requests — 100% complete.
-4. All files committed individually with `--no-gpg-sign`.
+- All 18 documentation files updated and verified against active source code.
+- Strict "1 changed file = 1 commit" rule maintained with `--no-gpg-sign`.
+- All unit and integration test suites passing, zero TypeScript errors.
 
 ## Next Steps
-- Maintain strict CSP and self-hosted privacy standards.
+- Run `graphify update .` to synchronize knowledge graph.
 - Push commits to remote origin if requested.
 
 ## Blockers
-- None. System is fully air-gapped ready and privacy friendly.
+- None. Documentation is fully synchronized with implementation.
