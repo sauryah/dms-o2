@@ -4,6 +4,64 @@ All notable changes to the DMS project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-06
+
+### Wire Drawing Calculator Technical Data Sheet (TDS) Printout & Reporting
+- **ISO/DIN Technical Data Sheet Report (`WireDrawingPrintReport.tsx`)**:
+  - Industrial print layout featuring formal document reference header (`TDS-[DATE]`), work order metadata, high-level deformation KPIs, and full die progression sequence pills.
+  - Engineering data table with pass-by-pass dimensional reduction and cross-sectional transformation schedule, including `AVG`, `RANGE`, and `TOTAL` summary footers.
+  - Formal shopfloor sign-off block with signature lines for *Prepared By*, *Verified By*, and *Quality Approval*.
+- **Vector Schematic Drafting Pipeline (`PrintSchematicPipeline.tsx`)**:
+  - Responsive multi-row wrapping design for multi-pass drawing sequences (5–6 stations per row) preventing print clipping across A4 pages.
+  - Visual deformation tapers with proportional wire thickness, centerline guides, and inter-pass $-\Delta A (\%)$ and $+E (\%)$ callout badges.
+- **High-Contrast Pure Vector SVG Pass Graphs (`PrintPassChart.tsx`)**:
+  - Pure SVG vector bar charts for **Elongation per Pass (%)** and **Area Reduction per Pass (%)** with exact values, dashed average reference lines, and process tolerance bands (20%–28% elongation, 18%–24% area reduction).
+  - Eliminates dark-theme canvas rasterization and `ResizeObserver` print collapse bugs.
+- **Interactive Print Preview Modal & Print CSS Engine**:
+  - Built `PrintPreviewModal.tsx` allowing toolroom operators to preview the document and customize Work Order #, Machine Assignment, and Shopfloor Notes before printing.
+  - Formatted `@media print` rules in `index.css` isolating `.print-container` and hiding navigation, 3D canvases, and buttons.
+  - Generated standalone printable HTML report (`wire-drawing-tds-report.html`) and pre-rendered vector PDF (`wire-drawing-tds-report.pdf`).
+
+### Inventory UX & Automatic Series Sorting
+- **Descending Size Pre-Sorting for Set Views**:
+  - Added dimension parsing and comparison utilities (`parseDieDimension`, `getDieSize`, `compareDiesBySize`) in `frontend/src/utils/dieHelpers.ts`.
+  - Automatically sorts dies assigned to any machine set in series from largest size to smallest across inventory and set views.
+
+### Security, Authentication & Session Hardening
+- **Authentication Required on Safe Methods**:
+  - Enforced `IsAuthenticated` across `IsAdminOrRoot` and `IsAdminOrRootOrOperatorRelocate` permissions, returning HTTP 401 Unauthorized for unauthenticated queries.
+- **Role-Based Session Eviction**:
+  - Automatically evicts active user sessions and invalidates Redis auth caches when user roles or tool authorization permissions are updated by an administrator.
+- **Depleted Backup Code Sign-In Blocking**:
+  - Enforced check blocking logins with depleted backup codes returning HTTP 403 Forbidden.
+- **Reverse Proxy IP Attribution**:
+  - Configured `NUM_PROXIES = 1` and isolated `LoginRateThrottle` scope in `settings.py` behind Traefik reverse proxy.
+
+### LAN Accessibility, mDNS & Workstation Setup
+- **WSL2 Stability & Healthcheck Throttling**:
+  - Relaxed container healthcheck intervals and localized Celery worker ping, eliminating WSL2 containerd PID exhaustion.
+- **Dynamic RFC 1918 Private Subnet Matching**:
+  - Added `PrivateNetworkHostMatcher` in `settings.py` to prevent `400 Bad Request` upon local DHCP IP changes.
+- **Standalone Native Workstation Setup Executable (`DMS-Client-Setup.exe`)**:
+  - Built standalone C# installer automating Root CA installation, browser enterprise policy configuration, and desktop shortcut creation.
+- **Network Diagnostics & Autostart**:
+  - Added `scripts/network-doctor.ps1` for 1-click LAN and container health diagnostics and `scripts/install-autostart.ps1` for silent boot startup.
+
+### Privacy Hardening & Self-Hosted Typography
+- **100% Self-Hosted WOFF2 Fonts**:
+  - Downloaded Inter and Plus Jakarta Sans WOFF2 fonts into `frontend/public/fonts/` and purged all external Google Fonts links.
+  - Enhanced ServiceWorker `sw.js` with offline font caching (`dms-static-v4`).
+- **Complete Third-Party Tracker Purge**:
+  - Completely removed Sentry SDK and tracking calls from frontend and backend.
+
+### Performance & Tooling Streamlining
+- **Rollup Vendor Code Splitting**:
+  - Configured `manualChunks` in `vite.config.ts` for `three`, `recharts`, `lucide-react`, and `framer-motion`.
+- **Search Pagination Accuracy**:
+  - Enforced direct PostgreSQL total count queries for numeric searches.
+- **Core Tool Focus**:
+  - Decommissioned experimental live telemetry and Julia metallurgy microservice, streamlining the platform to focus on the Rust/Wasm FEA Wire Drawing Workbench (`TOOL-01`) and Die Series Generator (`TOOL-02`).
+
 ## [2.0.0] - 2026-09-21
 
 ### Polyglot Multi-Language Architecture (DMS-O2)
