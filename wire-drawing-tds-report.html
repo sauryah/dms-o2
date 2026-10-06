@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wire Drawing Technical Data Sheet (TDS) & Drafting Schedule</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 12mm 12mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      padding: 24px;
+    }
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .page-break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    @media print {
+      .container {
+        border: none;
+        padding: 0;
+        box-shadow: none;
+        max-width: 100%;
+      }
+    }
+
+    /* Print toolbar */
+    .print-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .print-toolbar button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .print-toolbar button:hover {
+      background: #1d4ed8;
+    }
+
+    /* Header */
+    .doc-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .doc-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .badge-dms {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+    }
+    .badge-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      letter-spacing: 0.05em;
+      margin-left: 6px;
+    }
+    .doc-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #020617;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      margin-top: 4px;
+    }
+    .doc-subtitle {
+      font-size: 10px;
+      color: #475569;
+      margin-top: 2px;
+    }
+    .doc-ref-box {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 3px;
+      text-align: right;
+      min-width: 190px;
+    }
+    .doc-ref-title {
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .doc-ref-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .doc-ref-date {
+      font-size: 9px;
+      color: #475569;
+      margin-top: 2px;
+    }
+
+    /* Meta bar */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 10px;
+    }
+    .meta-label {
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: block;
+    }
+    .meta-val {
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .meta-val.verified {
+      color: #047857;
+    }
+
+    /* Section Cards */
+    .section-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      background: #ffffff;
+    }
+    .section-card.alt-bg {
+      background: #f8fafc;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .section-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* KPIs */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .kpi-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 6px 4px;
+      border-radius: 3px;
+    }
+    .kpi-label {
+      font-size: 8.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: block;
+    }
+    .kpi-val {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 2px;
+      display: block;
+    }
+    .kpi-val.green { color: #047857; }
+    .kpi-val.blue { color: #1d4ed8; }
+    .kpi-val.purple { color: #6d28d9; }
+
+    /* Series Progression Pills */
+    .series-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      border-radius: 3px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .series-pill {
+      background: #f1f5f9;
+      border: 1px solid #94a3b8;
+      color: #0f172a;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .series-arrow {
+      color: #94a3b8;
+      font-weight: 800;
+    }
+
+    /* Schematic Pipeline */
+    .pipeline-stage {
+      margin-bottom: 8px;
+    }
+    .pipeline-stage-label {
+      font-size: 9.5px;
+      color: #475569;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .pipeline-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2563eb;
+      display: inline-block;
+    }
+    .pipeline-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 4px;
+    }
+    .die-station {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 3px;
+      padding: 6px 8px;
+      width: 98px;
+      display: flex;
+      flex-col: column;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .station-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+    }
+    .station-name {
+      font-size: 8.5px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .station-badge {
+      font-size: 8px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+    .station-dia {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .station-unit {
+      font-size: 8.5px;
+      color: #64748b;
+    }
+    .inter-die-wire {
+      width: 54px;
+      height: 44px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #cbd5e1;
+      padding: 5px 7px;
+    }
+    .data-table th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 800;
+      text-align: right;
+    }
+    .data-table th:first-child, .data-table td:first-child {
+      text-align: center;
+      width: 48px;
+    }
+    .data-table td {
+      text-align: right;
+    }
+    .data-table tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .data-table td.pass-num {
+      font-weight: 800;
+      color: #334155;
+    }
+    .data-table td.to-dia {
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .data-table td.area-red {
+      font-weight: 800;
+      color: #047857;
+      background: #ecfdf5;
+    }
+    .data-table td.elong {
+      font-weight: 800;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+    .data-table tfoot tr.row-avg {
+      background: #f1f5f9;
+      font-weight: 800;
+      border-top: 2px solid #64748b;
+    }
+    .data-table tfoot tr.row-range {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #475569;
+    }
+    .data-table tfoot tr.row-total {
+      background: #e2e8f0;
+      font-weight: 900;
+      color: #020617;
+      border-top: 1px solid #94a3b8;
+    }
+
+    /* Graphs Layout */
+    .graphs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .graph-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 10px;
+      background: #ffffff;
+    }
+    .graph-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+    .graph-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+    .graph-stats {
+      font-size: 9px;
+      font-weight: 700;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #334155;
+    }
+
+    /* Sign-off */
+    .notes-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      border-radius: 3px;
+      color: #1e293b;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      font-size: 10px;
+    }
+    .signoff-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 9.5px;
+    }
+    .signoff-line {
+      height: 24px;
+      border-bottom: 1px solid #64748b;
+      margin-top: 8px;
+    }
+    .signoff-role {
+      font-size: 8.5px;
+      color: #64748b;
+      margin-top: 3px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Print / Save PDF Action Bar (Visible in browser, hidden on print) -->
+  <div class="print-toolbar no-print">
+    <div>
+      <strong style="font-size: 13px;">DMS-O2 Wire Drawing Calculator • Print Preview</strong>
+      <span style="font-size: 11px; opacity: 0.8; margin-left: 10px;">Technical Data Sheet (TDS) Ready</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button onclick="window.print()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Print / Save to PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- =========================================================================
+         DOCUMENT HEADER BLOCK (ISO / DIN Standard)
+         ========================================================================= -->
+    <header class="doc-header">
+      <div class="doc-header-top">
+        <div>
+          <div style="display: flex; align-items: center;">
+            <span class="badge-dms">DMS-O2</span>
+            <span class="badge-sub">DIE MANAGEMENT OPERATING SYSTEM</span>
+          </div>
+          <h1 class="doc-title">Wire Drawing Technical Data Sheet (TDS) & Drafting Schedule</h1>
+          <p class="doc-subtitle">Industrial Pass Progression, Deformation Mechanics & Elongation Profile</p>
+        </div>
+
+        <div class="doc-ref-box">
+          <div class="doc-ref-title">Document Reference</div>
+          <div class="doc-ref-val">TDS-WD2026-08P</div>
+          <div class="doc-ref-date">Generated: 06 Oct 2026 • 12:45 UTC</div>
+        </div>
+      </div>
+
+      <!-- Operational Context Bar -->
+      <div class="meta-grid">
+        <div>
+          <span class="meta-label">Work Order:</span>
+          <span class="meta-val">WDC-JOB-2026-08P</span>
+        </div>
+        <div>
+          <span class="meta-label">Drawing Machine:</span>
+          <span class="meta-val">Multi-Wire Drawing Line 01</span>
+        </div>
+        <div>
+          <span class="meta-label">Material Profile:</span>
+          <span class="meta-val">Standard Wire Drawing</span>
+        </div>
+        <div>
+          <span class="meta-label">Quality Status:</span>
+          <span class="meta-val verified">EXCELLENT (5★ VERIFIED)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- =========================================================================
+         SECTION 01: DRAFTING SCHEDULE & SERIES SUMMARY
+         ========================================================================= -->
+    <section class="section-card alt-bg">
+      <div class="section-header">
+        <span class="section-title">01. Drafting Schedule & Series Summary</span>
+        <span class="section-tag">8 Drawing Passes Total</span>
+      </div>
+
+      <!-- High-level KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Inlet Size</span>
+          <span class="kpi-val">Ø 3.500 mm</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Finish Size</span>
+          <span class="kpi-val">Ø 1.345 mm</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Overall Area Red.</span>
+          <span class="kpi-val green">85.23 %</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Total Ratio</span>
+          <span class="kpi-val blue">6.77</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Avg Elongation</span>
+          <span class="kpi-val purple">27.01 %</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Avg Area Red.</span>
+          <span class="kpi-val">21.27 %</span>
+        </div>
+      </div>
+
+      <!-- Complete Series progression string -->
+      <div>
+        <span style="font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase; display: block; margin-bottom: 5px;">
+          Complete Die Series Sequence:
+        </span>
+        <div class="series-box">
+          <span class="series-pill">Ø 3.500</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 3.100</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 2.750</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 2.440</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 2.165</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 1.920</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 1.705</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 1.515</span>
+          <span class="series-arrow">→</span>
+          <span class="series-pill">Ø 1.345</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 02: SCHEMATIC DRAFTING PIPELINE
+         ========================================================================= -->
+    <section class="section-card page-break-inside-avoid">
+      <div class="section-header">
+        <div>
+          <span class="section-title">02. Schematic Drafting Pipeline</span>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">
+            Sequential cross-section wire reduction and deformation taper through tungsten carbide dies
+          </div>
+        </div>
+        <span class="section-tag" style="font-weight: 800; color: #1e293b;">
+          9 STATIONS • 8 DRAFT PASSES
+        </span>
+      </div>
+
+      <!-- Pipeline Row 1 (Passes 1 - 5) -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-label">
+          <span class="pipeline-dot"></span>
+          <span>DRAFTING STAGE 1 (PASSES 1 – 5)</span>
+        </div>
+        <div class="pipeline-row">
+
+          <!-- Station 1 (Start) -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">START</span>
+              <span class="station-badge">#1</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 3.500</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 1 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 10 L 54 12 L 54 32 L 0 34 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.6%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+27.5%</text>
+            </svg>
+          </div>
+
+          <!-- Station 2 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 2</span>
+              <span class="station-badge">#2</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 3.100</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 2 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 12 L 54 13 L 54 31 L 0 32 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.3%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+27.1%</text>
+            </svg>
+          </div>
+
+          <!-- Station 3 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 3</span>
+              <span class="station-badge">#3</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 2.750</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 3 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 13 L 54 14 L 54 30 L 0 31 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.3%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+27.0%</text>
+            </svg>
+          </div>
+
+          <!-- Station 4 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 4</span>
+              <span class="station-badge">#4</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 2.440</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 4 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 14 L 54 15 L 54 29 L 0 30 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.3%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+27.0%</text>
+            </svg>
+          </div>
+
+          <!-- Station 5 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 5</span>
+              <span class="station-badge">#5</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 2.165</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Pipeline Row 2 (Passes 6 - 8 to FINISH) -->
+      <div class="pipeline-stage" style="margin-top: 14px;">
+        <div class="pipeline-stage-label">
+          <span class="pipeline-dot" style="background: #059669;"></span>
+          <span>DRAFTING STAGE 2 (PASSES 6 – 8)</span>
+        </div>
+        <div class="pipeline-row">
+
+          <!-- Station 5 Repeat Connector -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 5</span>
+              <span class="station-badge">#5</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 2.165</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 5 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 15 L 54 16 L 54 28 L 0 29 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.4%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+27.2%</text>
+            </svg>
+          </div>
+
+          <!-- Station 6 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 6</span>
+              <span class="station-badge">#6</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 1.920</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 6 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 16 L 54 17 L 54 27 L 0 28 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.1%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+26.8%</text>
+            </svg>
+          </div>
+
+          <!-- Station 7 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 7</span>
+              <span class="station-badge">#7</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 1.705</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 7 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 17 L 54 18 L 54 26 L 0 27 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.0%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+26.6%</text>
+            </svg>
+          </div>
+
+          <!-- Station 8 -->
+          <div class="die-station">
+            <div class="station-top">
+              <span class="station-name">STATION 8</span>
+              <span class="station-badge">#8</span>
+            </div>
+            <div>
+              <div class="station-dia">Ø 1.515</div>
+              <div class="station-unit">mm diameter</div>
+            </div>
+          </div>
+
+          <!-- Wire Taper 8 -->
+          <div class="inter-die-wire">
+            <svg width="54" height="44" viewBox="0 0 54 44">
+              <path d="M 0 18 L 54 19 L 54 25 L 0 26 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="0.75" opacity="0.85"/>
+              <line x1="0" y1="22" x2="54" y2="22" stroke="#c2410c" stroke-width="0.5" stroke-dasharray="2 2"/>
+              <rect x="4" y="6" width="46" height="32" rx="2" fill="#ffffff" stroke="#94a3b8" stroke-width="0.75"/>
+              <text x="27" y="17" text-anchor="middle" font-size="8" font-weight="800" fill="#047857">-21.2%</text>
+              <line x1="8" y1="21" x2="46" y2="21" stroke="#e2e8f0" stroke-width="0.5"/>
+              <text x="27" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#b45309">+26.9%</text>
+            </svg>
+          </div>
+
+          <!-- Station 9 (Finish) -->
+          <div class="die-station" style="border-color: #059669; background: #f0fdf4;">
+            <div class="station-top" style="border-color: #bbf7d0;">
+              <span class="station-name" style="color: #047857;">FINISH</span>
+              <span class="station-badge" style="background: #dcfce7; color: #166534;">#9</span>
+            </div>
+            <div>
+              <div class="station-dia" style="color: #064e3b;">Ø 1.345</div>
+              <div class="station-unit" style="color: #059669;">mm diameter</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 03: ELONGATION & REDUCTION ENGINEERING DATA TABLE
+         ========================================================================= -->
+    <section class="section-card page-break-inside-avoid">
+      <div class="section-header">
+        <div>
+          <span class="section-title">03. Elongation & Reduction Engineering Data Table</span>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">
+            Pass-by-pass dimensional reduction and cross-sectional transformation schedule
+          </div>
+        </div>
+        <span class="section-tag">UNITS: mm, mm², %</span>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>PASS</th>
+            <th>FROM (Ø mm)</th>
+            <th>TO (Ø mm)</th>
+            <th>AREA IN (mm²)</th>
+            <th>AREA OUT (mm²)</th>
+            <th style="background: #dcfce7; color: #064e3b;">AREA RED. ΔA (%)</th>
+            <th style="background: #dbeafe; color: #1e3a8a;">ELONGATION E (%)</th>
+            <th>RATIO R</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pass-num">P1</td>
+            <td>3.500</td>
+            <td class="to-dia">3.100</td>
+            <td>9.621</td>
+            <td>7.548</td>
+            <td class="area-red">21.55 %</td>
+            <td class="elong">27.47 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P2</td>
+            <td>3.100</td>
+            <td class="to-dia">2.750</td>
+            <td>7.548</td>
+            <td>5.940</td>
+            <td class="area-red">21.30 %</td>
+            <td class="elong">27.07 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P3</td>
+            <td>2.750</td>
+            <td class="to-dia">2.440</td>
+            <td>5.940</td>
+            <td>4.676</td>
+            <td class="area-red">21.28 %</td>
+            <td class="elong">27.03 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P4</td>
+            <td>2.440</td>
+            <td class="to-dia">2.165</td>
+            <td>4.676</td>
+            <td>3.681</td>
+            <td class="area-red">21.28 %</td>
+            <td class="elong">27.03 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P5</td>
+            <td>2.165</td>
+            <td class="to-dia">1.920</td>
+            <td>3.681</td>
+            <td>2.895</td>
+            <td class="area-red">21.35 %</td>
+            <td class="elong">27.15 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P6</td>
+            <td>1.920</td>
+            <td class="to-dia">1.705</td>
+            <td>2.895</td>
+            <td>2.283</td>
+            <td class="area-red">21.14 %</td>
+            <td class="elong">26.81 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P7</td>
+            <td>1.705</td>
+            <td class="to-dia">1.515</td>
+            <td>2.283</td>
+            <td>1.803</td>
+            <td class="area-red">21.03 %</td>
+            <td class="elong">26.63 %</td>
+            <td>1.27</td>
+          </tr>
+          <tr>
+            <td class="pass-num">P8</td>
+            <td>1.515</td>
+            <td class="to-dia">1.345</td>
+            <td>1.803</td>
+            <td>1.421</td>
+            <td class="area-red">21.19 %</td>
+            <td class="elong">26.89 %</td>
+            <td>1.27</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <!-- Average -->
+          <tr class="row-avg">
+            <td>AVG</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td style="color: #065f46; background: #d1fae5;">21.27 %</td>
+            <td style="color: #1e40af; background: #dbeafe;">27.01 %</td>
+            <td>1.27</td>
+          </tr>
+          <!-- Range -->
+          <tr class="row-range">
+            <td>RANGE</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>21.0% – 21.6%</td>
+            <td>26.6% – 27.5%</td>
+            <td>—</td>
+          </tr>
+          <!-- Overall -->
+          <tr class="row-total">
+            <td>TOTAL</td>
+            <td>3.500</td>
+            <td>1.345</td>
+            <td>9.621</td>
+            <td>1.421</td>
+            <td style="color: #064e3b; background: #a7f3d0;">85.23 %</td>
+            <td style="color: #1e3a8a; background: #bfdbfe;">577.0 %</td>
+            <td>6.77</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 04: GRAPHICAL PASS ANALYSIS (PURE SVG VECTOR PASS CHARTS)
+         ========================================================================= -->
+    <section class="section-card page-break-inside-avoid">
+      <div class="section-header">
+        <div>
+          <span class="section-title">04. Graphical Pass Analysis</span>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">
+            High-contrast vector profiles with mean drafting reference lines and process tolerance limits
+          </div>
+        </div>
+      </div>
+
+      <div class="graphs-grid">
+
+        <!-- Chart 1: Elongation per Pass -->
+        <div class="graph-card">
+          <div class="graph-header">
+            <span class="graph-title">Elongation per Pass (%)</span>
+            <span class="graph-stats">AVG: 27.01% | MAX: 27.47% | MIN: 26.63%</span>
+          </div>
+
+          <svg viewBox="0 0 400 180" style="width: 100%; height: auto;">
+            <!-- Target tolerance band (20% to 28%) -->
+            <rect x="40" y="32" width="340" height="42" fill="#eff6ff" opacity="0.6"/>
+
+            <!-- Grid Lines & Y ticks: 0, 10, 20, 30, 40 -->
+            <line x1="40" y1="140" x2="380" y2="140" stroke="#cbd5e1" stroke-width="1.2"/>
+            <text x="34" y="143" text-anchor="end" font-size="8.5" fill="#64748b">0%</text>
+
+            <line x1="40" y1="113" x2="380" y2="113" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="116" text-anchor="end" font-size="8.5" fill="#64748b">10%</text>
+
+            <line x1="40" y1="86" x2="380" y2="86" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="89" text-anchor="end" font-size="8.5" fill="#64748b">20%</text>
+
+            <line x1="40" y1="59" x2="380" y2="59" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="62" text-anchor="end" font-size="8.5" fill="#64748b">30%</text>
+
+            <line x1="40" y1="32" x2="380" y2="32" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="35" text-anchor="end" font-size="8.5" fill="#64748b">40%</text>
+
+            <!-- Average Line at 27.01% -> Y = 140 - (27.01/40)*108 = 67.07 -->
+            <line x1="40" y1="67" x2="380" y2="67" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="4 4"/>
+            <rect x="315" y="58" width="60" height="15" rx="2" fill="#ede9fe" stroke="#8b5cf6" stroke-width="0.75"/>
+            <text x="345" y="69" text-anchor="middle" font-size="8" font-weight="800" fill="#6d28d9">Avg 27.0%</text>
+
+            <!-- 8 Bars (width 22, spacing ~42) -->
+            <!-- P1: 27.47% -> Y = 140 - (27.47/40)*108 = 65.8, H = 74.2 -->
+            <rect x="49" y="66" width="22" height="74" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="60" y="61" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">27.5%</text>
+            <text x="60" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P1</text>
+
+            <!-- P2: 27.07% -> Y = 66.9, H = 73.1 -->
+            <rect x="91" y="67" width="22" height="73" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="102" y="62" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">27.1%</text>
+            <text x="102" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P2</text>
+
+            <!-- P3: 27.03% -> Y = 67.0, H = 73.0 -->
+            <rect x="133" y="67" width="22" height="73" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="144" y="62" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">27.0%</text>
+            <text x="144" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P3</text>
+
+            <!-- P4: 27.03% -> Y = 67.0, H = 73.0 -->
+            <rect x="175" y="67" width="22" height="73" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="186" y="62" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">27.0%</text>
+            <text x="186" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P4</text>
+
+            <!-- P5: 27.15% -> Y = 66.7, H = 73.3 -->
+            <rect x="217" y="67" width="22" height="73" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="228" y="62" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">27.2%</text>
+            <text x="228" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P5</text>
+
+            <!-- P6: 26.81% -> Y = 67.6, H = 72.4 -->
+            <rect x="259" y="68" width="22" height="72" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="270" y="63" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">26.8%</text>
+            <text x="270" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P6</text>
+
+            <!-- P7: 26.63% -> Y = 68.1, H = 71.9 -->
+            <rect x="301" y="68" width="22" height="72" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="312" y="63" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">26.6%</text>
+            <text x="312" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P7</text>
+
+            <!-- P8: 26.89% -> Y = 67.4, H = 72.6 -->
+            <rect x="343" y="67" width="22" height="73" fill="#3b82f6" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="354" y="62" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">26.9%</text>
+            <text x="354" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P8</text>
+
+            <!-- Left axis boundary -->
+            <line x1="40" y1="30" x2="40" y2="140" stroke="#475569" stroke-width="1.2"/>
+          </svg>
+        </div>
+
+        <!-- Chart 2: Area Reduction per Pass -->
+        <div class="graph-card">
+          <div class="graph-header">
+            <span class="graph-title">Area Reduction per Pass (%)</span>
+            <span class="graph-stats">AVG: 21.27% | MAX: 21.55% | MIN: 21.03%</span>
+          </div>
+
+          <svg viewBox="0 0 400 180" style="width: 100%; height: auto;">
+            <!-- Target tolerance band (18% to 24%) -->
+            <rect x="40" y="52" width="340" height="26" fill="#ecfdf5" opacity="0.6"/>
+
+            <!-- Grid Lines & Y ticks: 0, 10, 20, 30 -->
+            <line x1="40" y1="140" x2="380" y2="140" stroke="#cbd5e1" stroke-width="1.2"/>
+            <text x="34" y="143" text-anchor="end" font-size="8.5" fill="#64748b">0%</text>
+
+            <line x1="40" y1="104" x2="380" y2="104" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="107" text-anchor="end" font-size="8.5" fill="#64748b">10%</text>
+
+            <line x1="40" y1="68" x2="380" y2="68" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="71" text-anchor="end" font-size="8.5" fill="#64748b">20%</text>
+
+            <line x1="40" y1="32" x2="380" y2="32" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <text x="34" y="35" text-anchor="end" font-size="8.5" fill="#64748b">30%</text>
+
+            <!-- Average Line at 21.27% -> Y = 140 - (21.27/30)*108 = 63.4 -->
+            <line x1="40" y1="63" x2="380" y2="63" stroke="#059669" stroke-width="1.2" stroke-dasharray="4 4"/>
+            <rect x="315" y="55" width="60" height="15" rx="2" fill="#d1fae5" stroke="#10b981" stroke-width="0.75"/>
+            <text x="345" y="66" text-anchor="middle" font-size="8" font-weight="800" fill="#065f46">Avg 21.3%</text>
+
+            <!-- 8 Bars (width 22, spacing ~42) -->
+            <!-- P1: 21.55% -> Y = 62.4, H = 77.6 -->
+            <rect x="49" y="62" width="22" height="78" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="60" y="57" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.6%</text>
+            <text x="60" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P1</text>
+
+            <!-- P2: 21.30% -> Y = 63.3, H = 76.7 -->
+            <rect x="91" y="63" width="22" height="77" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="102" y="58" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.3%</text>
+            <text x="102" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P2</text>
+
+            <!-- P3: 21.28% -> Y = 63.4, H = 76.6 -->
+            <rect x="133" y="63" width="22" height="77" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="144" y="58" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.3%</text>
+            <text x="144" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P3</text>
+
+            <!-- P4: 21.28% -> Y = 63.4, H = 76.6 -->
+            <rect x="175" y="63" width="22" height="77" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="186" y="58" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.3%</text>
+            <text x="186" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P4</text>
+
+            <!-- P5: 21.35% -> Y = 63.1, H = 76.9 -->
+            <rect x="217" y="63" width="22" height="77" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="228" y="58" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.4%</text>
+            <text x="228" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P5</text>
+
+            <!-- P6: 21.14% -> Y = 63.9, H = 76.1 -->
+            <rect x="259" y="64" width="22" height="76" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="270" y="59" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.1%</text>
+            <text x="270" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P6</text>
+
+            <!-- P7: 21.03% -> Y = 64.3, H = 75.7 -->
+            <rect x="301" y="64" width="22" height="76" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="312" y="59" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.0%</text>
+            <text x="312" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P7</text>
+
+            <!-- P8: 21.19% -> Y = 63.7, H = 76.3 -->
+            <rect x="343" y="64" width="22" height="76" fill="#10b981" rx="1.5" stroke="#1e293b" stroke-width="0.75"/>
+            <text x="354" y="59" text-anchor="middle" font-size="7.5" font-weight="800" fill="#0f172a">21.2%</text>
+            <text x="354" y="152" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">P8</text>
+
+            <!-- Left axis boundary -->
+            <line x1="40" y1="30" x2="40" y2="140" stroke="#475569" stroke-width="1.2"/>
+          </svg>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 05: OPERATIONAL NOTES & ENGINEERING SIGN-OFF
+         ========================================================================= -->
+    <section class="section-card alt-bg page-break-inside-avoid">
+      <div class="section-header">
+        <span class="section-title">05. Operational Notes & Engineering Sign-Off</span>
+      </div>
+
+      <div>
+        <span style="font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">
+          Shopfloor Notes & Instructions:
+        </span>
+        <div class="notes-box">
+          Drafting schedule verified within ±0.5% elongation consistency tolerance. Tungsten carbide die profiles conform to standard drafting geometry. Capstan cooling pressure checked. Wire surface finish inspection required after pass 8.
+        </div>
+      </div>
+
+      <div class="signoff-grid">
+        <div>
+          <span style="font-weight: 700; color: #475569; text-transform: uppercase;">Prepared By:</span>
+          <div class="signoff-line"></div>
+          <span class="signoff-role">Tool Room Engineer</span>
+        </div>
+        <div>
+          <span style="font-weight: 700; color: #475569; text-transform: uppercase;">Verified By:</span>
+          <div class="signoff-line"></div>
+          <span class="signoff-role">Production Supervisor</span>
+        </div>
+        <div>
+          <span style="font-weight: 700; color: #475569; text-transform: uppercase;">Quality Approval:</span>
+          <div class="signoff-line"></div>
+          <span class="signoff-role">QA / Metallurgist</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
