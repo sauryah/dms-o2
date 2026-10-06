@@ -30,8 +30,38 @@
 *   **Problem**: The platform requires a high-density "Dark Terminal / Bloomberg-Tape" visual design for manufacturing telemetry, while also allowing operators to switch back to the "Classic Slate" modern industrial theme if desired, without fragmenting component implementations or allowing unauthorized users to modify system-wide appearance.
 *   **Decision**: Implement a unified theme provider (`ThemeContext.tsx`) and CSS custom property architecture (`[data-theme="terminal"]` vs `[data-theme="classic"]`). All UI primitives map to standard tokens (`var(--color-bg)`, `var(--color-surface)`, `var(--color-running)`). Enforce strict authorization allowing only users with `role === 'ROOT'` to switch or configure the application theme. Synchronize active theme system-wide across tabs via `localStorage`.
 
-## ADR 7: Redis Pub/Sub Distributed SSE Multiplexing & RFC 6238 TOTP 2FA
+## ADR 7: Redis Pub/Sub Distributed SSE Multiplexing
 *   **Date**: 2026-08-22
-*   **Problem**: Single-node in-memory event channels prevent horizontal scaling of Go API SSE listeners across multiple replicas. In addition, administrative and root accounts required standardized Two-Factor Authentication to protect high-impact shop-floor database operations.
-*   **Decision**: Multiplex PostgreSQL `LISTEN dms_events` through a distributed Redis Pub/Sub channel (`dms:events:broadcast`) so all Go API instances receive and broadcast events to their local clients. Implement RFC 6238 TOTP Two-Factor Authentication via `pyotp` with 2-step login verification and self-service QR enrollment.
+*   **Problem**: Single-node in-memory event channels prevent horizontal scaling of Go API SSE listeners across multiple replicas.
+*   **Decision**: Multiplex PostgreSQL `LISTEN dms_events` through a distributed Redis Pub/Sub channel (`dms:events:broadcast`) so all Go API instances receive and broadcast events to their local clients.
+
+## ADR 8: Single-Use Backup Codes Replacing Mobile TOTP Authenticator
+*   **Date**: 2026-08-30
+*   **Problem**: Factory shop-floor operators cannot always carry or use smartphones with authenticator apps inside cleanrooms or hazardous zones, leading to lockout issues.
+*   **Decision**: Replace TOTP authentication with cryptographically hashed (SHA-256) single-use backup recovery codes (`UserBackupCode`). Provide an emergency administrator unlock CLI command (`python manage.py reset_mfa <username>`) for non-interactive recovery.
+
+## ADR 9: O(1) Search Cache Invalidation via Atomic Generation Counter
+*   **Date**: 2026-09-19
+*   **Problem**: Tracking and deleting thousands of search cache keys via Redis Set lookups or keyspace scanning degrades throughput on high-frequency die status changes.
+*   **Decision**: Introduce an atomic 64-bit generation counter (`search_cache_gen`). Invalidation executes a single atomic `INCR search_cache_gen`, making all prior cached results immediate cache-misses in $O(1)$ time and allowing them to passively expire via Redis TTL.
+
+## ADR 10: Polyglot Rust / WebAssembly FEA Solver & Tooling Streamlining
+*   **Date**: 2026-09-21
+*   **Problem**: Simulating non-linear Ludwik-Hollomon strain hardening and von Mises stress tensors in real-time JavaScript causes main-thread frame drops. Maintaining separate experimental microservices (Julia, C Edge Gateway) introduced excessive operational overhead.
+*   **Decision**: Implement a client-side Rust/WebAssembly volumetric FEA solver (`wasm-drawing-engine/`) exporting zero-copy linear memory buffers (`Float32Array`) directly to WebGL/Canvas. Decommission experimental live telemetry and Julia metallurgy microservices, focusing the platform strictly on the Rust/Wasm Wire Drawing Workbench (`TOOL-01`) and Die Series Generator (`TOOL-02`).
+
+## ADR 11: 100% Self-Hosted Local Typography & Privacy Hardening
+*   **Date**: 2026-09-24
+*   **Problem**: External calls to Google Fonts and Sentry violated strict air-gap compliance on disconnected industrial local area networks.
+*   **Decision**: Serve Inter and Plus Jakarta Sans exclusively as local WOFF2 binaries from `frontend/public/fonts/`. Completely remove Sentry SDK dependencies from frontend and backend, enforcing zero third-party network egress.
+
+## ADR 12: LAN Dynamic Subnet Matching & Standalone Native Client Installer
+*   **Date**: 2026-09-26
+*   **Problem**: Dynamic DHCP IP assignments on shop-floor routers caused `400 Bad Request` host mismatches. Installing Root CAs and browser enterprise policies manually across multiple workstation PCs was error-prone.
+*   **Decision**: Implement `PrivateNetworkHostMatcher` in Django settings to dynamically accept RFC 1918 private subnets and `.local` hostnames. Build a standalone native C# WinForms utility `DMS-Client-Setup.exe` automating root CA installation, browser enterprise policy configuration, and desktop shortcut creation.
+
+## ADR 13: Technical Data Sheet (TDS) Pure Vector SVG Print Reporting
+*   **Date**: 2026-10-06
+*   **Problem**: Dark-theme canvas charts and Recharts components rasterized poorly and suffered from `ResizeObserver` collapse bugs during browser printing.
+*   **Decision**: Implement a dedicated white-paper Technical Data Sheet (TDS) reporting system featuring multi-row vector schematic deformation pipelines (`PrintSchematicPipeline.tsx`), pure vector SVG pass graphs (`PrintPassChart.tsx`), and a preview modal (`PrintPreviewModal.tsx`), coupled with strict `@media print` CSS rules.
 
