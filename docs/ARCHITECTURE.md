@@ -82,23 +82,31 @@ Authorization: Bearer <your_jwt_access_token>
 | Domain | Method | Route | Access Level | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Auth** | `POST` | `/api/auth/login/` | Public | Obtains JWT tokens |
+| | `POST` | `/api/auth/logout/` | Authenticated | Logs out and evicts session from Redis & DB |
 | | `POST` | `/api/auth/keep-alive/` | Authenticated | Extends current login session |
 | | `POST` | `/api/auth/sse-ticket/` | Authenticated | Exchanges a JWT for a short-lived SSE connection ticket |
-| **Dies** | `GET` | `/api/dies/` | Public | Lists all dies with range filters |
+| | `POST` | `/api/auth/backup-codes/generate/` | Authenticated | Generates 10 single-use SHA-256 hashed recovery backup codes |
+| | `POST` | `/api/auth/backup-codes/verify/` | Public (Login) | Verifies a single-use backup code challenge during sign-in |
+| | `POST` | `/api/auth/backup-codes/disable/` | Authenticated | Disables backup codes requirement with current password |
+| | `GET` | `/api/auth/backup-codes/status/` | Authenticated | Checks whether backup code 2FA is active and remaining code count |
+| **Dies** | `GET` | `/api/dies/` | Authenticated | Lists all dies with range filters |
 | | `POST` | `/api/dies/` | Admin / Root | Registers a new die |
-| | `GET` | `/api/dies/{id}/` | Public | Details a single die + change log |
+| | `GET` | `/api/dies/{id}/` | Authenticated | Details a single die + change log |
 | | `PATCH`| `/api/dies/{id}/` | Operator / Admin / Root | Partial updates (Operator: location/rack/shelf only; Admin/Root: full) |
 | | `DELETE`| `/api/dies/{id}/` | Admin / Root | Deletes die from inventory |
-| **Assets**| `GET` | `/api/categories/` | Public | Lists machine categories |
+| **Assets**| `GET` | `/api/categories/` | Authenticated | Lists machine categories |
 | | `POST` | `/api/categories/` | Admin / Root | Creates a new machine category |
-| | `GET` | `/api/machines/` | Public | Lists machines |
+| | `GET` | `/api/machines/` | Authenticated | Lists machines |
 | | `POST` | `/api/machines/` | Admin / Root | Creates a new machine |
-| | `GET` | `/api/sets/` | Public | Lists tool sets |
+| | `GET` | `/api/sets/` | Authenticated | Lists tool sets |
 | | `POST` | `/api/sets/` | Admin / Root | Creates a new tool set |
 | **Racks** | `GET` | `/api/racks/` | Authenticated | Lists all physical racks |
 | | `POST` | `/api/racks/` | Admin / Root | Creates a new physical rack storage |
 | | `PATCH`| `/api/racks/{id}/` | Admin / Root | Updates rack name, row_count, column_count |
 | | `DELETE`| `/api/racks/{id}/` | Admin / Root | Removes physical rack configuration |
+| **Recounts** | `GET/POST`| `/api/machine-die-stock/` | Authenticated / Admin | Live machine die stock allocation registry |
+| | `GET/POST`| `/api/inventory-recounts/` | Authenticated / Admin | Monthly physical inventory recount sheets |
+| | `POST` | `/api/inventory-recounts/{id}/submit/` | Admin / Root | Atomically commits recount audit sheet tallies into live stock |
 | **Users** | `GET` | `/api/users/` | Root Only | Paginated list of administrators and operators |
 | | `POST` | `/api/users/` | Root Only | Creates a new user account with specified role |
 | | `DELETE`| `/api/users/{id}/` | Root Only | Deactivates/removes user account |
@@ -298,16 +306,33 @@ sequenceDiagram
     ```
 *   **Rationale**: Isolates verification logic on the Django REST Auth app, preventing the Go search service from needing to duplicate user DB session tracking and eviction hooks directly.
 
+#### 6. Database Connection Pool Telemetry
+*   **Route**: `GET /api/go/db-stats`
+*   **Auth**: Authenticated (JWT Access Token)
+*   **Response**: Real-time stats on open connections, in-use connections, idle connections, and wait counters from the PostgreSQL pool.
+
+#### 7. Microservice Runtime Metrics
+*   **Route**: `GET /api/go/metrics`
+*   **Auth**: Public / Monitoring
+*   **Response**: Prometheus metrics export including active goroutines, memory allocation, and connection metrics.
+
+#### 8. Engineering Tools Calculations
+*   **Route**: `POST /api/go/tools/calculate/wire-drawing`
+*   **Auth**: Authenticated (Tool Authorized)
+*   **Description**: High-speed mathematical calculations for wire drawing pass reductions, area calculations, elongations, and drawing ratios.
+*   **Route**: `POST /api/go/tools/calculate/die-series`
+*   **Auth**: Authenticated (Tool Authorized)
+*   **Description**: Automated die series progression generator based on starting diameter, target finish diameter, and target reduction percentages.
+
 ---
 
 ### Redis Caching Architecture
 
 *   **Authentication**: Redis is started with `--requirepass`. All clients (Go API, Django cache backend, Celery broker) authenticate using the password set in `REDIS_PASSWORD` / `docker-compose.yml`.
 *   **Cache Lifetime**: Configurable via `SEARCH_CACHE_TTL_SECONDS` (default: 10 seconds).
-*   **Key Composition**: A combined hash of all active search query parameters:
-    `search:{q}:{die_type}:{status}:{location}:{casing}:{size_min}:{size_max}:{width_min}:{width_max}:{thick_min}:{thick_max}:{limit}:{offset}`
-*   **Eviction Strategy**: Immediate validation invalidates cache values when data changes. When database insertions, deletions, or modifications occur, a Django PostgreSQL `LISTEN` / `NOTIFY` hook broadcasts an invalidation signal to the Go service.
-*   **Cache Set-Tracker**: To avoid blocking Redis cursor-scanning operations, all cached search keys are registered under a Redis Set called `cached_searches` upon writing. During cache invalidation, the Go service pulls the keys from this Set, deletes them in a single batch operation, and clears the tracker Set.
+*   **Key Composition**: Resolved dynamically using the active generation counter:
+    `search:{generation}:{q}:{die_type}:{status}:{rack_id}:{shelf_number}:{casing}:{size_min}:{size_max}:{limit}:{offset}`
+*   **$O(1)$ Atomic Generation Invalidation**: To avoid blocking Redis cursor-scanning operations or tracking complex sets, cache invalidation uses an atomic 64-bit generation counter (`search_cache_gen`). When data mutations occur (intercepted via PostgreSQL `LISTEN/NOTIFY`), the Go service executes an atomic `INCR search_cache_gen`. This immediately invalidates all previous search keys in $O(1)$ time, allowing old entries to expire passively via their TTL without keyspace iteration overhead.
 
 ---
 
@@ -321,8 +346,7 @@ The Django backend follows a strict view → service → model layering pattern.
 | :--- | :--- | :--- |
 | `SessionService` | `backend/users/services/session_service.py` | Session lookup, timeout validation, last-seen updates, eviction detection |
 | `RecutService` | `backend/dies/services/recut_service.py` | Die recut business logic (size validation, audit logging) |
-| `WearPredictionService` | `backend/dies/services/wear_prediction_service.py` | Wear prediction calculations and threshold evaluation |
-| `ImportService` | `backend/dies/services/import_service.py` | Spreadsheet parsing, data resolution, bulk imports |
+| `ImportService` | `backend/dies/services/import_service.py` | Spreadsheet parsing, data resolution, bulk imports with rack pre-caching |
 | `SearchService` | `backend/dies/services/search_service.py` | Meilisearch query construction and PostgreSQL fallback |
 | `BackupService` | `backend/users/services/backup_service.py` | pg_dump/restore operations, backup file management |
 
