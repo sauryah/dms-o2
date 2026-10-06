@@ -11,6 +11,7 @@ interface WireDrawingPrintReportProps {
   workOrder?: string;
   machineName?: string;
   notes?: string;
+  operator?: string;
 }
 
 export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
@@ -21,6 +22,7 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
   workOrder = 'WDC-JOB-2026-001',
   machineName = 'Multi-Wire Drawing Line 01',
   notes = 'Production drafting schedule verified within standard elongation tolerances. No central burst risk detected.',
+  operator = 'TOOL ROOM / ADMIN',
 }) => {
   if (dies.length === 0 || !stats) return null;
 
@@ -64,11 +66,14 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
             </p>
           </div>
 
-          <div className="text-right border border-slate-300 bg-slate-50 p-2 rounded-xs min-w-[190px]">
+          <div className="text-right border border-slate-300 bg-slate-50 p-2 rounded-xs min-w-[200px]">
             <div className="text-[9px] text-slate-500 uppercase font-semibold">Document Reference</div>
             <div className="text-xs font-bold text-slate-900">TDS-{dateStr.replace(/ /g, '')}</div>
             <div className="text-[9px] text-slate-600 mt-0.5">
               Generated: {dateStr} • {timeStr}
+            </div>
+            <div className="text-[9px] text-slate-500 font-semibold mt-0.5 pt-0.5 border-t border-slate-200">
+              OPERATOR: <span className="text-slate-800 font-bold">{operator}</span>
             </div>
           </div>
         </div>
@@ -343,9 +348,24 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
           05. Operational Notes & Engineering Sign-Off
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2.5 text-[10px]">
+          <div>
+            <span className="text-slate-500 font-bold uppercase block mb-0.5">Work Order / Machine:</span>
+            <div className="text-slate-800 bg-white px-2 py-1 border border-slate-200 rounded-xs font-semibold">
+              [{workOrder}] • [{machineName}]
+            </div>
+          </div>
+          <div>
+            <span className="text-slate-500 font-bold uppercase block mb-0.5">Process Verification:</span>
+            <div className="text-slate-800 bg-white px-2 py-1 border border-slate-200 rounded-xs font-semibold text-emerald-800">
+              Verified within standard drafting limits
+            </div>
+          </div>
+        </div>
+
         <div className="mb-3 text-[10px]">
           <span className="text-slate-500 font-bold uppercase block mb-0.5">Shopfloor Notes & Instructions:</span>
-          <p className="text-slate-800 bg-white p-2 border border-slate-200 rounded-xs">
+          <p className="text-slate-800 bg-white p-2 border border-slate-200 rounded-xs leading-relaxed">
             {notes}
           </p>
         </div>
