@@ -1259,6 +1259,15 @@ textarea:focus {
     padding: 0 !important;
   }
 
+  nav,
+  footer,
+  header.app-header,
+  [role="navigation"],
+  [role="contentinfo"],
+  .no-print {
+    display: none !important;
+  }
+
   .page-break-inside-avoid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
