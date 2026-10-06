@@ -1,17 +1,25 @@
 # Go API Microservice (go-api.md)
 
 ## Purpose
-Handles high-throughput read operations: Go search parser, Meilisearch index querying, Redis caches, and real-time Server-Sent Events (SSE) broadcasts.
+Handles high-throughput read operations: high-performance search proxy, Meilisearch index querying, PostgreSQL fallback search, atomic Redis caching, wire drawing calculations, and real-time Server-Sent Events (SSE) broadcasts.
 
 ## Important Files
-- [main.go](file:///D:/DMS/dms-o2/go-api/cmd/server/main.go): Service entries and router maps.
-- [handlers.go](file:///D:/DMS/dms-o2/go-api/internal/handlers/handlers.go): Search handler, scoring, unit normalization, tool calculation endpoints.
-- [dieset/engine.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/engine.go): Die Set Planner domain engine (thousandths-normalized sizes, complete-set capacity, bottleneck/missing/unused detection) for `POST /api/go/tools/calculate/die-set`.
-- [dieset/parser.go](file:///D:/DMS/dms-o2/go-api/internal/dieset/parser.go): Authoritative line-based parser for pasted inventory + series text (quantity-less dies → zero stock, duplicate aggregation, header-row skip, per-line errors).
-- [database.go](file:///D:/DMS/dms-o2/go-api/internal/database/database.go): Direct PostgreSQL query builder `buildWhereClauses` with parameterized numeric prefix matching.
-- [auth.go](file:///D:/DMS/dms-o2/go-api/internal/auth/auth.go): Token verification client.
-- [events.go](file:///D:/DMS/dms-o2/go-api/internal/events/events.go): SSE listener and channel manager.
+- [main.go](file:///D:/dms-o2/go-api/cmd/server/main.go): Service entrypoint, route registrations, and graceful shutdown handling.
+- [handlers.go](file:///D:/dms-o2/go-api/internal/handlers/handlers.go): Search handler, scoring engine, unit normalization, database stats, and tool calculation endpoints (`/wire-drawing`, `/die-series`).
+- [search.go](file:///D:/dms-o2/go-api/internal/search/search.go): Meilisearch client wrapper with query scoring and strict digit filtering.
+- [database.go](file:///D:/dms-o2/go-api/internal/database/database.go): Direct PostgreSQL query builder `buildWhereClauses` with parameterized numeric prefix matching and connection pool telemetry.
+- [cache.go](file:///D:/dms-o2/go-api/internal/cache/cache.go): Redis caching layer with $O(1)$ generation counter invalidation (`search_cache_gen`).
+- [auth.go](file:///D:/dms-o2/go-api/internal/auth/auth.go): JWT token and SSE single-use ticket verification client.
+- [events.go](file:///D:/dms-o2/go-api/internal/events/events.go): SSE listener and Redis pub/sub channel manager.
+
+## Key Calculation Endpoints
+- `POST /api/go/tools/calculate/wire-drawing`: Drafting schedule, cumulative reduction, and multi-pass elongation calculator.
+- `POST /api/go/tools/calculate/die-series`: Automated die step series generator according to reduction criteria.
+- `GET /api/go/db-stats`: Connection pool status, open connections, and latency metrics.
+- `GET /api/go/metrics`: Prometheus metrics exposition for HTTP requests, SSE subscribers, and calculation durations.
 
 ## Key Search & Scoring Rules
 - **Size & Dimension Precision**: Dimension fields (`CurrentSize`, `CurrentWidth`, `CurrentThickness`) use exact numeric match (score 100) or prefix match (score 70). String substring matches (like `1.25` matching query `25`) are explicitly excluded.
 - **Digit Query Strict Filtering**: When a query contains digits, results with `score <= 50` are filtered out across both Meilisearch and direct SQL search paths.
+- **Atomic Cache Invalidation ($O(1)$)**: Search cache keys incorporate the generation counter: `search:<gen>:<hash>`. Django increments `search_cache_gen` on die mutations, rendering all prior cached search pages obsolete without executing expensive Redis `KEYS` or `SCAN` operations.
+
