@@ -246,6 +246,29 @@ Track implementation status across all phases.
 - **Service Worker SSE Stream & Realtime Auth Loop Resolution:** 100% complete
 - **Decommissioning of Live Telemetry & Tool 3 (Metallurgy Workbench):** 100% complete
 - **Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge:** 100% complete
+- **Wire Drawing TDS Vector Reporting & Set Series Auto-Sorting (v2.1.0):** 100% complete
+- **Full-Stack Documentation Synchronization:** 100% complete
+
+### Full-Stack Documentation Synchronization (2026-10-06) ✅
+**Status:** Complete  
+**Date:** 2026-10-06  
+
+**Completed:**
+- Audited entire repository across root documentation (`README.md`, `PROJECT.md`, `CHANGELOG.md`), architecture guides (`docs/ARCHITECTURE.md`, `.dev/architecture/*`), wiki (`wiki/Upgrade-Guide.md`), and modules (`.dev/modules/*`).
+- Replaced references to decommissioned components (Die Set Planner, Sizing Calculator, Pass Optimizer, Julia metallurgy, linear regression wear predictions) with current active implementations.
+- Documented single-use recovery backup codes MFA (`UserBackupCode`), session eviction on role modifications, and reverse proxy IP attribution (`NUM_PROXIES = 1`).
+- Documented 100% self-hosted local typography (zero Google Fonts, zero Sentry) and LAN deployment tooling (`DMS-Client-Setup.exe`).
+- Documented Rust/Wasm FEA simulation, TDS vector print engine, and set series auto-sorting across all relevant docs.
+- Strictly maintained the rule: 1 changed file = 1 commit with `--no-gpg-sign`.
+
+### Wire Drawing TDS Vector Reporting & Set Series Auto-Sorting (2026-10-06) ✅
+**Status:** Complete  
+**Date:** 2026-10-06  
+
+**Completed:**
+- **Technical Data Sheet (TDS) Vector Print Reporting Engine**: Built ISO/DIN-compliant vector print engine (`WireDrawingPrintReport.tsx`, `PrintSchematicPipeline.tsx`, `PrintPassChart.tsx`, `PrintPreviewModal.tsx`) with `@media print` rules, multi-pass elongation and area reduction SVG curves, and wire drafting pipeline schematics. Generated sample static artifacts (`wire-drawing-tds-report.html` and `.pdf`).
+- **Inventory Set Series Auto-Sorting**: Added automatic descending sequence sorting (big size to small size) in set detail views using `compareDiesBySize` and `getDieSize` in `dieHelpers.ts`.
+- **Enamel Machine Floor Stock Tracking**: Live die allocation tracking per enamel machine (`MachineDieStock`) and monthly recount audit sheets (`DieInventoryRecount`).
 
 ### Privacy Hardening, Self-Hosted Fonts & Third-Party Tracker Purge (2026-09-24) ✅
 **Status:** Complete  
@@ -297,5 +320,6 @@ Track implementation status across all phases.
 ## Next Actions
 1. Maintain test coverage and zero-regression policy across all stacks
 2. Monitor production metrics and telemetry
+
 
 
