@@ -145,7 +145,8 @@ graph TD
 * **Fuzzy & Parametric Search**: Sub-millisecond lookups via Go microservice with Redis $O(1)$ generation-counter caching, PostgreSQL range queries, and Meilisearch.
 * **Granular Role-Based Access Control (RBAC)**:
   * *Unauthenticated*: Redirected to login; safe and mutating APIs require authentication.
-  * *Operator*: Read-only search, metrics, inventory browsing, and physical rack/shelf relocation.
+  * *Regular*: Standard authenticated read-only access to inventory, plant metrics, and assigned tool suites.
+  * *Operator*: Read-only search, metrics, inventory browsing, plus physical rack/shelf relocation.
   * *Admin*: Full CRUD on dies, machines, and sets, plus bulk spreadsheet imports.
   * *Root*: User administration, tool permission toggles, database backup/restore, and system theme switching.
 * **Session Management**: Single active session enforcement with immediate revocation and automatic cache eviction upon role or permission changes.
@@ -340,7 +341,7 @@ dms-o2/
 ├── backend/                   # Django Backend Service
 │   ├── dms/                   # Core settings, URLs, Celery config
 │   ├── dies/                  # Die models, signals, viewsets, services (recut, wear, import, search, validation)
-│   ├── history/               # Audit logging (DieHistory, MachineHistory) and views
+│   ├── history/               # Audit logging (DieHistory, MachineHistory, PrintRecord) and views
 │   ├── machines/              # Assets (Categories, Machines, Sets, Racks)
 │   ├── search/                # Celery Meilisearch indexing tasks and outbox processor
 │   └── users/                 # RBAC, auth views, permissions, session management
@@ -353,21 +354,28 @@ dms-o2/
 │   └── Dockerfile             # Multi-stage container file
 ├── frontend/                  # React Frontend Single Page Application
 │   ├── src/                   # UI components, layout grids, hooks, contexts
-│   ├── features/              # Feature-specific components (inventory, dashboard, wire-drawing-calculator)
+│   ├── features/              # Feature components (inventory, dashboard, wire-drawing-calculator)
 │   └── Dockerfile.prod        # Production static Nginx configuration
+├── wasm-drawing-engine/       # Rust WebAssembly FEA & mechanics engine
+│   ├── Cargo.toml             # Rust package configuration
+│   └── src/                   # Constitutive material models, physics equations, FEA mesh
 ├── scripts/                   # Utility scripts
 │   ├── generate-certs.sh      # Auto-generate TLS certs (Linux/macOS)
 │   ├── generate-certs.bat     # Auto-generate TLS certs (Windows)
-│   ├── uninstall-certs.sh     # Uninstall Root CA and delete certs (Linux/macOS)
-│   ├── uninstall-certs.bat    # Uninstall Root CA and delete certs (Windows)
-│   ├── client-install-template.bat # Windows installer script template
-│   ├── client-install-template.sh # macOS/Linux installer script template
-│   ├── client-instructions-template.txt # Client cert installation instructions template
-│   ├── install-cert.bat       # Install rootCA on Windows clients
-│   ├── backup_db.sh           # Database backup script
-│   └── prune_history.sh       # Audit history retention cleanup
+│   ├── build-client-exe.ps1   # Compile native DMS-Client-Setup.exe installer
+│   ├── client-setup/          # Standalone C# client installer source
+│   ├── build-wasm.sh          # Compile WebAssembly drawing engine (Linux/macOS)
+│   ├── build-wasm.ps1         # Compile WebAssembly drawing engine (Windows)
+│   ├── network-doctor.ps1     # 5-point LAN and container diagnostic audit
+│   ├── env-doctor.sh          # Environment health diagnostic script
+│   ├── dependency-auditor.sh  # Multi-tier dependency security audit
+│   ├── verify-backup-integrity.sh # Automated backup restoration smoke test
+│   ├── install-autostart.ps1  # Register silent Windows startup launcher
+│   ├── uninstall-autostart.ps1# Remove Windows startup launcher
+│   ├── sync-meili.sh          # Meilisearch index synchronization script
+│   └── dms_mcp_server.py      # JSON-RPC 2.0 MCP operational server
 ├── docs/                      # Documentation folder
-│   └── ARCHITECTURE.md        # Deep architectural design specs
+│   └── ARCHITECTURE.md        # Architectural design specs
 ├── design-system/             # CSS tokens and design specs
 │   └── die-management-system/
 │       └── MASTER.md          # Global design components and tokens
