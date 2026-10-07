@@ -81,6 +81,19 @@ describe('WireDrawingPrintReport', () => {
     expect(getByText('Niehoff MT-200')).toBeInTheDocument();
   });
 
+  test('renders explicit unique docRef when provided', () => {
+    const { getByText } = render(
+      <WireDrawingPrintReport
+        passes={mockPasses}
+        stats={mockStats}
+        dies={mockDies}
+        consistency={mockConsistency}
+        docRef="TDS-20261007-0042"
+      />
+    );
+    expect(getByText('TDS-20261007-0042')).toBeInTheDocument();
+  });
+
   test('renders Section 01: process summary KPIs and die series sequence', () => {
     const { getByText, getAllByText } = render(
       <WireDrawingPrintReport
