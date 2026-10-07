@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '../hooks/useApi'
 import { useDebounce } from '../hooks/useDebounce'
-import { Search, User, Filter, ArrowLeft, ArrowRight, Download, Layers, Activity } from 'lucide-react'
+import { Search, User, Filter, ArrowLeft, ArrowRight, Download, Layers, Activity, Printer, Eye, X } from 'lucide-react'
+import type { PrintRecord } from '../features/wire-drawing-calculator/types'
 
 interface HistoryItem {
   id: string | number
@@ -136,7 +137,8 @@ function renderDiffValue(oldVal: string, newVal: string) {
 
 export function HistoryPage() {
   const { request } = useApi()
-  const [activeTab, setActiveTab] = useState<'timeline' | 'dies' | 'machines'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'dies' | 'machines' | 'prints'>('timeline')
+  const [selectedPrintRecord, setSelectedPrintRecord] = useState<PrintRecord | null>(null)
 
   // Shared Filter States
   const [userInput, setUserInput] = useState('')
@@ -155,6 +157,11 @@ export function HistoryPage() {
   const [entityTypeInput, setEntityTypeInput] = useState('')
   const [actionInput, setActionInput] = useState('')
 
+  // Print Filter States
+  const [docRefInput, setDocRefInput] = useState('')
+  const [workOrderInput, setWorkOrderInput] = useState('')
+  const [machineInput, setMachineInput] = useState('')
+
   // Debounced filters
   const debouncedUser = useDebounce(userInput, 300)
   const debouncedField = useDebounce(fieldInput, 300)
@@ -162,6 +169,9 @@ export function HistoryPage() {
   const debouncedSearchText = useDebounce(searchTextInput, 300)
   const debouncedDieId = useDebounce(dieIdInput, 300)
   const debouncedEntityName = useDebounce(entityNameInput, 300)
+  const debouncedDocRef = useDebounce(docRefInput, 300)
+  const debouncedWorkOrder = useDebounce(workOrderInput, 300)
+  const debouncedMachine = useDebounce(machineInput, 300)
 
   // Fetch Unified History
   const {
@@ -267,7 +277,41 @@ export function HistoryPage() {
     },
   })
 
-  const handleTabChange = (tab: 'timeline' | 'dies' | 'machines') => {
+  // Fetch Print History
+  const {
+    data: printHistoryData,
+    isLoading: isLoadingPrints,
+    error: errorPrints,
+  } = useQuery({
+    queryKey: [
+      'printHistory',
+      debouncedDocRef,
+      debouncedWorkOrder,
+      debouncedMachine,
+      debouncedUser,
+      debouncedSearchText,
+      fromDate,
+      toDate,
+      page,
+    ],
+    enabled: activeTab === 'prints',
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams()
+      if (debouncedDocRef) params.append('doc_ref', debouncedDocRef)
+      if (debouncedWorkOrder) params.append('work_order', debouncedWorkOrder)
+      if (debouncedMachine) params.append('machine', debouncedMachine)
+      if (debouncedUser) params.append('user', debouncedUser)
+      if (debouncedSearchText) params.append('search', debouncedSearchText)
+      if (fromDate) params.append('from', fromDate)
+      if (toDate) params.append('to', toDate)
+      params.append('page', page.toString())
+      params.append('page_size', '25')
+
+      return request<HistoryApiResponse<PrintRecord>>(`/api/history/print-records/?${params.toString()}`, { signal, keepMetadata: true })
+    },
+  })
+
+  const handleTabChange = (tab: 'timeline' | 'dies' | 'machines' | 'prints') => {
     setActiveTab(tab)
     setPage(1)
     setUserInput('')
@@ -280,24 +324,43 @@ export function HistoryPage() {
     setEntityNameInput('')
     setEntityTypeInput('')
     setActionInput('')
+    setDocRefInput('')
+    setWorkOrderInput('')
+    setMachineInput('')
   }
 
   const isCurrentLoading =
-    activeTab === 'timeline' ? isLoadingUnified : activeTab === 'dies' ? isLoadingDies : isLoadingMachines
+    activeTab === 'timeline'
+      ? isLoadingUnified
+      : activeTab === 'dies'
+      ? isLoadingDies
+      : activeTab === 'machines'
+      ? isLoadingMachines
+      : isLoadingPrints
   const currentError =
-    activeTab === 'timeline' ? errorUnified : activeTab === 'dies' ? errorDies : errorMachines
+    activeTab === 'timeline'
+      ? errorUnified
+      : activeTab === 'dies'
+      ? errorDies
+      : activeTab === 'machines'
+      ? errorMachines
+      : errorPrints
   const currentList =
     activeTab === 'timeline'
       ? unifiedHistoryData?.results || []
       : activeTab === 'dies'
       ? dieHistoryData?.results || []
-      : machineHistoryData?.results || []
+      : activeTab === 'machines'
+      ? machineHistoryData?.results || []
+      : printHistoryData?.results || []
   const count =
     activeTab === 'timeline'
       ? unifiedHistoryData?.count || 0
       : activeTab === 'dies'
       ? dieHistoryData?.count || 0
-      : machineHistoryData?.count || 0
+      : activeTab === 'machines'
+      ? machineHistoryData?.count || 0
+      : printHistoryData?.count || 0
   const totalPages = Math.ceil(count / (activeTab === 'timeline' ? 40 : 25))
 
   // CSV Export
@@ -353,6 +416,34 @@ export function HistoryPage() {
         })
 
         triggerCSVDownload(csvContent, `dms_die_history_${Date.now()}.csv`)
+      } else if (activeTab === 'prints') {
+        if (debouncedDocRef) params.append('doc_ref', debouncedDocRef)
+        if (debouncedWorkOrder) params.append('work_order', debouncedWorkOrder)
+        if (debouncedMachine) params.append('machine', debouncedMachine)
+
+        const res = await request<HistoryApiResponse<PrintRecord>>(`/api/history/print-records/?${params.toString()}`, { keepMetadata: true })
+        const allResults = res?.results || []
+
+        let csvContent =
+          'Timestamp,Doc Ref,Work Order,Machine,Total Passes,Inlet Size (mm),Finish Size (mm),Overall Reduction %,Avg Elongation %,Printed By,User Role,IP Address,Notes\n'
+        allResults.forEach((h: PrintRecord) => {
+          const timestamp = h.created_at ? new Date(h.created_at).toLocaleString() : ''
+          const docRef = h.doc_ref ?? ''
+          const workOrder = h.work_order ?? ''
+          const machine = h.machine_name ?? ''
+          const passes = h.total_passes ?? 0
+          const inlet = h.inlet_size ?? ''
+          const finish = h.finish_size ?? ''
+          const reduction = h.overall_reduction ?? ''
+          const elongation = h.avg_elongation ?? ''
+          const user = h.username ?? ''
+          const role = h.user_role ?? ''
+          const ip = h.ip_address ?? ''
+          const notes = `"${(h.notes ?? '').replace(/"/g, '""')}"`
+          csvContent += `${timestamp},${docRef},${workOrder},${machine},${passes},${inlet},${finish},${reduction},${elongation},${user},${role},${ip},${notes}\n`
+        })
+
+        triggerCSVDownload(csvContent, `dms_print_logs_${Date.now()}.csv`)
       } else {
         if (debouncedEntityName) params.append('entity_name', debouncedEntityName)
         if (entityTypeInput) params.append('entity_type', entityTypeInput)
@@ -460,12 +551,83 @@ export function HistoryPage() {
           <Activity className="h-3.5 w-3.5" />
           <span>Machines & Sets</span>
         </button>
+        <button
+          onClick={() => handleTabChange('prints')}
+          className={`pb-2.5 text-xs font-bold uppercase transition-colors flex items-center space-x-1.5 cursor-pointer ${
+            activeTab === 'prints'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+          }`}
+        >
+          <Printer className="h-3.5 w-3.5" />
+          <span>Print Logs</span>
+        </button>
       </div>
 
       {/* Filters Grid */}
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 sm:p-5 space-y-3 font-mono shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Tab Specific Filter */}
+          {activeTab === 'prints' && (
+            <>
+              <div>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Document Ref
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="e.g. TDS-2026..."
+                    value={docRefInput}
+                    onChange={(e) => {
+                      setDocRefInput(e.target.value)
+                      setPage(1)
+                    }}
+                    className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Work Order
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="e.g. WO-..."
+                    value={workOrderInput}
+                    onChange={(e) => {
+                      setWorkOrderInput(e.target.value)
+                      setPage(1)
+                    }}
+                    className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
+                  Machine
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-[var(--color-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="Machine name..."
+                    value={machineInput}
+                    onChange={(e) => {
+                      setMachineInput(e.target.value)
+                      setPage(1)
+                    }}
+                    className="pl-7 pr-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs w-full text-[var(--color-text)] focus:border-blue-500 focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+            </>
+          )}
           {activeTab === 'dies' && (
             <div>
               <label className="text-[var(--color-muted)] text-[10px] font-bold uppercase tracking-wider block mb-1">
@@ -769,6 +931,18 @@ export function HistoryPage() {
                         <th className="px-4 py-2.5 font-semibold">IP Address</th>
                         <th className="px-4 py-2.5 font-semibold">Reason / Note</th>
                       </tr>
+                    ) : activeTab === 'prints' ? (
+                      <tr>
+                        <th className="px-4 py-2.5 font-semibold">Timestamp</th>
+                        <th className="px-4 py-2.5 font-semibold">Doc Reference</th>
+                        <th className="px-4 py-2.5 font-semibold">Work Order</th>
+                        <th className="px-4 py-2.5 font-semibold">Machine</th>
+                        <th className="px-4 py-2.5 font-semibold">Passes</th>
+                        <th className="px-4 py-2.5 font-semibold">Reduction / Elong.</th>
+                        <th className="px-4 py-2.5 font-semibold">Printed By</th>
+                        <th className="px-4 py-2.5 font-semibold">IP Address</th>
+                        <th className="px-4 py-2.5 font-semibold text-right">Drafting Snapshot</th>
+                      </tr>
                     ) : (
                       <tr>
                         <th className="px-4 py-2.5 font-semibold">Timestamp</th>
@@ -823,6 +997,58 @@ export function HistoryPage() {
                               title={log.note}
                             >
                               {log.note || '—'}
+                            </td>
+                          </tr>
+                        ))
+                      : activeTab === 'prints'
+                      ? (currentList as PrintRecord[]).map((log: PrintRecord) => (
+                          <tr key={log.id} className="hover:bg-[var(--color-surface-2)] transition">
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)] tabular-nums">
+                              {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-blue-400 font-bold font-mono">
+                              {log.doc_ref}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-text)] font-semibold">
+                              {log.work_order}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-muted)]">
+                              {log.machine_name || '—'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono">
+                              <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[11px] font-bold">
+                                {log.total_passes} Passes
+                              </span>
+                              {log.inlet_size && log.finish_size && (
+                                <span className="text-[10px] text-[var(--color-muted)] ml-1.5">
+                                  (Ø {log.inlet_size} → {log.finish_size})
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[11px]">
+                              <span className="text-emerald-400 font-bold">
+                                {log.overall_reduction ? `${log.overall_reduction}%` : '—'}
+                              </span>
+                              <span className="text-[var(--color-muted)] mx-1">/</span>
+                              <span className="text-cyan-400 font-bold">
+                                {log.avg_elongation ? `${log.avg_elongation}%` : '—'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-[var(--color-text)] font-bold">
+                              <div>{log.username || 'System'}</div>
+                              <div className="text-[9px] text-[var(--color-muted)] font-normal">{log.user_role}</div>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[var(--color-muted)]">
+                              {log.ip_address || '—'}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-right">
+                              <button
+                                onClick={() => setSelectedPrintRecord(log)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-blue-500/50 rounded text-[11px] text-blue-400 font-bold transition cursor-pointer"
+                              >
+                                <Eye className="h-3 w-3" />
+                                <span>Inspect</span>
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -917,6 +1143,107 @@ export function HistoryPage() {
           </>
         )}
       </div>
-    </div>
-  )
-}
+
+      {/* Detail Inspection Modal for Print Records */}
+      {selectedPrintRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl font-mono text-[var(--color-text)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <div className="flex items-center gap-2">
+                <Printer className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-bold uppercase text-[var(--color-text)]">
+                  Print Record: {selectedPrintRecord.doc_ref}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedPrintRecord(null)}
+                className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)] rounded transition cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)]">
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Work Order</span>
+                  <span className="font-bold text-[var(--color-text)]">{selectedPrintRecord.work_order}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Machine</span>
+                  <span className="font-bold text-[var(--color-text)]">{selectedPrintRecord.machine_name || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Printed By</span>
+                  <span className="font-bold text-[var(--color-text)]">{selectedPrintRecord.username} ({selectedPrintRecord.user_role})</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Client IP</span>
+                  <span className="font-mono text-[var(--color-muted)]">{selectedPrintRecord.ip_address || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Inlet → Finish</span>
+                  <span className="font-bold text-blue-400">Ø {selectedPrintRecord.inlet_size || '—'} → Ø {selectedPrintRecord.finish_size || '—'} mm</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Total Passes</span>
+                  <span className="font-bold text-[var(--color-text)]">{selectedPrintRecord.total_passes}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Overall Reduction</span>
+                  <span className="font-bold text-emerald-400">{selectedPrintRecord.overall_reduction ? `${selectedPrintRecord.overall_reduction}%` : '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block">Avg Elongation</span>
+                  <span className="font-bold text-cyan-400">{selectedPrintRecord.avg_elongation ? `${selectedPrintRecord.avg_elongation}%` : '—'}</span>
+                </div>
+              </div>
+
+              {selectedPrintRecord.notes && (
+                <div>
+                  <span className="text-[10px] text-[var(--color-muted)] uppercase block mb-1">Shopfloor Remarks & Notes</span>
+                  <div className="p-2.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-[var(--color-muted)] italic">
+                    &ldquo;{selectedPrintRecord.notes}&rdquo;
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <span className="text-[10px] text-[var(--color-muted)] uppercase block mb-2">Drafting Schedule Snapshot</span>
+                <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
+                  <table className="min-w-full divide-y divide-[var(--color-border)] text-left text-xs font-mono">
+                    <thead className="bg-[var(--color-bg)] text-[var(--color-muted)] text-[10px] uppercase">
+                      <tr>
+                        <th className="px-3 py-2">Pass #</th>
+                        <th className="px-3 py-2">From Die (mm)</th>
+                        <th className="px-3 py-2">To Die (mm)</th>
+                        <th className="px-3 py-2">Area Red. %</th>
+                        <th className="px-3 py-2">Elongation %</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-border)] text-[var(--color-text)]">
+                      {Array.isArray(selectedPrintRecord.passes_data) && selectedPrintRecord.passes_data.length > 0 ? (
+                        selectedPrintRecord.passes_data.map((p, idx) => (
+                          <tr key={idx} className="hover:bg-[var(--color-surface-2)]">
+                            <td className="px-3 py-1.5 font-bold text-blue-400">P{p.pass || idx + 1}</td>
+                            <td className="px-3 py-1.5">{typeof p.fromDie === 'number' ? p.fromDie.toFixed(3) : p.fromDie}</td>
+                            <td className="px-3 py-1.5 font-bold">{typeof p.toDie === 'number' ? p.toDie.toFixed(3) : p.toDie}</td>
+                            <td className="px-3 py-1.5 text-emerald-400 font-semibold">{typeof p.areaReduction === 'number' ? `${p.areaReduction.toFixed(2)}%` : p.areaReduction}</td>
+                            <td className="px-3 py-1.5 text-cyan-400 font-semibold">{typeof p.elongation === 'number' ? `${p.elongation.toFixed(2)}%` : p.elongation}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-4 text-center text-[var(--color-muted)]">
+                            No pass-level breakdown recorded
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
