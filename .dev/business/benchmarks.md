@@ -11,10 +11,11 @@ This document defines performance baseline benchmarks for core system flows and 
 | **Authentication** | `POST /api/v1/auth/login/` | k6 | 50 RPS | < 120 ms |
 | **Go Search** | `GET /api/go/search?q=*` | k6 | 500 RPS | < 45 ms |
 | **Direct DB Search**| `GET /api/go/search?size_min=10` | k6 | 150 RPS | < 95 ms |
-| **Bulk Import** | `POST /api/v1/dies/import/` | Locust | 1 batch/sec (5k rows)| < 8.0 s (processing) |
-| **Excel Export** | `GET /api/v1/dies/export/` | k6 | 10 RPS | < 1.5 s |
-| **PDF/SVG Gen** | `GET /api/v1/dies/{id}/blueprint/` | Lighthouse | N/A | < 1.1 s (TTI) |
-| **History Audit** | `GET /api/v1/history/dashboard/` | k6 | 80 RPS | < 70 ms |
+| **Bulk Import** | `POST /api/v1/import/` | Locust | 1 batch/sec (5k rows)| < 8.0 s (processing) |
+| **Unified History** | `GET /api/v1/history/unified/` | k6 | 80 RPS | < 70 ms |
+| **Print Audit Log** | `GET /api/v1/history/print-records/` | k6 | 70 RPS | < 60 ms |
+| **Drawing Calc** | `POST /api/go/tools/calculate/wire-drawing` | k6 | 200 RPS | < 25 ms |
+| **TDS Vector Print**| Client Print Preview (DOM / SVG) | Lighthouse | N/A | < 1.1 s (TTI) |
 
 ---
 
@@ -99,7 +100,7 @@ class ImportLoadUser(HttpUser):
             return
         with open(filepath, "rb") as f:
             self.client.post(
-                "/api/v1/dies/import/",
+                "/api/v1/import/",
                 files={"file": ("test_import.csv", f, "text/csv")},
                 headers={"X-Requested-With": "XMLHttpRequest"}
             )
