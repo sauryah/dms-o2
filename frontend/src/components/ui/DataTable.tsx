@@ -56,18 +56,19 @@ export function DataTable<T extends object = object>({
   }
 
   return (
-    <div className="w-full bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm overflow-hidden">
+    <div className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-sm overflow-hidden">
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-[#2a2a2a] select-none">
+            <tr className="sticky top-0 z-10 bg-[var(--color-bg)] border-b border-[var(--color-border-visible)] select-none">
               {selectedIds && onSelectAll && (
                 <th className="py-2.5 px-3 w-10 text-center align-middle">
                   <input
                     type="checkbox"
+                    aria-label="Select all rows"
                     checked={rows.length > 0 && rows.every(row => selectedIds.has(String((row as Record<string, unknown>).die_id || (row as Record<string, unknown>).id)))}
                     onChange={(e) => onSelectAll(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded-none border-[#2a2a2a] bg-[#0f0f0f] text-blue-500 focus:ring-0 cursor-pointer"
+                    className="h-3.5 w-3.5 rounded-none border-[var(--color-border-visible)] bg-[var(--color-surface)] text-blue-500 focus:ring-0 cursor-pointer"
                   />
                 </th>
               )}
@@ -75,8 +76,9 @@ export function DataTable<T extends object = object>({
                 <th
                   key={col.key}
                   onClick={() => handleHeaderClick(col)}
-                  className={`py-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-[#6b7280] font-mono ${
-                    col.sortable ? 'cursor-pointer hover:text-[#e4e4e4] transition-colors' : ''
+                  aria-sort={col.sortable ? (sortField === col.key ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
+                  className={`py-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)] font-mono ${
+                    col.sortable ? 'cursor-pointer hover:text-[var(--color-text)] transition-colors' : ''
                   }`}
                 >
                   <div className="flex items-center">
@@ -87,7 +89,7 @@ export function DataTable<T extends object = object>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1a1a1a]">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {loading ? (
               // Loading state: render 5 rows of Skeleton block cells
               Array.from({ length: 5 }).map((_, rIdx) => (
@@ -124,8 +126,8 @@ export function DataTable<T extends object = object>({
                     key={String(rowObj.id || rowObj.die_id || rIdx)}
                     onClick={() => onRowClick && onRowClick(row)}
                     className={`group transition-colors duration-100 ${
-                      onRowClick ? 'cursor-pointer hover:bg-[#1a1a1a]' : ''
-                    } ${isSelected ? 'bg-[#141414] border-l-2 border-l-blue-500' : 'bg-transparent hover:bg-[#1a1a1a]'}`}
+                      onRowClick ? 'cursor-pointer hover:bg-[var(--color-surface-2)]' : ''
+                    } ${isSelected ? 'bg-[var(--color-surface-2)] border-l-2 border-l-blue-500' : 'bg-transparent hover:bg-[var(--color-surface-2)]'}`}
                   >
                     {selectedIds && onSelectId && (
                       <td 
@@ -134,9 +136,10 @@ export function DataTable<T extends object = object>({
                       >
                         <input
                           type="checkbox"
+                          aria-label={`Select row ${rowId}`}
                           checked={isSelected}
                           onChange={(e) => onSelectId(rowId, e.target.checked)}
-                          className="h-3.5 w-3.5 rounded-none border-[#2a2a2a] bg-[#0f0f0f] text-blue-500 focus:ring-0 cursor-pointer"
+                          className="h-3.5 w-3.5 rounded-none border-[var(--color-border-visible)] bg-[var(--color-surface)] text-blue-500 focus:ring-0 cursor-pointer"
                         />
                       </td>
                     )}
@@ -146,7 +149,7 @@ export function DataTable<T extends object = object>({
                       return (
                         <td 
                           key={col.key} 
-                          className={`py-2 px-3 text-[13px] text-[#e4e4e4] align-middle ${
+                          className={`py-2 px-3 text-[13px] text-[var(--color-text)] align-middle ${
                             isNumericVal ? 'font-mono tracking-tight' : 'font-mono'
                           }`}
                         >
