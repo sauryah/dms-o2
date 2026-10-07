@@ -381,3 +381,189 @@ class UnifiedHistoryListView(APIView):
             'results': results
         })
 
+
+from rest_framework import status
+from django.utils import timezone
+from history.models import PrintRecord
+from history.serializers import PrintRecordSerializer
+from users.views.auth import get_client_ip
+
+
+def generate_next_doc_ref(doc_type='WIRE_DRAWING_TDS', date_str=None):
+    if not date_str:
+        date_str = timezone.now().strftime('%Y%m%d')
+    prefix = f"TDS-{date_str}-"
+    last_record = (
+        PrintRecord.objects.filter(doc_ref__startswith=prefix)
+        .order_by('-doc_ref')
+        .first()
+    )
+    if last_record and last_record.doc_ref:
+        try:
+            seq_part = last_record.doc_ref.split('-')[-1]
+            next_seq = int(seq_part) + 1
+        except (ValueError, IndexError):
+            next_seq = 1
+    else:
+        next_seq = 1
+    return f"{prefix}{next_seq:04d}"
+
+
+def generate_default_work_order(date_str=None):
+    if not date_str:
+        date_str = timezone.now().strftime('%Y%m%d')
+    prefix = f"WO-{date_str}-"
+    last_record = (
+        PrintRecord.objects.filter(work_order__startswith=prefix)
+        .order_by('-work_order')
+        .first()
+    )
+    if last_record and last_record.work_order:
+        try:
+            seq_part = last_record.work_order.split('-')[-1]
+            next_seq = int(seq_part) + 1
+        except (ValueError, IndexError):
+            next_seq = 1
+    else:
+        next_seq = 1
+    return f"{prefix}{next_seq:03d}"
+
+
+class PrintRecordPagination(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
+
+class PrintRecordNextRefView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('doc_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Document Type', required=False),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+        description="Retrieve the next available document reference number and default work order for today."
+    )
+    def get(self, request, *args, **kwargs):
+        doc_type = request.query_params.get('doc_type', 'WIRE_DRAWING_TDS')
+        doc_ref = generate_next_doc_ref(doc_type)
+        work_order = generate_default_work_order()
+        return Response({
+            'doc_ref': doc_ref,
+            'default_work_order': work_order,
+        })
+
+
+class PrintRecordListView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [IsAdminOrRootOnly()]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('doc_ref', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Document Reference'),
+            OpenApiParameter('work_order', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Work Order'),
+            OpenApiParameter('user', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Username'),
+            OpenApiParameter('machine', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by Machine Name'),
+            OpenApiParameter('from', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Start date (YYYY-MM-DD)'),
+            OpenApiParameter('to', OpenApiTypes.STR, OpenApiParameter.QUERY, description='End date (YYYY-MM-DD)'),
+            OpenApiParameter('search', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Search across text fields'),
+            OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Items per page'),
+        ],
+        responses={200: PrintRecordSerializer(many=True)},
+        description="Retrieve paginated list of print records with filtering."
+    )
+    def get(self, request, *args, **kwargs):
+        queryset = PrintRecord.objects.all().select_related('printed_by')
+
+        doc_ref = request.query_params.get('doc_ref')
+        if doc_ref:
+            queryset = queryset.filter(doc_ref__icontains=doc_ref)
+
+        work_order = request.query_params.get('work_order')
+        if work_order:
+            queryset = queryset.filter(work_order__icontains=work_order)
+
+        user = request.query_params.get('user')
+        if user:
+            queryset = queryset.filter(
+                Q(username__icontains=user) | Q(printed_by__username__icontains=user)
+            )
+
+        machine = request.query_params.get('machine')
+        if machine:
+            queryset = queryset.filter(machine_name__icontains=machine)
+
+        from_date = request.query_params.get('from')
+        if from_date:
+            queryset = queryset.filter(created_at__date__gte=from_date)
+
+        to_date = request.query_params.get('to')
+        if to_date:
+            queryset = queryset.filter(created_at__date__lte=to_date)
+
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(doc_ref__icontains=search) |
+                Q(work_order__icontains=search) |
+                Q(machine_name__icontains=search) |
+                Q(notes__icontains=search) |
+                Q(username__icontains=search)
+            )
+
+        paginator = PrintRecordPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        if page is not None:
+            serializer = PrintRecordSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = PrintRecordSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=PrintRecordSerializer,
+        responses={201: PrintRecordSerializer},
+        description="Persist a new print event into the database with client IP and operator attribution."
+    )
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+
+        with transaction.atomic():
+            candidate_ref = str(data.get('doc_ref', '')).strip()
+            today_str = timezone.now().strftime('%Y%m%d')
+            prefix = f"TDS-{today_str}-"
+
+            if not candidate_ref or PrintRecord.objects.filter(doc_ref=candidate_ref).exists():
+                candidate = generate_next_doc_ref(data.get('doc_type', 'WIRE_DRAWING_TDS'), today_str)
+                attempt = 0
+                while PrintRecord.objects.filter(doc_ref=candidate).exists() and attempt < 50:
+                    seq = int(candidate.split('-')[-1]) + 1
+                    candidate = f"{prefix}{seq:04d}"
+                    attempt += 1
+                data['doc_ref'] = candidate
+            else:
+                data['doc_ref'] = candidate_ref
+
+            if not str(data.get('work_order', '')).strip():
+                data['work_order'] = generate_default_work_order(today_str)
+
+            user = request.user if request.user and request.user.is_authenticated else None
+            username = user.username if user else 'anonymous'
+            user_role = getattr(user, 'role', 'OPERATOR') if user else 'OPERATOR'
+            ip_address = get_client_ip(request)
+
+            serializer = PrintRecordSerializer(data=data)
+            if serializer.is_valid():
+                instance = serializer.save(
+                    printed_by=user,
+                    username=username,
+                    user_role=user_role,
+                    ip_address=ip_address,
+                )
+                return Response(PrintRecordSerializer(instance).data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
