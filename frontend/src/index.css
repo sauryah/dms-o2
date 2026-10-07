@@ -1233,24 +1233,11 @@ textarea:focus {
 }
 
 /* ==========================================================================
-   PRINT SPECIFICATION • MULTI-PAGE ENTERPRISE REPORTING & APPLICATION FRAME
+   PRINT SPECIFICATION • CLEAN PAPER & INDUSTRIAL REPORTS
    ========================================================================== */
-/* Screen handling: zero layout boxes, completely transparent to normal DOM */
-.dms-print-frame {
-  display: contents;
-}
-.dms-print-frame > thead,
-.dms-print-frame > tfoot {
-  display: none;
-}
-.dms-print-frame > tbody,
-.dms-print-frame > tbody > tr,
-.dms-print-frame > tbody > tr > td {
-  display: contents;
-}
 .dms-print-header,
 .dms-print-footer {
-  display: none;
+  display: none !important;
 }
 
 @media print {
@@ -1280,57 +1267,13 @@ textarea:focus {
   nav,
   footer,
   header.app-header,
+  .dms-print-header,
+  .dms-print-footer,
   [role="navigation"],
   [role="contentinfo"],
-  .no-print {
+  .no-print,
+  .print-hidden {
     display: none !important;
-  }
-
-  /* Multi-page repeating print frame table */
-  .dms-print-frame {
-    display: table !important;
-    width: 100% !important;
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .dms-print-frame > thead {
-    display: table-header-group !important;
-  }
-
-  .dms-print-frame > tfoot {
-    display: table-footer-group !important;
-  }
-
-  .dms-print-frame > tbody {
-    display: table-row-group !important;
-  }
-
-  .dms-print-frame > thead > tr > td,
-  .dms-print-frame > tfoot > tr > td,
-  .dms-print-frame > tbody > tr > td {
-    display: table-cell !important;
-    padding: 0 !important;
-    border: none !important;
-    vertical-align: top !important;
-  }
-
-  .dms-print-header {
-    display: flex !important;
-    width: 100% !important;
-    margin-bottom: 8px !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .dms-print-footer {
-    display: flex !important;
-    width: 100% !important;
-    margin-top: 8px !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
   }
 
   .page-break-inside-avoid {
