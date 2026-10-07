@@ -1,19 +1,14 @@
 # Engineering Implementation History (changelog-dev.md)
 
-### 2026-10-06 Application-Wide Print & PDF Layout Standardization
-*   **Print Header Component (`frontend/src/components/PrintHeader.tsx`)**:
-    *   Designed high-contrast monospace print header mirroring the production top navigation bar.
-    *   Dynamic route highlight matching current location (`DASHBOARD`, `INVENTORY`, `MACHINES`, `AUDIT LOG`, `TOOLS`, `BULK IMPORT`, `USERS`).
-    *   Attributed emerald `LIVE` status pill, authenticated username and uppercase role, and logout badge.
-*   **Print Footer Component (`frontend/src/components/PrintFooter.tsx`)**:
-    *   Integrated standard footer branding (`DMS / DIE MANAGEMENT SYSTEM / v{APP_VERSION}`).
-    *   Engineering credits: `ENGINEERING: SAHIL & ANTIGRAVITY | SYSINFO`.
-*   **Multi-Page Repeating Table Frame Architecture (`frontend/src/index.css`, `frontend/src/App.tsx`)**:
-    *   Employed standard W3C table frame layout (`display: table`, `thead` with `table-header-group`, `tfoot` with `table-footer-group`) ensuring automatic multi-page repeating headers and footers across page splits in Chromium/WebKit print engines without content overlap.
-    *   Employed `display: contents` for screen media, guaranteeing zero DOM box distortion or flexbox interference during interactive usage.
+### 2026-10-07 Clean Print Output & Complete Chrome Suppression
+*   **Navigation & Footer Print Suppression (`frontend/src/components/Navbar.tsx`, `frontend/src/components/Footer.tsx`)**:
+    *   Bound explicit `print:hidden` classes to root `<nav>` and `<footer>` elements, ensuring that web UI bars, tabs, search buttons, badges, and footer credits are never rendered during browser print / Save as PDF operations.
+*   **Print Stylesheet Hardening (`frontend/src/index.css`)**:
+    *   Enforced `display: none !important` across `nav`, `footer`, `header.app-header`, `.dms-print-header`, `.dms-print-footer`, and `.print-hidden` in `@media print`.
+    *   Removed experimental multi-page table frame wrappers, restoring standard clean 1:1 paper document flow.
 *   **Verification & Visual Inspection**:
-    *   Verified 92/92 Vitest tests passing; clean production Vite build in 20.7s.
-    *   Live headless Edge print preview and PDF generation verified on Dashboard, Inventory, and 5-page Audit Log views.
+    *   Verified 92/92 Vitest tests passing; clean production Vite build in 21.8s.
+    *   Live headless Microsoft Edge PDF generation confirmed completely clean output on Wire Drawing Technical Data Sheet (TDS) and Dashboard views with 0 website chrome.
 
 ### 2026-09-26 LAN Accessibility, Resilient Routing & WSL2 Stability Overhaul
 *   **WSL2 Stability & Healthcheck Throttling (Loop 1)**:
