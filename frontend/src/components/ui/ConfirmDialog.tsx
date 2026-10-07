@@ -91,7 +91,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 bg-[#0a0a0a]/80 z-[9999] flex items-center justify-center p-4 transition-all duration-150 animate-fadeIn"
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 transition-all duration-150 animate-fadeIn"
       onClick={onCancel}
       onKeyDown={handleKeyDown}
       role="dialog"
@@ -101,20 +101,20 @@ export function ConfirmDialog({
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-sm max-w-md w-full overflow-hidden focus-ring font-mono"
+        className="bg-[var(--color-surface)] border border-[var(--color-border-visible)] rounded-sm max-w-md w-full overflow-hidden focus-ring font-mono shadow-2xl"
         tabIndex={-1}
       >
         {/* Header */}
-        <div className="p-3.5 border-b border-[#2a2a2a] bg-[#0a0a0a] flex justify-between items-center">
+        <div className="p-3.5 border-b border-[var(--color-border-visible)] bg-[var(--color-bg)] flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <AlertTriangle className={`h-4 w-4 ${isDanger ? 'text-red-500' : 'text-amber-500'}`} />
-            <h2 id="confirm-dialog-title" className="text-xs font-medium text-[#e4e4e4] uppercase tracking-[0.05em] font-mono">
+            <h2 id="confirm-dialog-title" className="text-xs font-medium text-[var(--color-text)] uppercase tracking-[0.05em] font-mono">
               {title}
             </h2>
           </div>
           <button
             onClick={onCancel}
-            className="text-[#6b7280] hover:text-[#e4e4e4] p-1 rounded-sm hover:bg-[#141414] transition focus-ring cursor-pointer"
+            className="text-[var(--color-muted)] hover:text-[var(--color-text)] p-1 rounded-sm hover:bg-[var(--color-surface-2)] transition focus-ring cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -123,32 +123,32 @@ export function ConfirmDialog({
 
         {/* Content */}
         <div className="p-4 space-y-3">
-          <div className="text-xs text-[#6b7280] font-mono leading-relaxed">
+          <div className="text-xs text-[var(--color-muted)] font-mono leading-relaxed">
             {message}
           </div>
 
           {requireMatchText && (
             <div className="space-y-1.5 pt-1">
-              <label className="block text-[11px] font-medium text-[#6b7280] uppercase tracking-wider font-mono">
+              <label className="block text-[11px] font-medium text-[var(--color-muted)] uppercase tracking-wider font-mono">
                 Type <span className="text-red-400 font-bold">{requireMatchText}</span> to confirm:
               </label>
               <input
                 type="text"
                 value={matchInput}
                 onChange={(e) => setMatchInput(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] focus:border-red-500 rounded-sm py-1.5 px-2.5 text-xs text-[#e4e4e4] focus:outline-none placeholder-[#404040] transition font-mono"
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-visible)] focus:border-red-500 rounded-sm py-1.5 px-2.5 text-xs text-[var(--color-text)] focus:outline-none placeholder-[var(--color-muted-dark)] transition font-mono"
                 placeholder={`Type ${requireMatchText}`}
               />
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="border-t border-[#1a1a1a] pt-3 mt-2 flex justify-end space-x-2">
+          <div className="border-t border-[var(--color-border)] pt-3 mt-2 flex justify-end space-x-2">
             <button
               type="button"
               onClick={onCancel}
               data-cancel-btn
-              className="bg-[#141414] hover:bg-[#1f1f1f] text-[#6b7280] hover:text-[#e4e4e4] border border-[#2a2a2a] px-3.5 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
+              className="bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-[var(--color-muted)] hover:text-[var(--color-text)] border border-[var(--color-border-visible)] px-3.5 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring cursor-pointer"
             >
               {canText}
             </button>
@@ -158,8 +158,8 @@ export function ConfirmDialog({
               disabled={isConfirmedDisabled}
               className={`px-4 py-1.5 rounded-sm text-xs uppercase font-mono tracking-wider transition focus-ring border cursor-pointer ${
                 isDanger
-                  ? 'bg-[#141414] hover:bg-red-950/40 text-red-400 border-red-500/50 disabled:opacity-40'
-                  : 'bg-[#141414] hover:bg-blue-950/40 text-blue-400 border-blue-500/50 disabled:opacity-40'
+                  ? 'bg-[var(--color-surface-2)] hover:bg-red-950/40 text-red-400 border-red-500/50 disabled:opacity-40'
+                  : 'bg-[var(--color-surface-2)] hover:bg-blue-950/40 text-blue-400 border-blue-500/50 disabled:opacity-40'
               }`}
             >
               {cText}
