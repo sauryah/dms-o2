@@ -7,11 +7,11 @@ export function ToolsPage() {
     {
       id: 'wire-drawing-calculator',
       code: 'TOOL-01',
-      title: 'Wire Drawing Elongation Calculator',
+      title: 'Wire Drawing Workbench',
       description:
-        'Analyze multi-pass wire drawing sequences, evaluate pass area reductions and elongation ratios, and export calculation sheets.',
+        'Analyze multi-pass wire drawing sequences, evaluate pass area reductions and elongation ratios, simulate 3D deformation, and generate Technical Data Sheets.',
       icon: Calculator,
-      path: '/wire-drawing-calculator',
+      path: '/wire-drawing-workbench',
       ctaLabel: 'Launch Workbench',
       features: [
         'Multi-pass sequence calculation',
@@ -25,7 +25,7 @@ export function ToolsPage() {
       code: 'TOOL-02',
       title: 'Die Series Generator',
       description:
-        'Generate die drawing series from elongation targets, pass counts, or start and end diameter limits. Preview results before loading into the calculator.',
+        'Generate die drawing series from elongation targets, pass counts, or start and end diameter limits. Preview results before loading into the workbench.',
       icon: Zap,
       path: '/die-series-generator',
       ctaLabel: 'Generate Series',
@@ -33,7 +33,7 @@ export function ToolsPage() {
         'Generate by target diameter or pass count',
         'Custom elongation percentage per pass',
         'Live preview with statistics',
-        'Send series directly to calculator',
+        'Send series directly to workbench',
       ],
     },
   ]
@@ -53,7 +53,7 @@ export function ToolsPage() {
             <span>Engineering Toolbox</span>
           </div>
           <h1 className="text-base md:text-lg font-bold text-[var(--color-text)] uppercase tracking-wide font-heading">
-            Calculators & Sequence Solvers
+            Engineering Solvers & Workbenches
           </h1>
           <p className="text-xs text-[var(--color-muted)] mt-1 max-w-3xl">
             Mathematical models and draft optimizers for wire drawing lines, cross-sectional area reductions, and tooling inventory allocation.
