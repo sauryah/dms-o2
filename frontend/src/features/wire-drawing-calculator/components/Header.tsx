@@ -26,10 +26,10 @@ export default function Header({ dark: _dark, toggleDark }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-[15px] font-semibold text-[var(--color-text)] tracking-[-0.01em] m-0 leading-tight">
-              Wire Drawing Die Calculator
+              Wire Drawing Workbench
             </h1>
             <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5 tracking-wide uppercase">
-              Precision elongation analysis
+              Precision drafting & pass simulation
             </p>
           </div>
         </div>
