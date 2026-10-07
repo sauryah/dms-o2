@@ -1,5 +1,23 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-07 Unique Document Identifiers & Database Print Tracking
+*   **Print Audit Model & Migration (`backend/history/models.py`, Migration `0005_printrecord`)**:
+    *   Created `PrintRecord` model capturing document type (`TDS`), strictly unique reference identifier (`TDS-YYYYMMDD-XXXX`), operational work order (`WO-YYYYMMDD-XXX`), target drawing machine, schedule summary metrics (inlet size, finish size, passes count, overall reduction %, avg elongation %), JSON serialized snapshots of die sequences and drafting passes, operator attribution (`username`, `user_role`), reverse proxy client IP attribution via `get_client_ip`, and creation timestamps.
+    *   Applied database indexation on `created_at`, `doc_type`, `work_order`, `doc_ref`, and compound index `(doc_type, created_at)`.
+*   **Atomic Reference Allocation & REST APIs (`backend/history/views.py`, `backend/history/serializers.py`, `backend/dms/urls.py`)**:
+    *   Implemented `PrintRecordNextRefView` (`GET /api/v1/history/print-records/next-ref/`) providing current day reference preview and sequential default work order for operators.
+    *   Implemented `PrintRecordListView` (`POST` with atomic sequence collision retry loop up to 50 attempts to guarantee uniqueness under concurrent print actions; `GET` with pagination and filtering on `doc_ref`, `work_order`, `machine`, `start_date`, and `end_date` restricted to `IsAdminOrRootOnly`).
+    *   Configured primary `/api/v1/history/print-records/` and backwards-compatible `/api/history/print-records/` routes.
+*   **Dual-DOM Synchronization & Modal Print Flow (`frontend/src/pages/WireDrawingCalculatorPage.tsx`, `frontend/src/features/wire-drawing-calculator/`)**:
+    *   Lifted `docRef` state to calculator root, prefetching next sequence on print preview open and binding identically to off-screen print DOM (`WireDrawingPrintReport.tsx`) and on-screen modal preview (`PrintPreviewModal.tsx`).
+    *   Added Work Order, Machine Name, and Operator inputs inside `PrintPreviewModal`, persisting print record to backend via `useApi` prior to triggering native `window.print()`.
+*   **Audit Trail Inspection UI (`frontend/src/pages/HistoryPage.tsx`)**:
+    *   Integrated 4th tab "PRINT LOGS" with search by Doc Ref, Work Order, Machine, full paginated table, drafting schedule JSON snapshot viewer modal, and CSV export.
+*   **Test Suite & Build Verification**:
+    *   Added backend tests in `PrintRecordApiTests` covering sequence incrementing, permissions, and conflict resolution.
+    *   Added frontend unit test in `WireDrawingPrintReport.test.tsx` verifying explicit `docRef` rendering.
+    *   11/11 Django history tests green, 93/93 Vitest unit tests green, clean Vite bundle build, Docker frontend container healthy.
+
 ### 2026-10-07 Clean Print Output & Complete Chrome Suppression
 *   **Navigation & Footer Print Suppression (`frontend/src/components/Navbar.tsx`, `frontend/src/components/Footer.tsx`)**:
     *   Bound explicit `print:hidden` classes to root `<nav>` and `<footer>` elements, ensuring that web UI bars, tabs, search buttons, badges, and footer credits are never rendered during browser print / Save as PDF operations.
