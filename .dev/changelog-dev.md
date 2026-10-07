@@ -1,5 +1,24 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-07 Product Quality Upgrade: P0 Bulk Inventory Remediation & Design System Standardization
+*   **P0 Bulk Inventory Location & Batch Concurrency Remediation (`frontend/src/features/inventory/components/InventoryPage.tsx`)**:
+    *   Fixed critical silent update bug in bulk location assignments: replaced free-text string input with structured Target Rack and Shelf dropdowns queried from `/api/racks/`.
+    *   Resolved payload field mismatch: PATCH requests now send `{ rack, shelf }` corresponding to `DieCreateSerializer` instead of `{ location }` which was previously silently ignored.
+    *   Replaced sequential blocking `for...of` request loops with concurrent `Promise.all` requests and query invalidations (`['dies']`, `['searchDies']`, `['machinesList']`, `['setsDropdownList']`, `['allDiesStats']`).
+    *   Standardized floating bulk bar styles with semantic tokens (`var(--color-surface)`, `var(--color-border-visible)`, `var(--color-text)`).
+*   **Design System & Theme Token Standardization (`Skeleton.tsx`, `SearchBar.tsx`, `PageHeader.tsx`, `DataTable.tsx`, `EmptyState.tsx`, `ConfirmDialog.tsx`, `Drawer.tsx`, `Navbar.tsx`)**:
+    *   Replaced hardcoded jet-black hex colors (`#0a0a0a`, `#0f0f0f`, `#1a1a1a`, `#2a2a2a`) across UI primitives with semantic tokens (`var(--color-surface)`, `var(--color-surface-2)`, `var(--color-bg)`, `var(--color-border)`, `var(--color-border-visible)`, `var(--color-text)`, `var(--color-muted)`), guaranteeing pixel-perfect rendering across Dark Terminal, Classic Slate, and Precision Light themes.
+    *   Added accessible `aria-sort` on sorted column headers and descriptive `aria-label`s on selection checkboxes in `DataTable.tsx`.
+    *   Enhanced modal and drawer backdrops with `bg-black/60 backdrop-blur-xs` and depth shadows.
+*   **Mobile Navigation & Scroll Locking (`Navbar.tsx`)**:
+    *   Added background body scroll lock (`overflow: hidden`) when mobile navigation drawer is active.
+    *   Added automatic route-change dismiss effect for mobile menu.
+*   **Verification & Testing**:
+    *   95/95 Vitest unit tests green across all 28 test suites.
+    *   `npx tsc --noEmit` verified with 0 errors.
+    *   Production Vite bundle built cleanly in 5.04s.
+    *   Frontend Docker container rebuilt and healthy; live probes return HTTP 200 and database counts in sync (3087/3087).
+
 ### 2026-10-07 Full-Stack Documentation Synchronization & Alignment
 *   **Repository-Wide Documentation Audit & Gap Remediation**:
     *   Audited all markdown documentation files (`README.md`, `DOCKER.md`, `PROJECT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `.dev/architecture/*`, `.dev/modules/*`, `.dev/business/*`, `.dev/operations/*`, `.dev/processes/*`).
