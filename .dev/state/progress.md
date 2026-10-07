@@ -293,6 +293,17 @@ Track implementation status across all phases.
 - **CI/CD Pipeline Streamlining**: Removed C and Julia build and test steps from GitHub Actions `.github/workflows/deploy.yml`.
 - **Zero Regressions**: All 70/70 Vitest tests green, all 204/204 Django tests green, clean Vite bundle build in 12.6s, all 10 core containers healthy.
 
+### Wire Drawing TDS Chart AVG Callout Gutter Isolation & Collision Prevention (2026-10-07) ✅
+**Status:** Complete  
+**Date:** 2026-10-07  
+
+**Completed:**
+- **Right-Gutter Callout Architecture (`frontend/src/features/wire-drawing-calculator/components/PrintPassChart.tsx`)**: Re-architected SVG plotting margins (`marginLeft = 44`, `marginRight = 86`, `plotWidth = 550`, `plotRight = 594`, `plotBottom = 176`). Bounded all pass bars inside `[44, 594]`, reserving a dedicated 80px callout gutter on the right (`x = 594..680`). Placed the AVG pill at `badgeX = 600` (`width = 74`), completely eliminating visual collision with passes 16, 17, and 18 for both Elongation and Area Reduction charts.
+- **Reference Line & Numerical Fidelity**: Retained the horizontal dashed reference line across the full plot domain at the exact mathematical Y position (`y = getY(avg)`), connected to the callout pill via a connector line and anchor point.
+- **Visual Enhancement & Halo Text**: Added SVG white halo strokes (`paintOrder="stroke fill" stroke="#ffffff" strokeWidth={2.5}`) and dynamic font scaling on bar value labels to ensure complete contrast and readability against any background lines or tolerance bands.
+- **Static Template Alignment (`wire-drawing-tds-report.html`, `wire-drawing-tds-report.pdf`)**: Updated static HTML template with right-gutter layout and regenerated PDF artifact.
+- **Test Suite & Verification**: Added Vitest unit tests in `PrintPassChart.test.tsx` verifying gutter positioning (`x >= 594`) and collision prevention for 18 passes (95/95 frontend tests passing). Verified clean production Vite build and healthy Docker container.
+
 ### Unique Document Identifiers & Database Print Tracking (2026-10-07) ✅
 **Status:** Complete  
 **Date:** 2026-10-07  
