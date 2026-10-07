@@ -8,6 +8,7 @@ Manages die entities (`Die`, `RoundDie`, `FlatDie`), tolerance limits (`DieToler
 - [serializers.py](file:///backend/dies/serializers.py): API serializers including recount sheet items and validation.
 - [views.py](file:///backend/dies/views.py): REST API views and ViewSets for dies, recuts, enamel machine stocks, and recount submissions.
 - [import_service.py](file:///backend/dies/services/import_service.py): Bulk import parser with in-memory rack and casing pre-caching.
+- [recut_service.py](file:///backend/dies/services/recut_service.py): Atomic die recut processor with dimension validation and history logging.
 - [search_service.py](file:///backend/dies/services/search_service.py): Meilisearch outbox sync queue dispatcher.
 - [validation_service.py](file:///backend/dies/services/validation_service.py): Die dimensional and casing validation.
 - [wear_alert_service.py](file:///backend/dies/services/wear_alert_service.py): Threshold wear alerting engine.
