@@ -37,7 +37,7 @@ Define the standard workflow for all engineering tasks on DMS-O2.
 ### 5. Verify
 - Run backend compilation checks (`python manage.py check`, `go build ./...`)
 - Run frontend type-check and tests (`npx tsc --noEmit`, `npm test`, `npm run build`)
-- Verify dual-theme rendering in both **Dark Terminal** and **Classic Slate** modes
+- Verify triple-theme rendering across **Dark Terminal**, **Classic Slate**, and **Precision Light** modes
 - Verify text input casing (no forced uppercase on user text inputs)
 - Verify that theme-switching operations require ROOT privileges
 - Verify no regressions or compiler warnings
@@ -80,7 +80,7 @@ Ensure:
 Modify [ComponentName] to implement [UI logic].
 Ensure:
 1. Use standard design system tokens (var(--color-bg), var(--color-surface), var(--color-running), etc.).
-2. Fully support both Dark Terminal (monospace) and Classic Slate (sans-serif) themes.
+2. Fully support all three themes: Dark Terminal (monospace), Classic Slate (sans-serif), and Precision Light.
 3. Never apply uppercase to form inputs/textareas for user-entered text (usernames, names, notes, queries).
 4. Restrict any appearance or theme configuration controls to role === 'ROOT'.
 5. Handle loading, empty, and error states cleanly.
