@@ -106,7 +106,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className="border-b border-[#2a2a2a] bg-[#0a0a0a] sticky top-0 z-50 font-mono select-none">
+    <nav className="border-b border-[#2a2a2a] bg-[#0a0a0a] sticky top-0 z-50 font-mono select-none print:hidden">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex justify-between h-12">
           <div className="flex items-center space-x-6">
