@@ -89,12 +89,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         perform: () => { navigate('/tools'); onClose() }
       },
       {
-        id: 'nav-wire-drawing-calculator',
-        title: 'GO TO WIRE DRAWING CALCULATOR',
-        subtitle: 'Precision elongation analysis and multi-pass schedule optimization',
+        id: 'nav-wire-drawing-workbench',
+        title: 'GO TO WIRE DRAWING WORKBENCH',
+        subtitle: 'Precision drafting simulation, 3D FEA stress, and multi-pass schedule optimization',
         category: 'Navigation',
         icon: <Compass className="h-3.5 w-3.5 text-blue-400" />,
-        perform: () => { navigate('/wire-drawing-calculator'); onClose() }
+        perform: () => { navigate('/wire-drawing-workbench'); onClose() }
       },
       {
         id: 'nav-die-series-generator',
