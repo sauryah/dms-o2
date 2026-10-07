@@ -209,29 +209,29 @@ docker image prune -f
 
 ### Automatic Backups
 
-A built-in backup service runs **daily at 2:00 AM** (server time), creating compressed database dumps in a Docker volume (`dms_backups`).
+Celery Beat triggers database backups **daily at 2:00 AM** via the `auto_backup_task` (`python manage.py backup_db`), writing PostgreSQL custom-format archives to `/backups/`:
 
-* Backups are stored as `dms_YYYYMMDD_HHMMSS.sql.gz`
-* Only the **last 30 backups** are retained automatically
+* Backups are stored as `dms_backup_YYYYMMDD_HHMMSS.dump` alongside MD5 checksum files (`.dump.md5`).
+* Backups persist across container restarts in the `dms_backups` Docker volume.
 
 ### Manual Backup
 
 ```bash
 # Trigger an immediate backup
-docker compose -f docker-compose.ghcr.yml exec backup sh -c '. /env.sh; /usr/local/bin/backup.sh'
+docker compose -f docker-compose.ghcr.yml exec django python manage.py backup_db
 
 # List existing backups
-docker compose -f docker-compose.ghcr.yml exec backup ls -lh /backups/
+docker compose -f docker-compose.ghcr.yml exec django ls -lh /backups/
 ```
 
 ### Restore from Backup
 
 ```bash
-# Copy backup out of the container
-docker compose -f docker-compose.ghcr.yml cp backup:/backups/dms_20250101_020000.sql.gz ./
+# Restore directly using pg_restore inside the django container
+docker compose -f docker-compose.ghcr.yml exec django pg_restore -h db -p 5432 -U dms_user -d dms --clean --if-exists /backups/dms_backup_YYYYMMDD_HHMMSS.dump
 
-# Restore
-gunzip -c dms_20250101_020000.sql.gz | docker compose -f docker-compose.ghcr.yml exec -T db psql -U dms_user dms
+# After restore, synchronize the search index
+docker compose -f docker-compose.ghcr.yml exec django python manage.py sync_search
 ```
 
 ---
