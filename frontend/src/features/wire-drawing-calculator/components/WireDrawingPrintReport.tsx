@@ -75,7 +75,7 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
               Generated: {dateStr} • {timeStr}
             </div>
             <div className="text-[9px] text-slate-500 font-semibold mt-0.5 pt-0.5 border-t border-slate-200">
-              OPERATOR: <span className="text-slate-800 font-bold">{operator}</span>
+              PREPARED BY: <span className="text-slate-800 font-bold">{operator}</span>
             </div>
           </div>
         </div>
