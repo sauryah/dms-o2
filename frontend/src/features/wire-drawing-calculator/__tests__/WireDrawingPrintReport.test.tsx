@@ -169,5 +169,8 @@ describe('WireDrawingPrintReport', () => {
     expect(getByText('Prepared By:')).toBeInTheDocument();
     expect(getByText('Checked By:')).toBeInTheDocument();
     expect(getByText('Approved By:')).toBeInTheDocument();
+    expect(getByText('Originator')).toBeInTheDocument();
+    expect(getByText('Technical Reviewer')).toBeInTheDocument();
+    expect(getByText('Authorised Signatory')).toBeInTheDocument();
   });
 });
