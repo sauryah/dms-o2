@@ -5,10 +5,10 @@ High-density manufacturing telemetry dashboard, CAD vector blueprint renderer, 3
 
 ---
 
-## Design System & Dual-Theme Architecture
+## Design System & Triple-Theme Architecture
 
 ### 1. Supported Themes
-The application supports two global visual modes managed via `ThemeContext.tsx` and CSS root tokens:
+The application supports three global visual modes managed via `ThemeContext.tsx` and CSS root tokens:
 - **Dark Terminal / Bloomberg-Tape** (`data-theme="terminal"`, default):
   - **Canvas & Surfaces**: `#0a0a0a` (canvas), `#0f0f0f` (surfaces/cards), `#141414` (elevated/sidebar/hover).
   - **Borders & Dividers**: 1px flat solid `#1a1a1a` (subtle) / `#2a2a2a` (visible active).
@@ -19,13 +19,18 @@ The application supports two global visual modes managed via `ThemeContext.tsx` 
   - **Borders & Dividers**: `#1E293B` / `#334155`.
   - **Typography**: Sans-serif (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif`).
   - **Accents**: Cyan `#38BDF8`, Mint `#34D399`, Coral `#F87171`, Amber `#FBBF24`.
+- **Precision Light / Clean Industrial** (`data-theme="light"`):
+  - **Canvas & Surfaces**: Crisp slate `#F8FAFC` (canvas), `#FFFFFF` (surfaces/cards), `#F1F5F9` (elevated).
+  - **Borders & Dividers**: `#E2E8F0` / `#CBD5E1`.
+  - **Typography**: Clean industrial sans-serif with high contrast slate typography (`#0F172A`).
+  - **Accents**: Emerald `#059669`, Blue `#2563EB`, Amber `#D97706`, Rose `#E11D48`.
 
 ### 2. Access Control Rule: ROOT-Only Theme Switching
 - **Security Constraint**: Only authenticated users with `role === 'ROOT'` have permission to alter the system-wide visual theme.
 - **Enforcement**:
   - `ThemeContext.tsx` checks `role === 'ROOT'`.
-  - Non-root users (`ADMIN`, `OPERATOR`, `AUDITOR`, `VIEWER`) have theme toggles hidden in the Navbar and receive a disabled read-only lock in `SettingsPage.tsx`.
-  - The active theme is synchronized across browser tabs using `localStorage('dms_app_theme')`.
+  - Non-root users (`ADMIN`, `OPERATOR`, `REGULAR`) have theme toggles hidden in the Navbar and receive a disabled read-only lock in `SettingsPage.tsx`.
+  - The active theme is synchronized across browser tabs using `localStorage.getItem('dms_app_theme')`.
 
 ---
 
@@ -46,7 +51,7 @@ The application supports two global visual modes managed via `ThemeContext.tsx` 
 
 ## Important Files
 - [App.tsx](file:///frontend/src/App.tsx): Application router and shell layout with provider hierarchy (`AuthProvider` ➔ `ThemeProvider` ➔ `ToastProvider` ➔ `NotificationProvider` ➔ `AnnouncementProvider`).
-- [ThemeContext.tsx](file:///frontend/src/contexts/ThemeContext.tsx): Dual-theme state, persistence, and ROOT access control.
+- [ThemeContext.tsx](file:///frontend/src/contexts/ThemeContext.tsx): Triple-theme state (`terminal`, `classic`, `light`), persistence, and ROOT access control.
 - [index.css](file:///frontend/src/index.css): Theme design tokens, CSS variables, CAD blueprint filters, `@font-face` definitions, and print rules.
 - [WireDrawingPrintReport.tsx](file:///frontend/src/features/wire-drawing-calculator/components/WireDrawingPrintReport.tsx): Technical Data Sheet engineering report template for drafting pipeline and charts.
 - [useWasmFeaSolver.ts](file:///frontend/src/features/wire-drawing-calculator/hooks/useWasmFeaSolver.ts): Hook interfacing React with the WebAssembly drawing solver.
