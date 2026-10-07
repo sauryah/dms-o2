@@ -10,7 +10,7 @@ export function Footer() {
     <>
       <footer
         role="contentinfo"
-        className="border-t border-[var(--color-border)] bg-[var(--color-bg)] py-3 mt-auto font-mono text-[11px] select-none"
+        className="border-t border-[var(--color-border)] bg-[var(--color-bg)] py-3 mt-auto font-mono text-[11px] select-none print:hidden"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[var(--color-muted)]">
