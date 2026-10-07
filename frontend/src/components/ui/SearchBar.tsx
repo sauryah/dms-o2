@@ -30,7 +30,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
     <div className="relative w-full">
       <div className="relative flex items-center">
         {/* Left Search Icon */}
-        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#6b7280]">
+        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-muted)]">
           <Search className="h-4 w-4" />
         </span>
 
@@ -42,7 +42,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full bg-[#0f0f0f] border border-[#2a2a2a] focus:border-blue-500 rounded-sm pl-9 pr-9 py-2 text-[13px] text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono"
+          className="w-full bg-[var(--color-surface)] border border-[var(--color-border-visible)] focus:border-blue-500 rounded-sm pl-9 pr-9 py-2 text-[13px] text-[var(--color-text)] placeholder-[var(--color-muted-dark)] focus:outline-none transition-colors font-mono"
         />
 
         {/* Right Action container (Spinner / Clear button) */}
@@ -57,7 +57,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 onClear()
                 localInputRef.current?.focus()
               }}
-              className="text-[#6b7280] hover:text-[#e4e4e4] hover:bg-[#1f1f1f] p-1 rounded-sm transition"
+              className="text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)] p-1 rounded-sm transition"
               aria-label="Clear search input"
             >
               <X className="h-3.5 w-3.5" />
