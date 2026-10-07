@@ -293,6 +293,16 @@ Track implementation status across all phases.
 - **CI/CD Pipeline Streamlining**: Removed C and Julia build and test steps from GitHub Actions `.github/workflows/deploy.yml`.
 - **Zero Regressions**: All 70/70 Vitest tests green, all 204/204 Django tests green, clean Vite bundle build in 12.6s, all 10 core containers healthy.
 
+### Product Quality Upgrade: P0 Bulk Inventory Remediation & Design System Standardization (2026-10-07) ✅
+**Status:** Complete  
+**Date:** 2026-10-07  
+
+**Completed:**
+- **P0 Bulk Inventory Location & Batch Concurrency Remediation (`InventoryPage.tsx`)**: Replaced free-text location string input in the floating bulk action bar with structured Target Rack and Shelf dropdown selectors queried from `/api/racks/`. Fixed silent update failure bug where PATCH payload was sending `{ location }` instead of `{ rack, shelf }`. Replaced sequential blocking `for...of` request loops with concurrent `Promise.all` requests and query invalidations.
+- **Design System & Theme Token Standardization (`Skeleton.tsx`, `SearchBar.tsx`, `PageHeader.tsx`, `DataTable.tsx`, `EmptyState.tsx`, `ConfirmDialog.tsx`, `Drawer.tsx`, `Navbar.tsx`)**: Replaced hardcoded jet-black hex colors across UI primitives with semantic tokens (`var(--color-surface)`, `var(--color-surface-2)`, `var(--color-bg)`, `var(--color-border)`, `var(--color-border-visible)`, `var(--color-text)`, `var(--color-muted)`), guaranteeing pixel-perfect rendering across Dark Terminal, Classic Slate, and Precision Light themes. Added accessible `aria-sort` and row selection labels to `DataTable.tsx`.
+- **Mobile Navigation & Scroll Locking (`Navbar.tsx`)**: Added background body scroll lock (`overflow: hidden`) when mobile navigation drawer is active, and automatic route-change dismiss.
+- **Full Verification**: 95/95 Vitest unit tests passing across all 28 test suites, `npx tsc --noEmit` clean with 0 errors, Vite production build clean in 5.04s, and Docker frontend container rebuilt and verified serving HTTP 200.
+
 ### Wire Drawing TDS Chart AVG Callout Gutter Isolation & Collision Prevention (2026-10-07) ✅
 **Status:** Complete  
 **Date:** 2026-10-07  
