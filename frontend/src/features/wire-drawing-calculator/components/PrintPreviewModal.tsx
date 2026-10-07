@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Printer, FileText, SlidersHorizontal, Loader2 } from 'lucide-react';
 import type { PassData, Statistics, ConsistencyData, PrintRecord } from '../types';
 import { WireDrawingPrintReport } from './WireDrawingPrintReport';
-import { useApi } from '../../../../hooks/useApi';
+import { useApi } from '../../../hooks/useApi';
 
 interface PrintPreviewModalProps {
   isOpen: boolean;
