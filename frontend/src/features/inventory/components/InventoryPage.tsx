@@ -21,7 +21,7 @@ import { Skeleton } from '../../../components/ui/Skeleton'
 import { useInventoryState } from '../hooks/useInventoryState'
 import { SearchView, MachineView, SetView, UnassignedView } from './InventorySubViews'
 import { useApi } from '../../../hooks/useApi'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../../../contexts/ToastContext'
 import { Die } from '../../../types'
 
@@ -103,9 +103,19 @@ export function InventoryPage() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
+  interface RackOption {
+    id: number
+    name: string
+  }
+  const { data: racksList } = useQuery<RackOption[]>({
+    queryKey: ['racksList'],
+    queryFn: () => request('/api/racks/'),
+  })
+
   const [selectedDieIds, setSelectedDieIds] = useState<Set<string>>(new Set())
   const [bulkStatus, setBulkStatus] = useState('')
-  const [bulkLocation, setBulkLocation] = useState('')
+  const [bulkRackId, setBulkRackId] = useState('')
+  const [bulkShelf, setBulkShelf] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
 
   const handleSelectId = (id: string, checked: boolean) => {
@@ -143,19 +153,21 @@ export function InventoryPage() {
   useEffect(() => {
     setSelectedDieIds(new Set())
     setBulkStatus('')
-    setBulkLocation('')
+    setBulkRackId('')
+    setBulkShelf('')
   }, [activeView, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, locationQuery])
 
   const handleBulkStatusUpdate = async () => {
-    if (!bulkStatus) return
+    if (!bulkStatus || selectedDieIds.size === 0) return
     setIsUpdating(true)
     try {
-      for (const dieId of selectedDieIds) {
-        await request(`/api/dies/${dieId}/`, {
+      const updatePromises = Array.from(selectedDieIds).map(dieId =>
+        request(`/api/dies/${dieId}/`, {
           method: 'PATCH',
           body: JSON.stringify({ status: bulkStatus })
         })
-      }
+      )
+      await Promise.all(updatePromises)
       const count = selectedDieIds.size
       setSelectedDieIds(new Set())
       setBulkStatus('')
@@ -175,24 +187,30 @@ export function InventoryPage() {
   }
 
   const handleBulkLocationUpdate = async () => {
-    if (!bulkLocation.trim()) return
+    if (!bulkRackId || selectedDieIds.size === 0) return
     setIsUpdating(true)
     try {
-      for (const dieId of selectedDieIds) {
-        await request(`/api/dies/${dieId}/`, {
+      const rackNum = Number(bulkRackId)
+      const shelfNum = bulkShelf.trim() ? Number(bulkShelf) : null
+      const selectedRackName = racksList?.find(r => String(r.id) === String(bulkRackId))?.name || `Rack #${bulkRackId}`
+      const updatePromises = Array.from(selectedDieIds).map(dieId =>
+        request(`/api/dies/${dieId}/`, {
           method: 'PATCH',
-          body: JSON.stringify({ location: bulkLocation.trim() })
+          body: JSON.stringify({ rack: rackNum, shelf: shelfNum })
         })
-      }
+      )
+      await Promise.all(updatePromises)
       const count = selectedDieIds.size
       setSelectedDieIds(new Set())
-      setBulkLocation('')
+      setBulkRackId('')
+      setBulkShelf('')
       queryClient.invalidateQueries({ queryKey: ['dies'] })
       queryClient.invalidateQueries({ queryKey: ['searchDies'] })
       queryClient.invalidateQueries({ queryKey: ['machinesList'] })
       queryClient.invalidateQueries({ queryKey: ['setsDropdownList'] })
       queryClient.invalidateQueries({ queryKey: ['allDiesStats'] })
-      showToast(`Successfully updated location of ${count} dies to "${bulkLocation}".`, "success")
+      const locLabel = shelfNum ? `${selectedRackName} - Shelf ${shelfNum}` : selectedRackName
+      showToast(`Successfully relocated ${count} dies to ${locLabel}.`, "success")
     } catch (err: unknown) {
       console.error(err)
       const msg = err instanceof Error ? err.message : 'Unknown error'
@@ -647,15 +665,15 @@ export function InventoryPage() {
 
       {/* Floating Bulk Action Bar */}
       {selectedDieIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[#0f0f0f] border border-[#2a2a2a] px-4 py-2.5 rounded-sm flex flex-wrap items-center gap-4 max-w-4xl animate-fadeIn font-mono select-none">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[var(--color-surface)] border border-[var(--color-border-visible)] px-4 py-2.5 rounded-sm flex flex-wrap items-center gap-4 max-w-4xl shadow-xl animate-fadeIn font-mono select-none">
           <div className="flex items-center space-x-2">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs font-medium text-[#e4e4e4] uppercase tracking-wider">
+            <span className="text-xs font-medium text-[var(--color-text)] uppercase tracking-wider">
               {selectedDieIds.size} {selectedDieIds.size === 1 ? 'ITEM' : 'ITEMS'} SELECTED
             </span>
           </div>
 
-          <div className="h-4 w-[1px] bg-[#2a2a2a]" />
+          <div className="h-4 w-[1px] bg-[var(--color-border-visible)]" />
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Status update group */}
@@ -664,7 +682,7 @@ export function InventoryPage() {
                 value={bulkStatus}
                 disabled={isUpdating}
                 onChange={(e) => setBulkStatus(e.target.value)}
-                className="bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[#e4e4e4] focus:outline-none font-mono uppercase"
+                className="bg-[var(--color-bg)] border border-[var(--color-border-visible)] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[var(--color-text)] focus:outline-none font-mono uppercase"
               >
                 <option value="">— SELECT STATUS —</option>
                 <option value="AVAILABLE">AVAILABLE</option>
@@ -680,40 +698,55 @@ export function InventoryPage() {
               <button
                 onClick={handleBulkStatusUpdate}
                 disabled={!bulkStatus || isUpdating}
-                className="bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
+                className="bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
               >
                 {isUpdating ? 'UPDATING...' : 'APPLY STATUS'}
               </button>
             </div>
 
-            <div className="h-4 w-[1px] bg-[#2a2a2a]" />
+            <div className="h-4 w-[1px] bg-[var(--color-border-visible)]" />
 
-            {/* Location update group */}
+            {/* Structured Location update group */}
             <div className="flex items-center space-x-1.5">
-              <input
-                type="text"
-                value={bulkLocation}
+              <select
+                value={bulkRackId}
                 disabled={isUpdating}
-                onChange={(e) => setBulkLocation(e.target.value)}
-                placeholder="e.g. Rack A - Shelf 3"
-                className="bg-[#0a0a0a] border border-[#2a2a2a] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none w-40 font-mono"
+                onChange={(e) => setBulkRackId(e.target.value)}
+                className="bg-[var(--color-bg)] border border-[var(--color-border-visible)] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[var(--color-text)] focus:outline-none font-mono uppercase w-36"
+              >
+                <option value="">— TARGET RACK —</option>
+                {racksList?.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                min="1"
+                value={bulkShelf}
+                disabled={isUpdating}
+                onChange={(e) => setBulkShelf(e.target.value)}
+                placeholder="Shelf #"
+                className="bg-[var(--color-bg)] border border-[var(--color-border-visible)] focus:border-blue-500 rounded-sm px-2 py-1 text-xs text-[var(--color-text)] placeholder-[var(--color-muted-dark)] focus:outline-none w-20 font-mono"
               />
 
               <button
                 onClick={handleBulkLocationUpdate}
-                disabled={!bulkLocation.trim() || isUpdating}
-                className="bg-[#141414] hover:bg-[#1f1f1f] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
+                disabled={!bulkRackId || isUpdating}
+                className="bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] text-blue-400 border border-blue-500/50 text-xs uppercase px-3 py-1 rounded-sm transition disabled:opacity-40 cursor-pointer font-mono"
               >
-                {isUpdating ? 'UPDATING...' : 'APPLY LOCATION'}
+                {isUpdating ? 'RELOCATING...' : 'APPLY LOCATION'}
               </button>
             </div>
 
-            <div className="h-4 w-[1px] bg-[#2a2a2a]" />
+            <div className="h-4 w-[1px] bg-[var(--color-border-visible)]" />
 
             <button
-              onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkLocation(''); }}
+              onClick={() => { setSelectedDieIds(new Set()); setBulkStatus(''); setBulkRackId(''); setBulkShelf(''); }}
               disabled={isUpdating}
-              className="text-xs font-mono uppercase text-[#6b7280] hover:text-[#e4e4e4] px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#141414] hover:bg-[#1f1f1f] transition cursor-pointer"
+              className="text-xs font-mono uppercase text-[var(--color-muted)] hover:text-[var(--color-text)] px-2.5 py-1 rounded-sm border border-[var(--color-border-visible)] bg-[var(--color-surface-2)] hover:bg-[var(--color-border-visible)] transition cursor-pointer"
             >
               Cancel
             </button>
