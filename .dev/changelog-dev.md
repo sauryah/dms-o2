@@ -1,5 +1,15 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-07 Full-Stack Documentation Synchronization & Alignment
+*   **Repository-Wide Documentation Audit & Gap Remediation**:
+    *   Audited all markdown documentation files (`README.md`, `DOCKER.md`, `PROJECT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `.dev/architecture/*`, `.dev/modules/*`, `.dev/business/*`, `.dev/operations/*`, `.dev/processes/*`).
+    *   Corrected role definitions across all documents: reconciled RBAC to actual `User.ROLE_CHOICES` (`ROOT`, `ADMIN`, `OPERATOR`, `REGULAR`), eliminating references to non-existent `Viewer` and `Auditor` roles.
+    *   Corrected database schema and table references: corrected `outbox_task` to actual Django table `dies_outboxtask` (`OutboxTask`), added `PrintRecord` (`history_printrecord`), `DieTolerance`, `MaintenanceLog`, and `ImportLog`.
+    *   Corrected endpoint routing catalogs: fixed `/api/v1/dies/enamel-machines/` -> `/api/v1/enamel-machines/`, `/api/v1/dies/machine-stock/` -> `/api/v1/machine-die-stock/`, `/api/v1/dies/inventory-recounts/` -> `/api/v1/inventory-recounts/`, `/api/v1/dies/import/` -> `/api/v1/import/`, `/api/v1/users/terminate-sessions/` -> `POST /api/v1/active-sessions/bulk/` / `terminate-all`.
+    *   Documented new endpoints: `GET /api/v1/history/unified/`, `GET /api/v1/history/print-records/next-ref/`, `GET/POST /api/v1/history/print-records/`, health sub-endpoints (`/api/v1/health/detailed/`, `/liveness/`, `/readiness/`), and Go microservice endpoints (`/api/go/liveness`, `/readiness`, `/stats`, `/index-status`, `/import-status`).
+    *   Updated theme architecture to triple-theme system: Dark Terminal (`terminal`), Classic Slate (`classic`), and Precision Light (`light`).
+    *   Corrected test and CLI management commands: replaced non-existent `pytest` with `python manage.py test`, replaced fixture loading with `python manage.py seed_dies`, and updated Docker backup commands to use `manage.py backup_db` and PostgreSQL `.dump` format with `dms_backups` volume.
+
 ### 2026-10-07 Wire Drawing TDS Chart AVG Callout Gutter Isolation & Collision Prevention
 *   **Root Cause Analysis & Geometry Remediation (`frontend/src/features/wire-drawing-calculator/components/PrintPassChart.tsx`)**:
     *   Identified root cause of AVG annotation collision: previously, the AVG badge rectangle was placed inside the bar plotting domain (`x = width - marginRight - 74`), directly occupying the exact X coordinates (`x = 555..648`) and Y coordinates (`y ≈ getY(avg)`) of passes 16, 17, and 18 for multi-pass drawing schedules.
