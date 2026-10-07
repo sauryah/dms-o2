@@ -17,7 +17,10 @@ from users.views import (
     BackupCodeGenerateView, BackupCodeDisableView, BackupCodeVerifyLoginView, BackupCodeStatusView,
     MFASetupView, MFAEnableView, MFADisableView, MFAVerifyLoginView,
 )
-from history.views import DieHistoryListView, MachineHistoryListView, DashboardHistoryListView, UnifiedHistoryListView
+from history.views import (
+    DieHistoryListView, MachineHistoryListView, DashboardHistoryListView,
+    UnifiedHistoryListView, PrintRecordListView, PrintRecordNextRefView
+)
 from machines.views import MachineCategoryViewSet, MachineViewSet, SetViewSet, RackViewSet
 
 router = DefaultRouter()
@@ -78,6 +81,8 @@ urlpatterns = [
     path('api/v1/history/machines/', MachineHistoryListView.as_view(), name='machine-history'),
     path('api/v1/history/dashboard/', DashboardHistoryListView.as_view(), name='dashboard-history'),
     path('api/v1/history/unified/', UnifiedHistoryListView.as_view(), name='unified-history'),
+    path('api/v1/history/print-records/next-ref/', PrintRecordNextRefView.as_view(), name='print-record-next-ref'),
+    path('api/v1/history/print-records/', PrintRecordListView.as_view(), name='print-records'),
 
     # Legacy fallbacks (used by frontend and e2e tests)
     path('api/auth/login/', LoginView.as_view()),
@@ -108,6 +113,8 @@ urlpatterns = [
     path('api/history/machines/', MachineHistoryListView.as_view()),
     path('api/history/dashboard/', DashboardHistoryListView.as_view()),
     path('api/history/unified/', UnifiedHistoryListView.as_view()),
+    path('api/history/print-records/next-ref/', PrintRecordNextRefView.as_view()),
+    path('api/history/print-records/', PrintRecordListView.as_view()),
 
     path('internal/verify-token/', VerifyTokenView.as_view(), name='verify-token'),
     path('api/v1/', include(router.urls)),
