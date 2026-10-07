@@ -62,7 +62,7 @@ graph TD
 | System Role | Permissions & Permitted Actions | Interface Restrictions |
 | :--- | :--- | :--- |
 | **Unauthenticated** | Redirected to `/login`. Safe and mutating API routes require authentication (return HTTP 401). | Full lockout. Cannot browse inventory or access tool features without credentials. |
-| **Viewer** | Read-only browsing of inventory, dashboard telemetry, and machines. | Read-Only. Mutation forms, die creation, and administrative tabs are disabled. |
+| **Regular** | Read-only browsing of inventory, dashboard telemetry, and machines. | Read-Only. Mutation forms, die creation, and administrative tabs are disabled. |
 | **Operator** | Read-only search, metrics, inventory browsing, plus physical rack/shelf relocation. | Relocation only. Locked out of die creation, machine edits, user administration, and backups. |
 | **Admin** | Register new dies, edit location/status/remarks, trigger bulk spreadsheet imports, CRUD on Sets & Machines. | Full asset management. Locked out of user administration, theme toggles, and database backup restoration. |
 | **Root** | Create/deactivate user accounts, assign roles, toggle tool permissions, manage backups, restore system states, switch system visual themes. | Full administrative access. Single superuser account created via shell seeder. |
@@ -126,6 +126,13 @@ graph TD
 ---
 
 ## 8. Chronological Changelog
+
+### 2026-10-07 · feat: unique document identifiers, database print tracking, clean print styles & chart gutter isolation
+- Created `PrintRecord` audit model (`backend/history/models.py`, Migration `0005_printrecord`) recording document type, sequence identifier (`TDS-YYYYMMDD-XXXX`), work order, machine name, reduction/elongation metrics, die sequence and pass schedule JSON snapshots, user attribution, and reverse-proxy client IP address.
+- Added atomic sequence generator endpoint (`GET /api/v1/history/print-records/next-ref/`) and print recording endpoints (`POST /api/v1/history/print-records/`, `GET /api/v1/history/print-records/`).
+- Added "PRINT LOGS" 4th tab to Facility Audit Trail (`frontend/src/pages/HistoryPage.tsx`) with search filters, drafting schedule inspection modal, and CSV export.
+- Suppressed navigation and footer bars in print output (`print:hidden` utility classes and `@media print` rules).
+- Re-architected SVG plot layout in `PrintPassChart.tsx` with dedicated right-gutter positioning (`x >= 594`) for the AVG callout badge and SVG white halos on text labels to prevent visual collisions on multi-pass schedules.
 
 ### 2026-10-06 · feat: Wire Drawing Calculator Technical Data Sheet (TDS) printout & vector charts
 - Implemented formal ISO/DIN Technical Data Sheet printable report (`WireDrawingPrintReport.tsx`) featuring header reference block, high-level process KPIs, and full sequence pills.
