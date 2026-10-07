@@ -119,6 +119,14 @@ Authorization: Bearer <your_jwt_access_token>
 | **History**| `GET` | `/api/history/` | Admin / Root | Audit Trail log history records (Restricted to Admin/Root roles) |
 | | `GET` | `/api/history/machines/` | Admin / Root | Machine/Set Audit Trail history records |
 | | `GET` | `/api/history/dashboard/` | Authenticated | Cached summary of non-sensitive history (strips IP, notes; cached 60s) |
+| | `GET` | `/api/history/unified/` | Authenticated | Chronological unified timeline combining die and machine edits with diffs |
+| | `GET` | `/api/history/print-records/next-ref/` | Authenticated | Preview next sequential document reference and default work order |
+| | `GET/POST`| `/api/history/print-records/` | Admin / Root (`GET`), Authenticated (`POST`) | List print audit records or record new Technical Data Sheet print event |
+| **System** | `GET` | `/api/health/` | Public | System health check (database, redis, meilisearch status) |
+| | `GET` | `/api/health/detailed/` | Public | Comprehensive health check with per-service status |
+| | `GET` | `/api/health/liveness/` | Public | Container liveness check |
+| | `GET` | `/api/health/readiness/` | Public | Container readiness check |
+| | `GET` | `/api/server-info/` | Public | System hostname and detected LAN IP |
 | **Internal**| `POST` | `/internal/verify-token/` | Go Service Only | Internal-only token validation route mapping active user role and id |
 
 ---
@@ -216,8 +224,11 @@ sequenceDiagram
 
 ### Endpoints Specifications
 
-#### 1. Microservice Liveness Check
-*   **Route**: `GET /api/go/health`
+#### 1. Microservice Health & Probes
+*   **Routes**:
+    *   `GET /api/go/health`: General service health check.
+    *   `GET /api/go/liveness`: Kubernetes/Docker liveness probe verifying process is responsive.
+    *   `GET /api/go/readiness`: Readiness probe verifying PostgreSQL and Redis connections are established.
 *   **Auth**: Public
 *   **Response (200 OK)**:
     ```json
@@ -412,7 +423,7 @@ DATABASES = {
 > Enforcing statement timeouts prevents long-running queries from blocking database indexes, but requires proper query indexing to avoid false-positive timeouts.
 
 *   **Idle Connection Bloat**: If connection counts regularly reach the host limit, reduce `CONN_MAX_AGE` to `120` or `180` to force earlier connection closures.
-*   **Atomic Rollbacks**: Since `ATOMIC_REQUESTS` is active, any unhandled error inside a Django view will roll back all modifications within that request. Be cautious with third-party async calls inside views to avoid long-lived transaction locks.
+*   **Transaction Management**: `ATOMIC_REQUESTS` is explicitly set to `False`. Mutating operations wrap database modifications inside explicit `transaction.atomic` blocks (such as `recut`, `submit`, and import operations). This allows client validation errors (HTTP 400, 401, 403) to return standard response payloads without contaminating test transactions.
 
 ---
 
@@ -440,8 +451,7 @@ ORDER BY query_start ASC;
 ## 5. Scheduled History Pruning & Cache Invalidation
 
 To prevent query degradation and database bloating as operational logs grow over time:
-*   **Celery Beat Task**: A daily background task `auto_prune_history` is configured via `CELERY_BEAT_SCHEDULE` to run every 24 hours. It calls the Django management command `prune_history` to delete logs older than the retention threshold.
-*   **Legacy Pruner**: A backup cron job scheduled nightly at **3:00 AM** in the `backup` container executes `scripts/prune_history.sh`.
+*   **Celery Beat Task**: A daily background task `auto_prune_history` is configured via `CELERY_BEAT_SCHEDULE` to run nightly at **3:00 AM**. It calls the Django management command `prune_history` to delete logs older than the retention threshold.
 *   **Logic**: Deletes all `history_diehistory` entries older than `HISTORY_RETENTION_DAYS` (default: 365 days).
 *   **Cache Invalidation**: Whenever a new `DieHistory` row is saved or deleted, Django signals (`post_save`, `post_delete`) automatically clear the cached `/api/history/dashboard/` queries to keep the Operator dashboard accurate and real-time.
 
@@ -449,12 +459,11 @@ To prevent query degradation and database bloating as operational logs grow over
 
 ## 6. Inventory Scaling Constraints & Limits
 
-To deliver high performance and low-latency rendering, the DMS React frontend uses a client-side grouping architecture for the Inventory Explorer sidebar tree and machine detail views:
-- **Client-Side Grouping**: The frontend fetches active inventory records using a single paginated API request `/api/go/search` and then dynamically parses and groups them into their respective machines and sets in memory.
-- **Maximum Page Size (`100,000`)**: To ensure all dies in the facility are represented in the explorer tree (rather than just the first few), the default `pageSize` state in [useInventoryState.ts](file:///frontend/src/features/inventory/hooks/useInventoryState.ts#L20) is set to `100000`.
-- **Scaling Recommendations**:
-  - *Below 100,000 dies*: Performance remains sub-millisecond due to the virtualized grid renderer (`react-window`).
-  - *Beyond 100,000 dies*: If the facility scales past this threshold, increase the `pageSize` default state value inside [useInventoryState.ts](file:///frontend/src/features/inventory/hooks/useInventoryState.ts) accordingly, or refactor the sidebar tree to fetch counts dynamically from a dedicated backend metrics/grouping endpoint.
+To deliver high performance and low-latency rendering, the DMS React frontend combines paginated data access with client-side virtualization:
+- **Server Pagination**: The inventory view uses server-driven pagination with an initial page size of `25` (configurable up to 100 via the pagination controls in `useInventoryState.ts`).
+- **List Virtualization**: Large record lists are rendered using virtualized windowing (`react-window`), ensuring smooth DOM performance regardless of the total record count.
+- **Tree & Machine Filtering**: Machine and set tree nodes pass direct `machine_id` and `set_id` filters to the Go search API rather than loading full unbounded datasets into memory.
+- **Search Query Limits**: High-volume queries (such as active stock loaders) enforce explicit page limits (`limit=5000` max per request) to prevent memory spikes on both the Go microservice and the browser client.
 
 ---
 
