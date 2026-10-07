@@ -6,8 +6,8 @@ Handles user authentication, JWT token lifecycle, profile management, active ses
 ## Important Files
 - [models.py](file:///backend/users/models.py): Schema definitions for `User`, `UserSession`, `UserActivityLog`, and `UserBackupCode`.
 - [auth.py](file:///backend/users/views/auth.py): Login/logout, refresh tokens, SSE ticket generation, backup code generation/verification views, and reverse-proxy IP attribution.
-- [profile.py](file:///backend/users/views/profile.py): User profile details, password updates, and avatar handling.
-- [views.py](file:///backend/users/views.py): UserViewSet with `tools_permissions`, `toggle_permission`, and bulk `terminate-sessions` endpoints.
+- [profile.py](file:///backend/users/views/profile.py): User profile details, password updates, avatar handling, `UserViewSet` (`tools_permissions`, `toggle_permission`), and `UserSessionViewSet` (active sessions listing, `bulk` deletion, `all` termination).
+- [backup.py](file:///backend/users/views/backup.py): `DatabaseBackupViewSet` for listing, creating, and downloading PostgreSQL database backups.
 - [reset_mfa.py](file:///backend/users/management/commands/reset_mfa.py): Administrative CLI command to purge depleted/lost MFA backup codes and restore account access.
 - [permissions.py](file:///backend/users/permissions.py): Custom RBAC permission classes (`IsRootUser`, `IsAdminOrRoot`, `IsAdminOrRootOrOperatorRelocate`, `IsOperatorOrAbove`) with safe-method authentication enforcement.
 
