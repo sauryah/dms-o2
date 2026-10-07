@@ -212,6 +212,13 @@ function AppContent() {
                 </ProtectedRoute>
               </ErrorBoundary>
             } />
+            <Route path="/wire-drawing-workbench" element={
+              <ErrorBoundary>
+                <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
+                  <WireDrawingCalculatorPage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            } />
             <Route path="/wire-drawing-calculator" element={
               <ErrorBoundary>
                 <ProtectedRoute requireToolAuth toolId="wire-drawing-calculator">
