@@ -883,7 +883,7 @@ export function UserManager() {
                           className="rounded-none border-[#2a2a2a] bg-[#0a0a0a] text-blue-500 cursor-pointer"
                         />
                         <label htmlFor="tool-wire-drawing-calculator" className="text-xs text-[#e4e4e4] cursor-pointer uppercase select-none">
-                          Wire Drawing Calculator (Base)
+                          Wire Drawing Workbench (Base)
                         </label>
                       </div>
                     </div>
