@@ -82,6 +82,38 @@ class MachineHistory(models.Model):
         return f"MachineHistory: {self.entity_type} {self.entity_name} - {self.action}"
 
 
+class PrintRecord(models.Model):
+    doc_type = models.CharField(max_length=50, default='WIRE_DRAWING_TDS', db_index=True)
+    doc_ref = models.CharField(max_length=64, unique=True, db_index=True)
+    work_order = models.CharField(max_length=100, db_index=True)
+    machine_name = models.CharField(max_length=100, blank=True)
+    material_profile = models.CharField(max_length=100, blank=True, default='Standard Wire Drawing')
+    quality_status = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    inlet_size = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
+    finish_size = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
+    total_passes = models.PositiveSmallIntegerField(default=0)
+    overall_reduction = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    avg_elongation = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    dies = models.JSONField(default=list, blank=True)
+    passes_data = models.JSONField(default=list, blank=True)
+    printed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='print_records')
+    username = models.CharField(max_length=150)
+    user_role = models.CharField(max_length=50)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['doc_type', 'created_at']),
+            models.Index(fields=['work_order', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"PrintRecord: {self.doc_ref} ({self.work_order}) by {self.username}"
+
+
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
