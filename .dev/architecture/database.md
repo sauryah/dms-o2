@@ -24,6 +24,7 @@ erDiagram
     User ||--o{ UserSession : "has many"
     User ||--o{ UserBackupCode : "has many"
     User ||--o{ UserActivityLog : "tracks"
+    User ||--o{ PrintRecord : "prints"
 ```
 
 ## Core Tables
@@ -192,7 +193,7 @@ CREATE TABLE users_user (
     id SERIAL PRIMARY KEY,
     username VARCHAR(150) NOT NULL UNIQUE,
     email VARCHAR(254) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'OPERATOR' CHECK (role IN ('ROOT', 'ADMIN', 'OPERATOR', 'VIEWER')),
+    role VARCHAR(10) NOT NULL DEFAULT 'REGULAR' CHECK (role IN ('ROOT', 'ADMIN', 'OPERATOR', 'REGULAR')),
     is_authorized_for_tools BOOLEAN NOT NULL DEFAULT FALSE,
     authorized_tools JSONB NOT NULL DEFAULT '[]',
     is_mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
@@ -210,6 +211,44 @@ CREATE TABLE users_userbackupcode (
 );
 ```
 
+### DieTolerance (`dies_dietolerance`)
+```sql
+CREATE TABLE dies_dietolerance (
+    id SERIAL PRIMARY KEY,
+    die_type VARCHAR(10) NOT NULL UNIQUE CHECK (die_type IN ('ROUND', 'FLAT')),
+    max_wear_mm NUMERIC(5,3) NOT NULL DEFAULT 0.050,
+    warning_percentage INTEGER NOT NULL DEFAULT 70,
+    critical_percentage INTEGER NOT NULL DEFAULT 90
+);
+```
+
+### MaintenanceLog (`dies_maintenancelog`)
+```sql
+CREATE TABLE dies_maintenancelog (
+    id SERIAL PRIMARY KEY,
+    die_id INTEGER NOT NULL REFERENCES dies_die(id) ON DELETE CASCADE,
+    created_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    note TEXT NOT NULL,
+    category VARCHAR(30) NOT NULL DEFAULT '' CHECK (category IN ('INSPECTION', 'REPAIR', 'RECUT', 'CLEANING', 'POLISHING', 'MEASUREMENT', 'OTHER'))
+);
+```
+
+### ImportLog (`dies_importlog`)
+```sql
+CREATE TABLE dies_importlog (
+    id SERIAL PRIMARY KEY,
+    imported_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    filename VARCHAR(255) NOT NULL,
+    created_count INTEGER NOT NULL,
+    updated_count INTEGER NOT NULL,
+    skipped_count INTEGER NOT NULL,
+    error_count INTEGER NOT NULL,
+    errors_json JSONB
+);
+```
+
 ### WearAlert (`dies_wearalert`)
 ```sql
 CREATE TABLE dies_wearalert (
@@ -223,18 +262,42 @@ CREATE TABLE dies_wearalert (
 );
 ```
 
-### OutboxTask
+### OutboxTask (`dies_outboxtask`)
 ```sql
-CREATE TABLE outbox_task (
+CREATE TABLE dies_outboxtask (
     id SERIAL PRIMARY KEY,
-    task_type VARCHAR(100) NOT NULL,
+    task_type VARCHAR(50) NOT NULL,
     payload JSONB NOT NULL,
-    payload_hash VARCHAR(64) NOT NULL,
-    is_processed BOOLEAN DEFAULT FALSE,
-    retry_count INTEGER DEFAULT 0,
-    max_retries INTEGER DEFAULT 3,
-    created_at TIMESTAMP DEFAULT NOW(),
-    processed_at TIMESTAMP
+    payload_hash VARCHAR(64) NOT NULL DEFAULT '',
+    is_processed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at TIMESTAMPTZ
+);
+```
+
+### PrintRecord (`history_printrecord`)
+```sql
+CREATE TABLE history_printrecord (
+    id SERIAL PRIMARY KEY,
+    doc_type VARCHAR(50) NOT NULL DEFAULT 'WIRE_DRAWING_TDS',
+    doc_ref VARCHAR(64) NOT NULL UNIQUE,
+    work_order VARCHAR(100) NOT NULL,
+    machine_name VARCHAR(100) NOT NULL DEFAULT '',
+    material_profile VARCHAR(100) NOT NULL DEFAULT 'Standard Wire Drawing',
+    quality_status VARCHAR(50) NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    inlet_size NUMERIC(7,3),
+    finish_size NUMERIC(7,3),
+    total_passes SMALLINT NOT NULL DEFAULT 0,
+    overall_reduction NUMERIC(5,2),
+    avg_elongation NUMERIC(5,2),
+    dies JSONB NOT NULL DEFAULT '[]',
+    passes_data JSONB NOT NULL DEFAULT '[]',
+    printed_by_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+    username VARCHAR(150) NOT NULL,
+    user_role VARCHAR(50) NOT NULL,
+    ip_address INET,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
