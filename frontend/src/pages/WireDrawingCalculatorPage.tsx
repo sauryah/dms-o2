@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PassConsistency from '../features/wire-drawing-calculator/components/PassConsistency';
 import WireDrawingPrintReport from '../features/wire-drawing-calculator/components/WireDrawingPrintReport';
 import PrintPreviewModal from '../features/wire-drawing-calculator/components/PrintPreviewModal';
+import type { PrintRecordNextRefResponse } from '../features/wire-drawing-calculator/types';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 // Skeleton loading fallbacks
@@ -101,6 +102,7 @@ export function WireDrawingCalculatorPage() {
   const { state: dies, set: setDies, undo, redo, canUndo, canRedo } = useUndo<number[]>(DEFAULT_DIES);
   const [selectedPassIdx, setSelectedPassIdx] = useState<number | null>(0);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [docRef, setDocRef] = useState('');
   const [workOrder, setWorkOrder] = useState('WDC-JOB-2026-001');
   const [machineName, setMachineName] = useState('Multi-Wire Drawing Line 01');
   const [notes, setNotes] = useState(
@@ -183,6 +185,32 @@ export function WireDrawingCalculatorPage() {
 
   const handleParse = useCallback((d: number[]) => setDies(d), [setDies]);
   const handleDiesChange = useCallback((d: number[]) => setDies(d), [setDies]);
+
+  const handleOpenPrintPreview = useCallback(async () => {
+    try {
+      const res = await request<PrintRecordNextRefResponse>('/api/history/print-records/next-ref/');
+      if (res) {
+        if (res.doc_ref) setDocRef(res.doc_ref);
+        if (res.default_work_order && workOrder === 'WDC-JOB-2026-001') {
+          setWorkOrder(res.default_work_order);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch next print ref, using fallback:', err);
+    }
+    setIsPrintModalOpen(true);
+  }, [request, workOrder]);
+
+  const handlePrintCompleted = useCallback(async () => {
+    try {
+      const res = await request<PrintRecordNextRefResponse>('/api/history/print-records/next-ref/');
+      if (res?.doc_ref) {
+        setDocRef(res.doc_ref);
+      }
+    } catch {
+      // ignore
+    }
+  }, [request]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -289,7 +317,7 @@ export function WireDrawingCalculatorPage() {
                       passes={passes}
                       stats={stats}
                       dies={dies}
-                      onOpenPrintPreview={() => setIsPrintModalOpen(true)}
+                      onOpenPrintPreview={handleOpenPrintPreview}
                     />
                   )}
                   <SaveLoad dies={dies} onLoad={setDies} />
@@ -328,6 +356,7 @@ export function WireDrawingCalculatorPage() {
         stats={stats}
         dies={dies}
         consistency={consistency}
+        docRef={docRef}
         workOrder={workOrder}
         machineName={machineName}
         notes={notes}
@@ -343,6 +372,8 @@ export function WireDrawingCalculatorPage() {
       stats={stats}
       dies={dies}
       consistency={consistency}
+      docRef={docRef}
+      onDocRefChange={setDocRef}
       workOrder={workOrder}
       onWorkOrderChange={setWorkOrder}
       machineName={machineName}
@@ -350,6 +381,7 @@ export function WireDrawingCalculatorPage() {
       notes={notes}
       onNotesChange={setNotes}
       operator={operator}
+      onPrintCompleted={handlePrintCompleted}
     />
   </>
 );
