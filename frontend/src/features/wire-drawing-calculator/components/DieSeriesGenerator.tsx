@@ -348,7 +348,7 @@ export default function DieSeriesGenerator({ onApply }: DieSeriesGeneratorProps)
               className="wdc-btn wdc-btn-primary text-xs flex items-center gap-2"
             >
               <Sliders className="w-3.5 h-3.5" />
-              Load into Calculator
+              Load into Workbench
             </button>
             <span className="text-[11px] text-[#334155]">
               {generated[0]}mm → {generated[generated.length - 1]}mm
