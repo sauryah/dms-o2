@@ -293,6 +293,17 @@ Track implementation status across all phases.
 - **CI/CD Pipeline Streamlining**: Removed C and Julia build and test steps from GitHub Actions `.github/workflows/deploy.yml`.
 - **Zero Regressions**: All 70/70 Vitest tests green, all 204/204 Django tests green, clean Vite bundle build in 12.6s, all 10 core containers healthy.
 
+### Unique Document Identifiers & Database Print Tracking (2026-10-07) ✅
+**Status:** Complete  
+**Date:** 2026-10-07  
+
+**Completed:**
+- **`PrintRecord` Audit Model (`backend/history/models.py`, Migration `0005`)**: Added `PrintRecord` table capturing document type, guaranteed-unique sequence identifier (`TDS-YYYYMMDD-XXXX`), work order, machine name, draft schedule metrics (inlet size, finish size, total passes, overall reduction %, avg elongation %), JSON snapshots of dies and pass schedules, user attribution (`username`, `user_role`), reverse proxy client IP address via `get_client_ip`, and timestamp.
+- **Atomic Sequence Generation & Endpoints (`backend/history/views.py`, `backend/dms/urls.py`)**: Implemented `PrintRecordNextRefView` (`GET /api/v1/history/print-records/next-ref/`) and `PrintRecordListView` (`POST` for recording printout with collision-safe atomic sequence resolution; `GET` for paginated audit listing restricted to `IsAdminOrRootOnly`).
+- **Synchronized Print DOM State (`frontend/src/pages/WireDrawingCalculatorPage.tsx`)**: Lifted `docRef` state to calculator root, binding the exact unique reference identically to both on-screen `PrintPreviewModal` and off-screen print DOM container (`hidden print:block`).
+- **Audit Trail UI Integration (`frontend/src/pages/HistoryPage.tsx`)**: Added 4th tab "PRINT LOGS" to Facility Audit Trail with dedicated filters (Doc Ref, Work Order, Machine), full metadata table, drafting schedule inspection modal, and CSV export.
+- **Verification**: Verified 11/11 Django history tests pass, 93/93 Vitest unit tests pass, Vite production build succeeds, and end-to-end API execution confirms sequential daily increments (`0001` → `0002`).
+
 ### Clean Print Output & Complete Chrome Suppression (2026-10-07) ✅
 **Status:** Complete  
 **Date:** 2026-10-07  
