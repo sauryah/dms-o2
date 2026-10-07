@@ -1243,7 +1243,7 @@ textarea:focus {
 @media print {
   @page {
     size: portrait;
-    margin: 8mm 10mm;
+    margin: 0;
   }
 
   *,
