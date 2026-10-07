@@ -45,7 +45,7 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
   const maxRed = reductions.length > 0 ? Math.max(...reductions) : 0;
 
   return (
-    <div className="bg-white text-slate-900 p-6 max-w-[900px] mx-auto font-mono text-[11px] leading-normal print:p-2 print:max-w-none print:w-full select-text">
+    <div className="bg-white text-slate-900 p-6 max-w-[900px] mx-auto font-mono text-[11px] leading-normal print:p-8 print:max-w-none print:w-full select-text">
       {/* =========================================================================
           DOCUMENT HEADER BLOCK (ISO / DIN Standard)
           ========================================================================= */}
