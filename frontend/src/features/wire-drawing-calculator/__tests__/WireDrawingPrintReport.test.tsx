@@ -167,7 +167,7 @@ describe('WireDrawingPrintReport', () => {
     expect(getByText('05. Operational Notes & Engineering Sign-Off')).toBeInTheDocument();
     expect(getByText('Custom test shopfloor instructions.')).toBeInTheDocument();
     expect(getByText('Prepared By:')).toBeInTheDocument();
-    expect(getByText('Verified By:')).toBeInTheDocument();
-    expect(getByText('Quality Approval:')).toBeInTheDocument();
+    expect(getByText('Checked By:')).toBeInTheDocument();
+    expect(getByText('Approved By:')).toBeInTheDocument();
   });
 });
