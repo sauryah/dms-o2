@@ -187,7 +187,7 @@ docker compose up -d --scale go-api=2
 docker compose up -d --scale worker=3
 ```
 
-Note: Django Gunicorn scaling within a single compose stack is limited because sessions reference in-memory state. For multi-instance Django, use the unified monolith deployment with a load balancer.
+Note: Django application servers are stateless; sessions are persisted in PostgreSQL (`UserSession`) and JWT blacklists are maintained in Redis. When scaling Django horizontally, ensure database connection limits and shared media volumes are configured appropriately.
 
 ### Vertical Scaling
 Update `docker-compose.yml` resource limits:
