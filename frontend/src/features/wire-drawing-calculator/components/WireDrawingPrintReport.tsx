@@ -32,11 +32,11 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
   notes = 'Production drafting schedule verified within standard elongation tolerances. No central burst risk detected.',
   operator = 'TOOL ROOM / ADMIN',
   preparedByTitle = 'Prepared By:',
-  preparedBySubtitle = 'Tool Room / Drafter',
+  preparedBySubtitle = 'Originator',
   checkedByTitle = 'Checked By:',
-  checkedBySubtitle = 'Production Supervisor',
+  checkedBySubtitle = 'Technical Reviewer',
   approvedByTitle = 'Approved By:',
-  approvedBySubtitle = 'Quality / Plant Manager',
+  approvedBySubtitle = 'Authorised Signatory',
 }) => {
   if (dies.length === 0 || !stats) return null;
 
