@@ -7,52 +7,39 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Full-Stack Codebase Audit & Documentation Synchronization (v2.1.0)
+**Task:** Unique Document Identifiers & Database Print Tracking
 **Status:** Complete
-**Started:** 2026-10-06
-**Completed:** 2026-10-06
+**Started:** 2026-10-07
+**Completed:** 2026-10-07
 **Confidence:** 100%
 
 ## Task Description
-Executed exhaustive audit of all project documentation against the active codebase implementation:
-1. **Root Documentation (`README.md`, `PROJECT.md`, `CHANGELOG.md`)**:
-   - Replaced obsolete tools (Die Set Planner, Sizing Calculator, Pass Optimizer, wear prediction) with current active tool suite.
-   - Documented Wire Drawing 3D Workbench with Rust/Wasm high-resolution FEA engine (`wasm-drawing-engine`).
-   - Documented Technical Data Sheet (TDS) vector reporting engine (`WireDrawingPrintReport.tsx`) with drafting pipelines and pass curves.
-   - Documented automatic descending series sorting in set detail views (big to small).
-   - Documented single-use recovery backup codes MFA (`UserBackupCode`), session eviction on role modifications, and reverse proxy IP attribution.
-   - Documented 100% self-hosted local typography (zero Google Fonts, zero Sentry) and LAN deployment tooling (`DMS-Client-Setup.exe`).
-   - Added release `[2.1.0] - 2026-10-06` to changelog.
-2. **Architecture & Upgrade Docs (`docs/ARCHITECTURE.md`, `wiki/Upgrade-Guide.md`)**:
-   - Aligned endpoint permission matrices (safe method auth enforcement returning 401).
-   - Added Go calculation tools (`/wire-drawing`, `/die-series`).
-   - Replaced old Redis pattern invalidation with $O(1)$ atomic generation counter `search_cache_gen`.
-   - Updated upgrade guide to v2.1.0 target with backup codes migration and font asset cache bumping (`dms-static-v4`).
-3. **Architecture Specifications (`.dev/architecture/*`)**:
-   - `api.md`: Added backup codes MFA routes, recount audit sheets, machine stock endpoints, Go calculation tools, and `/api/go/metrics`.
-   - `database.md`: Added `EnamelMachine`, `MachineDieStock`, `DieInventoryRecount`, `DieInventoryRecountItem`, `UserBackupCode`, and cryptographic hash chaining (`prev_hash`, `hash`) on `DieHistory`/`MachineHistory`.
-   - `security.md`: Replaced TOTP with Single-Use Backup Codes, documented role-change session eviction, reverse proxy IP resolution (`NUM_PROXIES = 1`), and depleted code login blocking (403).
-   - `decisions.md`: Documented ADR 8 through ADR 13.
-   - `observability.md`: Documented `/api/go/metrics`, Prometheus alerts, and air-gapped local health probes.
-4. **Module Documentation (`.dev/modules/*`)**:
-   - `backend.md`: Updated `Die` model (`MAINTENANCE` status, removed wear prediction), added enamel/recount/backup models and recount reconciliation flow.
-   - `dies.md`: Documented `EnamelMachine`, `MachineDieStock`, `DieInventoryRecount`, and bulk import pre-caching.
-   - `frontend.md`: Removed decommissioned tools, documented Rust/Wasm FEA solver, TDS vector print engine, set series auto-sorting, and Rollup `manualChunks`.
-   - `go-api.md`: Corrected file paths, removed `dieset/` parser references, documented calculation tools and $O(1)$ generation caching.
-   - `users.md`: Documented `UserBackupCode`, session eviction, safe method auth, and `reset_mfa` CLI command.
-   - `history.md`: Documented cryptographic SHA-256 hash chaining and atomic dashboard cache invalidation.
-5. **Business Roadmap (`.dev/business/roadmap.md`)**:
-   - Noted formal decommissioning of predictive ML wear forecasting in favor of deterministic threshold alerts and physical recount verification.
-   - Recorded completion of Phase 4 and releases v2.0.0 & v2.1.0.
+Implement guaranteed-unique Document Reference Numbers (`TDS-YYYYMMDD-XXXX`) and default sequential Work Orders (`WO-YYYYMMDD-XXX`) on Wire Drawing Technical Data Sheet (TDS) printouts, persist every print event into PostgreSQL for facility audit tracking, and provide an audit interface to inspect/search past print jobs:
+1. **Backend Audit Model & Migrations (`backend/history/models.py`, Migration `0005_printrecord`)**:
+   - Created `PrintRecord` model capturing document type, guaranteed-unique sequence identifier (`TDS-YYYYMMDD-XXXX`), work order, machine name, drafting metrics, full JSON snapshots of dies and passes, user attribution, client IP attribution (`get_client_ip`), and timestamps.
+   - Applied database indexes on `created_at`, `doc_type`, `work_order`, `doc_ref`, and compound `(doc_type, created_at)`.
+2. **REST Endpoints & Collision-Safe Allocation (`backend/history/views.py`, `backend/history/serializers.py`, `backend/dms/urls.py`)**:
+   - `GET /api/v1/history/print-records/next-ref/` for pre-fetching next available daily reference and default work order (`IsAuthenticated`).
+   - `POST /api/v1/history/print-records/` with atomic collision resolution loop (up to 50 attempts) to guarantee uniqueness under concurrent operations (`IsAuthenticated`).
+   - `GET /api/v1/history/print-records/` with paginated search and filters on doc_ref, work_order, machine, and dates (`IsAdminOrRootOnly`).
+3. **Frontend Integration & Dual-DOM Synchronization (`frontend/src/`)**:
+   - Lifted `docRef` state to `WireDrawingCalculatorPage.tsx` root to synchronize off-screen print DOM (`WireDrawingPrintReport.tsx`) and on-screen modal preview (`PrintPreviewModal.tsx`).
+   - Added Work Order, Machine, and Operator fields in preview modal with backend persistence prior to `window.print()`.
+   - Added 4th tab "PRINT LOGS" in `HistoryPage.tsx` with search filters, full metadata table, JSON snapshot viewer modal, and CSV export.
+4. **Verification & Test Coverage**:
+   - Added Django test suite `PrintRecordApiTests` in `backend/history/tests/test_views.py` (11/11 tests pass).
+   - Added Vitest unit test in `WireDrawingPrintReport.test.tsx` (93/93 tests pass).
+   - Verified clean Vite production build and healthy Docker container deployment.
 
 ## Completed
-- All 18 documentation files updated and verified against active source code.
-- Strict "1 changed file = 1 commit" rule maintained with `--no-gpg-sign`.
+- Backend models, migrations, serializers, views, routes, and unit tests implemented.
+- Frontend types, report components, preview modal, calculator page, and history audit tab implemented.
 - All unit and integration test suites passing, zero TypeScript errors.
+- Strict "1 changed file = 1 commit" rule maintained with `--no-gpg-sign`.
 
 ## Next Steps
 - Run `graphify update .` to synchronize knowledge graph.
-- Push commits to remote origin if requested.
+- Push commits to remote origin when instructed.
 
 ## Blockers
-- None. Documentation is fully synchronized with implementation.
+- None. Feature implemented, tested, and verified end-to-end.
