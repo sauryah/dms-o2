@@ -195,7 +195,7 @@ export function Navbar() {
                     aria-expanded={showToolsDropdown}
                     aria-haspopup="true"
                     className={`px-2.5 py-1 text-xs font-medium uppercase tracking-wider transition-colors font-mono border flex items-center gap-1 cursor-pointer select-none focus-ring ${
-                      location.pathname.startsWith('/tools') || location.pathname === '/wire-drawing-calculator' || location.pathname === '/die-series-generator'
+                      location.pathname.startsWith('/tools') || location.pathname === '/wire-drawing-calculator' || location.pathname === '/wire-drawing-workbench' || location.pathname === '/die-series-generator'
                         ? 'bg-[#141414] text-[#e4e4e4] border-[#2a2a2a] border-b-blue-500'
                         : 'text-[#6b7280] hover:text-[#e4e4e4] hover:bg-[#141414] border-transparent'
                     }`}
@@ -210,14 +210,14 @@ export function Navbar() {
                         <div className="p-1 space-y-0.5">
                           {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
                             <Link
-                              to="/wire-drawing-calculator"
+                              to="/wire-drawing-workbench"
                               onClick={() => setShowToolsDropdown(false)}
                               className="flex items-start gap-2 px-2.5 py-2 text-xs text-[#e4e4e4] hover:bg-[#141414] rounded-sm transition-colors"
                             >
                               <Calculator className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
                               <div className="flex flex-col">
-                                <span className="font-medium uppercase">Wire Drawing Calc</span>
-                                <span className="text-[10px] text-[#6b7280]">Precision elongation analysis</span>
+                                <span className="font-medium uppercase">Wire Drawing Workbench</span>
+                                <span className="text-[10px] text-[#6b7280]">Precision drafting & pass simulation</span>
                               </div>
                             </Link>
                           )}
@@ -501,12 +501,12 @@ export function Navbar() {
               <div className="space-y-1 pl-2 mt-1">
                 {(role === 'ROOT' || (authorizedTools || []).includes('wire-drawing-calculator')) && (
                   <Link
-                    to="/wire-drawing-calculator"
+                    to="/wire-drawing-workbench"
                     className="flex items-center gap-2 text-xs text-[#e4e4e4] hover:text-blue-400 py-1 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
                     <Calculator className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Wire Drawing Calc</span>
+                    <span>Wire Drawing Workbench</span>
                   </Link>
                 )}
                 {(role === 'ROOT' || (authorizedTools || []).includes('die-series-generator')) && (
