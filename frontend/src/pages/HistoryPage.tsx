@@ -1247,3 +1247,6 @@ export function HistoryPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
