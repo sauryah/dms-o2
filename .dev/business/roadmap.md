@@ -28,6 +28,8 @@
   - Atomic $O(1)$ search cache invalidation via Redis generation counter (`search_cache_gen`).
 - **v2.1.0**:
   - Technical Data Sheet (TDS) ISO/DIN vector print reporting engine (`WireDrawingPrintReport.tsx`) with drafting schematic pipelines and area-reduction/elongation pass curves.
+  - `PrintRecord` compliance audit logging (`history_printrecord`) with sequential reference tracking (`TDS-YYYYMMDD-XXXX`), unified history feed (`/api/v1/history/unified/`), and "PRINT LOGS" UI tab.
+  - Production print layout isolation (`@page { margin: 8mm }`, `@media print` URL/date suppression, SVG chart right-gutter geometry fix).
   - Automatic descending series sorting in set detail views (big size to small size).
   - 100% self-hosted typography (`Inter` & `Plus Jakarta Sans` local WOFF2) and full telemetry de-Sentrying.
   - Factory LAN zero-configuration deployment (`toolroom.local`, `DMS-Client-Setup.exe`, dynamic private subnet matcher).
