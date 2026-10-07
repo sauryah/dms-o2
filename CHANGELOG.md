@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [2.1.0] - 2026-10-06
 
+### Unique Document Identifiers & Database Print Tracking (2026-10-07)
+- **`PrintRecord` Audit Model (`backend/history/models.py`, Migration `0005_printrecord`)**:
+  - Implemented `PrintRecord` table capturing document type, sequence identifier (`TDS-YYYYMMDD-XXXX`), work order, machine name, draft schedule metrics, JSON snapshots of dies and pass schedules, user attribution (`username`, `user_role`), reverse proxy client IP address via `get_client_ip`, and creation timestamps.
+- **Atomic Sequence Generation & Endpoints (`backend/history/views.py`, `backend/dms/urls.py`)**:
+  - Implemented `PrintRecordNextRefView` (`GET /api/v1/history/print-records/next-ref/`) and `PrintRecordListView` (`POST` for recording printout with collision-safe sequence resolution; `GET` for paginated audit listing restricted to `IsAdminOrRootOnly`).
+- **Facility Audit Trail UI Integration (`frontend/src/pages/HistoryPage.tsx`)**:
+  - Added 4th tab "PRINT LOGS" to Facility Audit Trail with dedicated filters (Doc Ref, Work Order, Machine), full metadata table, drafting schedule inspection modal, and CSV export.
+- **Clean Print Output & Complete Chrome Suppression (`frontend/src/components/Navbar.tsx`, `frontend/src/components/Footer.tsx`, `frontend/src/index.css`)**:
+  - Applied `print:hidden` classes to root `<nav>` and `<footer>` elements and enforced `display: none !important` across website chrome in `@media print`.
+- **SVG Plot Gutter Isolation & Collision Prevention (`frontend/src/features/wire-drawing-calculator/components/PrintPassChart.tsx`)**:
+  - Re-architected SVG plotting margins and bounded all pass bars inside `[44, 594]`, reserving a dedicated 80px callout gutter on the right (`x >= 594`) for the AVG pill with SVG white text halos to eliminate visual collision across multi-pass schedules.
+
 ### Wire Drawing Calculator Technical Data Sheet (TDS) Printout & Reporting
 - **ISO/DIN Technical Data Sheet Report (`WireDrawingPrintReport.tsx`)**:
   - Industrial print layout featuring formal document reference header (`TDS-[DATE]`), work order metadata, high-level deformation KPIs, and full die progression sequence pills.
