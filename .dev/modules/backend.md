@@ -18,8 +18,8 @@ Django backend overview for write operations and business logic.
 ### Service Responsibilities
 - User authentication and authorization
 - CRUD operations for dies, machines, sets
-- Business logic (recut, wear alerts, predictions)
-- Audit logging and history tracking
+- Business logic (recut, wear alerts, maintenance logs, inventory recounts)
+- Audit logging, history tracking, and print record compliance
 - Background task processing (outbox pattern)
 - Database migrations and schema management
 
@@ -36,7 +36,7 @@ Django backend overview for write operations and business logic.
 backend/
 ├── dms/             # Core settings, main URLs, WSGI/ASGI, Celery config
 ├── dies/            # Dies, RoundDie, FlatDie, WearAlert, DieTolerance, MaintenanceLog, ImportLog, OutboxTask
-├── history/         # DieHistory, MachineHistory models, signals, and views
+├── history/         # DieHistory, MachineHistory, PrintRecord models, signals, and views
 ├── machines/        # MachineCategory, Machine, Set, Rack models and ViewSets
 ├── search/          # Celery Meilisearch indexing tasks
 ├── users/           # Custom User, UserSession, UserActivityLog, auth views & permissions
@@ -94,6 +94,19 @@ backend/
 - `prev_hash`: SHA-256 hash of preceding machine history record
 - `hash`: SHA-256 hash of current machine history record
 
+### PrintRecord
+- `doc_type`: String document classification (e.g. `TECHNICAL_DATA_SHEET`)
+- `doc_ref`: Unique human-readable document reference (e.g. `TDS-20261007-0001`)
+- `work_order`, `machine_name`, `material_profile`, `quality_status`: Metadata strings
+- `inlet_size`, `finish_size`: Decimal(7,3) input and output targets
+- `total_passes`: Positive small integer pass count
+- `overall_reduction`, `avg_elongation`: Decimal(5,2) calculated metallurgy metrics
+- `dies`, `passes_data`: JSON fields preserving immutable snapshot of calculated die strings and pass rows
+- `printed_by`: Foreign key to User (nullable, `SET_NULL` on user deletion)
+- `username`, `user_role`: Snapshot audit strings preserved even if user is deleted
+- `ip_address`: Client IP string captured during print submission
+- `created_at`: DateTime audit timestamp
+
 ### EnamelMachine & MachineDieStock
 - `EnamelMachine`: Unique name and description representing active enameling lines
 - `MachineDieStock`: Die size (Decimal 7,3) and quantity counter allocated to an enamel machine
@@ -128,13 +141,19 @@ backend/
 - `GET /api/v1/dies/`: List dies (with type/status/size filters)
 - `POST /api/v1/dies/{die_id}/recut/`: Recut die
 - `GET/POST /api/v1/dies/{die_id}/maintenance_logs/`: Maintenance log
-- `GET /api/v1/dies/enamel-machines/`: List enamel machines
-- `GET /api/v1/dies/machine-stock/`: Machine-allocated die stock quantities
-- `GET/POST /api/v1/dies/inventory-recounts/`: Physical recount audit sheets
-- `POST /api/v1/dies/inventory-recounts/{id}/submit/`: Submit and reconcile recount with stock
+- `GET /api/v1/enamel-machines/`: List enamel machines
+- `GET /api/v1/machine-die-stock/`: Machine-allocated die stock quantities
+- `GET/POST /api/v1/inventory-recounts/`: Physical recount audit sheets
+- `POST /api/v1/inventory-recounts/{id}/submit/`: Submit and reconcile recount with stock
+
+### History & Print Records
+- `GET /api/v1/history/unified/`: Unified audit timeline of die, machine, and print activity
+- `GET /api/v1/history/print-records/next-ref/`: Next sequential document reference (`TDS-YYYYMMDD-XXXX`)
+- `GET/POST /api/v1/history/print-records/`: Query print audit history / record new print job
 
 ### User Management
-- `POST /api/v1/users/terminate-sessions/`: Bulk terminate active sessions on permission/role change
+- `POST /api/v1/active-sessions/bulk/`: Bulk terminate active sessions on permission/role change
+- `POST /api/v1/active-sessions/terminate-all/`: Terminate all active sessions across users
 
 ### Backups
 - `GET/POST /api/v1/backups/`: List / create backups
@@ -169,37 +188,31 @@ backend/
 ## Background Tasks
 
 ### Outbox Pattern
-- Tasks queued in outbox_task table
+- Tasks queued in `dies_outboxtask` table (`OutboxTask` model)
 - HMAC-SHA256 payload signatures
-- Exponential backoff retry
-- Dead-letter queue for failures
+- Retry limit (3 attempts) before marking task failed
+- Asynchronous Celery task dispatch to Go search proxy / Meilisearch
 
-### Scheduled Tasks
-- Daily backup creation
-- Hourly wear alert checks
-- Periodic Meilisearch index synchronization
+### Scheduled Tasks (Celery Beat)
+- `auto-check-wear-alerts-daily`: 1:00 AM (`dies.tasks.check_all_wear_alerts_task`)
+- `auto-backup-daily`: 2:00 AM (`users.tasks.auto_backup_task`)
+- `auto-verify-backup-daily`: 2:30 AM (`users.tasks.verify_backup_restorability_task`)
+- `auto-prune-history-daily`: 3:00 AM (`history.tasks.auto_prune_history`)
+- `auto-prune-outbox-daily`: 4:00 AM (`search.tasks.prune_processed_outbox_tasks`)
+- `process-outbox-periodic`: Every 5.0 seconds (`search.tasks.process_outbox_task`)
 
 ## Testing
 
-### Unit Tests
+### Django Test Suite
 ```bash
 # Run all tests
-pytest
+python manage.py test
 
-# Run specific module
-pytest dies/
-
-# Run with coverage
-pytest --cov=backend
-```
-
-### Integration Tests
-```bash
-# Run integration tests
-pytest --integration
-
-# Run API tests
-pytest api/
+# Run specific apps
+python manage.py test dies
+python manage.py test machines
+python manage.py test history
+python manage.py test users
 ```
 
 ## Development
@@ -230,8 +243,11 @@ python manage.py makemigrations
 # Apply migration
 python manage.py migrate
 
-# Load fixtures
-python manage.py loaddata fixtures/initial_data.json
+# Seed sample dies
+python manage.py seed_dies
+
+# Create initial root user
+python manage.py create_root_user --username root --password <secure-password>
 ```
 
 ## Performance Considerations
