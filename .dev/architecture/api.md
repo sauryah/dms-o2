@@ -88,7 +88,13 @@ Complete catalog of all API endpoints across Django and Go services.
 | `GET` | `/api/v1/history/machines/` | Authenticated | List machine/set/category/rack change logs |
 | `GET` | `/api/v1/history/dashboard/` | Authenticated | Dashboard recent history feed |
 | `GET` | `/api/v1/history/unified/` | Authenticated | Chronological unified timeline combining die and machine edits with diffs |
+| `GET` | `/api/v1/history/print-records/next-ref/` | Authenticated | Preview next sequential document reference and default work order |
+| `POST` | `/api/v1/history/print-records/` | Authenticated | Record new Technical Data Sheet print event with atomic sequence increment |
+| `GET` | `/api/v1/history/print-records/` | Admin / Root | Paginated facility print audit records with filtering by doc ref, work order, machine |
 | `GET` | `/api/v1/health/` | Public | System health check (database, redis, meilisearch status) |
+| `GET` | `/api/v1/health/detailed/` | Public | Detailed health status with service latencies |
+| `GET` | `/api/v1/health/liveness/` | Public | Django container liveness check |
+| `GET` | `/api/v1/health/readiness/` | Public | Django container readiness check |
 | `GET` | `/api/v1/server-info/` | Public | System hostname and detected LAN IP |
 | `GET/POST` | `/api/v1/backups/` | Root | List backups or trigger manual database backup dump |
 | `GET` | `/metrics` | Public / Monitor | Prometheus metrics export endpoint |
