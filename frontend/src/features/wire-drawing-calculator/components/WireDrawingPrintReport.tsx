@@ -13,6 +13,12 @@ interface WireDrawingPrintReportProps {
   machineName?: string;
   notes?: string;
   operator?: string;
+  preparedByTitle?: string;
+  preparedBySubtitle?: string;
+  checkedByTitle?: string;
+  checkedBySubtitle?: string;
+  approvedByTitle?: string;
+  approvedBySubtitle?: string;
 }
 
 export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
@@ -25,6 +31,12 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
   machineName = 'Multi-Wire Drawing Line 01',
   notes = 'Production drafting schedule verified within standard elongation tolerances. No central burst risk detected.',
   operator = 'TOOL ROOM / ADMIN',
+  preparedByTitle = 'Prepared By:',
+  preparedBySubtitle = 'Tool Room / Drafter',
+  checkedByTitle = 'Checked By:',
+  checkedBySubtitle = 'Production Supervisor',
+  approvedByTitle = 'Approved By:',
+  approvedBySubtitle = 'Quality / Plant Manager',
 }) => {
   if (dies.length === 0 || !stats) return null;
 
@@ -374,19 +386,19 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
 
         <div className="grid grid-cols-3 gap-4 pt-3 border-t border-slate-200 text-[10px]">
           <div>
-            <span className="text-slate-500 uppercase block font-semibold">Prepared By:</span>
+            <span className="text-slate-500 uppercase block font-semibold">{preparedByTitle}</span>
             <div className="h-6 border-b border-slate-400 mt-2" />
-            <span className="text-slate-600 text-[9px] mt-0.5 block">Tool Room Engineer</span>
+            <span className="text-slate-600 text-[9px] mt-0.5 block">{preparedBySubtitle}</span>
           </div>
           <div>
-            <span className="text-slate-500 uppercase block font-semibold">Verified By:</span>
+            <span className="text-slate-500 uppercase block font-semibold">{checkedByTitle}</span>
             <div className="h-6 border-b border-slate-400 mt-2" />
-            <span className="text-slate-600 text-[9px] mt-0.5 block">Production Supervisor</span>
+            <span className="text-slate-600 text-[9px] mt-0.5 block">{checkedBySubtitle}</span>
           </div>
           <div>
-            <span className="text-slate-500 uppercase block font-semibold">Quality Approval:</span>
+            <span className="text-slate-500 uppercase block font-semibold">{approvedByTitle}</span>
             <div className="h-6 border-b border-slate-400 mt-2" />
-            <span className="text-slate-600 text-[9px] mt-0.5 block">QA / Metallurgist</span>
+            <span className="text-slate-600 text-[9px] mt-0.5 block">{approvedBySubtitle}</span>
           </div>
         </div>
       </div>
