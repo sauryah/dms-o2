@@ -51,7 +51,9 @@ Define the standard workflow for all engineering tasks on DMS-O2.
 ### 7. Complete
 - Mark task as done in `state/active-task.md`
 - Update `state/progress.md`
-- Commit with conventional commit message
+- Stage and commit all related changes atomically (`git add ...` for the logical unit of work)
+- Use conventional commit messages describing the full change
+- Never commit one file at a time for cohesive tasks or state tracking updates
 - Push and create PR if required
 
 ## Implementation Patterns

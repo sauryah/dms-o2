@@ -41,7 +41,7 @@ Upgrade the existing application into a professional, production-quality industr
 - 95/95 Vitest unit tests passing.
 - Production Vite build verified.
 - Docker containers rebuilt and running healthy.
-- Strict "1 changed file = 1 commit" rule maintained with `--no-gpg-sign`.
+- Atomic commits policy established.
 
 ## Next Steps
 - Push commits to remote origin when instructed.

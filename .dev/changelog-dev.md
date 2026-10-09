@@ -1,5 +1,11 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-09 Git Workflow & Atomic Commit Policy Enforcement
+*   **Atomic Commits Policy & Anti-Pattern Remediation**:
+    *   Decommissioned the legacy "1 changed file = 1 commit" rule across `.dev/state/current-goal.md` and `.dev/state/active-task.md`.
+    *   Added Git & Commit Rules to [AGENTS.md](file:///D:/dms-o2/AGENTS.md) and [.dev/processes/engineering-workflow.md](file:///D:/dms-o2/.dev/processes/engineering-workflow.md) prohibiting single-file micro-commits for cohesive changes.
+    *   Created [.dev/processes/git-workflow.md](file:///D:/dms-o2/.dev/processes/git-workflow.md) and [.agents/rules/git-workflow.md](file:///D:/dms-o2/.agents/rules/git-workflow.md) mandating atomic commits for multi-file changesets and state/doc tracking bundling.
+
 ### 2026-10-07 Product Quality Upgrade: P0 Bulk Inventory Remediation & Design System Standardization
 *   **P0 Bulk Inventory Location & Batch Concurrency Remediation (`frontend/src/features/inventory/components/InventoryPage.tsx`)**:
     *   Fixed critical silent update bug in bulk location assignments: replaced free-text string input with structured Target Rack and Shelf dropdowns queried from `/api/racks/`.

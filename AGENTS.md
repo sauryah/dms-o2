@@ -59,6 +59,12 @@ Every implementation must pass:
 3. Outbox task payloads are signed using HMAC-SHA256 signatures.
 4. Startup validation prevents launching in production mode with default insecure credentials.
 
+## Git & Commit Rules
+1. Atomic Commits: Group all files belonging to a logical unit of work (code, tests, docs) into a single cohesive commit.
+2. No Single-File Micro-Commits: Do not split changes across multiple commits per file when they are part of the same feature, refactor, or documentation sync.
+3. State Synchronization: When completing a task, commit state tracking files (`active-task.md`, `progress.md`, `changelog-dev.md`) together in a single commit.
+4. Conventional Commits: Use standard prefixes (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`).
+
 ## Quick Reference
 | Directory | Purpose |
 |-----------|---------|

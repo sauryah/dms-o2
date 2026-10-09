@@ -19,7 +19,7 @@ Audit the entire codebase against all architectural and user-facing documentatio
 2. Architecture specifications (`docs/ARCHITECTURE.md`, `.dev/architecture/*`) reflect current models, endpoints, $O(1)$ caching, and cryptographic audit chains.
 3. Module documentation (`.dev/modules/*`) updated to accurately document Wasm FEA, TDS vector printing, enamel stock, recount audits, and backup codes MFA.
 4. Business roadmap (`.dev/business/roadmap.md`) reflects decommissioned wear predictions and completed v2.0/v2.1 milestones.
-5. All modified documentation files committed strictly according to "1 changed file = 1 commit".
+5. All documentation updates committed atomically according to logical changesets.
 6. Knowledge graph (`graphify update .`) refreshed to match current codebase.
 
 ## Current Progress
@@ -32,7 +32,7 @@ Audit the entire codebase against all architectural and user-facing documentatio
 
 ## Definition of Done
 - Zero discrepancies between documentation and actual implementation
-- 1 file = 1 commit rule strictly followed
+- Atomic commits followed for all related changes
 - All test suites passing and working tree clean
 - Knowledge graph synchronized
 
