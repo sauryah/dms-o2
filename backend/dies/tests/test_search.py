@@ -270,5 +270,40 @@ class MeilisearchTests(TransactionTestCase):
             {'action': DIE_BULK_IMPORT_ACTION, 'count': 2}
         )
 
+    def test_outbox_task_created_in_transaction_rolls_back_on_failure(self):
+        from dies.models import OutboxTask
+        from dies.services.search_service import SearchService
+        from django.db import transaction
+
+        die = Die.objects.create(die_id="ROLLBACK-001", die_type="ROUND", casing="6x3")
+        OutboxTask.objects.filter(payload__die_id=die.id).delete()
+
+        try:
+            with transaction.atomic():
+                SearchService.queue_die_sync(die.id)
+                self.assertTrue(OutboxTask.objects.filter(payload__die_id=die.id).exists())
+                raise RuntimeError("Simulated transaction failure")
+        except RuntimeError:
+            pass
+
+        # The outbox task must have been rolled back along with the transaction
+        self.assertFalse(OutboxTask.objects.filter(payload__die_id=die.id).exists())
+
+    def test_outbox_task_persists_on_transaction_commit(self):
+        from dies.models import OutboxTask
+        from dies.services.search_service import SearchService
+        from django.db import transaction
+
+        die = Die.objects.create(die_id="COMMIT-001", die_type="ROUND", casing="6x3")
+        OutboxTask.objects.filter(payload__die_id=die.id).delete()
+
+        with transaction.atomic():
+            SearchService.queue_die_sync(die.id)
+            self.assertTrue(OutboxTask.objects.filter(payload__die_id=die.id).exists())
+
+        # The outbox task must persist upon commit
+        self.assertTrue(OutboxTask.objects.filter(payload__die_id=die.id).exists())
+
+
 
 

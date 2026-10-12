@@ -249,6 +249,33 @@ class DieAPITests(APITestCase):
         response = self.client.get(url_ml)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_die_update_increments_version_in_single_save(self):
+        from dies.models import OutboxTask
+        from history.models import DieHistory
+        OutboxTask.objects.filter(payload__die_id=self.round_die.id).delete()
+        DieHistory.objects.filter(die=self.round_die).delete()
+
+        url_detail = reverse('die-detail', kwargs={'die_id': 'R-101'})
+        data = {
+            'status': 'MAINTENANCE',
+            'version': 1,
+        }
+        response = self.client.patch(url_detail, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['version'], 2)
+
+        self.round_die.refresh_from_db()
+        self.assertEqual(self.round_die.version, 2)
+        self.assertEqual(self.round_die.status, 'MAINTENANCE')
+
+        # Should only generate 1 history entry for status change, NOT duplicated
+        history_entries = DieHistory.objects.filter(die=self.round_die, field_name='status')
+        self.assertEqual(history_entries.count(), 1)
+
+        # Should only generate 1 outbox task, NOT duplicated by two consecutive saves
+        outbox_tasks = OutboxTask.objects.filter(payload__die_id=self.round_die.id)
+        self.assertEqual(outbox_tasks.count(), 1)
+
 
 from dies.models import DieTolerance, WearAlert
 

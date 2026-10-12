@@ -91,10 +91,8 @@ class DieViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(locked_instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         
-        self.perform_update(serializer)
         locked_instance.version += 1
-        locked_instance.save(update_fields=['version'])
-        serializer.instance.version = locked_instance.version
+        serializer.save(version=locked_instance.version)
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):

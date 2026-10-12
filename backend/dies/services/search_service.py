@@ -22,24 +22,24 @@ class SearchService:
         if die_id not in pending:
             pending.add(die_id)
             
+            from dies.models import OutboxTask
+            import json, hmac, hashlib
+            from django.conf import settings
+            payload = {'die_id': die_id}
+            serialized = json.dumps(payload, sort_keys=True)
+            payload_hash = hmac.new(
+                settings.SECRET_KEY.encode('utf-8'),
+                serialized.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            OutboxTask.objects.create(
+                task_type='SYNC_DIE',
+                payload=payload,
+                payload_hash=payload_hash
+            )
+
             def run_sync():
                 pending.discard(die_id)
-                from dies.models import OutboxTask
-                import json, hmac, hashlib
-                from django.conf import settings
-                payload = {'die_id': die_id}
-                serialized = json.dumps(payload, sort_keys=True)
-                payload_hash = hmac.new(
-                    settings.SECRET_KEY.encode('utf-8'),
-                    serialized.encode('utf-8'),
-                    hashlib.sha256
-                ).hexdigest()
-                OutboxTask.objects.create(
-                    task_type='SYNC_DIE',
-                    payload=payload,
-                    payload_hash=payload_hash
-                )
-                from django.conf import settings
                 if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
                     from search.tasks import process_outbox_task
                     process_outbox_task.delay()
@@ -102,25 +102,25 @@ class SearchService:
 
     @staticmethod
     def delete_die_document(die_id, die_str_id=None):
+        from dies.models import OutboxTask
+        import json, hmac, hashlib
+        from django.conf import settings
+        payload = {'die_id': die_id}
+        if die_str_id:
+            payload['die_str_id'] = die_str_id
+        serialized = json.dumps(payload, sort_keys=True)
+        payload_hash = hmac.new(
+            settings.SECRET_KEY.encode('utf-8'),
+            serialized.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        OutboxTask.objects.create(
+            task_type='DELETE_DIE',
+            payload=payload,
+            payload_hash=payload_hash
+        )
+
         def run_delete():
-            from dies.models import OutboxTask
-            import json, hmac, hashlib
-            from django.conf import settings
-            payload = {'die_id': die_id}
-            if die_str_id:
-                payload['die_str_id'] = die_str_id
-            serialized = json.dumps(payload, sort_keys=True)
-            payload_hash = hmac.new(
-                settings.SECRET_KEY.encode('utf-8'),
-                serialized.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            OutboxTask.objects.create(
-                task_type='DELETE_DIE',
-                payload=payload,
-                payload_hash=payload_hash
-            )
-            from django.conf import settings
             if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
                 from search.tasks import process_outbox_task
                 process_outbox_task.delay()

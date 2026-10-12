@@ -1,5 +1,26 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-12 Data Integrity & Outbox Hardening (Batch 2)
+*   **Transactional Outbox Guarantees (`backend/dies/services/search_service.py`, `ARC-01`)**:
+    *   Refactored `SearchService.queue_die_sync` and `SearchService.delete_die_document` to create `OutboxTask` database records inside the active primary transaction context rather than deferred inside `transaction.on_commit(run_sync)`.
+    *   Guarantees that `OutboxTask` records roll back atomically if the primary entity transaction fails, and guarantees they persist before post-commit celery dispatch.
+    *   Added regression test suite in `backend/dies/tests/test_search.py` (`test_outbox_task_created_in_transaction_rolls_back_on_failure` and `test_outbox_task_persists_on_transaction_commit`).
+*   **Single-Save OCC Versioning (`backend/dies/views.py`, `PERF-02`)**:
+    *   Consolidated pessimistic lock version increment in `DieViewSet.update` directly into `serializer.save(version=locked_instance.version + 1)`.
+    *   Eliminated redundant second `.save(update_fields=['version'])` call, preventing duplicated `pre_save`/`post_save` signal execution, duplicate `DieHistory` audit records, and redundant outbox queue tasks.
+    *   Added regression test in `backend/dies/tests/test_api.py` (`test_die_update_increments_version_in_single_save`) asserting exact 1:1 history and outbox task creation.
+*   **Decoupled Outbox Processing (`backend/search/tasks.py`, `PERF-01`)**:
+    *   Decoupled row claiming and status updates from blocking external HTTP calls and task polling in `process_outbox_task`.
+    *   The atomic database transaction completes row-level locking (`select_for_update(skip_locked=True)`), hash integrity checks, and `bulk_update` within milliseconds, releasing database connection locks before Meilisearch network I/O begins.
+    *   Eliminated connection pool exhaustion and transaction lock hold times across network latencies.
+*   **Length-Aware Sequence Ordering (`backend/history/views.py`, `BUG-04`)**:
+    *   Updated `generate_next_doc_ref` and `generate_default_work_order` to order by `Length('doc_ref').desc(), '-doc_ref'` and `Length('work_order').desc(), '-work_order'` using `django.db.models.functions.Length`.
+    *   Prevents string lexicographical sorting inversion when sequence numbers exceed 4 digits (e.g. `10000` sorting before `9999`), eliminating duplicate reference generation.
+    *   Added regression test in `backend/history/tests/test_views.py` (`test_next_ref_sorting_exceeding_9999`) validating sequence numbers crossing 9999 -> 10000 -> 10001.
+*   **Verification**:
+    *   All modified Python files compiled cleanly with 0 syntax errors (`python -m py_compile`).
+    *   Frontend test suite verified: 28 test suites, 95/95 tests passing (`npm run test`).
+
 ### 2026-10-12 High-Impact Stability & Bug Remediation (Batch 1)
 *   **Go API Calculation Robustness (`go-api/internal/handlers/handlers.go`, `BUG-01`)**:
     *   Added validation ensuring all die sizes in `HandleCalculateWireDrawing` are strictly positive (`> 0`) and finite (`!math.IsNaN() && !math.IsInf()`).

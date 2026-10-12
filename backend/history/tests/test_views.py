@@ -190,6 +190,30 @@ class PrintRecordApiTests(APITestCase):
         seq2 = int(res2.data['doc_ref'].split('-')[-1])
         self.assertEqual(seq2, seq1 + 1)
 
+    def test_next_ref_sorting_exceeding_9999(self):
+        from history.views import generate_next_doc_ref, generate_default_work_order
+        test_date = '20261012'
+
+        # Seed records with 4-digit and 5-digit sequence numbers
+        PrintRecord.objects.create(
+            doc_ref=f"TDS-{test_date}-9999",
+            work_order=f"WO-{test_date}-999",
+            username='operator_print_user',
+            user_role='OPERATOR'
+        )
+        PrintRecord.objects.create(
+            doc_ref=f"TDS-{test_date}-10000",
+            work_order=f"WO-{test_date}-1000",
+            username='operator_print_user',
+            user_role='OPERATOR'
+        )
+
+        next_ref = generate_next_doc_ref(date_str=test_date)
+        self.assertEqual(next_ref, f"TDS-{test_date}-10001")
+
+        next_wo = generate_default_work_order(date_str=test_date)
+        self.assertEqual(next_wo, f"WO-{test_date}-1001")
+
     def test_create_print_record_unauthenticated_denied(self):
         res = self.client.post(self.print_records_url, {
             'work_order': 'WO-TEST-001',

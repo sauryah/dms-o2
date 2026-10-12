@@ -59,6 +59,17 @@ Track implementation status across all phases.
 
 ## Roadmap Progress
 
+### Data Integrity & Outbox Hardening (Batch 2) ✅
+**Status:** Complete
+**Date:** 2026-10-12
+
+**Completed:**
+- Transactional Outbox Boundaries (`backend/dies/services/search_service.py`, `ARC-01`): Guaranteed `OutboxTask` database records are inserted inside the active primary transaction context in `queue_die_sync` and `delete_die_document`. Added rollback and commit unit tests in `test_search.py`.
+- Single-Save OCC Versioning (`backend/dies/views.py`, `PERF-02`): Increment version atomically inside `serializer.save(version=locked_instance.version + 1)`, removing duplicate `.save()` call, duplicate audit logs, and redundant outbox tasks. Added unit test in `test_api.py`.
+- Decoupled Outbox Processing (`backend/search/tasks.py`, `PERF-01`): Decoupled row claiming and status updates from blocking Meilisearch HTTP calls, releasing database row locks within milliseconds.
+- Length-Aware Document Sequence Generation (`backend/history/views.py`, `BUG-04`): Guaranteed sequence numbers crossing 9,999 to 10,000+ sort strictly numerically using `Length('doc_ref').desc(), '-doc_ref'`. Added unit test in `test_views.py`.
+- Verified Python bytecode compilation (`python -m py_compile`) and frontend test suite (28/28 test suites, 95/95 passing).
+
 ### High-Impact Stability & Bug Remediation (Batch 1) ✅
 **Status:** Complete
 **Date:** 2026-10-12

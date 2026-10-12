@@ -389,6 +389,7 @@ class UnifiedHistoryListView(APIView):
 
 from rest_framework import status
 from django.utils import timezone
+from django.db.models.functions import Length
 from history.models import PrintRecord
 from history.serializers import PrintRecordSerializer
 from users.views.auth import get_client_ip
@@ -400,7 +401,7 @@ def generate_next_doc_ref(doc_type='WIRE_DRAWING_TDS', date_str=None):
     prefix = f"TDS-{date_str}-"
     last_record = (
         PrintRecord.objects.filter(doc_ref__startswith=prefix)
-        .order_by('-doc_ref')
+        .order_by(Length('doc_ref').desc(), '-doc_ref')
         .first()
     )
     if last_record and last_record.doc_ref:
@@ -420,7 +421,7 @@ def generate_default_work_order(date_str=None):
     prefix = f"WO-{date_str}-"
     last_record = (
         PrintRecord.objects.filter(work_order__startswith=prefix)
-        .order_by('-work_order')
+        .order_by(Length('work_order').desc(), '-work_order')
         .first()
     )
     if last_record and last_record.work_order:
