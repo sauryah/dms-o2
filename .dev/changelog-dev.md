@@ -1,5 +1,22 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-12 Senior Review & Regression Hardening
+*   **At-Least-Once Outbox Delivery Restored (`backend/search/tasks.py`)**:
+    *   Restored atomic rollback boundary around Meilisearch document delivery with bounded 3000ms timeout. If worker crashes or Meilisearch experiences network timeout, outbox tasks roll back (`is_processed=False`) guaranteeing at-least-once document delivery rather than dropped search records.
+    *   Moved Redis `broadcast_event(...)` calls outside database transaction boundary to avoid holding database transaction locks during realtime socket fanout.
+    *   Added missing module-level imports (`transaction`, `timezone`, `OutboxTask`) eliminating runtime `NameError` exceptions during outbox processing.
+*   **Relational Search Query Routing (`go-api/internal/handlers/handlers.go`, `go-api/internal/handlers/handlers_test.go`)**:
+    *   Routed relational foreign-key queries (`machine_id`, `set_id`, `unassigned`) directly through `QueryPostgresDirectly` with native ILIKE text matching across all fields, exact foreign key constraints, and accurate `COUNT(*)` pagination. Eliminates data truncation caused by Meilisearch not indexing foreign keys or null assignment status.
+    *   Preserved authoritative `totalHits` from Meilisearch response on general queries, removing the artificial override that truncated total hits to the returned page size.
+    *   Updated Go test suite with `TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect` and `TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch`.
+*   **Verification**:
+    *   `python -m py_compile` validated all backend Python files with 0 syntax errors.
+    *   AST symbol verification confirmed 0 undefined names in `process_outbox_task`.
+    *   ESLint: 0 errors, 0 warnings (`npm run lint`).
+    *   TypeScript: 0 compiler errors (`npx tsc --noEmit`).
+    *   Vitest: 28 test suites, 95/95 unit tests passing (`npm run test`).
+    *   Vite production build succeeded in 5.42s (`npm run build`).
+
 ### 2026-10-12 Search Consistency & Realtime Multiplexing (Batch 3)
 *   **Search Filter Consistency Across Storage Layers (`go-api/internal/handlers/handlers.go`, `go-api/internal/database/database.go`, `BUG-05`)**:
     *   Propagated `machine_id`, `set_id`, `unassigned`, and `location` filtering parameters to `QueryPostgresByIDs` during Meilisearch-backed full-text queries.

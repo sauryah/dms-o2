@@ -33,6 +33,13 @@ Implement the highest-impact, evidence-backed fixes identified in the repository
   - BUG-05: Propagated `machine_id`, `set_id`, `unassigned`, and `location` to `QueryPostgresByIDs` during Meilisearch full-text queries + regression test.
   - PERF-03: Expanded SSE client channel buffer from 10 to 256 in `HandleEvents`.
   - TEST-01: Updated Playwright smoke test fixture with structured `{ rack, shelf_number }`.
+  - Commit: `c95fe45`.
+- **Senior Review & Regression Hardening**:
+  - Restored at-least-once transactional outbox delivery guarantee in `backend/search/tasks.py`: bounded Meilisearch HTTP calls with 3000ms timeout within transaction rollback boundary so worker crashes or index failures never drop tasks as phantom-processed; moved Redis `broadcast_event(...)` calls outside transaction.
+  - Resolved missing imports (`transaction`, `timezone`, `OutboxTask`) at module level in `backend/search/tasks.py`.
+  - Routed relational foreign-key queries (`machine_id`, `set_id`, `unassigned`) directly to Postgres in `go-api/internal/handlers/handlers.go`, guaranteeing complete result sets, ILIKE search, and accurate `COUNT(*)` pagination without Meilisearch un-indexed relational truncation.
+  - Preserved Meilisearch authoritative `totalHits` on general searches, eliminating artificial page-size truncation.
+  - Updated Go regression test suite `TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect` and `TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch`.
 
 ## Next Steps
 - Maintain verified test baselines across all modules.

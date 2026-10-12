@@ -608,20 +608,22 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 		isNumericQuery = true
 	}
 
-	// For numeric queries, use Postgres directly — it does correct ILIKE prefix
-	// matching on CAST(r.current_size AS TEXT), which Meilisearch float tokenization
-	// handles poorly (e.g. "1.6" misses "1.600" because Meilisearch normalizes floats).
-	if isNumericQuery {
-		slog.Info("Numeric query detected, using Postgres direct query", "query", params.Q, "numStr", qNumStr)
+	// For numeric queries or queries with relational foreign-key filters (machine_id, set_id, unassigned),
+	// route directly to Postgres. Meilisearch only indexes textual names, not relational IDs or nullity.
+	// Postgres direct query provides native ILIKE text search across fields, exact FK constraints, accurate COUNT(*),
+	// and clean SQL pagination.
+	useDirectPostgres := isNumericQuery || params.MachineID != "" || params.SetID != "" || params.Unassigned != ""
+	if useDirectPostgres {
+		slog.Info("Direct Postgres search routing chosen", "query", params.Q, "numeric", isNumericQuery, "machineID", params.MachineID, "setID", params.SetID, "unassigned", params.Unassigned)
 		postgresDies, err := h.db.QueryPostgresDirectly(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Location, params.Limit, params.Offset)
 		if err != nil {
-			slog.Error("Postgres direct query for numeric search failed", "error", err)
+			slog.Error("Postgres direct query search failed", "error", err)
 			return nil, 0, err
 		}
 
 		totalCount, countErr := h.db.QueryPostgresDirectlyCount(ctx, params.Q, params.DieType, params.Status, params.Casing, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Location)
 		if countErr != nil {
-			slog.Warn("Failed to count Postgres numeric query matches", "error", countErr)
+			slog.Warn("Failed to count Postgres query matches", "error", countErr)
 			totalCount = len(postgresDies)
 			if params.Offset > 0 {
 				totalCount = params.Offset + len(postgresDies)
@@ -736,9 +738,6 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 						if die, ok := dieMap[hid]; ok {
 							meiliDies = append(meiliDies, die)
 						}
-					}
-					if params.MachineID != "" || params.SetID != "" || params.Unassigned != "" || params.Location != "" {
-						totalHits = len(meiliDies)
 					}
 				}
 			}

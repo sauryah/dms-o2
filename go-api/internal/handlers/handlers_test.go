@@ -987,23 +987,20 @@ func TestHandleDBStats(t *testing.T) {
 	}
 }
 
-func TestQueryMeilisearchAndPostgres_FiltersPropagated(t *testing.T) {
+func TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect(t *testing.T) {
 	cfg := &config.Config{}
 	var capturedMachineID, capturedSetID, capturedUnassigned, capturedLocation string
+	var directCountCalled bool
 
 	mockSearch := &MockSearch{
 		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
-			return &meilisearch.SearchResponse{
-				Hits: []interface{}{
-					map[string]interface{}{"id": "101"},
-				},
-				TotalHits: 1,
-			}, nil
+			t.Errorf("Meilisearch should NOT be called when relational filters (machine_id, set_id, unassigned) are present")
+			return &meilisearch.SearchResponse{}, nil
 		},
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
+		QueryPostgresDirectlyFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string, limit, offset int) ([]database.DieRepresentation, error) {
 			capturedMachineID = machineID
 			capturedSetID = setID
 			capturedUnassigned = unassigned
@@ -1011,6 +1008,10 @@ func TestQueryMeilisearchAndPostgres_FiltersPropagated(t *testing.T) {
 			return []database.DieRepresentation{
 				{ID: 101, DieID: "ROUND-101", DieType: "ROUND", Status: "AVAILABLE"},
 			}, nil
+		},
+		QueryPostgresDirectlyCountFn: func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) (int, error) {
+			directCountCalled = true
+			return 1, nil
 		},
 	}
 
@@ -1024,6 +1025,9 @@ func TestQueryMeilisearchAndPostgres_FiltersPropagated(t *testing.T) {
 		t.Fatalf("expected status OK, got %d", w.Code)
 	}
 
+	if !directCountCalled {
+		t.Errorf("expected QueryPostgresDirectlyCount to be called")
+	}
 	if capturedMachineID != "7" {
 		t.Errorf("expected machineID '7', got %q", capturedMachineID)
 	}
@@ -1032,6 +1036,52 @@ func TestQueryMeilisearchAndPostgres_FiltersPropagated(t *testing.T) {
 	}
 	if capturedUnassigned != "true" {
 		t.Errorf("expected unassigned 'true', got %q", capturedUnassigned)
+	}
+	if capturedLocation != "Rack B" {
+		t.Errorf("expected location 'Rack B', got %q", capturedLocation)
+	}
+}
+
+func TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch(t *testing.T) {
+	cfg := &config.Config{}
+	var capturedLocation string
+	var meiliFilter string
+
+	mockSearch := &MockSearch{
+		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+			if searchRequest != nil {
+				meiliFilter = searchRequest.Filter
+			}
+			return &meilisearch.SearchResponse{
+				Hits: []interface{}{
+					map[string]interface{}{"id": "101"},
+				},
+				TotalHits: 1,
+			}, nil
+		},
+	}
+
+	mockDb := &MockDatabase{
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
+			capturedLocation = location
+			return []database.DieRepresentation{
+				{ID: 101, DieID: "ROUND-101", DieType: "ROUND", Status: "AVAILABLE"},
+			}, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, mockSearch, nil)
+	req := httptest.NewRequest("GET", "/api/go/search?q=ROUND&location=Rack%20B", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status OK, got %d", w.Code)
+	}
+
+	if !strings.Contains(meiliFilter, "rack = 'Rack B'") {
+		t.Errorf("expected meili filter to contain rack = 'Rack B', got %q", meiliFilter)
 	}
 	if capturedLocation != "Rack B" {
 		t.Errorf("expected location 'Rack B', got %q", capturedLocation)
