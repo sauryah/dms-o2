@@ -40,6 +40,7 @@ Implement the highest-impact, evidence-backed fixes identified in the repository
   - Routed relational foreign-key queries (`machine_id`, `set_id`, `unassigned`) directly to Postgres in `go-api/internal/handlers/handlers.go`, guaranteeing complete result sets, ILIKE search, and accurate `COUNT(*)` pagination without Meilisearch un-indexed relational truncation.
   - Preserved Meilisearch authoritative `totalHits` on general searches, eliminating artificial page-size truncation.
   - Updated Go regression test suite `TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect` and `TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch`.
+  - Resolved undefined `search` query parameter variable in `UnifiedHistoryListView.get` (`backend/history/views.py`) and undefined `res_filter` in `backend/history/tests/test_views.py`.
 
 ## Next Steps
 - Maintain verified test baselines across all modules.

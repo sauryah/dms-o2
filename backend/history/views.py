@@ -231,6 +231,7 @@ class UnifiedHistoryListView(APIView):
         from_date = request.query_params.get('from')
         to_date = request.query_params.get('to')
         ip = request.query_params.get('ip')
+        search = request.query_params.get('search')
         try:
             page = max(int(request.query_params.get('page', 1)), 1)
             page_size = min(max(int(request.query_params.get('page_size', 25)), 1), 100)

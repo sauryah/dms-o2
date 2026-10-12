@@ -9,6 +9,9 @@
     *   Routed relational foreign-key queries (`machine_id`, `set_id`, `unassigned`) directly through `QueryPostgresDirectly` with native ILIKE text matching across all fields, exact foreign key constraints, and accurate `COUNT(*)` pagination. Eliminates data truncation caused by Meilisearch not indexing foreign keys or null assignment status.
     *   Preserved authoritative `totalHits` from Meilisearch response on general queries, removing the artificial override that truncated total hits to the returned page size.
     *   Updated Go test suite with `TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect` and `TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch`.
+*   **Unified History API Query Search Parameter & Test Scoping (`backend/history/views.py`, `backend/history/tests/test_views.py`)**:
+    *   Added missing `search = request.query_params.get('search')` variable extraction in `UnifiedHistoryListView.get`, resolving Pylance `reportUndefinedVariable` and preventing runtime `UnboundLocalError` / `NameError` crashes when filtering unified history by text.
+    *   Fixed undefined `res_filter` variable in `test_list_print_records_admin_success_with_filters` in `test_views.py` by making the filtered API request call explicitly, and added `test_unified_history_search_filter_returns_200` to verify search filtering behavior.
 *   **Verification**:
     *   `python -m py_compile` validated all backend Python files with 0 syntax errors.
     *   AST symbol verification confirmed 0 undefined names in `process_outbox_task`.

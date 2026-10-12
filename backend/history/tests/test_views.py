@@ -297,6 +297,8 @@ class PrintRecordApiTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(res.data['count'], 2)
 
+        res_filter = self.client.get(f"{self.print_records_url}?doc_ref=TDS-20261007-0010")
+        self.assertEqual(res_filter.status_code, status.HTTP_200_OK)
         self.assertEqual(res_filter.data['count'], 1)
         self.assertEqual(res_filter.data['results'][0]['doc_ref'], 'TDS-20261007-0010')
 
@@ -330,6 +332,12 @@ class UnifiedHistoryApiTests(APITestCase):
 
     def test_unified_history_valid_pagination_returns_200(self):
         res = self.client.get(f"{self.unified_url}?page=1&page_size=10")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('results', res.data)
+        self.assertIn('count', res.data)
+
+    def test_unified_history_search_filter_returns_200(self):
+        res = self.client.get(f"{self.unified_url}?search=test")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn('results', res.data)
         self.assertIn('count', res.data)
