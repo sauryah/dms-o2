@@ -41,6 +41,7 @@ Implement the highest-impact, evidence-backed fixes identified in the repository
   - Preserved Meilisearch authoritative `totalHits` on general searches, eliminating artificial page-size truncation.
   - Updated Go regression test suite `TestQueryMeilisearchAndPostgres_RelationalFilterRoutesToPostgresDirect` and `TestQueryMeilisearchAndPostgres_LocationFilterPropagatedToMeilisearch`.
   - Resolved undefined `search` query parameter variable in `UnifiedHistoryListView.get` (`backend/history/views.py`) and undefined `res_filter` in `backend/history/tests/test_views.py`.
+  - Configured `.vscode/settings.json` with Pylance path mapping and diagnostic overrides for Docker monorepo development.
 
 ## Next Steps
 - Maintain verified test baselines across all modules.

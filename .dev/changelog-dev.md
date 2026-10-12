@@ -12,6 +12,9 @@
 *   **Unified History API Query Search Parameter & Test Scoping (`backend/history/views.py`, `backend/history/tests/test_views.py`)**:
     *   Added missing `search = request.query_params.get('search')` variable extraction in `UnifiedHistoryListView.get`, resolving Pylance `reportUndefinedVariable` and preventing runtime `UnboundLocalError` / `NameError` crashes when filtering unified history by text.
     *   Fixed undefined `res_filter` variable in `test_list_print_records_admin_success_with_filters` in `test_views.py` by making the filtered API request call explicitly, and added `test_unified_history_search_filter_returns_200` to verify search filtering behavior.
+*   **Editor Environment Configuration (`.vscode/settings.json`)**:
+    *   Configured `python.analysis.extraPaths` for `./backend` to enable Pylance to resolve intra-project Django app imports.
+    *   Configured `diagnosticSeverityOverrides` (`reportMissingImports: none`, `reportMissingModuleSource: none`) to eliminate host-side missing module diagnostics when developing in containerized environments.
 *   **Verification**:
     *   `python -m py_compile` validated all backend Python files with 0 syntax errors.
     *   AST symbol verification confirmed 0 undefined names in `process_outbox_task`.
