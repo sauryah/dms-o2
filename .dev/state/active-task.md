@@ -7,45 +7,28 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Product Quality Upgrade: P0 Bulk Inventory Remediation, Theme System Standardization & UX Polish
-**Status:** Complete
-**Started:** 2026-10-07
-**Completed:** 2026-10-07
+**Task:** Data Integrity & Outbox Hardening (Batch 2: ARC-01, PERF-02, PERF-01, BUG-04)
+**Status:** In Progress
+**Started:** 2026-10-12
+**Completed:** In Progress
 **Confidence:** 100%
 
 ## Task Description
-Upgrade the existing application into a professional, production-quality industrial software product without bloat:
-1. **P0 Bulk Inventory Location & Batch Concurrency Remediation (`frontend/src/features/inventory/components/InventoryPage.tsx`)**:
-   - Replaced free-text location string input in the floating bulk action bar with structured Target Rack and Shelf dropdown selectors queried from `/api/racks/`.
-   - Fixed silent update failure bug where PATCH payload was sending `{ location }` instead of `{ rack, shelf }`.
-   - Replaced sequential blocking `for...of` request loops with concurrent `Promise.all` requests and query invalidations.
-   - Standardized floating bulk bar styles with semantic tokens (`var(--color-surface)`, `var(--color-border-visible)`, `var(--color-text)`).
-2. **Design System & Theme Token Standardization (`Skeleton.tsx`, `SearchBar.tsx`, `PageHeader.tsx`, `DataTable.tsx`, `EmptyState.tsx`, `ConfirmDialog.tsx`, `Drawer.tsx`, `Navbar.tsx`)**:
-   - Eliminated hardcoded jet-black hex colors (`#0a0a0a`, `#0f0f0f`, `#1a1a1a`, `#2a2a2a`) across UI primitives.
-   - Wired components directly to semantic CSS tokens (`var(--color-surface)`, `var(--color-surface-2)`, `var(--color-bg)`, `var(--color-border)`, `var(--color-border-visible)`, `var(--color-text)`, `var(--color-muted)`), guaranteeing pixel-perfect rendering across Dark Terminal, Classic Slate, and Precision Light themes.
-   - Added accessible `aria-sort` and row selection labels to `DataTable.tsx`.
-   - Enhanced modal and drawer backdrops with `bg-black/60 backdrop-blur-xs` and depth shadows.
-3. **Mobile Navigation & Scroll Locking (`Navbar.tsx`)**:
-   - Added background body scroll lock (`overflow: hidden`) when mobile navigation drawer is active.
-   - Added automatic route-change dismiss effect for mobile menu.
-4. **Verification & Testing**:
-   - 95/95 Vitest unit tests green across all 28 test suites.
-   - `npx tsc --noEmit` verified with 0 errors.
-   - Production Vite bundle built cleanly in 5.04s.
-   - Frontend Docker container rebuilt and healthy; live probes return HTTP 200 and database counts in sync (3087/3087).
+Implement the next highest-impact architectural and performance fixes:
+1. **ARC-01 (`SearchService.queue_die_sync`, `delete_die_document`)**: Execute `OutboxTask.objects.create` inside the primary database transaction instead of `transaction.on_commit(run_sync)`. Use `on_commit` strictly to discard thread-local tracking and dispatch background workers.
+2. **PERF-02 (`DieViewSet.update`)**: Consolidate version increment into a single atomic `save()` operation (`serializer.save(version=locked_instance.version + 1)`), eliminating double database writes, duplicate signal firings, and redundant outbox tasks.
+3. **PERF-01 (`backend/search/tasks.py`)**: Decouple outbox row claiming from blocking Meilisearch HTTP requests and task polling, releasing row locks and returning connections to the pool immediately.
+4. **BUG-04 (`backend/history/views.py`)**: Prevent document sequence sorting inversion when IDs exceed 4 digits by ordering by string length before lexical order (`Length('doc_ref').desc(), '-doc_ref'`).
 
 ## Completed
-- P0 bulk location update and concurrent batching implemented and verified.
-- UI primitives converted to semantic tokens across all three themes.
-- Navbar desktop and mobile UX upgraded with scroll locking.
-- 95/95 Vitest unit tests passing.
-- Production Vite build verified.
-- Docker containers rebuilt and running healthy.
-- Atomic commits policy established.
+- Completed Batch 1: BUG-01, BUG-02, BUG-03, LINT-01, UI-02 with regression tests and clean frontend verification (95/95 tests passing, 0 TypeScript errors, 0 ESLint warnings, clean Vite production build).
 
 ## Next Steps
-- Push commits to remote origin when instructed.
-- Refresh graphify knowledge graph if required.
+- Implement Batch 2 fixes in `search_service.py`, `views.py` (dies), `tasks.py` (search), and `views.py` (history).
+- Add regression tests for transactional outbox, OCC single-save versioning, and document sequence generation past 9999.
+- Verify regressions and compile checks.
 
 ## Blockers
-- None. All audit items implemented, tested, and verified end-to-end.
+- None.
+
+

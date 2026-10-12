@@ -59,6 +59,17 @@ Track implementation status across all phases.
 
 ## Roadmap Progress
 
+### High-Impact Stability & Bug Remediation (Batch 1) ✅
+**Status:** Complete
+**Date:** 2026-10-12
+
+**Completed:**
+- Go Wire Drawing Calculator Validation (`go-api/internal/handlers/handlers.go`, `BUG-01`): Guaranteed strictly positive and finite die sizes, returning HTTP 422 Unprocessable Entity instead of crashing JSON serialization on `+Inf`. Added regression test suite in `handlers_test.go`.
+- Session Management Redis Eviction (`backend/users/management/commands/expire_sessions.py`, `BUG-02`): Evicts both `verify_token:{token_hash}` and `user_session:{user_id}:{token_hash}` keys when pruning expired sessions. Added unit test in `test_auth.py`.
+- Unified History Query Validation (`backend/history/views.py`, `BUG-03`): Added safe integer parsing for `page` and `page_size`, returning HTTP 400 Bad Request on invalid inputs. Added `UnifiedHistoryApiTests` in `test_views.py`.
+- Frontend Cleanliness (`LINT-01`, `UI-02`): Removed unused `elongations` in `WireDrawingPrintReport.tsx` (restored 0-warning ESLint baseline); removed forced uppercase in `MachineSidebarTree.tsx`.
+- Verified with 28/28 Vitest test suites (95/95 passing), `npx tsc --noEmit` 0 errors, ESLint 0 errors / 0 warnings, and Vite production bundle clean in 17.4s.
+
 ### Multi-Language Architecture — Phase 1: Rust/WebAssembly High-Resolution FEA & Math Engine ✅
 **Status:** Complete
 **Date:** 2026-09-19

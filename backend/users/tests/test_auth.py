@@ -448,6 +448,52 @@ class AuthTests(APITestCase):
             except Exception:
                 pass
 
+    def test_expire_sessions_command_evicts_redis_cache(self):
+        from django.core.management import call_command
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.core.cache import cache
+        import redis
+        import json
+
+        login_res = self.client.post(self.login_url, {
+            'username': 'admin_test',
+            'password': 'admin_password_123'
+        })
+        token = login_res.data['token']
+        token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+        # Set session to be older than idle timeout
+        sess = UserSession.objects.get(user=self.admin_user, token_hash=token_hash)
+        old_time = timezone.now() - timedelta(minutes=settings.SESSION_IDLE_TIMEOUT_MINUTES + 10)
+        UserSession.objects.filter(pk=sess.pk).update(last_seen=old_time, created_at=old_time)
+
+        # Set mock caches
+        django_cache_key = f"user_session:{self.admin_user.id}:{token_hash}"
+        cache.set(django_cache_key, "active_session", 3600)
+
+        verify_key = f"verify_token:{token_hash}"
+        try:
+            r = redis.Redis.from_url(settings.REDIS_CACHE_URL)
+            r.set(verify_key, json.dumps({"user_id": self.admin_user.id, "role": "ADMIN"}))
+
+            self.assertTrue(r.exists(verify_key))
+            self.assertIsNotNone(cache.get(django_cache_key))
+
+            # Run expire_sessions command
+            call_command('expire_sessions')
+
+            # Verify session was deleted and caches cleared
+            self.assertFalse(UserSession.objects.filter(pk=sess.pk).exists())
+            self.assertFalse(r.exists(verify_key))
+            self.assertIsNone(cache.get(django_cache_key))
+        finally:
+            try:
+                r.delete(verify_key)
+            except Exception:
+                pass
+            cache.delete(django_cache_key)
+
     def test_multi_device_concurrent_sessions(self):
         from django.test import override_settings
         

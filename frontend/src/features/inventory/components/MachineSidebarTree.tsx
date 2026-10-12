@@ -219,7 +219,7 @@ export const MachineSidebarTree = forwardRef<MachineSidebarTreeRef, MachineSideb
               placeholder="SEARCH TREE..."
               value={treeSearch}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTreeSearch(e.target.value)}
-              className="w-full bg-[#0f0f0f] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 pl-8 pr-2.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono uppercase"
+              className="w-full bg-[#0f0f0f] border border-[#2a2a2a] focus:border-blue-500 rounded-sm py-1.5 pl-8 pr-2.5 text-xs text-[#e4e4e4] placeholder-[#404040] focus:outline-none transition-colors font-mono"
             />
           </div>
 

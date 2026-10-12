@@ -231,9 +231,14 @@ class UnifiedHistoryListView(APIView):
         from_date = request.query_params.get('from')
         to_date = request.query_params.get('to')
         ip = request.query_params.get('ip')
-        search = request.query_params.get('search')
-        page = max(int(request.query_params.get('page', 1)), 1)
-        page_size = min(int(request.query_params.get('page_size', 25)), 100)
+        try:
+            page = max(int(request.query_params.get('page', 1)), 1)
+            page_size = min(max(int(request.query_params.get('page_size', 25)), 1), 100)
+        except (ValueError, TypeError):
+            return Response(
+                {"detail": "Invalid page or page_size query parameter. Must be valid integers."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         offset = (page - 1) * page_size
 
         # 1. Build SELECT for DieHistory

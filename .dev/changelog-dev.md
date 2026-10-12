@@ -1,5 +1,26 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-12 High-Impact Stability & Bug Remediation (Batch 1)
+*   **Go API Calculation Robustness (`go-api/internal/handlers/handlers.go`, `BUG-01`)**:
+    *   Added validation ensuring all die sizes in `HandleCalculateWireDrawing` are strictly positive (`> 0`) and finite (`!math.IsNaN() && !math.IsInf()`).
+    *   Returns structured HTTP 422 Unprocessable Entity with error code `invalid_die_size` instead of propagating `+Inf` or `NaN` into division-by-zero, which previously crashed JSON response serialization.
+    *   Added comprehensive table-driven regression tests in `handlers_test.go` covering zero sizes, negative sizes, and infinite/non-numeric values.
+*   **Session Management & Redis Cache Eviction (`backend/users/management/commands/expire_sessions.py`, `BUG-02`)**:
+    *   Enhanced `expire_sessions` management command to explicitly delete associated Redis session cache keys (`verify_token:{token_hash}` and `user_session:{user_id}:{token_hash}`) for all pruned expired sessions.
+    *   Added regression test in `backend/users/tests/test_auth.py` verifying cache eviction for bulk expired sessions.
+*   **Unified History API Query Parameter Validation (`backend/history/views.py`, `BUG-03`)**:
+    *   Wrapped `page` and `page_size` query parameter parsing in `UnifiedHistoryListView` inside explicit integer conversion guards with positive integer checks.
+    *   Returns structured HTTP 400 Bad Request with informative error details when invalid or non-numeric pagination inputs are passed, preventing SQL syntax exceptions and 500 crashes.
+    *   Added regression test suite `UnifiedHistoryApiTests` in `backend/history/tests/test_views.py` validating 400 responses on string and negative pagination parameters.
+*   **Frontend Linter & Search Usability (`LINT-01`, `UI-02`)**:
+    *   Removed unused `elongations` variable from `WireDrawingPrintReport.tsx`, restoring zero-warning ESLint baseline (`npm run lint`).
+    *   Removed forced `uppercase` styling from the machine tree search input in `MachineSidebarTree.tsx`, enabling case-natural text filtering.
+*   **Verification**:
+    *   Vitest suite: 28 test suites, 95/95 unit tests passing.
+    *   TypeScript: `npx tsc --noEmit` verified clean with 0 errors.
+    *   ESLint: 0 errors, 0 warnings.
+    *   Vite build: Production bundle built cleanly in 17.4s.
+
 ### 2026-10-09 Git Workflow & Atomic Commit Policy Enforcement
 *   **Atomic Commits Policy & Anti-Pattern Remediation**:
     *   Decommissioned the legacy "1 changed file = 1 commit" rule across `.dev/state/current-goal.md` and `.dev/state/active-task.md`.

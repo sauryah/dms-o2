@@ -903,6 +903,48 @@ func TestHandleCalculateWireDrawing(t *testing.T) {
 			t.Errorf("expected total passes statistic to be 3, got %d", resp.Stats.TotalPasses)
 		}
 	})
+
+	t.Run("zero_or_negative_die_size", func(t *testing.T) {
+		testCases := []string{
+			`{"dies":[2.5, 0.0]}`,
+			`{"dies":[-1.0, 2.0]}`,
+			`{"dies":[2.5, -0.5]}`,
+		}
+		for _, body := range testCases {
+			req := httptest.NewRequest("POST", "/api/go/tools/calculate/wire-drawing", strings.NewReader(body))
+			w := httptest.NewRecorder()
+			h.HandleCalculateWireDrawing(w, req)
+			if w.Code != http.StatusUnprocessableEntity {
+				t.Errorf("expected 422 Unprocessable Entity for body %s, got %d: %s", body, w.Code, w.Body.String())
+			}
+		}
+	})
+
+	t.Run("less_than_two_dies", func(t *testing.T) {
+		body := `{"dies":[2.5]}`
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/wire-drawing", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		h.HandleCalculateWireDrawing(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+		}
+		var resp WireDrawingCalcResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(resp.Passes) != 0 || resp.Stats.TotalPasses != 0 {
+			t.Errorf("expected 0 passes, got %d", len(resp.Passes))
+		}
+	})
+
+	t.Run("invalid_json_payload", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/api/go/tools/calculate/wire-drawing", strings.NewReader(`not json`))
+		w := httptest.NewRecorder()
+		h.HandleCalculateWireDrawing(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 Bad Request, got %d", w.Code)
+		}
+	})
 }
 
 func TestHandleDBStats(t *testing.T) {

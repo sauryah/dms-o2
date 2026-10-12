@@ -19,9 +19,27 @@ class Command(BaseCommand):
             created_at__lt=absolute_limit
         )
 
-        # Log session expirations
+        # Evict session caches and log expirations
+        from django.core.cache import cache
         from users.models import UserActivityLog
+        import redis
+
+        r = None
+        try:
+            r = redis.Redis.from_url(settings.REDIS_CACHE_URL)
+        except Exception:
+            pass
+
         for session in expired_sessions:
+            # Evict Django session cache
+            cache.delete(f"user_session:{session.user_id}:{session.token_hash}")
+            # Evict Go API token verification cache
+            if r is not None:
+                try:
+                    r.delete(f"verify_token:{session.token_hash}")
+                except Exception:
+                    pass
+
             UserActivityLog.objects.create(
                 user=session.user,
                 username=session.user.username,

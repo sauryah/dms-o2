@@ -1062,6 +1062,13 @@ func (h *Handler) HandleCalculateWireDrawing(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	for _, d := range req.Dies {
+		if d <= 0 || math.IsNaN(d) || math.IsInf(d, 0) {
+			writeProblemDetails(w, r, "Unprocessable Entity", http.StatusUnprocessableEntity, "All die sizes must be positive numeric values")
+			return
+		}
+	}
+
 	passes := make([]PassData, 0, len(req.Dies)-1)
 	for i := 0; i < len(req.Dies)-1; i++ {
 		fromDie := req.Dies[i]

@@ -273,7 +273,40 @@ class PrintRecordApiTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(res.data['count'], 2)
 
-        res_filter = self.client.get(f"{self.print_records_url}?work_order=ALPHA")
-        self.assertEqual(res_filter.status_code, status.HTTP_200_OK)
         self.assertEqual(res_filter.data['count'], 1)
         self.assertEqual(res_filter.data['results'][0]['doc_ref'], 'TDS-20261007-0010')
+
+
+class UnifiedHistoryApiTests(APITestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            username='admin_unified_user',
+            password='admin_unified_password',
+            role='ADMIN'
+        )
+        self.login_url = reverse('login')
+        self.unified_url = '/api/v1/history/unified/'
+
+        from django.core.cache import cache
+        cache.clear()
+
+        res = self.client.post(self.login_url, {'username': 'admin_unified_user', 'password': 'admin_unified_password'})
+        token = res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_unified_history_invalid_page_returns_400(self):
+        res = self.client.get(f"{self.unified_url}?page=notanumber")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', res.data)
+
+    def test_unified_history_invalid_page_size_returns_400(self):
+        res = self.client.get(f"{self.unified_url}?page_size=notanumber")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', res.data)
+
+    def test_unified_history_valid_pagination_returns_200(self):
+        res = self.client.get(f"{self.unified_url}?page=1&page_size=10")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('results', res.data)
+        self.assertIn('count', res.data)
+

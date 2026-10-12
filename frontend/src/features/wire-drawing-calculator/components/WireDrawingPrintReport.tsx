@@ -52,7 +52,6 @@ export const WireDrawingPrintReport: React.FC<WireDrawingPrintReportProps> = ({
 
   // Calculate min/max reduction for summary
   const reductions = passes.map((p) => p.areaReduction);
-  const elongations = passes.map((p) => p.elongation);
   const minRed = reductions.length > 0 ? Math.min(...reductions) : 0;
   const maxRed = reductions.length > 0 ? Math.max(...reductions) : 0;
 
