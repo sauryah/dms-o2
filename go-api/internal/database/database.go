@@ -301,7 +301,7 @@ func (db *PostgresDB) QueryPostgresDirectlyCount(ctx context.Context, q, dieType
 }
 
 
-func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]DieRepresentation, error) {
+func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]DieRepresentation, error) {
 	var sqlParts []string
 	var args []interface{}
 	argCounter := 1
@@ -329,6 +329,26 @@ func (db *PostgresDB) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, si
 	sqlParts = append(sqlParts, dimParts...)
 	args = dimArgs
 	argCounter = dimCounter
+
+	if machineID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND m.id = $%d", argCounter))
+		args = append(args, machineID)
+		argCounter++
+	}
+	if setID != "" {
+		sqlParts = append(sqlParts, fmt.Sprintf("AND s.id = $%d", argCounter))
+		args = append(args, setID)
+		argCounter++
+	}
+	if unassigned == "true" {
+		sqlParts = append(sqlParts, "AND d.current_set_id IS NULL")
+	}
+	if location != "" {
+		cleanLoc := strings.Trim(location, `"'`)
+		sqlParts = append(sqlParts, fmt.Sprintf("AND (rk.name ILIKE $%d OR CAST(d.shelf_number AS TEXT) ILIKE $%d)", argCounter, argCounter))
+		args = append(args, "%"+cleanLoc+"%")
+		argCounter++
+	}
 
 	query := strings.Join(sqlParts, "\n")
 	rows, err := db.QueryContext(ctx, query, args...)

@@ -59,6 +59,16 @@ Track implementation status across all phases.
 
 ## Roadmap Progress
 
+### Search Consistency & Realtime Multiplexing (Batch 3) ✅
+**Status:** Complete
+**Date:** 2026-10-12
+
+**Completed:**
+- Search Filter Consistency Across Storage Layers (`go-api/internal/handlers/handlers.go`, `database.go`, `BUG-05`): Propagated `machine_id`, `set_id`, `unassigned`, and `location` to `QueryPostgresByIDs` during full-text queries, eliminating filter leaks when searching across machines or sets. Added unit test in `handlers_test.go`.
+- Realtime Event Multiplexing Buffer Capacity (`go-api/internal/handlers/handlers.go`, `PERF-03`): Expanded SSE client channel buffer from 10 to 256 in `HandleEvents` to prevent dropping clients during high-throughput broadcast bursts.
+- E2E Test Physical Schema Alignment (`frontend/tests/e2e/smoke.spec.js`, `TEST-01`): Updated Playwright smoke test die fixture to query racks dynamically and use structured `{ rack, shelf_number }`.
+- Verified across Vitest (28 test suites, 95/95 passing), ESLint (0 errors/warnings), and TypeScript (0 errors).
+
 ### Data Integrity & Outbox Hardening (Batch 2) ✅
 **Status:** Complete
 **Date:** 2026-10-12

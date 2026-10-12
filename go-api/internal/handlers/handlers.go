@@ -26,7 +26,7 @@ type Database interface {
 	GetPoolStats() database.DBStats
 	QueryPostgresDirectly(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string, limit, offset int) ([]database.DieRepresentation, error)
 	QueryPostgresDirectlyCount(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) (int, error)
-	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
+	QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error)
 	GetCount(ctx context.Context) (int, error)
 	IsUserActive(ctx context.Context, userID int) (bool, error)
 }
@@ -723,7 +723,7 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 				}
 			}
 			if len(hitIDs) > 0 {
-				diesFromDB, err := h.db.QueryPostgresByIDs(ctx, hitIDs, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax)
+				diesFromDB, err := h.db.QueryPostgresByIDs(ctx, hitIDs, params.SizeMin, params.SizeMax, params.WidthMin, params.WidthMax, params.ThickMin, params.ThickMax, params.MachineID, params.SetID, params.Unassigned, params.Location)
 				if err != nil {
 					slog.Error("Failed to query Postgres by Meilisearch IDs", "error", err)
 				} else {
@@ -736,6 +736,9 @@ func (h *Handler) QueryMeilisearchAndPostgres(ctx context.Context, params *Searc
 						if die, ok := dieMap[hid]; ok {
 							meiliDies = append(meiliDies, die)
 						}
+					}
+					if params.MachineID != "" || params.SetID != "" || params.Unassigned != "" || params.Location != "" {
+						totalHits = len(meiliDies)
 					}
 				}
 			}
@@ -862,8 +865,7 @@ func (h *Handler) HandleEvents(w http.ResponseWriter, r *http.Request) {
 	_ = rc.SetWriteDeadline(time.Time{})
 
 	// Create SSE connection channel
-
-	clientChan := make(events.Client, 10)
+	clientChan := make(events.Client, 256)
 	h.eventManager.Register(clientChan)
 
 	defer func() {

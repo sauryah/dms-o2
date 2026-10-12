@@ -1,5 +1,21 @@
 # Engineering Implementation History (changelog-dev.md)
 
+### 2026-10-12 Search Consistency & Realtime Multiplexing (Batch 3)
+*   **Search Filter Consistency Across Storage Layers (`go-api/internal/handlers/handlers.go`, `go-api/internal/database/database.go`, `BUG-05`)**:
+    *   Propagated `machine_id`, `set_id`, `unassigned`, and `location` filtering parameters to `QueryPostgresByIDs` during Meilisearch-backed full-text queries.
+    *   Eliminated search leak bug where searching dies with text queries alongside machine or set filters returned dies from other machines/sets.
+    *   Updated `totalHits` to accurately reflect post-filter match counts when machine/set constraints are applied.
+    *   Added regression test in `handlers_test.go` (`TestQueryMeilisearchAndPostgres_FiltersPropagated`) verifying that all query parameters are preserved and forwarded.
+*   **Realtime SSE Channel Buffer Capacity (`go-api/internal/handlers/handlers.go`, `PERF-03`)**:
+    *   Expanded client channel buffer from 10 to 256 in `HandleEvents`.
+    *   Prevents client disconnects and premature channel closure under high-throughput batch operations and concurrent broadcast bursts.
+*   **E2E Test Physical Schema Alignment (`frontend/tests/e2e/smoke.spec.js`, `TEST-01`)**:
+    *   Updated Playwright smoke test die creation fixture to dynamically query valid rack IDs from `/api/racks/` and supply structured `{ rack, shelf_number }` rather than deprecated `location` string.
+*   **Verification**:
+    *   Frontend unit test suites: 28 test suites, 95/95 tests passing (`npm run test`).
+    *   ESLint: 0 errors, 0 warnings (`npm run lint`).
+    *   TypeScript: 0 compiler errors (`npx tsc --noEmit`).
+
 ### 2026-10-12 Data Integrity & Outbox Hardening (Batch 2)
 *   **Transactional Outbox Guarantees (`backend/dies/services/search_service.py`, `ARC-01`)**:
     *   Refactored `SearchService.queue_die_sync` and `SearchService.delete_die_document` to create `OutboxTask` database records inside the active primary transaction context rather than deferred inside `transaction.on_commit(run_sync)`.

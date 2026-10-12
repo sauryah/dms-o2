@@ -25,7 +25,22 @@ test.describe('DMS E2E Smoke Tests', () => {
         }
       });
 
-      // Create a clean test die
+      // Fetch available racks to get a valid rack ID
+      const racksRes = await request.get(`${API_URL}/api/racks/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      let rackId = 1;
+      if (racksRes.ok()) {
+        const racksData = await racksRes.json();
+        const racksList = Array.isArray(racksData) ? racksData : (racksData.results || []);
+        if (racksList.length > 0) {
+          rackId = racksList[0].id;
+        }
+      }
+
+      // Create a clean test die with structured physical location
       const createRes = await request.post(`${API_URL}/api/dies/`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -35,7 +50,8 @@ test.describe('DMS E2E Smoke Tests', () => {
           die_type: 'ROUND',
           casing: '25x10',
           status: 'AVAILABLE',
-          location: 'Rack A - Shelf 3',
+          rack: rackId,
+          shelf_number: 1,
           punched_size: 2.5,
           current_size: 2.5,
         }

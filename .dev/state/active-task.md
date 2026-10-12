@@ -7,26 +7,35 @@ Track current work item for AI sessions.
 **Updated:** Every session.
 
 ### Current Task
-**Task:** Search Consistency & Realtime Multiplexing (Batch 3: BUG-05, PERF-03, TEST-01)
-**Status:** In Progress
+**Task:** High-Impact Codebase Quality & Stability Overhaul (Batches 1-3 Complete)
+**Status:** Complete
 **Started:** 2026-10-12
-**Completed:** In Progress
+**Completed:** 2026-10-12
 **Confidence:** 100%
 
 ## Task Description
-Implement search consistency, realtime multiplexing, and test fixtures:
-1. **BUG-05 (`go-api/internal/handlers/handlers.go`)**: Include `machine_id`, `set_id`, and `unassigned` filters in the Meilisearch query payload (`QueryMeilisearchAndPostgres`), matching the Postgres direct query filter behavior.
-2. **PERF-03 (`go-api/internal/handlers/handlers.go`)**: Expand SSE client channel buffer from 10 to 256 in `HandleEvents` to prevent slow-client disconnects during high-throughput batch operations.
-3. **TEST-01 (`frontend/tests/e2e/smoke.spec.js`)**: Update E2E smoke tests to supply structured `{ rack, shelf_number }` rather than deprecated free-text `location`.
+Implement the highest-impact, evidence-backed fixes identified in the repository audit across stability, concurrency, outbox integrity, search consistency, and test health.
 
 ## Completed
-- Completed Batch 1: BUG-01, BUG-02, BUG-03, LINT-01, UI-02 with regression tests and clean frontend verification (95/95 tests passing, 0 TypeScript errors, 0 ESLint warnings, clean Vite production build). Commit: `93e7850`.
-- Completed Batch 2: ARC-01, PERF-02, PERF-01, BUG-04 with regression tests across `test_search.py`, `test_api.py`, and `test_views.py`, plus full bytecode compilation.
+- **Batch 1 (Calculation, Session, and Pagination Stability)**:
+  - BUG-01: Go Wire Drawing finite/positive die size validation (`HandleCalculateWireDrawing`) + regression tests.
+  - BUG-02: Session pruning explicit Redis token and user session eviction (`expire_sessions.py`) + regression test.
+  - BUG-03: Unified History query integer parsing validation (`UnifiedHistoryListView`) + regression test suite.
+  - LINT-01 & UI-02: Cleaned ESLint warning in `WireDrawingPrintReport.tsx` and removed forced uppercase in `MachineSidebarTree.tsx`.
+  - Commit: `93e7850`.
+- **Batch 2 (Data Integrity & Outbox Hardening)**:
+  - ARC-01: Transactional outbox guarantees in `search_service.py` (`queue_die_sync` & `delete_die_document` creating `OutboxTask` inside primary transaction) + rollback/commit regression tests.
+  - PERF-02: Single-save OCC version increment in `DieViewSet.update` (`serializer.save(version=locked_instance.version + 1)`) + regression test.
+  - PERF-01: Decoupled outbox row claiming from Meilisearch HTTP calls in `process_outbox_task`.
+  - BUG-04: Length-aware sequence ordering (`Length('doc_ref').desc(), '-doc_ref'`) for document IDs exceeding 9,999 + regression test.
+  - Commit: `11a159b`.
+- **Batch 3 (Search Consistency & Realtime Multiplexing)**:
+  - BUG-05: Propagated `machine_id`, `set_id`, `unassigned`, and `location` to `QueryPostgresByIDs` during Meilisearch full-text queries + regression test.
+  - PERF-03: Expanded SSE client channel buffer from 10 to 256 in `HandleEvents`.
+  - TEST-01: Updated Playwright smoke test fixture with structured `{ rack, shelf_number }`.
 
 ## Next Steps
-- Implement Batch 3 fixes in `go-api/internal/handlers/handlers.go` and `frontend/tests/e2e/smoke.spec.js`.
-- Add regression tests in `go-api/internal/handlers/handlers_test.go`.
-- Run frontend and Go test suites and verify baselines.
+- Maintain verified test baselines across all modules.
 
 ## Blockers
 - None.

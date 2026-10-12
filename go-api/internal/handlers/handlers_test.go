@@ -21,7 +21,7 @@ type MockDatabase struct {
 	GetPoolStatsFn               func() database.DBStats
 	QueryPostgresDirectlyFn      func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string, limit, offset int) ([]database.DieRepresentation, error)
 	QueryPostgresDirectlyCountFn func(ctx context.Context, q, dieType, statusVal, casing, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) (int, error)
-	QueryPostgresByIDsFn         func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error)
+	QueryPostgresByIDsFn         func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error)
 	GetCountFn                   func(ctx context.Context) (int, error)
 	IsUserActiveFn               func(ctx context.Context, userID int) (bool, error)
 }
@@ -60,9 +60,9 @@ func (m *MockDatabase) QueryPostgresDirectlyCount(ctx context.Context, q, dieTyp
 }
 
 
-func (m *MockDatabase) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+func (m *MockDatabase) QueryPostgresByIDs(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
 	if m.QueryPostgresByIDsFn != nil {
-		return m.QueryPostgresByIDsFn(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax)
+		return m.QueryPostgresByIDsFn(ctx, hitIDs, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location)
 	}
 	return nil, nil
 }
@@ -423,7 +423,7 @@ func TestHandleSearch_MeilisearchAndPostgres(t *testing.T) {
 	}
 
 	mockDb := &MockDatabase{
-		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
 			if len(hitIDs) == 1 && hitIDs[0] == 101 {
 				return []database.DieRepresentation{
 					{ID: 101, DieID: "ROUND-101", DieType: "ROUND", Status: "AVAILABLE"},
@@ -479,7 +479,7 @@ func TestRelevanceSorting(t *testing.T) {
 			return candidates, nil
 		},
 
-		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax string) ([]database.DieRepresentation, error) {
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
 			return candidates, nil
 		},
 	}
@@ -986,3 +986,55 @@ func TestHandleDBStats(t *testing.T) {
 		t.Errorf("unexpected DB stats: %+v", resp.Database)
 	}
 }
+
+func TestQueryMeilisearchAndPostgres_FiltersPropagated(t *testing.T) {
+	cfg := &config.Config{}
+	var capturedMachineID, capturedSetID, capturedUnassigned, capturedLocation string
+
+	mockSearch := &MockSearch{
+		SearchFn: func(query string, searchRequest *meilisearch.SearchRequest) (*meilisearch.SearchResponse, error) {
+			return &meilisearch.SearchResponse{
+				Hits: []interface{}{
+					map[string]interface{}{"id": "101"},
+				},
+				TotalHits: 1,
+			}, nil
+		},
+	}
+
+	mockDb := &MockDatabase{
+		QueryPostgresByIDsFn: func(ctx context.Context, hitIDs []int64, sizeMin, sizeMax, widthMin, widthMax, thickMin, thickMax, machineID, setID, unassigned, location string) ([]database.DieRepresentation, error) {
+			capturedMachineID = machineID
+			capturedSetID = setID
+			capturedUnassigned = unassigned
+			capturedLocation = location
+			return []database.DieRepresentation{
+				{ID: 101, DieID: "ROUND-101", DieType: "ROUND", Status: "AVAILABLE"},
+			}, nil
+		},
+	}
+
+	h := NewHandler(cfg, mockDb, &MockCache{}, mockSearch, nil)
+	req := httptest.NewRequest("GET", "/api/go/search?q=ROUND&machine_id=7&set_id=14&unassigned=true&location=Rack%20B", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleSearch(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status OK, got %d", w.Code)
+	}
+
+	if capturedMachineID != "7" {
+		t.Errorf("expected machineID '7', got %q", capturedMachineID)
+	}
+	if capturedSetID != "14" {
+		t.Errorf("expected setID '14', got %q", capturedSetID)
+	}
+	if capturedUnassigned != "true" {
+		t.Errorf("expected unassigned 'true', got %q", capturedUnassigned)
+	}
+	if capturedLocation != "Rack B" {
+		t.Errorf("expected location 'Rack B', got %q", capturedLocation)
+	}
+}
+
